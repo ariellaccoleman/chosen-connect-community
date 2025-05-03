@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile, ProfileWithDetails, Location } from '@/types';
-import { toast } from '@/components/ui/sonner';
+import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useCurrentProfile = (userId: string | undefined) => {
   return useQuery({
@@ -154,21 +154,18 @@ export const useUpdateProfile = () => {
       console.log('Operation successful, response:', result);
       return result;
     },
-    onSuccess: (_, variables) => {
-      // Invalidate both profile queries to ensure they're refreshed
-      queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
-      queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
-      
-      // Also invalidate community profiles query
-      queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
-      
-      // Only show success toast after the operation has completed successfully
-      toast.success('Profile updated successfully');
-    },
-    onError: (error: any) => {
-      console.error('Mutation error:', error);
-      toast.error(`Error updating profile: ${error.message}`);
-    },
+    ...createMutationHandlers({
+      successMessage: 'Profile updated successfully',
+      errorMessagePrefix: 'Error updating profile',
+      onSuccessCallback: (_, variables) => {
+        // Invalidate both profile queries to ensure they're refreshed
+        queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
+        queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
+        
+        // Also invalidate community profiles query
+        queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
+      }
+    })
   });
 };
 
