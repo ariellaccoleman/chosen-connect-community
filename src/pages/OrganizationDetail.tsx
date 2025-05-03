@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -104,32 +103,31 @@ const OrganizationDetail = () => {
 
       // Format the profiles for display
       return data.map(relationship => {
+        // Ensure profile exists
+        if (!relationship.profile) return relationship;
+        
         const profile = relationship.profile as ProfileWithDetails;
         
-        if (profile) {
-          // Add full_name to profile
-          profile.full_name = [profile.first_name, profile.last_name]
+        // Add full_name to profile - make sure this is explicitly set
+        profile.full_name = [profile.first_name, profile.last_name]
+          .filter(Boolean)
+          .join(' ');
+        
+        // Format location if available
+        if (profile.location) {
+          profile.location.formatted_location = [
+            profile.location.city,
+            profile.location.region,
+            profile.location.country
+          ]
             .filter(Boolean)
-            .join(' ');
-          
-          // Format location if available
-          if (profile.location) {
-            profile.location.formatted_location = [
-              profile.location.city,
-              profile.location.region,
-              profile.location.country
-            ]
-              .filter(Boolean)
-              .join(', ');
-          }
-          
-          return {
-            ...relationship,
-            profile
-          };
+            .join(', ');
         }
         
-        return relationship;
+        return {
+          ...relationship,
+          profile
+        };
       }).filter(item => item.profile); // Only include items that have profiles
     },
     enabled: !!id,
@@ -312,40 +310,54 @@ const OrganizationDetail = () => {
                   <div className="text-center py-4">Loading community members...</div>
                 ) : communityMembers.length > 0 ? (
                   <div className="space-y-4">
-                    {communityMembers.map((relationship) => (
-                      <div key={relationship.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                        <Avatar>
-                          <AvatarImage src={relationship.profile?.avatar_url || ""} />
-                          <AvatarFallback className="bg-chosen-blue text-white">
-                            {relationship.profile?.first_name?.[0]}{relationship.profile?.last_name?.[0]}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">{relationship.profile?.full_name}</p>
-                              {relationship.profile?.headline && (
-                                <p className="text-sm text-gray-500">{relationship.profile.headline}</p>
-                              )}
+                    {communityMembers.map((relationship) => {
+                      // Ensure we have a profile and it has name properties before accessing
+                      const profile = relationship.profile as ProfileWithDetails;
+                      const profileName = profile ? 
+                        // Create name on the fly if full_name somehow doesn't exist
+                        profile.full_name || [profile.first_name, profile.last_name].filter(Boolean).join(' ') : 
+                        'Unknown Member';
+                        
+                      // Get initials safely
+                      const firstInitial = profile?.first_name?.[0] || '';
+                      const lastInitial = profile?.last_name?.[0] || '';
+                      const initials = (firstInitial + lastInitial) || '??';
+                      
+                      return (
+                        <div key={relationship.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                          <Avatar>
+                            <AvatarImage src={profile?.avatar_url || ""} />
+                            <AvatarFallback className="bg-chosen-blue text-white">
+                              {initials}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <p className="font-medium">{profileName}</p>
+                                {profile?.headline && (
+                                  <p className="text-sm text-gray-500">{profile.headline}</p>
+                                )}
+                              </div>
+                              <span className={`text-xs px-2 py-1 rounded-full ${
+                                relationship.connection_type === 'current' ? 'bg-blue-100 text-blue-800' :
+                                relationship.connection_type === 'former' ? 'bg-gray-100 text-gray-800' :
+                                'bg-green-100 text-green-800'
+                              }`}>
+                                {relationship.connection_type === 'current' ? 'Current' :
+                                 relationship.connection_type === 'former' ? 'Former' : 'Ally'}
+                              </span>
                             </div>
-                            <span className={`text-xs px-2 py-1 rounded-full ${
-                              relationship.connection_type === 'current' ? 'bg-blue-100 text-blue-800' :
-                              relationship.connection_type === 'former' ? 'bg-gray-100 text-gray-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
-                              {relationship.connection_type === 'current' ? 'Current' :
-                               relationship.connection_type === 'former' ? 'Former' : 'Ally'}
-                            </span>
+                            {relationship.department && (
+                              <p className="text-xs mt-1 flex items-center text-gray-600">
+                                <Briefcase className="h-3 w-3 mr-1" />
+                                {relationship.department}
+                              </p>
+                            )}
                           </div>
-                          {relationship.department && (
-                            <p className="text-xs mt-1 flex items-center text-gray-600">
-                              <Briefcase className="h-3 w-3 mr-1" />
-                              {relationship.department}
-                            </p>
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <Alert className="bg-gray-50 border-gray-200">
