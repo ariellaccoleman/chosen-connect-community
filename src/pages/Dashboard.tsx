@@ -13,17 +13,19 @@ import OrganizationCard from "@/components/organizations/OrganizationCard";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
+  // We don't need this useEffect anymore since we're using ProtectedRoute
+  // to handle the redirection in App.tsx
+  // useEffect(() => {
+  //   if (!loading && !user) {
+  //     navigate("/auth");
+  //   }
+  // }, [user, loading, navigate]);
 
-  if (loading || isLoadingProfile) {
+  if (isLoadingProfile) {
     return (
       <DashboardLayout>
         <div className="flex items-center justify-center h-full">

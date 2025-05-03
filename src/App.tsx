@@ -3,8 +3,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/hooks/useAuth";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
@@ -19,25 +19,130 @@ import TestDataGenerator from "./pages/TestDataGenerator";
 
 const queryClient = new QueryClient();
 
+// Component that checks if user is authenticated and redirects accordingly
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  // While checking authentication status, show nothing
+  if (loading) {
+    return null;
+  }
+
+  // If not authenticated, redirect to auth page
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If authenticated, show the protected content
+  return <>{children}</>;
+};
+
+// Component that redirects authenticated users away from public pages
+const PublicRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  // While checking authentication status, show nothing
+  if (loading) {
+    return null;
+  }
+
+  // If authenticated, redirect to dashboard
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If not authenticated, show the public content
+  return <>{children}</>;
+};
+
+const AppRoutes = () => {
+  return (
+    <Routes>
+      <Route path="/auth" element={<Auth />} />
+      <Route 
+        path="/" 
+        element={
+          <PublicRoute>
+            <Index />
+          </PublicRoute>
+        } 
+      />
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/profile" 
+        element={
+          <ProtectedRoute>
+            <ProfileEdit />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations" 
+        element={
+          <ProtectedRoute>
+            <Organizations />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations/new" 
+        element={
+          <ProtectedRoute>
+            <CreateOrganization />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations/:id" 
+        element={
+          <ProtectedRoute>
+            <OrganizationDetail />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/organizations/manage" 
+        element={
+          <ProtectedRoute>
+            <ManageOrganizationConnections />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/directory" 
+        element={
+          <ProtectedRoute>
+            <CommunityDirectory />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/generate-test-data" 
+        element={
+          <ProtectedRoute>
+            <TestDataGenerator />
+          </ProtectedRoute>
+        } 
+      />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <BrowserRouter>
       <AuthProvider>
         <TooltipProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<ProfileEdit />} />
-            <Route path="/organizations" element={<Organizations />} />
-            <Route path="/organizations/new" element={<CreateOrganization />} />
-            <Route path="/organizations/:id" element={<OrganizationDetail />} />
-            <Route path="/organizations/manage" element={<ManageOrganizationConnections />} />
-            <Route path="/directory" element={<CommunityDirectory />} />
-            <Route path="/admin/generate-test-data" element={<TestDataGenerator />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <AppRoutes />
           <Toaster />
           <Sonner />
         </TooltipProvider>
