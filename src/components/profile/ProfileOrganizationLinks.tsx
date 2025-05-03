@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { 
@@ -30,12 +29,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { ProfileFormValues } from "./ProfileForm";
 import { OrganizationWithLocation } from "@/types";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
 }
 
 const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
   const [connectionType, setConnectionType] = useState<"current" | "former" | "ally">("current");
@@ -71,16 +72,27 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Organizations</CardTitle>
-        <Button 
-          type="button" 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsAddingNew(true)}
-          disabled={isAddingNew || availableOrganizations.length === 0}
-        >
-          <Plus className="h-4 w-4 mr-1" />
-          Add Organization
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            type="button" 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsAddingNew(true)}
+            disabled={isAddingNew || availableOrganizations.length === 0}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Connect to Org
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => navigate("/organizations/new")}
+          >
+            <Plus className="h-4 w-4 mr-1" />
+            Create New Org
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {isLoadingRelationships ? (

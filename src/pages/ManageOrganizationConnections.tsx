@@ -45,7 +45,7 @@ const ManageOrganizationConnections = () => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold font-heading">Your Organizations</h1>
           <Button 
-            onClick={() => navigate("/organizations")} 
+            onClick={() => navigate("/organizations/new")} 
             className="bg-chosen-blue hover:bg-chosen-navy"
           >
             <Plus className="mr-2 h-4 w-4" />

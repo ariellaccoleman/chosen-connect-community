@@ -28,6 +28,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<ProfileEdit />} />
             <Route path="/organizations" element={<Organizations />} />
+            <Route path="/organizations/new" element={<Organizations />} />
             <Route path="/organizations/:id" element={<OrganizationDetail />} />
             <Route path="/organizations/manage" element={<ManageOrganizationConnections />} />
             <Route path="/directory" element={<CommunityDirectory />} />
