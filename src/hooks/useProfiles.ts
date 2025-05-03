@@ -162,6 +162,7 @@ export const useUpdateProfile = () => {
       // Also invalidate community profiles query
       queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
       
+      // Only show success toast after the operation has completed successfully
       toast.success('Profile updated successfully');
     },
     onError: (error: any) => {
