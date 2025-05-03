@@ -100,6 +100,8 @@ export const useAddOrganizationRelationship = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['organizationRelationships', variables.profile_id] });
+      
+      // Only show success toast after the operation has completed successfully
       toast.success('Organization relationship added successfully');
     },
     onError: (error: any) => {
@@ -131,6 +133,8 @@ export const useUpdateOrganizationRelationship = () => {
     onSuccess: (_, variables) => {
       // We need to refetch the profile's relationships
       queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
+      
+      // Only show success toast after the operation has completed successfully
       toast.success('Organization relationship updated successfully');
     },
     onError: (error: any) => {
@@ -155,6 +159,8 @@ export const useDeleteOrganizationRelationship = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
+      
+      // Only show success toast after the operation has completed successfully
       toast.success('Organization relationship removed successfully');
     },
     onError: (error: any) => {
