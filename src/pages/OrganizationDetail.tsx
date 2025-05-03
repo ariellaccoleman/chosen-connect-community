@@ -9,7 +9,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Briefcase, Link, Plus } from "lucide-react";
+import { ArrowLeft, Briefcase, Link, Plus, User, Users } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -28,7 +28,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { OrganizationWithLocation } from "@/types";
+import { OrganizationWithLocation, ProfileWithDetails } from "@/types";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -75,6 +76,61 @@ const OrganizationDetail = () => {
       }
       
       return data as OrganizationWithLocation;
+    },
+    enabled: !!id,
+  });
+
+  // Query to get all community members associated with this organization
+  const { data: communityMembers = [], isLoading: isLoadingMembers } = useQuery({
+    queryKey: ['organization-members', id],
+    queryFn: async () => {
+      if (!id) return [];
+      
+      const { data, error } = await supabase
+        .from('org_relationships')
+        .select(`
+          *,
+          profile:profiles(
+            *,
+            location:locations(*)
+          )
+        `)
+        .eq('organization_id', id);
+      
+      if (error) {
+        console.error('Error fetching organization members:', error);
+        return [];
+      }
+
+      // Format the profiles for display
+      return data.map(relationship => {
+        const profile = relationship.profile as ProfileWithDetails;
+        
+        if (profile) {
+          // Add full_name to profile
+          profile.full_name = [profile.first_name, profile.last_name]
+            .filter(Boolean)
+            .join(' ');
+          
+          // Format location if available
+          if (profile.location) {
+            profile.location.formatted_location = [
+              profile.location.city,
+              profile.location.region,
+              profile.location.country
+            ]
+              .filter(Boolean)
+              .join(', ');
+          }
+          
+          return {
+            ...relationship,
+            profile
+          };
+        }
+        
+        return relationship;
+      }).filter(item => item.profile); // Only include items that have profiles
     },
     enabled: !!id,
   });
@@ -238,7 +294,70 @@ const OrganizationDetail = () => {
               </CardContent>
             </Card>
             
-            {/* We could add more sections here like related organizations, members, etc. */}
+            {/* Community members section */}
+            <Card className="mt-8">
+              <CardHeader className="pb-3">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle className="flex items-center">
+                      <Users className="mr-2 h-5 w-5" />
+                      Community Members
+                    </CardTitle>
+                    <CardDescription>People connected to this organization</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoadingMembers ? (
+                  <div className="text-center py-4">Loading community members...</div>
+                ) : communityMembers.length > 0 ? (
+                  <div className="space-y-4">
+                    {communityMembers.map((relationship) => (
+                      <div key={relationship.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                        <Avatar>
+                          <AvatarImage src={relationship.profile?.avatar_url || ""} />
+                          <AvatarFallback className="bg-chosen-blue text-white">
+                            {relationship.profile?.first_name?.[0]}{relationship.profile?.last_name?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium">{relationship.profile?.full_name}</p>
+                              {relationship.profile?.headline && (
+                                <p className="text-sm text-gray-500">{relationship.profile.headline}</p>
+                              )}
+                            </div>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              relationship.connection_type === 'current' ? 'bg-blue-100 text-blue-800' :
+                              relationship.connection_type === 'former' ? 'bg-gray-100 text-gray-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {relationship.connection_type === 'current' ? 'Current' :
+                               relationship.connection_type === 'former' ? 'Former' : 'Ally'}
+                            </span>
+                          </div>
+                          {relationship.department && (
+                            <p className="text-xs mt-1 flex items-center text-gray-600">
+                              <Briefcase className="h-3 w-3 mr-1" />
+                              {relationship.department}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Alert className="bg-gray-50 border-gray-200">
+                    <User className="h-4 w-4" />
+                    <AlertTitle>No connected members</AlertTitle>
+                    <AlertDescription>
+                      This organization doesn't have any connected community members yet.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
