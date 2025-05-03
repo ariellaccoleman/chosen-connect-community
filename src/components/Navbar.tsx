@@ -50,6 +50,7 @@ const Navbar = () => {
               <div className="hidden md:flex items-center space-x-8">
                 <Link to="/dashboard" className="text-gray-700 hover:text-chosen-blue font-medium">Dashboard</Link>
                 <Link to="/organizations" className="text-gray-700 hover:text-chosen-blue font-medium">Organizations</Link>
+                <Link to="/directory" className="text-gray-700 hover:text-chosen-blue font-medium">Community Directory</Link>
               </div>
               
               <div className="hidden md:flex items-center">
@@ -161,6 +162,13 @@ const Navbar = () => {
                 onClick={toggleMenu}
               >
                 Organizations
+              </Link>
+              <Link 
+                to="/directory" 
+                className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+                onClick={toggleMenu}
+              >
+                Community Directory
               </Link>
               <button 
                 onClick={() => {

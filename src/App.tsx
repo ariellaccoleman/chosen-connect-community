@@ -13,6 +13,7 @@ import ProfileEdit from "./pages/ProfileEdit";
 import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
 import ManageOrganizationConnections from "./pages/ManageOrganizationConnections";
+import CommunityDirectory from "./pages/CommunityDirectory";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/organizations" element={<Organizations />} />
             <Route path="/organizations/:id" element={<OrganizationDetail />} />
             <Route path="/organizations/manage" element={<ManageOrganizationConnections />} />
+            <Route path="/directory" element={<CommunityDirectory />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
