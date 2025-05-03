@@ -3,14 +3,17 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile, useUpdateProfile } from "@/hooks/useProfiles";
+import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
+import { toast } from "@/components/ui/sonner";
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const updateProfile = useUpdateProfile();
+  const addOrganizationRelationship = useAddOrganizationRelationship();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -31,6 +34,7 @@ const ProfileEdit = () => {
           bio: data.bio || null,
           linkedin_url: data.linkedin_url || null,
           twitter_url: data.twitter_url || null,
+          website_url: data.website_url || null,
           avatar_url: data.avatar_url || null,
           location_id: data.location_id || null,
         }
@@ -39,7 +43,36 @@ const ProfileEdit = () => {
       navigate("/dashboard");
     } catch (error) {
       console.error("Error updating profile:", error);
+      toast.error("Failed to update profile. Please try again.");
     }
+  };
+  
+  const handleAddOrganization = async (data: {
+    organizationId: string;
+    connectionType: "current" | "former" | "ally";
+    department: string | null;
+    notes: string | null;
+  }) => {
+    if (!user?.id) return;
+    
+    try {
+      await addOrganizationRelationship.mutateAsync({
+        profile_id: user.id,
+        organization_id: data.organizationId,
+        connection_type: data.connectionType,
+        department: data.department,
+        notes: data.notes
+      });
+      
+      toast.success("Organization relationship added successfully!");
+    } catch (error) {
+      console.error("Error adding organization relationship:", error);
+      toast.error("Failed to add organization. Please try again.");
+    }
+  };
+  
+  const handleNavigateToManageOrgs = () => {
+    navigate("/organizations/manage");
   };
 
   if (loading || isLoadingProfile) {
@@ -62,6 +95,8 @@ const ProfileEdit = () => {
           isSubmitting={updateProfile.isPending}
           onSubmit={handleSubmit}
           onCancel={() => navigate("/dashboard")}
+          onAddOrganization={handleAddOrganization}
+          onNavigateToManageOrgs={handleNavigateToManageOrgs}
         />
       </div>
     </DashboardLayout>

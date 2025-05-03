@@ -390,6 +390,51 @@ export type Database = {
           },
         ]
       }
+      organization_admins: {
+        Row: {
+          can_edit_profile: boolean | null
+          created_at: string | null
+          id: string
+          is_approved: boolean | null
+          organization_id: string | null
+          profile_id: string | null
+          role: string | null
+        }
+        Insert: {
+          can_edit_profile?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          organization_id?: string | null
+          profile_id?: string | null
+          role?: string | null
+        }
+        Update: {
+          can_edit_profile?: boolean | null
+          created_at?: string | null
+          id?: string
+          is_approved?: boolean | null
+          organization_id?: string | null
+          profile_id?: string | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_admins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_admins_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organizations: {
         Row: {
           created_at: string | null

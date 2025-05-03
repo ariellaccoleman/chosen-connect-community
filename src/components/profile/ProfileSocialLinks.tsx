@@ -19,9 +19,23 @@ const ProfileSocialLinks = ({ form }: ProfileSocialLinksProps) => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Social Media</CardTitle>
+        <CardTitle>Social Media & Website</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        <FormField
+          control={form.control}
+          name="website_url"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Personal Website</FormLabel>
+              <FormControl>
+                <Input placeholder="https://yourwebsite.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="linkedin_url"
