@@ -15,10 +15,36 @@ serve(async (req) => {
   const payload = await req.json();
   const { record, type } = payload;
   
+  console.log("New user trigger called:", type, record?.id);
+  
   if (type === "INSERT" && record?.id) {
+    console.log("Processing new user:", record.id);
+    
+    // Check if profile already exists
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', record.id)
+      .maybeSingle();
+      
+    if (existingProfile) {
+      console.log("Profile already exists for user:", record.id);
+      return new Response(JSON.stringify({ success: true, message: "Profile already exists" }), {
+        headers: { "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    
     // Extract first_name and last_name from user metadata
     const first_name = record.raw_user_meta_data?.first_name;
     const last_name = record.raw_user_meta_data?.last_name;
+    
+    console.log("Creating profile with data:", { 
+      id: record.id, 
+      first_name, 
+      last_name, 
+      email: record.email 
+    });
     
     // Create profile record
     const { error } = await supabase
@@ -37,6 +63,8 @@ serve(async (req) => {
         status: 400,
       });
     }
+    
+    console.log("Successfully created profile for user:", record.id);
     
     return new Response(JSON.stringify({ success: true }), {
       headers: { "Content-Type": "application/json" },

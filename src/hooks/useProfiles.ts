@@ -103,19 +103,56 @@ export const useUpdateProfile = () => {
     }) => {
       console.log('Updating profile with data:', profileData);
       
-      const { error, data } = await supabase
+      // First check if the profile exists
+      const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
-        .update(profileData)
+        .select('id')
         .eq('id', profileId)
-        .select();
+        .maybeSingle();
       
-      if (error) {
-        console.error('Error in update:', error);
-        throw error;
+      if (checkError) {
+        console.error('Error checking profile existence:', checkError);
+        throw checkError;
       }
       
-      console.log('Update successful, response:', data);
-      return data;
+      let result;
+      
+      if (!existingProfile) {
+        // Profile doesn't exist, create it
+        console.log('Profile does not exist, creating new profile');
+        const { data, error: insertError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: profileId, 
+            ...profileData 
+          })
+          .select();
+          
+        if (insertError) {
+          console.error('Error creating profile:', insertError);
+          throw insertError;
+        }
+        
+        result = data;
+      } else {
+        // Profile exists, update it
+        console.log('Profile exists, updating');
+        const { data, error: updateError } = await supabase
+          .from('profiles')
+          .update(profileData)
+          .eq('id', profileId)
+          .select();
+        
+        if (updateError) {
+          console.error('Error updating profile:', updateError);
+          throw updateError;
+        }
+        
+        result = data;
+      }
+      
+      console.log('Operation successful, response:', result);
+      return result;
     },
     onSuccess: (_, variables) => {
       // Invalidate both profile queries to ensure they're refreshed
