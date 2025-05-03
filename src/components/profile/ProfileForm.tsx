@@ -10,6 +10,14 @@ import ProfileBasicInfo from "./ProfileBasicInfo";
 import ProfileSocialLinks from "./ProfileSocialLinks";
 import ProfileOrganizationLinks from "./ProfileOrganizationLinks";
 
+// Define the organization relationship schema separately
+const organizationRelationshipSchema = z.object({
+  organizationId: z.string(),
+  connectionType: z.enum(["current", "former", "ally"]),
+  department: z.string().nullable(),
+  notes: z.string().nullable()
+});
+
 const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -21,12 +29,7 @@ const profileSchema = z.object({
   avatar_url: z.string().optional(),
   location_id: z.string().optional(),
   // These fields are used for special actions, not actual profile data
-  addOrganizationRelationship: z.object({
-    organizationId: z.string(),
-    connectionType: z.enum(["current", "former", "ally"]),
-    department: z.string().nullable(),
-    notes: z.string().nullable()
-  }).optional(),
+  addOrganizationRelationship: organizationRelationshipSchema.optional(),
   navigateToManageOrgs: z.boolean().optional()
 });
 
@@ -93,7 +96,12 @@ const ProfileForm = ({
     const subscription = form.watch((value, { name, type }) => {
       // If addOrganizationRelationship is set, call the onAddOrganization callback
       if (name === "addOrganizationRelationship" && value.addOrganizationRelationship && onAddOrganization) {
-        onAddOrganization(value.addOrganizationRelationship);
+        onAddOrganization({
+          organizationId: value.addOrganizationRelationship.organizationId,
+          connectionType: value.addOrganizationRelationship.connectionType,
+          department: value.addOrganizationRelationship.department,
+          notes: value.addOrganizationRelationship.notes
+        });
         form.setValue("addOrganizationRelationship", undefined);
       }
       

@@ -51,23 +51,20 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
     org => !userRelationships.some(rel => rel.organization_id === org.id)
   );
 
-  const handleAddOrganization = async () => {
-    // This will be implemented in the ProfileEdit page through a hook
-    if (form.getValues("addOrganizationRelationship")) {
-      form.setValue("addOrganizationRelationship", {
-        organizationId: selectedOrgId,
-        connectionType,
-        department: department || null,
-        notes: notes || null
-      });
-      
-      // Reset form fields
-      setSelectedOrgId("");
-      setConnectionType("current");
-      setDepartment("");
-      setNotes("");
-      setIsAddingNew(false);
-    }
+  const handleAddOrganization = () => {
+    form.setValue("addOrganizationRelationship", {
+      organizationId: selectedOrgId,
+      connectionType,
+      department: department || null,
+      notes: notes || null
+    });
+    
+    // Reset form fields
+    setSelectedOrgId("");
+    setConnectionType("current");
+    setDepartment("");
+    setNotes("");
+    setIsAddingNew(false);
   };
 
   return (
@@ -120,10 +117,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
                     size="sm" 
                     className="text-gray-500"
                     onClick={() => {
-                      // Navigate to manage organizations page
-                      if (form.getValues("navigateToManageOrgs")) {
-                        form.setValue("navigateToManageOrgs", true);
-                      }
+                      form.setValue("navigateToManageOrgs", true);
                     }}
                   >
                     Edit
