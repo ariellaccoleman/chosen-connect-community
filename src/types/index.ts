@@ -7,6 +7,7 @@ export type Profile = {
   headline: string | null;
   linkedin_url: string | null;
   twitter_url: string | null;
+  website_url: string | null;
   avatar_url: string | null;
   location_id: string | null;
   email: string | null;
