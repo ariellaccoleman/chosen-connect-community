@@ -12,6 +12,8 @@ type AuthContextType = {
   signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,6 +57,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       
       if (error) throw error;
+      
+      // Send custom confirmation email
+      try {
+        const confirmationURL = `${window.location.origin}/auth?confirmation=true`;
+        await supabase.functions.invoke('custom-email', {
+          body: {
+            type: 'confirmation',
+            email: email,
+            actionLink: confirmationURL,
+            additionalData: { firstName }
+          }
+        });
+      } catch (emailError) {
+        console.error("Error sending custom confirmation email:", emailError);
+        // Continue with signup even if custom email fails
+      }
+      
       toast.success("Sign up successful. Please check your email for verification.");
     } catch (error: any) {
       toast.error(error.message || "An error occurred during sign up");
@@ -89,8 +108,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const forgotPassword = async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      if (error) throw error;
+      
+      // Send custom password reset email
+      try {
+        const resetURL = `${window.location.origin}/auth?reset=true`;
+        await supabase.functions.invoke('custom-email', {
+          body: {
+            type: 'reset_password',
+            email: email,
+            actionLink: resetURL
+          }
+        });
+      } catch (emailError) {
+        console.error("Error sending custom password reset email:", emailError);
+        // Continue with reset flow even if custom email fails
+      }
+      
+      toast.success("Please check your email for password reset instructions");
+    } catch (error: any) {
+      toast.error(error.message || "Error requesting password reset");
+      throw error;
+    }
+  };
+
+  const resetPassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({ password });
+      
+      if (error) throw error;
+      toast.success("Password has been successfully reset");
+      navigate('/auth');
+    } catch (error: any) {
+      toast.error(error.message || "Error resetting password");
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      session, 
+      loading, 
+      signUp, 
+      signIn, 
+      signOut,
+      forgotPassword,
+      resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
