@@ -49,7 +49,7 @@ export const useCurrentProfile = (userId: string | undefined) => {
 
 export const useProfiles = (userId: string | undefined) => {
   return useQuery({
-    queryKey: ['profile', userId],
+    queryKey: ['profiles', userId],
     queryFn: async (): Promise<ProfileWithDetails | null> => {
       if (!userId) return null;
       
@@ -101,20 +101,34 @@ export const useUpdateProfile = () => {
       profileId: string, 
       profileData: Partial<Profile> 
     }) => {
-      const { error } = await supabase
+      console.log('Updating profile with data:', profileData);
+      
+      const { error, data } = await supabase
         .from('profiles')
         .update(profileData)
-        .eq('id', profileId);
+        .eq('id', profileId)
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error in update:', error);
+        throw error;
+      }
       
-      return true;
+      console.log('Update successful, response:', data);
+      return data;
     },
     onSuccess: (_, variables) => {
+      // Invalidate both profile queries to ensure they're refreshed
       queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
+      queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
+      
+      // Also invalidate community profiles query
+      queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
+      
       toast.success('Profile updated successfully');
     },
     onError: (error: any) => {
+      console.error('Mutation error:', error);
       toast.error(`Error updating profile: ${error.message}`);
     },
   });

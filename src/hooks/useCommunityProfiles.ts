@@ -7,6 +7,8 @@ export const useCommunityProfiles = (searchQuery: string = "") => {
   return useQuery({
     queryKey: ["community-profiles", searchQuery],
     queryFn: async () => {
+      console.log("Fetching community profiles with search:", searchQuery);
+      
       let query = supabase
         .from("profiles")
         .select(`
@@ -25,9 +27,11 @@ export const useCommunityProfiles = (searchQuery: string = "") => {
 
       if (error) {
         console.error("Error fetching profiles:", error);
-        return [];
+        throw error;
       }
 
+      console.log("Found profiles:", data.length);
+      
       return data.map((profile: ProfileWithDetails) => {
         // Format full name
         profile.full_name = [profile.first_name, profile.last_name]
@@ -48,6 +52,6 @@ export const useCommunityProfiles = (searchQuery: string = "") => {
         return profile;
       });
     },
-    enabled: true,
+    refetchOnWindowFocus: false,
   });
 };
