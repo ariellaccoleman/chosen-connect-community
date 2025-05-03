@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
-import { Link } from "react-router-dom";
 import { ProfileWithDetails } from "@/types";
 
 const CommunityDirectory = () => {
