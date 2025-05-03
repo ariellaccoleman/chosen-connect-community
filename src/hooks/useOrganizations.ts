@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Organization, OrganizationWithLocation, OrganizationRelationship } from '@/types';
 import { toast } from '@/components/ui/sonner';
+import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useOrganizations = () => {
   return useQuery({
@@ -98,15 +98,13 @@ export const useAddOrganizationRelationship = () => {
       
       return true;
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['organizationRelationships', variables.profile_id] });
-      
-      // Only show success toast after the operation has completed successfully
-      toast.success('Organization relationship added successfully');
-    },
-    onError: (error: any) => {
-      toast.error(`Error adding organization relationship: ${error.message}`);
-    },
+    ...createMutationHandlers({
+      successMessage: 'Organization relationship added successfully',
+      errorMessagePrefix: 'Error adding organization relationship',
+      onSuccessCallback: (_, variables) => {
+        queryClient.invalidateQueries({ queryKey: ['organizationRelationships', variables.profile_id] });
+      }
+    })
   });
 };
 
@@ -130,16 +128,14 @@ export const useUpdateOrganizationRelationship = () => {
       
       return true;
     },
-    onSuccess: (_, variables) => {
-      // We need to refetch the profile's relationships
-      queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
-      
-      // Only show success toast after the operation has completed successfully
-      toast.success('Organization relationship updated successfully');
-    },
-    onError: (error: any) => {
-      toast.error(`Error updating organization relationship: ${error.message}`);
-    },
+    ...createMutationHandlers({
+      successMessage: 'Organization relationship updated successfully',
+      errorMessagePrefix: 'Error updating organization relationship',
+      onSuccessCallback: () => {
+        // We need to refetch the profile's relationships
+        queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
+      }
+    })
   });
 };
 
@@ -157,14 +153,12 @@ export const useDeleteOrganizationRelationship = () => {
       
       return true;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
-      
-      // Only show success toast after the operation has completed successfully
-      toast.success('Organization relationship removed successfully');
-    },
-    onError: (error: any) => {
-      toast.error(`Error removing organization relationship: ${error.message}`);
-    },
+    ...createMutationHandlers({
+      successMessage: 'Organization relationship removed successfully',
+      errorMessagePrefix: 'Error removing organization relationship',
+      onSuccessCallback: () => {
+        queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
+      }
+    })
   });
 };
