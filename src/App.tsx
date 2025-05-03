@@ -15,6 +15,7 @@ import OrganizationDetail from "./pages/OrganizationDetail";
 import ManageOrganizationConnections from "./pages/ManageOrganizationConnections";
 import CommunityDirectory from "./pages/CommunityDirectory";
 import CreateOrganization from "./pages/CreateOrganization";
+import TestDataGenerator from "./pages/TestDataGenerator";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/organizations/:id" element={<OrganizationDetail />} />
             <Route path="/organizations/manage" element={<ManageOrganizationConnections />} />
             <Route path="/directory" element={<CommunityDirectory />} />
+            <Route path="/admin/generate-test-data" element={<TestDataGenerator />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
