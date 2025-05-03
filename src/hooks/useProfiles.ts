@@ -17,7 +17,50 @@ export const useCurrentProfile = (userId: string | undefined) => {
           location:locations(*)
         `)
         .eq('id', userId)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors
+      
+      if (error) {
+        console.error('Error fetching profile:', error);
+        return null;
+      }
+      
+      if (!data) return null;
+      
+      const profile = data as ProfileWithDetails;
+      
+      // Format full name
+      profile.full_name = [profile.first_name, profile.last_name]
+        .filter(Boolean)
+        .join(' ');
+      
+      // Format location if available
+      if (profile.location) {
+        const location = profile.location as Location;
+        profile.location.formatted_location = [location.city, location.region, location.country]
+          .filter(Boolean)
+          .join(', ');
+      }
+      
+      return profile;
+    },
+    enabled: !!userId,
+  });
+};
+
+export const useProfiles = (userId: string | undefined) => {
+  return useQuery({
+    queryKey: ['profile', userId],
+    queryFn: async (): Promise<ProfileWithDetails | null> => {
+      if (!userId) return null;
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          *,
+          location:locations(*)
+        `)
+        .eq('id', userId)
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle case of no results
       
       if (error) {
         console.error('Error fetching profile:', error);

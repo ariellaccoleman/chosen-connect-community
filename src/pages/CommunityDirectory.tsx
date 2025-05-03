@@ -8,9 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Search } from "lucide-react";
 import { ProfileWithDetails } from "@/types";
+import { useAuth } from "@/hooks/useAuth";
+import { useProfiles } from "@/hooks/useProfiles";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const { user } = useAuth();
+  
+  // Use the current user's profile separately to ensure we always display it
+  const { data: currentUserProfile } = useProfiles(user?.id || "");
 
   const { data: profiles, isLoading } = useQuery({
     queryKey: ["community-profiles", searchQuery],
@@ -56,7 +62,11 @@ const CommunityDirectory = () => {
         return profile;
       });
     },
+    enabled: true, // Always enable this query to ensure we fetch profiles
   });
+
+  // Combine and deduplicate profiles
+  const allProfiles = profiles || [];
 
   return (
     <DashboardLayout>
@@ -82,9 +92,9 @@ const CommunityDirectory = () => {
               <ProfileCardSkeleton key={i} />
             ))}
           </div>
-        ) : profiles && profiles.length > 0 ? (
+        ) : allProfiles && allProfiles.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {profiles.map((profile) => (
+            {allProfiles.map((profile) => (
               <ProfileCard key={profile.id} profile={profile} />
             ))}
           </div>
