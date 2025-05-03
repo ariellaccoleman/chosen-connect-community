@@ -1,0 +1,113 @@
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useOrganizations } from "@/hooks/useOrganizations";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Briefcase, Search } from "lucide-react";
+import { OrganizationWithLocation } from "@/types";
+
+const OrganizationsList = () => {
+  const navigate = useNavigate();
+  const { data: organizations = [], isLoading } = useOrganizations();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredOrganizations = organizations.filter((org) => 
+    org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  return (
+    <DashboardLayout>
+      <div className="container mx-auto py-6 max-w-7xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold font-heading">Organizations</h1>
+          <Button 
+            onClick={() => navigate("/organizations/manage")} 
+            className="bg-chosen-blue hover:bg-chosen-navy"
+          >
+            <Briefcase className="mr-2 h-4 w-4" />
+            Manage Your Organizations
+          </Button>
+        </div>
+        
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search organizations by name, description, or location"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </CardContent>
+        </Card>
+        
+        {isLoading ? (
+          <div className="text-center py-12">Loading organizations...</div>
+        ) : filteredOrganizations.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredOrganizations.map((organization) => (
+              <OrganizationCard 
+                key={organization.id} 
+                organization={organization} 
+                onClick={() => navigate(`/organizations/${organization.id}`)} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No organizations found matching your search</p>
+          </div>
+        )}
+      </div>
+    </DashboardLayout>
+  );
+};
+
+const OrganizationCard = ({ 
+  organization, 
+  onClick 
+}: { 
+  organization: OrganizationWithLocation;
+  onClick: () => void;
+}) => {
+  const orgInitials = organization.name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .substring(0, 2)
+    .toUpperCase();
+  
+  return (
+    <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
+      <CardContent className="p-6">
+        <div className="flex space-x-4">
+          <Avatar className="h-16 w-16">
+            <AvatarImage src={organization.logo_url || organization.logo_api_url || ""} />
+            <AvatarFallback className="bg-chosen-blue text-white">
+              {orgInitials}
+            </AvatarFallback>
+          </Avatar>
+          <div>
+            <h3 className="text-lg font-semibold mb-1">{organization.name}</h3>
+            {organization.location && (
+              <p className="text-sm text-gray-500 mb-2">{organization.location.formatted_location}</p>
+            )}
+          </div>
+        </div>
+        {organization.description && (
+          <p className="mt-4 text-sm text-gray-600 line-clamp-3">{organization.description}</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default OrganizationsList;
