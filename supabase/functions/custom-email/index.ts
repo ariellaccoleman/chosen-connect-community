@@ -30,8 +30,8 @@ serve(async (req) => {
   try {
     const { type, email, actionLink, additionalData } = await req.json();
     
-    // Log the request details
-    console.log(`Processing ${type} email for ${email}`);
+    // Log the request details for debugging
+    console.log(`Processing ${type} email for ${email} at ${new Date().toISOString()}`);
     
     let emailContent;
     let subject;
