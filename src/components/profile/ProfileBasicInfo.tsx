@@ -135,7 +135,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? (
+                      {field.value && locations ? (
                         locations.find((location) => location.id === field.value)?.formatted_location ||
                         "Select location..."
                       ) : (
@@ -151,28 +151,34 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                       placeholder="Search locations..." 
                       onValueChange={setLocationSearch}
                     />
-                    <CommandEmpty>No location found</CommandEmpty>
-                    <CommandGroup className="max-h-60 overflow-auto">
-                      {locations.map((location: LocationWithDetails) => (
-                        <CommandItem
-                          key={location.id}
-                          value={location.formatted_location}
-                          onSelect={() => {
-                            form.setValue("location_id", location.id);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              location.id === field.value
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {location.formatted_location}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                    {isLoadingLocations ? (
+                      <div className="py-6 text-center text-sm">Loading locations...</div>
+                    ) : (
+                      <>
+                        <CommandEmpty>No location found</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-auto">
+                          {Array.isArray(locations) && locations.map((location: LocationWithDetails) => (
+                            <CommandItem
+                              key={location.id}
+                              value={location.formatted_location}
+                              onSelect={() => {
+                                form.setValue("location_id", location.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  location.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {location.formatted_location}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </>
+                    )}
                   </Command>
                 </PopoverContent>
               </Popover>
