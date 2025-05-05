@@ -1,7 +1,10 @@
 
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="hero-gradient text-white pb-16 pt-32">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -15,10 +18,19 @@ const HeroSection = () => {
               Join the premier professional network dedicated to fostering connections, opportunities, and growth for pro-Jewish and pro-Israel professionals.
             </p>
             <div className="flex flex-wrap gap-4">
-              <Button className="btn-secondary" size="lg">
+              <Button 
+                className="btn-secondary" 
+                size="lg"
+                onClick={() => navigate("/auth")}
+              >
                 Join Now
               </Button>
-              <Button variant="outline" className="border-white text-white hover:bg-white hover:text-chosen-navy" size="lg">
+              <Button 
+                variant="outline" 
+                className="border-white text-chosen-navy bg-white hover:bg-gray-100 hover:text-chosen-navy" 
+                size="lg"
+                onClick={() => navigate("/about")}
+              >
                 Learn More
               </Button>
             </div>

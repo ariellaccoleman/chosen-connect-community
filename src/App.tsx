@@ -16,6 +16,8 @@ import ManageOrganizationConnections from "./pages/ManageOrganizationConnections
 import CommunityDirectory from "./pages/CommunityDirectory";
 import CreateOrganization from "./pages/CreateOrganization";
 import TestDataGenerator from "./pages/TestDataGenerator";
+import About from "./pages/About";
+import CommunityGuide from "./components/community-guide/CommunityGuide";
 
 const queryClient = new QueryClient();
 
@@ -66,6 +68,14 @@ const AppRoutes = () => {
             <Index />
           </PublicRoute>
         } 
+      />
+      <Route 
+        path="/about" 
+        element={<About />} 
+      />
+      <Route 
+        path="/community-guide" 
+        element={<CommunityGuide />} 
       />
       <Route 
         path="/dashboard" 
