@@ -22,8 +22,6 @@ interface ProfileBasicInfoProps {
 }
 
 const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
-  // We don't need locationSearch anymore since we're using the GeoNames API
-  
   return (
     <Card>
       <CardHeader>
@@ -122,7 +120,9 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                 <LocationSelector 
                   value={field.value}
                   onChange={(locationId, location) => {
-                    form.setValue("location_id", locationId);
+                    if (locationId && location) {
+                      form.setValue("location_id", locationId);
+                    }
                   }}
                   placeholder="Search for your location..."
                 />

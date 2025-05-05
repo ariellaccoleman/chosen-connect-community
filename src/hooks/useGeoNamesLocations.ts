@@ -35,5 +35,10 @@ export const useGeoNamesLocations = (searchTerm: string = "") => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  return { data: locations || [], isLoading, error }; // Ensure we always return an array
+  // Ensure we always return a valid array, never undefined
+  return { 
+    data: Array.isArray(locations) ? locations : [], 
+    isLoading, 
+    error 
+  };
 };

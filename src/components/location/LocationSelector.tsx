@@ -69,33 +69,37 @@ const LocationSelector = ({ value, onChange, placeholder = "Select location...",
             placeholder="Search locations..." 
             value={searchTerm}
             onValueChange={setSearchTerm}
+            className="h-9"
           />
           {isLoading && <div className="py-6 text-center text-sm text-muted-foreground">Loading locations...</div>}
           <CommandEmpty>
             {searchTerm.length > 0 ? 'No locations found' : 'Type to search for locations'}
           </CommandEmpty>
-          <CommandGroup className="max-h-60 overflow-auto">
-            {Array.isArray(locations) && locations.map((location) => (
-              <CommandItem
-                key={location.id}
-                value={location.formatted_location}
-                onSelect={() => handleSelect(location.id)}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    location.id === value ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                <div className="flex flex-col">
-                  <span>{location.city}</span>
-                  <span className="text-xs text-muted-foreground">
-                    {[location.region, location.country].filter(Boolean).join(", ")}
-                  </span>
-                </div>
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          {/* Ensure we have a valid array before attempting to map */}
+          {!isLoading && locations && locations.length > 0 && (
+            <CommandGroup className="max-h-60 overflow-auto">
+              {locations.map((location) => (
+                <CommandItem
+                  key={location.id}
+                  value={location.formatted_location}
+                  onSelect={() => handleSelect(location.id)}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      location.id === value ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  <div className="flex flex-col">
+                    <span>{location.city}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {[location.region, location.country].filter(Boolean).join(", ")}
+                    </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
         </Command>
       </PopoverContent>
     </Popover>
