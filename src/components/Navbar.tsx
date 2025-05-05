@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Globe, Menu, X, User, LogOut } from "lucide-react";
 import { useState } from "react";
@@ -51,6 +50,7 @@ const Navbar = () => {
                 <Link to="/dashboard" className="text-gray-700 hover:text-chosen-blue font-medium">Dashboard</Link>
                 <Link to="/organizations" className="text-gray-700 hover:text-chosen-blue font-medium">Organizations</Link>
                 <Link to="/directory" className="text-gray-700 hover:text-chosen-blue font-medium">Community Directory</Link>
+                <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
               </div>
               
               <div className="hidden md:flex items-center">
@@ -93,6 +93,7 @@ const Navbar = () => {
               <div className="hidden md:flex items-center space-x-8">
                 <Link to="/" className="text-gray-700 hover:text-chosen-blue font-medium">Home</Link>
                 <Link to="/about" className="text-gray-700 hover:text-chosen-blue font-medium">About</Link>
+                <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
               </div>
               
               <div className="hidden md:flex items-center space-x-4">
@@ -170,6 +171,13 @@ const Navbar = () => {
               >
                 Community Directory
               </Link>
+              <Link 
+                to="/community-guide" 
+                className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+                onClick={toggleMenu}
+              >
+                Community Guide
+              </Link>
               <button 
                 onClick={() => {
                   signOut();
@@ -197,6 +205,13 @@ const Navbar = () => {
                   onClick={toggleMenu}
                 >
                   About
+                </Link>
+                <Link 
+                  to="/community-guide" 
+                  className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+                  onClick={toggleMenu}
+                >
+                  Community Guide
                 </Link>
               </div>
               <div className="pt-4 pb-3 border-t border-gray-200 flex flex-col space-y-2 px-4">
