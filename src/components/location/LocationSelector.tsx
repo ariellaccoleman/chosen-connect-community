@@ -75,10 +75,9 @@ const LocationSelector = ({ value, onChange, placeholder = "Select location...",
           <CommandEmpty>
             {searchTerm.length > 0 ? 'No locations found' : 'Type to search for locations'}
           </CommandEmpty>
-          {/* Ensure we have a valid array before attempting to map */}
-          {!isLoading && locations && locations.length > 0 && (
-            <CommandGroup className="max-h-60 overflow-auto">
-              {locations.map((location) => (
+          <CommandGroup className="max-h-60 overflow-auto">
+            {locations.length > 0 ? (
+              locations.map((location) => (
                 <CommandItem
                   key={location.id}
                   value={location.formatted_location}
@@ -97,9 +96,17 @@ const LocationSelector = ({ value, onChange, placeholder = "Select location...",
                     </span>
                   </div>
                 </CommandItem>
-              ))}
-            </CommandGroup>
-          )}
+              ))
+            ) : (
+              // This is a workaround for the cmdk issue - empty arrays can cause problems,
+              // so we add a dummy item when there are no results but we're not loading or showing CommandEmpty
+              searchTerm.length >= 2 && !isLoading ? (
+                <CommandItem disabled value="dummy" className="hidden">
+                  Dummy item
+                </CommandItem>
+              ) : null
+            )}
+          </CommandGroup>
         </Command>
       </PopoverContent>
     </Popover>

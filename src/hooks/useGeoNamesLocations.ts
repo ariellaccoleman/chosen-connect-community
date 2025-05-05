@@ -20,7 +20,7 @@ export const useGeoNamesLocations = (searchTerm: string = "") => {
 
       try {
         const results = await searchGeoNamesLocations(searchTerm);
-        setLocations(results || []); // Ensure we always set an array
+        setLocations(results); // results is guaranteed to be an array from searchGeoNamesLocations
       } catch (err) {
         console.error("Error fetching locations:", err);
         setError(err instanceof Error ? err : new Error("Failed to fetch locations"));
@@ -35,9 +35,8 @@ export const useGeoNamesLocations = (searchTerm: string = "") => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  // Ensure we always return a valid array, never undefined
   return { 
-    data: Array.isArray(locations) ? locations : [], 
+    data: locations, // locations is always initialized as an empty array
     isLoading, 
     error 
   };
