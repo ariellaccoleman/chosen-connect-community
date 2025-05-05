@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   createBrowserRouter,
@@ -13,12 +14,11 @@ import {
 import Dashboard from "./pages/Dashboard";
 import CommunityDirectory from "./pages/CommunityDirectory";
 import ProfileForm from "./components/profile/ProfileForm";
-import GuideList from './pages/GuideList';
-import GuideDetail from './pages/GuideDetail';
 import AdminDashboard from "@/pages/AdminDashboard";
+import { supabase } from "@/integrations/supabase/client";
 
 const App = () => {
-  const { session, isLoading } = useAuth();
+  const { session, loading: isLoading } = useAuth();
   const navigate = useNavigate();
   const [isFirstRender, setIsFirstRender] = useState(true);
 
@@ -53,15 +53,12 @@ const App = () => {
           },
           {
             path: "/profile",
-            element: <ProfileForm />,
-          },
-          {
-            path: "/guides",
-            element: <GuideList />,
-          },
-          {
-            path: "/guides/:guideId",
-            element: <GuideDetail />,
+            element: <ProfileForm 
+              profile={null} 
+              isSubmitting={false} 
+              onSubmit={() => {}} 
+              onCancel={() => {}}
+            />,
           },
           {
             path: "/admin",
@@ -70,7 +67,7 @@ const App = () => {
         ])} />
       ) : (
         <Auth
-          supabaseClient={useAuth().supabase}
+          supabaseClient={supabase}
           appearance={{ theme: ThemeSupa }}
           providers={['github', 'google']}
         />
