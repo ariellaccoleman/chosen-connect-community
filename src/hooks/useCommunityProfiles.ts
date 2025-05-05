@@ -30,9 +30,12 @@ export const useCommunityProfiles = (searchQuery: string = "") => {
         throw error;
       }
 
-      console.log("Found profiles:", data.length);
+      // Ensure data is an array, even if it's null or undefined
+      const profiles = data || [];
       
-      return data.map((profile: ProfileWithDetails) => {
+      console.log("Found profiles:", profiles.length);
+      
+      return profiles.map((profile: ProfileWithDetails) => {
         // Format full name
         profile.full_name = [profile.first_name, profile.last_name]
           .filter(Boolean)

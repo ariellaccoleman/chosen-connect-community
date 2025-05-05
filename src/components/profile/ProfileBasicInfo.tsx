@@ -28,7 +28,10 @@ interface ProfileBasicInfoProps {
 
 const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
   const [locationSearch, setLocationSearch] = useState("");
-  const { data: locations = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+  const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+  
+  // Ensure locations is always an array
+  const locations = Array.isArray(locationsData) ? locationsData : [];
 
   return (
     <Card>
@@ -135,7 +138,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value ? (
+                      {field.value && locations.length > 0 ? (
                         locations.find((location) => location.id === field.value)?.formatted_location ||
                         "Select location..."
                       ) : (
@@ -151,28 +154,34 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                       placeholder="Search locations..." 
                       onValueChange={setLocationSearch}
                     />
-                    <CommandEmpty>No location found</CommandEmpty>
-                    <CommandGroup className="max-h-60 overflow-auto">
-                      {locations.map((location: LocationWithDetails) => (
-                        <CommandItem
-                          key={location.id}
-                          value={location.formatted_location}
-                          onSelect={() => {
-                            form.setValue("location_id", location.id);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              location.id === field.value
-                                ? "opacity-100"
-                                : "opacity-0"
-                            )}
-                          />
-                          {location.formatted_location}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
+                    {isLoadingLocations ? (
+                      <div className="py-6 text-center">Loading locations...</div>
+                    ) : (
+                      <>
+                        <CommandEmpty>No location found</CommandEmpty>
+                        <CommandGroup className="max-h-60 overflow-auto">
+                          {locations.map((location: LocationWithDetails) => (
+                            <CommandItem
+                              key={location.id}
+                              value={location.formatted_location || ""}
+                              onSelect={() => {
+                                form.setValue("location_id", location.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  location.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {location.formatted_location || "Unknown location"}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </>
+                    )}
                   </Command>
                 </PopoverContent>
               </Popover>
