@@ -1,5 +1,25 @@
 
 project_id = "nvaqqkffmfuxdnwnqhxo"
 
-[functions.custom-email]
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+
+[functions.import-geonames]
 verify_jwt = true

@@ -1,164 +1,82 @@
-
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/hooks/useAuth";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
+import React, { useEffect, useState } from 'react';
+import {
+  createBrowserRouter,
+  RouterProvider,
+  useNavigate,
+} from "react-router-dom";
+import './App.css';
+import { useAuth } from "./hooks/useAuth";
+import { Auth } from "@supabase/auth-ui-react";
+import {
+  ThemeSupa,
+} from "@supabase/auth-ui-shared";
 import Dashboard from "./pages/Dashboard";
-import ProfileEdit from "./pages/ProfileEdit";
-import Organizations from "./pages/Organizations";
-import OrganizationDetail from "./pages/OrganizationDetail";
-import ManageOrganizationConnections from "./pages/ManageOrganizationConnections";
 import CommunityDirectory from "./pages/CommunityDirectory";
-import CreateOrganization from "./pages/CreateOrganization";
-import TestDataGenerator from "./pages/TestDataGenerator";
-import About from "./pages/About";
-import CommunityGuide from "./components/community-guide/CommunityGuide";
+import ProfileForm from "./components/profile/ProfileForm";
+import GuideList from './pages/GuideList';
+import GuideDetail from './pages/GuideDetail';
+import AdminDashboard from "@/pages/AdminDashboard";
 
-const queryClient = new QueryClient();
+const App = () => {
+  const { session, isLoading } = useAuth();
+  const navigate = useNavigate();
+  const [isFirstRender, setIsFirstRender] = useState(true);
 
-// Component that checks if user is authenticated and redirects accordingly
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
+  useEffect(() => {
+    if (isFirstRender) {
+      setIsFirstRender(false);
+      return;
+    }
 
-  // While checking authentication status, show nothing
-  if (loading) {
-    return null;
+    if (!session) {
+      navigate('/login');
+    } else {
+      navigate('/dashboard');
+    }
+  }, [session, navigate, isFirstRender]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
   }
 
-  // If not authenticated, redirect to auth page
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-
-  // If authenticated, show the protected content
-  return <>{children}</>;
-};
-
-// Component that redirects authenticated users away from public pages
-const PublicRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-
-  // While checking authentication status, show nothing
-  if (loading) {
-    return null;
-  }
-
-  // If authenticated, redirect to dashboard
-  if (user) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  // If not authenticated, show the public content
-  return <>{children}</>;
-};
-
-const AppRoutes = () => {
   return (
-    <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route 
-        path="/" 
-        element={
-          <PublicRoute>
-            <Index />
-          </PublicRoute>
-        } 
-      />
-      <Route 
-        path="/about" 
-        element={<About />} 
-      />
-      <Route 
-        path="/community-guide" 
-        element={<CommunityGuide />} 
-      />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <ProfileEdit />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations" 
-        element={
-          <ProtectedRoute>
-            <Organizations />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/new" 
-        element={
-          <ProtectedRoute>
-            <CreateOrganization />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/:id" 
-        element={
-          <ProtectedRoute>
-            <OrganizationDetail />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/manage" 
-        element={
-          <ProtectedRoute>
-            <ManageOrganizationConnections />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/directory" 
-        element={
-          <ProtectedRoute>
-            <CommunityDirectory />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/generate-test-data" 
-        element={
-          <ProtectedRoute>
-            <TestDataGenerator />
-          </ProtectedRoute>
-        } 
-      />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+    <>
+      {session ? (
+        <RouterProvider router={createBrowserRouter([
+          {
+            path: "/dashboard",
+            element: <Dashboard />,
+          },
+          {
+            path: "/community",
+            element: <CommunityDirectory />,
+          },
+          {
+            path: "/profile",
+            element: <ProfileForm />,
+          },
+          {
+            path: "/guides",
+            element: <GuideList />,
+          },
+          {
+            path: "/guides/:guideId",
+            element: <GuideDetail />,
+          },
+          {
+            path: "/admin",
+            element: <AdminDashboard />,
+          },
+        ])} />
+      ) : (
+        <Auth
+          supabaseClient={useAuth().supabase}
+          appearance={{ theme: ThemeSupa }}
+          providers={['github', 'google']}
+        />
+      )}
+    </>
   );
-};
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter>
-      <AuthProvider>
-        <TooltipProvider>
-          <AppRoutes />
-          <Toaster />
-          <Sonner />
-        </TooltipProvider>
-      </AuthProvider>
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+}
 
 export default App;
