@@ -75,7 +75,7 @@ const LocationSelector = ({ value, onChange, placeholder = "Select location...",
             {searchTerm.length > 0 ? 'No locations found' : 'Type to search for locations'}
           </CommandEmpty>
           <CommandGroup className="max-h-60 overflow-auto">
-            {locations.map((location) => (
+            {Array.isArray(locations) && locations.map((location) => (
               <CommandItem
                 key={location.id}
                 value={location.formatted_location}

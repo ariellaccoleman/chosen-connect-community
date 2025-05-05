@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Profile, ProfileWithDetails, Location } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 import { getGeoNameLocationById } from '@/utils/geoNamesUtils';
+import { useGeoNamesLocations } from '@/hooks/useGeoNamesLocations';
 
 export const useCurrentProfile = (userId: string | undefined) => {
   return useQuery({

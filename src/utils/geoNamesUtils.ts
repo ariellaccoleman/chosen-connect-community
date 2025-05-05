@@ -49,6 +49,11 @@ export const searchGeoNamesLocations = async (searchTerm: string): Promise<Locat
     
     const data: GeoNamesSearchResponse = await response.json();
     
+    if (!data || !data.geonames || !Array.isArray(data.geonames)) {
+      console.error("Invalid response format from GeoNames:", data);
+      return [];
+    }
+    
     // Map the GeoNames response to our LocationWithDetails format
     return data.geonames.map(location => ({
       id: location.geonameId,
@@ -90,6 +95,11 @@ export const getGeoNameLocationById = async (geonameId: string): Promise<Locatio
     }
     
     const location: GeoNamesLocation = await response.json();
+    
+    if (!location || !location.geonameId) {
+      console.error("Invalid location data received from GeoNames:", location);
+      return null;
+    }
     
     return {
       id: location.geonameId,

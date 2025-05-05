@@ -20,10 +20,11 @@ export const useGeoNamesLocations = (searchTerm: string = "") => {
 
       try {
         const results = await searchGeoNamesLocations(searchTerm);
-        setLocations(results);
+        setLocations(results || []); // Ensure we always set an array
       } catch (err) {
         console.error("Error fetching locations:", err);
         setError(err instanceof Error ? err : new Error("Failed to fetch locations"));
+        setLocations([]); // Set empty array on error
       } finally {
         setIsLoading(false);
       }
@@ -34,5 +35,5 @@ export const useGeoNamesLocations = (searchTerm: string = "") => {
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
-  return { data: locations, isLoading, error };
+  return { data: locations || [], isLoading, error }; // Ensure we always return an array
 };
