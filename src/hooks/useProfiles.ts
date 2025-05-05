@@ -1,9 +1,8 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile, ProfileWithDetails, Location } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
-import { getGeoNameLocationById } from '@/utils/geoNamesUtils';
-import { useGeoNamesLocations } from '@/hooks/useGeoNamesLocations';
 
 export const useCurrentProfile = (userId: string | undefined) => {
   return useQuery({
@@ -13,9 +12,12 @@ export const useCurrentProfile = (userId: string | undefined) => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          location:locations(*)
+        `)
         .eq('id', userId)
-        .maybeSingle();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors
       
       if (error) {
         console.error('Error fetching profile:', error);
@@ -31,16 +33,12 @@ export const useCurrentProfile = (userId: string | undefined) => {
         .filter(Boolean)
         .join(' ');
       
-      // If location_id exists, fetch from GeoNames API instead of local DB
-      if (profile.location_id) {
-        try {
-          const locationDetails = await getGeoNameLocationById(profile.location_id);
-          if (locationDetails) {
-            profile.location = locationDetails;
-          }
-        } catch (err) {
-          console.error('Error fetching location details:', err);
-        }
+      // Format location if available
+      if (profile.location) {
+        const location = profile.location as Location;
+        profile.location.formatted_location = [location.city, location.region, location.country]
+          .filter(Boolean)
+          .join(', ');
       }
       
       return profile;
@@ -57,9 +55,12 @@ export const useProfiles = (userId: string | undefined) => {
       
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select(`
+          *,
+          location:locations(*)
+        `)
         .eq('id', userId)
-        .maybeSingle();
+        .maybeSingle(); // Use maybeSingle() instead of single() to handle case of no results
       
       if (error) {
         console.error('Error fetching profile:', error);
@@ -75,16 +76,12 @@ export const useProfiles = (userId: string | undefined) => {
         .filter(Boolean)
         .join(' ');
       
-      // If location_id exists, fetch from GeoNames API instead of local DB
-      if (profile.location_id) {
-        try {
-          const locationDetails = await getGeoNameLocationById(profile.location_id);
-          if (locationDetails) {
-            profile.location = locationDetails;
-          }
-        } catch (err) {
-          console.error('Error fetching location details:', err);
-        }
+      // Format location if available
+      if (profile.location) {
+        const location = profile.location as Location;
+        profile.location.formatted_location = [location.city, location.region, location.country]
+          .filter(Boolean)
+          .join(', ');
       }
       
       return profile;
@@ -173,5 +170,28 @@ export const useUpdateProfile = () => {
 };
 
 export const useLocations = (searchTerm: string = '') => {
-  return useGeoNamesLocations(searchTerm);
+  return useQuery({
+    queryKey: ['locations', searchTerm],
+    queryFn: async () => {
+      let query = supabase.from('locations').select('*');
+      
+      if (searchTerm) {
+        query = query.or(`city.ilike.%${searchTerm}%,region.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
+      }
+      
+      const { data, error } = await query.order('full_name');
+      
+      if (error) {
+        console.error('Error fetching locations:', error);
+        return [];
+      }
+      
+      return data.map(location => ({
+        ...location,
+        formatted_location: [location.city, location.region, location.country]
+          .filter(Boolean)
+          .join(', ')
+      }));
+    },
+  });
 };

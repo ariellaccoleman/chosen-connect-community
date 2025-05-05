@@ -11,17 +11,25 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useLocations } from "@/hooks/useProfiles";
 import { LocationWithDetails } from "@/types";
 import { ProfileFormValues } from "./ProfileForm";
-import LocationSelector from "@/components/location/LocationSelector";
 
 interface ProfileBasicInfoProps {
   form: UseFormReturn<ProfileFormValues>;
 }
 
 const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
+  const [locationSearch, setLocationSearch] = useState("");
+  const { data: locations = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+
   return (
     <Card>
       <CardHeader>
@@ -109,27 +117,65 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
           )}
         />
         
-        {/* Location using our new GeoNames-based LocationSelector */}
+        {/* Location */}
         <FormField
           control={form.control}
           name="location_id"
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Location</FormLabel>
-              <FormControl>
-                <LocationSelector 
-                  value={field.value}
-                  onChange={(locationId, location) => {
-                    if (locationId && location) {
-                      form.setValue("location_id", locationId);
-                    }
-                  }}
-                  placeholder="Search for your location..."
-                />
-              </FormControl>
-              <FormDescription>
-                Search for cities worldwide using the GeoNames database
-              </FormDescription>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className={cn(
+                        "justify-between",
+                        !field.value && "text-muted-foreground"
+                      )}
+                    >
+                      {field.value ? (
+                        locations.find((location) => location.id === field.value)?.formatted_location ||
+                        "Select location..."
+                      ) : (
+                        "Select location..."
+                      )}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="p-0 w-[300px]">
+                  <Command>
+                    <CommandInput 
+                      placeholder="Search locations..." 
+                      onValueChange={setLocationSearch}
+                    />
+                    <CommandEmpty>No location found</CommandEmpty>
+                    <CommandGroup className="max-h-60 overflow-auto">
+                      {locations.map((location: LocationWithDetails) => (
+                        <CommandItem
+                          key={location.id}
+                          value={location.formatted_location}
+                          onSelect={() => {
+                            form.setValue("location_id", location.id);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              location.id === field.value
+                                ? "opacity-100"
+                                : "opacity-0"
+                            )}
+                          />
+                          {location.formatted_location}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
