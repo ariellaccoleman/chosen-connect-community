@@ -1,13 +1,14 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Profile } from "@/integrations/supabase/types";
+import { Profile } from "@/types";
 
 interface UserAvatarProps {
   profile?: Profile | null;
   size?: "sm" | "md" | "lg";
+  className?: string; // Add className to the props interface
 }
 
-const UserAvatar = ({ profile, size = "md" }: UserAvatarProps) => {
+const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) => {
   const getInitials = () => {
     if (!profile || !profile.first_name) return "U";
     
@@ -24,7 +25,7 @@ const UserAvatar = ({ profile, size = "md" }: UserAvatarProps) => {
   };
 
   return (
-    <Avatar className={sizeClasses[size]}>
+    <Avatar className={`${sizeClasses[size]} ${className}`}>
       <AvatarImage src={profile?.avatar_url || ""} />
       <AvatarFallback className="bg-chosen-blue text-white">
         {getInitials()}
