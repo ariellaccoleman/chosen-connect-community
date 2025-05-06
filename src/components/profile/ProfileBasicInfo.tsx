@@ -134,13 +134,11 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                     <Button
                       variant="outline"
                       role="combobox"
+                      type="button"
                       className={cn(
                         "justify-between",
                         !field.value && "text-muted-foreground"
                       )}
-                      onClick={(e) => {
-                        e.preventDefault();
-                      }}
                     >
                       {field.value && locations.length > 0
                         ? locations.find((location) => location.id === field.value)?.formatted_location || "Select location..."
