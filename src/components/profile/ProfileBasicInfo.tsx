@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocations } from "@/hooks/useProfiles";
@@ -31,7 +31,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
   const [open, setOpen] = useState(false);
   
-  // Ensure locations is always a valid array to prevent "items is undefined" error
+  // Ensure locations is always a valid array
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
   
   return (
@@ -147,7 +147,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-[300px]" align="start">
+                <PopoverContent className="p-0 w-[300px] bg-white" align="start">
                   <Command>
                     <CommandInput 
                       placeholder="Search locations..." 
@@ -155,43 +155,49 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         setLocationSearch(value);
                       }}
                     />
-                    {isLoadingLocations ? (
-                      <div className="py-6 text-center">Loading locations...</div>
-                    ) : locations.length === 0 ? (
-                      <CommandEmpty>No locations found</CommandEmpty>
-                    ) : (
-                      <CommandGroup className="max-h-60 overflow-auto">
-                        {locations.map((location) => {
-                          // Ensure we have a valid string for the CommandItem value
-                          const displayValue = location.formatted_location || 
-                            [location.city, location.region, location.country]
-                              .filter(Boolean)
-                              .join(", ") || 
-                            "Unknown location";
-                            
-                          return (
-                            <CommandItem
-                              key={location.id}
-                              value={displayValue}
-                              onSelect={() => {
-                                form.setValue("location_id", location.id);
-                                setOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  location.id === field.value
-                                    ? "opacity-100"
-                                    : "opacity-0"
-                                )}
-                              />
-                              {displayValue}
-                            </CommandItem>
-                          );
-                        })}
-                      </CommandGroup>
-                    )}
+                    <CommandList>
+                      {isLoadingLocations ? (
+                        <div className="py-6 text-center">Loading locations...</div>
+                      ) : (
+                        <>
+                          {locations.length === 0 ? (
+                            <CommandEmpty>No locations found</CommandEmpty>
+                          ) : (
+                            <CommandGroup>
+                              {locations.map((location) => {
+                                // Ensure we have a valid string for the CommandItem value
+                                const displayValue = location.formatted_location || 
+                                  [location.city, location.region, location.country]
+                                    .filter(Boolean)
+                                    .join(", ") || 
+                                  "Unknown location";
+                                  
+                                return (
+                                  <CommandItem
+                                    key={location.id}
+                                    value={displayValue}
+                                    onSelect={() => {
+                                      form.setValue("location_id", location.id);
+                                      setOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        location.id === field.value
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      )}
+                                    />
+                                    {displayValue}
+                                  </CommandItem>
+                                );
+                              })}
+                            </CommandGroup>
+                          )}
+                        </>
+                      )}
+                    </CommandList>
                   </Command>
                 </PopoverContent>
               </Popover>
