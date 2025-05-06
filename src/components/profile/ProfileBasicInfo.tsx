@@ -154,6 +154,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                       placeholder="Search locations..." 
                       onValueChange={setLocationSearch}
                     />
+                    console.log("Mapped locations:", locations);
                     {isLoadingLocations ? (
                       <div className="py-6 text-center">Loading locations...</div>
                     ) : (
