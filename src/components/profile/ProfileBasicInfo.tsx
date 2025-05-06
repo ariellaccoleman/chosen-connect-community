@@ -29,11 +29,10 @@ interface ProfileBasicInfoProps {
 const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+  const [open, setOpen] = useState(false);
   
   // Ensure locations is always a valid array to prevent "items is undefined" error
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
-  
-  console.log("Before mapping locations:", locations);
   
   return (
     <Card>
@@ -129,7 +128,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
           render={({ field }) => (
             <FormItem className="flex flex-col">
               <FormLabel>Location</FormLabel>
-              <Popover>
+              <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                   <FormControl>
                     <Button
@@ -139,6 +138,9 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         "justify-between",
                         !field.value && "text-muted-foreground"
                       )}
+                      onClick={(e) => {
+                        e.preventDefault();
+                      }}
                     >
                       {field.value && locations.length > 0
                         ? locations.find((location) => location.id === field.value)?.formatted_location || "Select location..."
@@ -147,11 +149,13 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                     </Button>
                   </FormControl>
                 </PopoverTrigger>
-                <PopoverContent className="p-0 w-[300px]">
+                <PopoverContent className="p-0 w-[300px]" align="start">
                   <Command>
                     <CommandInput 
                       placeholder="Search locations..." 
-                      onValueChange={setLocationSearch}
+                      onValueChange={(value) => {
+                        setLocationSearch(value);
+                      }}
                     />
                     {isLoadingLocations ? (
                       <div className="py-6 text-center">Loading locations...</div>
@@ -160,14 +164,20 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                     ) : (
                       <CommandGroup className="max-h-60 overflow-auto">
                         {locations.map((location) => {
-                          console.log("Mapping location:", location);
-                          console.log("Location formatted_location:", location.formatted_location);
+                          // Ensure we have a valid string for the CommandItem value
+                          const displayValue = location.formatted_location || 
+                            [location.city, location.region, location.country]
+                              .filter(Boolean)
+                              .join(", ") || 
+                            "Unknown location";
+                            
                           return (
                             <CommandItem
                               key={location.id}
-                              value={location.formatted_location || ""}
+                              value={displayValue}
                               onSelect={() => {
                                 form.setValue("location_id", location.id);
+                                setOpen(false);
                               }}
                             >
                               <Check
@@ -178,7 +188,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                                     : "opacity-0"
                                 )}
                               />
-                              {location.formatted_location || "Unknown location"}
+                              {displayValue}
                             </CommandItem>
                           );
                         })}

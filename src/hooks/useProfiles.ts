@@ -189,13 +189,21 @@ export const useLocations = (searchTerm: string = '') => {
       // Ensure we always have an array, even if data is null
       const locations = data || [];
       
-      // Map locations to include the formatted_location field
-      return locations.map(location => ({
-        ...location,
-        formatted_location: [location.city, location.region, location.country]
+      // Map locations to include the formatted_location field, making sure no field is undefined
+      return locations.map(location => {
+        const city = location.city || '';
+        const region = location.region || '';
+        const country = location.country || '';
+        
+        const formatted = [city, region, country]
           .filter(Boolean)
-          .join(', ')
-      }));
+          .join(', ');
+        
+        return {
+          ...location,
+          formatted_location: formatted || 'Unknown location'
+        };
+      });
     },
   });
 };
