@@ -30,9 +30,11 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
   
-  // Ensure locations is always an array
-  const locations = Array.isArray(locationsData) ? locationsData : [];
-
+  // Ensure locations is always a valid array to prevent "items is undefined" error
+  const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
+  
+  console.log("Before mapping locations:", locations);
+  
   return (
     <Card>
       <CardHeader>
@@ -138,12 +140,9 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         !field.value && "text-muted-foreground"
                       )}
                     >
-                      {field.value && locations.length > 0 ? (
-                        locations.find((location) => location.id === field.value)?.formatted_location ||
-                        "Select location..."
-                      ) : (
-                        "Select location..."
-                      )}
+                      {field.value && locations.length > 0
+                        ? locations.find((location) => location.id === field.value)?.formatted_location || "Select location..."
+                        : "Select location..."}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
                   </FormControl>
@@ -156,11 +155,14 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                     />
                     {isLoadingLocations ? (
                       <div className="py-6 text-center">Loading locations...</div>
+                    ) : locations.length === 0 ? (
+                      <CommandEmpty>No locations found</CommandEmpty>
                     ) : (
-                      <>
-                        <CommandEmpty>No location found</CommandEmpty>
-                        <CommandGroup className="max-h-60 overflow-auto">
-                          {locations.map((location: LocationWithDetails) => (
+                      <CommandGroup className="max-h-60 overflow-auto">
+                        {locations.map((location) => {
+                          console.log("Mapping location:", location);
+                          console.log("Location formatted_location:", location.formatted_location);
+                          return (
                             <CommandItem
                               key={location.id}
                               value={location.formatted_location || ""}
@@ -178,9 +180,9 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                               />
                               {location.formatted_location || "Unknown location"}
                             </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </>
+                          );
+                        })}
+                      </CommandGroup>
                     )}
                   </Command>
                 </PopoverContent>

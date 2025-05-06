@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, ProfileWithDetails, Location } from '@/types';
+import { Profile, ProfileWithDetails, Location, LocationWithDetails } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useCurrentProfile = (userId: string | undefined) => {
@@ -172,7 +172,7 @@ export const useUpdateProfile = () => {
 export const useLocations = (searchTerm: string = '') => {
   return useQuery({
     queryKey: ['locations', searchTerm],
-    queryFn: async () => {
+    queryFn: async (): Promise<LocationWithDetails[]> => {
       let query = supabase.from('locations').select('*');
       
       if (searchTerm) {
@@ -186,7 +186,11 @@ export const useLocations = (searchTerm: string = '') => {
         return [];
       }
       
-      return data.map(location => ({
+      // Ensure we always have an array, even if data is null
+      const locations = data || [];
+      
+      // Map locations to include the formatted_location field
+      return locations.map(location => ({
         ...location,
         formatted_location: [location.city, location.region, location.country]
           .filter(Boolean)
