@@ -189,16 +189,16 @@ export const useLocations = (searchTerm: string = '') => {
         return [];
       }
       
-      if (!data) {
-        console.log("No location data returned, returning empty array");
+      if (!data || !Array.isArray(data)) {
+        console.log("No location data returned or data is not an array, returning empty array");
         return [];
       }
       
       const processedData = data.map(location => {
         // Make sure all location fields have fallback values
-        const city = location.city || '';
-        const region = location.region || '';
-        const country = location.country || '';
+        const city = location?.city || '';
+        const region = location?.region || '';
+        const country = location?.country || '';
         
         const formattedLocation = [city, region, country]
           .filter(Boolean)
@@ -206,7 +206,7 @@ export const useLocations = (searchTerm: string = '') => {
         
         console.log(`Processing location ${location.id}:`, {
           ...location,
-          formatted_location: formattedLocation
+          formatted_location: formattedLocation || 'Unknown location'
         });
         
         return {
