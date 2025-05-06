@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, ProfileWithDetails, Location, LocationWithDetails } from '@/types';
+import { Profile, ProfileWithDetails, Location } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useCurrentProfile = (userId: string | undefined) => {
@@ -172,8 +172,7 @@ export const useUpdateProfile = () => {
 export const useLocations = (searchTerm: string = '') => {
   return useQuery({
     queryKey: ['locations', searchTerm],
-    queryFn: async (): Promise<LocationWithDetails[]> => {
-      console.log("Fetching locations with search term:", searchTerm);
+    queryFn: async () => {
       let query = supabase.from('locations').select('*');
       
       if (searchTerm) {
@@ -182,54 +181,17 @@ export const useLocations = (searchTerm: string = '') => {
       
       const { data, error } = await query.order('full_name');
       
-      console.log("Raw location data from API:", data);
-      
       if (error) {
         console.error('Error fetching locations:', error);
         return [];
       }
       
-      if (!data || !Array.isArray(data)) {
-        console.log("No location data returned or data is not an array, returning empty array");
-        return [];
-      }
-      
-      const processedData: LocationWithDetails[] = data.map(location => {
-        if (!location) {
-          console.log("Encountered null location, creating placeholder");
-          return {
-            id: `placeholder-${Math.random()}`,
-            city: null,
-            region: null,
-            country: null,
-            full_name: null,
-            formatted_location: 'Unknown location'
-          };
-        }
-        
-        // Make sure all location fields have fallback values
-        const city = location?.city || '';
-        const region = location?.region || '';
-        const country = location?.country || '';
-        
-        const formattedLocation = [city, region, country]
+      return data.map(location => ({
+        ...location,
+        formatted_location: [location.city, location.region, location.country]
           .filter(Boolean)
-          .join(', ');
-        
-        console.log(`Processing location ${location.id}:`, {
-          ...location,
-          formatted_location: formattedLocation || 'Unknown location'
-        });
-        
-        return {
-          ...location,
-          formatted_location: formattedLocation || 'Unknown location'  // Always provide a fallback
-        };
-      });
-      
-      console.log("Final processed locations:", processedData);
-      return processedData;
+          .join(', ')
+      }));
     },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };

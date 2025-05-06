@@ -30,14 +30,9 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
   
-  console.log("Raw locationsData:", locationsData);
-  
   // Ensure locations is always an array
   const locations = Array.isArray(locationsData) ? locationsData : [];
-  
-  console.log("Processed locations array:", locations);
-  console.log("Array length:", locations.length);
-  
+
   return (
     <Card>
       <CardHeader>
@@ -144,12 +139,8 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                       )}
                     >
                       {field.value && locations.length > 0 ? (
-                        (() => {
-                          console.log("Looking for location with ID:", field.value);
-                          const foundLocation = locations.find((location) => location.id === field.value);
-                          console.log("Found location:", foundLocation);
-                          return foundLocation?.formatted_location || "Select location...";
-                        })()
+                        locations.find((location) => location.id === field.value)?.formatted_location ||
+                        "Select location..."
                       ) : (
                         "Select location..."
                       )}
@@ -169,32 +160,25 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                       <>
                         <CommandEmpty>No location found</CommandEmpty>
                         <CommandGroup className="max-h-60 overflow-auto">
-                          {console.log("Before mapping locations:", locations)}
-                          {locations.map((location) => {
-                            console.log("Mapping location:", location);
-                            console.log("Location formatted_location:", location.formatted_location);
-                            
-                            return (
-                              <CommandItem
-                                key={location.id}
-                                value={location.formatted_location || ""}
-                                onSelect={() => {
-                                  console.log("Selected location:", location);
-                                  form.setValue("location_id", location.id);
-                                }}
-                              >
-                                <Check
-                                  className={cn(
-                                    "mr-2 h-4 w-4",
-                                    location.id === field.value
-                                      ? "opacity-100"
-                                      : "opacity-0"
-                                  )}
-                                />
-                                {location.formatted_location || "Unknown location"}
-                              </CommandItem>
-                            );
-                          })}
+                          {locations.map((location: LocationWithDetails) => (
+                            <CommandItem
+                              key={location.id}
+                              value={location.formatted_location || ""}
+                              onSelect={() => {
+                                form.setValue("location_id", location.id);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  location.id === field.value
+                                    ? "opacity-100"
+                                    : "opacity-0"
+                                )}
+                              />
+                              {location.formatted_location || "Unknown location"}
+                            </CommandItem>
+                          ))}
                         </CommandGroup>
                       </>
                     )}
