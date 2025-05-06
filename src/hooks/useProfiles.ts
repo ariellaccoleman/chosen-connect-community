@@ -195,6 +195,14 @@ export const useLocations = (searchTerm: string = '') => {
       }
       
       const processedData = data.map(location => {
+        if (!location) {
+          console.log("Encountered null location, creating placeholder");
+          return {
+            id: `placeholder-${Math.random()}`,
+            formatted_location: 'Unknown location'
+          };
+        }
+        
         // Make sure all location fields have fallback values
         const city = location?.city || '';
         const region = location?.region || '';

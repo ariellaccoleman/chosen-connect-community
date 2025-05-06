@@ -173,6 +173,8 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                           {locations.map((location: LocationWithDetails) => {
                             console.log("Mapping location:", location);
                             console.log("Location formatted_location:", location.formatted_location);
+                            
+                            // Fixed: Return the CommandItem explicitly
                             return (
                               <CommandItem
                                 key={location.id}
