@@ -195,7 +195,12 @@ export const useLocations = (searchTerm: string = '') => {
       }
       
       const processedData = data.map(location => {
-        const formattedLocation = [location.city, location.region, location.country]
+        // Make sure all location fields have fallback values
+        const city = location.city || '';
+        const region = location.region || '';
+        const country = location.country || '';
+        
+        const formattedLocation = [city, region, country]
           .filter(Boolean)
           .join(', ');
         
@@ -206,7 +211,7 @@ export const useLocations = (searchTerm: string = '') => {
         
         return {
           ...location,
-          formatted_location: formattedLocation
+          formatted_location: formattedLocation || 'Unknown location'  // Always provide a fallback
         };
       });
       
