@@ -13,7 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocations } from "@/hooks/useProfiles";
+import { useLocations } from "@/hooks/useLocations";
 import { LocationWithDetails } from "@/types";
 import { ProfileFormValues } from "../ProfileForm";
 
