@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, ProfileWithDetails, Location } from '@/types';
+import { Profile, ProfileWithDetails, Location, LocationWithDetails } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useCurrentProfile = (userId: string | undefined) => {
@@ -172,7 +172,7 @@ export const useUpdateProfile = () => {
 export const useLocations = (searchTerm: string = '') => {
   return useQuery({
     queryKey: ['locations', searchTerm],
-    queryFn: async () => {
+    queryFn: async (): Promise<LocationWithDetails[]> => {
       console.log("Fetching locations with search term:", searchTerm);
       let query = supabase.from('locations').select('*');
       
@@ -194,11 +194,15 @@ export const useLocations = (searchTerm: string = '') => {
         return [];
       }
       
-      const processedData = data.map(location => {
+      const processedData: LocationWithDetails[] = data.map(location => {
         if (!location) {
           console.log("Encountered null location, creating placeholder");
           return {
             id: `placeholder-${Math.random()}`,
+            city: null,
+            region: null,
+            country: null,
+            full_name: null,
             formatted_location: 'Unknown location'
           };
         }

@@ -170,11 +170,10 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
                         <CommandEmpty>No location found</CommandEmpty>
                         <CommandGroup className="max-h-60 overflow-auto">
                           {console.log("Before mapping locations:", locations)}
-                          {locations.map((location: LocationWithDetails) => {
+                          {locations.map((location) => {
                             console.log("Mapping location:", location);
                             console.log("Location formatted_location:", location.formatted_location);
                             
-                            // Fixed: Return the CommandItem explicitly
                             return (
                               <CommandItem
                                 key={location.id}
