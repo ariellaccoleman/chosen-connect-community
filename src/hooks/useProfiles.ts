@@ -173,6 +173,7 @@ export const useLocations = (searchTerm: string = '') => {
   return useQuery({
     queryKey: ['locations', searchTerm],
     queryFn: async () => {
+      console.log("Fetching locations with search term:", searchTerm);
       let query = supabase.from('locations').select('*');
       
       if (searchTerm) {
@@ -181,17 +182,37 @@ export const useLocations = (searchTerm: string = '') => {
       
       const { data, error } = await query.order('full_name');
       
+      console.log("Raw location data from API:", data);
+      
       if (error) {
         console.error('Error fetching locations:', error);
         return [];
       }
       
-      return data.map(location => ({
-        ...location,
-        formatted_location: [location.city, location.region, location.country]
+      if (!data) {
+        console.log("No location data returned, returning empty array");
+        return [];
+      }
+      
+      const processedData = data.map(location => {
+        const formattedLocation = [location.city, location.region, location.country]
           .filter(Boolean)
-          .join(', ')
-      }));
+          .join(', ');
+        
+        console.log(`Processing location ${location.id}:`, {
+          ...location,
+          formatted_location: formattedLocation
+        });
+        
+        return {
+          ...location,
+          formatted_location: formattedLocation
+        };
+      });
+      
+      console.log("Final processed locations:", processedData);
+      return processedData;
     },
+    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
   });
 };
