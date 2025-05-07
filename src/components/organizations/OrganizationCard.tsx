@@ -2,9 +2,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Briefcase, Eye } from "lucide-react";
+import { Edit, Briefcase, Eye, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
+import { useAuth } from "@/hooks/useAuth";
 
 interface OrganizationCardProps {
   relationship: ProfileOrganizationRelationshipWithDetails;
@@ -17,9 +19,12 @@ const OrganizationCard = ({
   showActions = false,
   onEditClick 
 }: OrganizationCardProps) => {
+  const { user } = useAuth();
+  
   if (!relationship.organization) return null;
   
   const organization = relationship.organization;
+  const { data: isAdmin = false } = useIsOrganizationAdmin(user?.id, organization.id);
   
   const orgInitials = organization.name
     .split(' ')
@@ -86,15 +91,29 @@ const OrganizationCard = ({
             </Link>
           </Button>
           
-          {showActions && (
+          {showActions && onEditClick && (
             <Button 
               variant="outline" 
               size="sm" 
-              className="flex items-center text-chosen-blue hover:text-chosen-navy hover:bg-blue-50"
+              className="flex items-center"
               onClick={onEditClick}
             >
               <Edit className="h-4 w-4 mr-1" />
               Edit Relationship
+            </Button>
+          )}
+          
+          {isAdmin && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center text-blue-600 hover:text-blue-800 hover:bg-blue-50"
+              asChild
+            >
+              <Link to={`/organizations/${organization.id}/edit`}>
+                <Settings className="h-4 w-4 mr-1" />
+                Edit Organization
+              </Link>
             </Button>
           )}
         </div>
