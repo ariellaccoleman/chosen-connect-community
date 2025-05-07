@@ -75,32 +75,40 @@ serve(async (req) => {
     console.log("Sending email to:", email);
     console.log("From: CHOSEN Community <onboarding@resend.dev>");
     
-    const { data, error } = await resend.emails.send({
-      from: "CHOSEN Community <onboarding@resend.dev>",
-      to: [email],
-      subject: subject,
-      html: emailContent,
-    });
+    try {
+      const { data, error } = await resend.emails.send({
+        from: "CHOSEN Community <onboarding@resend.dev>",
+        to: [email],
+        subject: subject,
+        html: emailContent,
+      });
 
-    if (error) {
-      console.error("Error sending email:", error);
-      throw error;
+      if (error) {
+        console.error("Error sending email:", error);
+        // Just log the error but don't throw - let the function complete successfully
+        // so the user creation process isn't interrupted
+      } else {
+        console.log("Email sent successfully:", data);
+      }
+    } catch (emailError) {
+      // Log but don't throw - this shouldn't block the signup process
+      console.error("Error in email sending:", emailError);
     }
-
-    console.log("Email sent successfully:", data);
     
-    return new Response(JSON.stringify({ success: true, data }), {
+    // Always return success to ensure the signup flow continues
+    return new Response(JSON.stringify({ success: true, message: "Email processed" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error in custom-email function:", error);
     
+    // Still return a 200 status to prevent blocking the main signup flow
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error.message, message: "Error processing email but continuing signup" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 500,
+        status: 200,
       }
     );
   }
