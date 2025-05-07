@@ -28,6 +28,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log("Auth state changed:", event, session?.user?.id);
         setSession(session);
         setUser(session?.user ?? null);
       }
@@ -45,6 +46,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
     try {
+      console.log("Starting signup process for:", email);
+      console.log("With user metadata:", { first_name: firstName, last_name: lastName });
+      
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -65,7 +69,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const confirmationURL = `${window.location.origin}/auth?confirmation=true`;
         console.log("Sending confirmation email with URL:", confirmationURL);
         
-        await supabase.functions.invoke('custom-email', {
+        const { data, error: emailError } = await supabase.functions.invoke('custom-email', {
           body: {
             type: 'confirmation',
             email: email,
@@ -73,7 +77,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             additionalData: { firstName }
           }
         });
-        console.log("Custom email function called successfully");
+        
+        if (emailError) {
+          console.error("Error calling custom email function:", emailError);
+          throw emailError;
+        }
+        
+        console.log("Custom email function response:", data);
       } catch (emailError) {
         console.error("Error sending custom confirmation email:", emailError);
         // Continue with signup even if custom email fails

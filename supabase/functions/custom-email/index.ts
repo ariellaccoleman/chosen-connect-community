@@ -14,7 +14,7 @@ import { MagicLinkEmail } from "./email-templates/magic-link.tsx";
 // @ts-ignore: Deno-specific import
 import { ResetPasswordEmail } from "./email-templates/reset-password.tsx";
 
-// Initialize Resend email service
+// Initialize Resend email service with API key
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
 // Initialize Supabase client
@@ -39,6 +39,8 @@ serve(async (req) => {
     
     // Log the request details for debugging
     console.log(`Processing ${type} email for ${email} at ${new Date().toISOString()}`);
+    console.log("Action link:", actionLink);
+    console.log("Additional data:", additionalData);
     
     let emailContent;
     let subject;
@@ -49,25 +51,30 @@ serve(async (req) => {
         emailContent = await renderAsync(
           ConfirmationEmail({ confirmLink: actionLink, firstName: additionalData?.firstName || "" })
         );
+        console.log("Generated confirmation email content");
         break;
       case "magic_link":
         subject = "Your Magic Sign-in Link for CHOSEN";
         emailContent = await renderAsync(
           MagicLinkEmail({ signInLink: actionLink })
         );
+        console.log("Generated magic link email content");
         break;
       case "reset_password":
         subject = "Reset Your CHOSEN Password";
         emailContent = await renderAsync(
           ResetPasswordEmail({ resetLink: actionLink })
         );
+        console.log("Generated reset password email content");
         break;
       default:
         throw new Error(`Unknown email type: ${type}`);
     }
 
-    // Send the email using Resend
-    // Use "onboarding@resend.dev" which is pre-verified with Resend
+    // Send the email using Resend with a pre-verified sender
+    console.log("Sending email to:", email);
+    console.log("From: CHOSEN Community <onboarding@resend.dev>");
+    
     const { data, error } = await resend.emails.send({
       from: "CHOSEN Community <onboarding@resend.dev>",
       to: [email],

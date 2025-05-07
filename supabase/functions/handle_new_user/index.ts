@@ -19,9 +19,10 @@ serve(async (req) => {
     const { record, type } = payload;
     
     console.log("New user trigger called:", type, record?.id);
+    console.log("Full payload:", JSON.stringify(payload, null, 2));
     
-    if (type === "INSERT" && record?.id) {
-      console.log("Processing new user:", record.id);
+    if ((type === "INSERT" || type === "UPDATE") && record?.id) {
+      console.log("Processing user:", record.id);
       console.log("User metadata:", record.raw_user_meta_data);
       
       // Check if profile already exists
@@ -81,7 +82,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
-    console.error("Error handling new user:", error);
+    console.error("Error handling user:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { "Content-Type": "application/json" },
       status: 500,
