@@ -10,7 +10,17 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.8.0";
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+  
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
@@ -18,13 +28,13 @@ serve(async (req) => {
     const payload = await req.json();
     const { record, type } = payload;
     
-    console.log("New user trigger called:", type, record?.id);
-    console.log("Full payload:", JSON.stringify(payload, null, 2));
-    console.log("Supabase URL:", supabaseUrl);
+    console.log(`[${new Date().toISOString()}] New user trigger called:`, type, record?.id);
+    console.log(`[${new Date().toISOString()}] Full payload:`, JSON.stringify(payload, null, 2));
+    console.log(`[${new Date().toISOString()}] Supabase URL:`, supabaseUrl);
     
     if ((type === "INSERT" || type === "UPDATE") && record?.id) {
-      console.log("Processing user:", record.id);
-      console.log("User metadata:", record.raw_user_meta_data);
+      console.log(`[${new Date().toISOString()}] Processing user:`, record.id);
+      console.log(`[${new Date().toISOString()}] User metadata:`, JSON.stringify(record.raw_user_meta_data, null, 2));
       
       try {
         // Check if profile already exists
@@ -35,17 +45,17 @@ serve(async (req) => {
           .maybeSingle();
           
         if (checkError) {
-          console.error("Error checking profile existence:", checkError);
+          console.error(`[${new Date().toISOString()}] Error checking profile existence:`, checkError);
           return new Response(JSON.stringify({ error: checkError.message }), {
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
             status: 500,
           });
         }
         
         if (existingProfile) {
-          console.log("Profile already exists for user:", record.id);
+          console.log(`[${new Date().toISOString()}] Profile already exists for user:`, record.id);
           return new Response(JSON.stringify({ success: true, message: "Profile already exists" }), {
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
             status: 200,
           });
         }
@@ -54,7 +64,7 @@ serve(async (req) => {
         const first_name = record.raw_user_meta_data?.first_name;
         const last_name = record.raw_user_meta_data?.last_name;
         
-        console.log("Creating profile with data:", { 
+        console.log(`[${new Date().toISOString()}] Creating profile with data:`, { 
           id: record.id, 
           first_name, 
           last_name, 
@@ -72,36 +82,36 @@ serve(async (req) => {
           });
           
         if (error) {
-          console.error("Error creating profile:", error);
+          console.error(`[${new Date().toISOString()}] Error creating profile:`, error);
           return new Response(JSON.stringify({ error: error.message }), {
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", ...corsHeaders },
             status: 400,
           });
         }
         
-        console.log("Successfully created profile for user:", record.id);
+        console.log(`[${new Date().toISOString()}] Successfully created profile for user:`, record.id);
         
         return new Response(JSON.stringify({ success: true }), {
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...corsHeaders },
           status: 200,
         });
       } catch (innerError) {
-        console.error("Error in profile creation process:", innerError);
+        console.error(`[${new Date().toISOString()}] Error in profile creation process:`, innerError);
         return new Response(JSON.stringify({ error: innerError.message }), {
-          headers: { "Content-Type": "application/json" },
+          headers: { "Content-Type": "application/json", ...corsHeaders },
           status: 500,
         });
       }
     }
     
     return new Response(JSON.stringify({ success: true, message: "No action needed" }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
       status: 200,
     });
   } catch (error) {
-    console.error("Error handling user:", error);
+    console.error(`[${new Date().toISOString()}] Error handling user:`, error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...corsHeaders },
       status: 500,
     });
   }
