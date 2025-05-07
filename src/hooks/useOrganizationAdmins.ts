@@ -1,8 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationAdmin, OrganizationAdminWithDetails } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
+import { formatLocation } from '@/utils/formatters';
 
 // Fetch all organization admin requests (for site admins)
 export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved' | 'all' } = {}) => {
@@ -36,26 +36,20 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
       return data.map(admin => {
         // Format profile
         if (admin.profile) {
+          // Create full_name from first_name and last_name
           admin.profile.full_name = [admin.profile.first_name, admin.profile.last_name]
             .filter(Boolean)
             .join(' ');
             
-          if (admin.profile.location) {
-            admin.profile.location.formatted_location = [
-              admin.profile.location.city,
-              admin.profile.location.region,
-              admin.profile.location.country
-            ].filter(Boolean).join(', ');
+          // Format location if it exists
+          if (admin.profile.location_id && admin.profile.location) {
+            admin.profile.location.formatted_location = formatLocation(admin.profile.location);
           }
         }
         
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location.formatted_location = [
-            admin.organization.location.city,
-            admin.organization.location.region,
-            admin.organization.location.country
-          ].filter(Boolean).join(', ');
+          admin.organization.location.formatted_location = formatLocation(admin.organization.location);
         }
         
         return admin;
@@ -132,11 +126,7 @@ export const useUserAdminRequests = (userId: string | undefined) => {
       return data.map(admin => {
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location.formatted_location = [
-            admin.organization.location.city,
-            admin.organization.location.region,
-            admin.organization.location.country
-          ].filter(Boolean).join(', ');
+          admin.organization.location.formatted_location = formatLocation(admin.organization.location);
         }
         
         return admin;

@@ -55,7 +55,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // If not admin, redirect to dashboard
-  if (!user.user_metadata?.role === "admin") {
+  if (user.user_metadata?.role !== "admin") {
     return <Navigate to="/dashboard" replace />;
   }
 
