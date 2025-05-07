@@ -15,9 +15,10 @@ export const profileSchema = z.object({
   last_name: z.string().min(1, "Last name is required"),
   headline: z.string().optional(),
   bio: z.string().optional(),
-  linkedin_url: z.string().url("Must be a valid URL").optional().or(z.string().length(0)),
-  twitter_url: z.string().url("Must be a valid URL").optional().or(z.string().length(0)),
-  website_url: z.string().url("Must be a valid URL").optional().or(z.string().length(0)),
+  // Make URL fields more flexible - we'll handle the formatting when saving
+  linkedin_url: z.string().optional().or(z.string().length(0)),
+  twitter_url: z.string().optional().or(z.string().length(0)),
+  website_url: z.string().optional().or(z.string().length(0)),
   avatar_url: z.string().optional(),
   location_id: z.string().optional(),
   role: z.enum(["admin", "member"]).default("member"),

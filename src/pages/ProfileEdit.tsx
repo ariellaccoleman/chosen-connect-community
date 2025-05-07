@@ -7,6 +7,7 @@ import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
+import { formatWebsiteUrl } from "@/utils/formatters";
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
@@ -25,18 +26,18 @@ const ProfileEdit = () => {
     if (!user?.id) return;
 
     try {
-      // Extract only profile-related fields for the update operation
+      // Format URLs before submission
       const profileData = {
         first_name: data.first_name,
         last_name: data.last_name,
         headline: data.headline || null,
         bio: data.bio || null,
-        linkedin_url: data.linkedin_url || null,
-        twitter_url: data.twitter_url || null,
-        website_url: data.website_url || null,
+        linkedin_url: data.linkedin_url ? formatWebsiteUrl(data.linkedin_url) : null,
+        twitter_url: data.twitter_url ? formatWebsiteUrl(data.twitter_url) : null,
+        website_url: data.website_url ? formatWebsiteUrl(data.website_url) : null,
         avatar_url: data.avatar_url || null,
         location_id: data.location_id || null,
-        role: data.role || "member", // Include the role field with default "member"
+        role: data.role || "member",
       };
       
       await updateProfile.mutateAsync({
@@ -91,7 +92,7 @@ const ProfileEdit = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-3xl">
+      <div className="container mx-auto py-6 px-4 max-w-3xl">
         <h1 className="text-3xl font-bold mb-6 font-heading">Edit Your Profile</h1>
         
         <ProfileForm 

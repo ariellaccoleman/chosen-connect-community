@@ -61,7 +61,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-7xl">
+      <div className="container mx-auto py-6 px-4 max-w-7xl">
         <h1 className="text-3xl font-bold mb-8 font-heading">Your Dashboard</h1>
         
         <div className="grid gap-6 md:grid-cols-12">
@@ -112,24 +112,35 @@ const Dashboard = () => {
               <div className="flex flex-col space-y-2 mt-4">
                 {profile.linkedin_url && (
                   <a 
-                    href={profile.linkedin_url} 
+                    href={formatWebsiteUrl(profile.linkedin_url)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy"
+                    className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
                   >
-                    <Link className="h-4 w-4 mr-2" />
+                    <Link className="h-4 w-4 mr-2 flex-shrink-0" />
                     LinkedIn
                   </a>
                 )}
                 {profile.twitter_url && (
                   <a 
-                    href={profile.twitter_url} 
+                    href={formatWebsiteUrl(profile.twitter_url)}
                     target="_blank" 
                     rel="noopener noreferrer"
-                    className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy"
+                    className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
                   >
-                    <Link className="h-4 w-4 mr-2" />
+                    <Link className="h-4 w-4 mr-2 flex-shrink-0" />
                     Twitter
+                  </a>
+                )}
+                {profile.website_url && (
+                  <a 
+                    href={formatWebsiteUrl(profile.website_url)}
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
+                  >
+                    <Link className="h-4 w-4 mr-2 flex-shrink-0" />
+                    Website
                   </a>
                 )}
               </div>
@@ -140,11 +151,11 @@ const Dashboard = () => {
           <div className="md:col-span-8 space-y-6">
             <Card>
               <CardHeader className="pb-3">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
                   <CardTitle>Your Organizations</CardTitle>
                   <Button 
                     onClick={() => navigate("/organizations/manage")} 
-                    className="bg-chosen-blue hover:bg-chosen-navy"
+                    className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
                   >
                     <Briefcase className="h-4 w-4 mr-2" />
                     Manage Organizations
@@ -162,7 +173,7 @@ const Dashboard = () => {
                     {currentOrgs.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold mb-3">Current</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2">
                           {currentOrgs.map(relationship => (
                             <OrganizationCard 
                               key={relationship.id} 
@@ -177,7 +188,7 @@ const Dashboard = () => {
                     {formerOrgs.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold mb-3">Former</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2">
                           {formerOrgs.map(relationship => (
                             <OrganizationCard 
                               key={relationship.id} 
@@ -192,7 +203,7 @@ const Dashboard = () => {
                     {allyOrgs.length > 0 && (
                       <div>
                         <h3 className="text-lg font-semibold mb-3">Allied</h3>
-                        <div className="grid gap-4 md:grid-cols-2">
+                        <div className="grid gap-4 sm:grid-cols-2">
                           {allyOrgs.map(relationship => (
                             <OrganizationCard 
                               key={relationship.id} 
@@ -222,6 +233,12 @@ const Dashboard = () => {
       </div>
     </DashboardLayout>
   );
+};
+
+// Helper function to format website URLs
+const formatWebsiteUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
 
 export default Dashboard;

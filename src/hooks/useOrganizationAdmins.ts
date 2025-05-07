@@ -1,7 +1,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { OrganizationAdmin, OrganizationAdminWithDetails, ProfileWithDetails } from '@/types';
+import { OrganizationAdmin, OrganizationAdminWithDetails, ProfileWithDetails, Location, LocationWithDetails } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 import { formatLocation } from '@/utils/formatters';
 
@@ -36,32 +36,53 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
       
       return data.map(admin => {
         // Format profile
-        if (admin.profile) {
-          // Need to cast to ProfileWithDetails since the raw data doesn't include our extended fields
-          const profileWithDetails = admin.profile as ProfileWithDetails;
-          
-          // Create full_name from first_name and last_name
-          profileWithDetails.full_name = [profileWithDetails.first_name, profileWithDetails.last_name]
+        const profileData = admin.profile || {};
+        const profileWithDetails: ProfileWithDetails = {
+          ...profileData,
+          id: profileData.id || '',
+          email: profileData.email || '',
+          first_name: profileData.first_name || '',
+          last_name: profileData.last_name || '',
+          avatar_url: profileData.avatar_url || null,
+          headline: profileData.headline || null,
+          bio: profileData.bio || null,
+          linkedin_url: profileData.linkedin_url || null,
+          twitter_url: profileData.twitter_url || null,
+          website_url: profileData.website_url || null,
+          role: profileData.role || 'member',
+          location_id: profileData.location_id || null,
+          full_name: [profileData.first_name, profileData.last_name]
             .filter(Boolean)
-            .join(' ');
+            .join(' ')
+        };
             
-          // Format location if it exists
-          if (admin.profile.location_id && admin.profile.location) {
-            profileWithDetails.location = {
-              ...admin.profile.location,
-              formatted_location: formatLocation(admin.profile.location)
-            };
-          }
-          
-          admin.profile = profileWithDetails;
+        if (profileData.location_id && profileData.location) {
+          const locationData = profileData.location || {};
+          const locationWithDetails: LocationWithDetails = {
+            ...locationData,
+            id: locationData.id || '',
+            city: locationData.city || '',
+            region: locationData.region || '',
+            country: locationData.country || '',
+            formatted_location: formatLocation(locationData)
+          };
+          profileWithDetails.location = locationWithDetails;
         }
+        
+        admin.profile = profileWithDetails;
         
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location = {
-            ...admin.organization.location,
-            formatted_location: formatLocation(admin.organization.location)
+          const locationData = admin.organization.location || {};
+          const locationWithDetails: LocationWithDetails = {
+            ...locationData,
+            id: locationData.id || '',
+            city: locationData.city || '',
+            region: locationData.region || '',
+            country: locationData.country || '',
+            formatted_location: formatLocation(locationData)
           };
+          admin.organization.location = locationWithDetails;
         }
         
         return admin;
@@ -98,16 +119,27 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
       
       return data.map(admin => {
         // Format profile
-        if (admin.profile) {
-          // Need to cast to ProfileWithDetails since the raw data doesn't include our extended fields
-          const profileWithDetails = admin.profile as ProfileWithDetails;
-          
-          profileWithDetails.full_name = [profileWithDetails.first_name, profileWithDetails.last_name]
+        const profileData = admin.profile || {};
+        const profileWithDetails: ProfileWithDetails = {
+          ...profileData,
+          id: profileData.id || '',
+          email: profileData.email || '',
+          first_name: profileData.first_name || '',
+          last_name: profileData.last_name || '',
+          avatar_url: profileData.avatar_url || null,
+          headline: profileData.headline || null,
+          bio: profileData.bio || null,
+          linkedin_url: profileData.linkedin_url || null,
+          twitter_url: profileData.twitter_url || null,
+          website_url: profileData.website_url || null,
+          role: profileData.role || 'member',
+          location_id: profileData.location_id || null,
+          full_name: [profileData.first_name, profileData.last_name]
             .filter(Boolean)
-            .join(' ');
-            
-          admin.profile = profileWithDetails;
-        }
+            .join(' ')
+        };
+        
+        admin.profile = profileWithDetails;
         
         return admin;
       });
@@ -143,10 +175,16 @@ export const useUserAdminRequests = (userId: string | undefined) => {
       return data.map(admin => {
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location = {
-            ...admin.organization.location,
-            formatted_location: formatLocation(admin.organization.location)
+          const locationData = admin.organization.location || {};
+          const locationWithDetails: LocationWithDetails = {
+            ...locationData,
+            id: locationData.id || '',
+            city: locationData.city || '',
+            region: locationData.region || '',
+            country: locationData.country || '',
+            formatted_location: formatLocation(locationData)
           };
+          admin.organization.location = locationWithDetails;
         }
         
         return admin;

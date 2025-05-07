@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Organization, OrganizationWithLocation, LocationWithDetails } from "@/types";
+import { OrganizationWithLocation, LocationWithDetails } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building, Link as LinkIcon, MapPin, ShieldCheck } from "lucide-react";
@@ -12,6 +12,7 @@ import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import RequestAdminAccessButton from "@/components/organizations/RequestAdminAccessButton";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +21,7 @@ const OrganizationDetail = () => {
   const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     const fetchOrganization = async () => {
@@ -86,14 +88,14 @@ const OrganizationDetail = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-3xl">
+      <div className="container mx-auto py-6 px-4 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate("/organizations")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Organizations
         </Button>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-          <div className="flex items-start justify-between mb-4">
+        <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
             <div className="flex items-center gap-4">
               {organization.logo_url ? (
                 <img
@@ -118,10 +120,12 @@ const OrganizationDetail = () => {
             </div>
             
             {user && id && (
-              <RequestAdminAccessButton 
-                organizationId={id} 
-                organizationName={organization.name} 
-              />
+              <div className="flex justify-end">
+                <RequestAdminAccessButton 
+                  organizationId={id} 
+                  organizationName={organization.name} 
+                />
+              </div>
             )}
           </div>
 
@@ -149,12 +153,12 @@ const OrganizationDetail = () => {
             <div className="mb-6">
               <h2 className="text-lg font-semibold mb-2">Website</h2>
               <a
-                href={organization.website_url}
+                href={formatWebsiteUrl(organization.website_url)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 hover:underline flex items-center"
+                className="text-blue-600 hover:underline flex items-center break-all"
               >
-                <LinkIcon className="h-4 w-4 mr-2" />
+                <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                 {organization.website_url}
               </a>
             </div>
@@ -166,6 +170,12 @@ const OrganizationDetail = () => {
       </div>
     </DashboardLayout>
   );
+};
+
+// Helper function to format website URLs
+const formatWebsiteUrl = (url: string): string => {
+  if (!url) return '';
+  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
 
 export default OrganizationDetail;

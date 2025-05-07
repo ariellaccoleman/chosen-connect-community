@@ -1,78 +1,80 @@
-
-export type Profile = {
+export interface Location {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  bio: string | null;
+  city: string;
+  region: string;
+  country: string;
+  full_name?: string;
+}
+
+export interface LocationWithDetails extends Location {
+  formatted_location: string;
+}
+
+export interface Profile {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
   headline: string | null;
+  bio: string | null;
   linkedin_url: string | null;
   twitter_url: string | null;
   website_url: string | null;
-  avatar_url: string | null;
+  role: "admin" | "member";
   location_id: string | null;
-  email: string | null;
-  role: string | null;
-};
+}
 
-export type Location = {
-  id: string;
-  city: string | null;
-  region: string | null;
-  country: string | null;
-  full_name: string | null;
-};
+export interface ProfileWithDetails extends Profile {
+  full_name: string;
+  location?: LocationWithDetails;
+}
 
-export type Organization = {
+export interface Organization {
   id: string;
   name: string;
   description: string | null;
+  website_url: string | null;
   logo_url: string | null;
   logo_api_url: string | null;
-  website_url: string | null;
+  created_at: string;
+  updated_at: string;
   location_id: string | null;
-  created_at: string | null;
-  is_verified: boolean | null;
-};
+}
 
-export type OrganizationRelationship = {
+export interface OrganizationWithLocation extends Organization {
+  location?: LocationWithDetails;
+}
+
+export interface ProfileOrganizationRelationship {
   id: string;
-  profile_id: string | null;
-  organization_id: string | null;
-  connection_type: 'current' | 'former' | 'ally' | null;
+  profile_id: string;
+  organization_id: string;
+  connection_type: "current" | "former" | "ally";
   department: string | null;
   notes: string | null;
-  created_at: string | null;
-};
+  created_at: string;
+}
 
-export type LocationWithDetails = Location & {
-  formatted_location?: string;
-};
+export interface ProfileOrganizationRelationshipWithDetails extends ProfileOrganizationRelationship {
+  organization: OrganizationWithLocation;
+}
 
-export type OrganizationWithLocation = Organization & {
-  location?: LocationWithDetails | null;
-};
-
-export type OrganizationRelationshipWithDetails = OrganizationRelationship & {
-  organization?: OrganizationWithLocation | null;
-};
-
-export type ProfileWithDetails = Profile & {
-  location?: LocationWithDetails | null;
-  full_name?: string;
-  organizations?: OrganizationRelationshipWithDetails[];
-};
-
-export type OrganizationAdmin = {
+export interface OrganizationAdmin {
   id: string;
-  profile_id: string | null;
-  organization_id: string | null;
-  role: string | null;
-  is_approved: boolean | null;
-  can_edit_profile: boolean | null;
-  created_at: string | null;
-};
+  profile_id: string;
+  organization_id: string;
+  role: string;
+  is_approved: boolean;
+  created_at: string;
+}
 
-export type OrganizationAdminWithDetails = OrganizationAdmin & {
-  profile?: ProfileWithDetails | null;
-  organization?: OrganizationWithLocation | null;
-};
+export interface OrganizationAdminWithDetails extends OrganizationAdmin {
+  profile: ProfileWithDetails;
+  organization: OrganizationWithLocation;
+}
+
+export interface SupabaseListResult<T> {
+  data: T[] | null;
+  error: any;
+}

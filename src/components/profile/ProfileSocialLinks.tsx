@@ -5,7 +5,8 @@ import {
   FormItem, 
   FormLabel, 
   FormControl, 
-  FormMessage 
+  FormMessage,
+  FormDescription 
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,8 +30,11 @@ const ProfileSocialLinks = ({ form }: ProfileSocialLinksProps) => {
             <FormItem>
               <FormLabel>Personal Website</FormLabel>
               <FormControl>
-                <Input placeholder="https://yourwebsite.com" {...field} />
+                <Input placeholder="yourwebsite.com" {...field} />
               </FormControl>
+              <FormDescription className="text-xs">
+                You can enter just "yourwebsite.com" without "https://"
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -43,8 +47,11 @@ const ProfileSocialLinks = ({ form }: ProfileSocialLinksProps) => {
             <FormItem>
               <FormLabel>LinkedIn URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://linkedin.com/in/yourprofile" {...field} />
+                <Input placeholder="linkedin.com/in/yourprofile" {...field} />
               </FormControl>
+              <FormDescription className="text-xs">
+                You can enter just "linkedin.com/in/yourprofile" without "https://"
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -57,8 +64,11 @@ const ProfileSocialLinks = ({ form }: ProfileSocialLinksProps) => {
             <FormItem>
               <FormLabel>Twitter URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://twitter.com/yourusername" {...field} />
+                <Input placeholder="twitter.com/yourusername" {...field} />
               </FormControl>
+              <FormDescription className="text-xs">
+                You can enter just "twitter.com/yourusername" without "https://"
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

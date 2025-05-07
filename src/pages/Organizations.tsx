@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
+import { formatWebsiteUrl } from "@/utils/formatters";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -23,12 +24,12 @@ const OrganizationsList = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
+      <div className="container mx-auto py-6 px-4 max-w-7xl">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h1 className="text-3xl font-bold font-heading">Organizations</h1>
           <Button 
             onClick={() => navigate("/organizations/manage")} 
-            className="bg-chosen-blue hover:bg-chosen-navy"
+            className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
           >
             <Briefcase className="mr-2 h-4 w-4" />
             Manage Your Organizations
@@ -89,16 +90,16 @@ const OrganizationCard = ({
     <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardContent className="p-6">
         <div className="flex space-x-4">
-          <Avatar className="h-16 w-16">
+          <Avatar className="h-16 w-16 flex-shrink-0">
             <AvatarImage src={organization.logo_url || organization.logo_api_url || ""} />
             <AvatarFallback className="bg-chosen-blue text-white">
               {orgInitials}
             </AvatarFallback>
           </Avatar>
-          <div>
-            <h3 className="text-lg font-semibold mb-1">{organization.name}</h3>
+          <div className="min-w-0">
+            <h3 className="text-lg font-semibold mb-1 break-words">{organization.name}</h3>
             {organization.location && (
-              <p className="text-sm text-gray-500 mb-2">{organization.location.formatted_location}</p>
+              <p className="text-sm text-gray-500 mb-2 truncate">{organization.location.formatted_location}</p>
             )}
           </div>
         </div>
