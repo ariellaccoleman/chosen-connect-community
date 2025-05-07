@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { Navigate, useSearchParams } from "react-router-dom";
@@ -116,15 +115,15 @@ const Auth = () => {
   const onSignupSubmit = async (data: SignupValues) => {
     setIsSubmitting(true);
     try {
-      // First sign up the user
-      const { user: newUser } = await signUp(data.email, data.password, data.firstName, data.lastName);
+      // First sign up the user and get the returned data
+      const result = await signUp(data.email, data.password, data.firstName, data.lastName);
       
       // If signup was successful and we have a user ID, ensure profile record exists
-      if (newUser?.id) {
+      if (result && result.user?.id) {
         try {
           // Create/update profile with first and last name
           await updateProfile.mutateAsync({
-            profileId: newUser.id,
+            profileId: result.user.id,
             profileData: {
               first_name: data.firstName,
               last_name: data.lastName,
