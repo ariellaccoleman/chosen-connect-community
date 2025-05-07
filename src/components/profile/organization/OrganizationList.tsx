@@ -1,5 +1,7 @@
 
 import { Button } from "@/components/ui/button";
+import { Eye, Edit } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 interface OrganizationListProps {
@@ -34,28 +36,45 @@ const OrganizationList = ({
         return (
           <div 
             key={relationship.id} 
-            className="flex items-start justify-between p-3 border rounded-md"
+            className="flex flex-col p-4 border rounded-md space-y-3"
           >
-            <div>
-              <div className="font-medium">{org.name}</div>
-              <div className="text-sm text-muted-foreground">
-                {relationship.connection_type === 'current' ? 'Current' : 
-                 relationship.connection_type === 'former' ? 'Former' : 'Allied'}
-                {relationship.department && ` • ${relationship.department}`}
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="font-medium">{org.name}</div>
+                <div className="text-sm text-muted-foreground">
+                  {relationship.connection_type === 'current' ? 'Current' : 
+                   relationship.connection_type === 'former' ? 'Former' : 'Allied'}
+                  {relationship.department && ` • ${relationship.department}`}
+                </div>
+                {relationship.notes && (
+                  <div className="text-sm mt-1 text-gray-600">{relationship.notes}</div>
+                )}
               </div>
-              {relationship.notes && (
-                <div className="text-sm mt-1 text-gray-600">{relationship.notes}</div>
-              )}
             </div>
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="sm" 
-              className="text-gray-500"
-              onClick={onManageClick}
-            >
-              Edit
-            </Button>
+            
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex items-center"
+                asChild
+              >
+                <Link to={`/organizations/${org.id}`}>
+                  <Eye className="h-4 w-4 mr-1" />
+                  View Organization
+                </Link>
+              </Button>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                className="flex items-center" 
+                onClick={onManageClick}
+              >
+                <Edit className="h-4 w-4 mr-1" />
+                Edit Relationship
+              </Button>
+            </div>
           </div>
         );
       })}

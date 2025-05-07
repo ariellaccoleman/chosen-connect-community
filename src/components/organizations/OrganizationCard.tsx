@@ -2,7 +2,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Edit, Briefcase } from "lucide-react";
+import { Edit, Briefcase, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 interface OrganizationCardProps {
@@ -64,20 +65,6 @@ const OrganizationCard = ({
               )}
             </div>
           </div>
-          
-          {showActions && (
-            <div>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="text-chosen-blue hover:text-chosen-navy hover:bg-blue-50"
-                onClick={onEditClick}
-              >
-                <Edit className="h-4 w-4 mr-1" />
-                Edit
-              </Button>
-            </div>
-          )}
         </div>
         
         {relationship.notes && (
@@ -85,6 +72,32 @@ const OrganizationCard = ({
             <p className="text-sm text-gray-600">{relationship.notes}</p>
           </div>
         )}
+        
+        <div className="mt-4 flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="flex items-center"
+            asChild
+          >
+            <Link to={`/organizations/${organization.id}`}>
+              <Eye className="h-4 w-4 mr-1" />
+              View Organization
+            </Link>
+          </Button>
+          
+          {showActions && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center text-chosen-blue hover:text-chosen-navy hover:bg-blue-50"
+              onClick={onEditClick}
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              Edit Relationship
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
