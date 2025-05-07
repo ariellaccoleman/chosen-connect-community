@@ -1,8 +1,36 @@
 
 project_id = "nvaqqkffmfuxdnwnqhxo"
 
-[functions.custom-email]
-verify_jwt = true
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage"]
 
-[functions.handle_new_user]
-verify_jwt = false
+[db]
+port = 54322
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[storage]
+enabled = true
+
+[realtime]
+enabled = true
+
+[analytics]
+enabled = false
+port = 54327
+
+[functions.set_admin_role]
+verify_jwt = true

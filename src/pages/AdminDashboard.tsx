@@ -17,10 +17,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Check, Search, ShieldCheck, Trash, X } from "lucide-react";
+import { Check, Search, ShieldCheck, Trash } from "lucide-react";
 import { OrganizationAdminWithDetails } from "@/types";
 import { format } from "date-fns";
 import AdminRequestDetails from "@/components/admin/AdminRequestDetails";
+import { SetAdminRole } from "@/components/admin/SetAdminRole";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -75,6 +76,17 @@ const AdminDashboard = () => {
             <p className="text-muted-foreground">Manage organization access requests</p>
           </div>
         </div>
+
+        {/* Admin Tools Section */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle>Admin Tools</CardTitle>
+            <CardDescription>Special administrative functions</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SetAdminRole />
+          </CardContent>
+        </Card>
 
         <Card className="mb-6">
           <CardHeader className="pb-3">
