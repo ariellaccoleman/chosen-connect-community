@@ -1,8 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ProfileWithDetails, LocationWithDetails, Location } from "@/types";
-import { formatLocation } from "@/utils/formatters";
+import { ProfileWithDetails, Location } from "@/types";
+import { formatLocationWithDetails } from "@/utils/adminFormatters";
 
 export const useCommunityProfiles = (filters: {
   search?: string;
@@ -52,15 +52,7 @@ export const useCommunityProfiles = (filters: {
         };
 
         if (profile.location_id && profile.location) {
-          const locationData = profile.location as unknown as Location;
-          
-          // Format the location data
-          const locationWithDetails: LocationWithDetails = {
-            ...locationData,
-            formatted_location: formatLocation(locationData)
-          };
-          
-          profileWithDetails.location = locationWithDetails;
+          profileWithDetails.location = formatLocationWithDetails(profile.location as unknown as Location);
         }
 
         return profileWithDetails;

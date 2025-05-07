@@ -25,6 +25,12 @@ export const useUpdateProfile = () => {
       delete cleanedProfileData.addOrganizationRelationship;
       delete cleanedProfileData.navigateToManageOrgs;
       
+      // Ensure membership_tier is a valid enum value if it exists
+      if (cleanedProfileData.membership_tier && 
+          !["free", "community", "pro", "partner"].includes(cleanedProfileData.membership_tier)) {
+        cleanedProfileData.membership_tier = "free";
+      }
+      
       // First check if the profile exists
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')

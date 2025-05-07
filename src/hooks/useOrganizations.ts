@@ -1,9 +1,9 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Organization, OrganizationWithLocation, OrganizationRelationship } from '@/types';
+import { Organization, OrganizationWithLocation, ProfileOrganizationRelationship } from '@/types';
 import { toast } from '@/components/ui/sonner';
 import { createMutationHandlers } from '@/utils/toastUtils';
+import { formatLocationWithDetails } from '@/utils/adminFormatters';
 
 export const useOrganizations = () => {
   return useQuery({
@@ -24,19 +24,13 @@ export const useOrganizations = () => {
       
       return data.map(org => {
         if (org.location) {
-          const location = org.location;
           return {
             ...org,
-            location: {
-              ...location,
-              formatted_location: [location.city, location.region, location.country]
-                .filter(Boolean)
-                .join(', ')
-            }
+            location: formatLocationWithDetails(org.location)
           };
         }
         return org;
-      });
+      }) as OrganizationWithLocation[];
     },
   });
 };
@@ -90,7 +84,7 @@ export const useAddOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (relationship: Partial<OrganizationRelationship>) => {
+    mutationFn: async (relationship: Partial<ProfileOrganizationRelationship>) => {
       console.log('Adding organization relationship:', relationship);
       
       if (!relationship.profile_id) {
@@ -157,7 +151,7 @@ export const useUpdateOrganizationRelationship = () => {
       relationshipData 
     }: { 
       relationshipId: string, 
-      relationshipData: Partial<OrganizationRelationship> 
+      relationshipData: Partial<ProfileOrganizationRelationship> 
     }) => {
       const { error } = await supabase
         .from('org_relationships')

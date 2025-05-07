@@ -1,4 +1,3 @@
-
 export interface Location {
   id: string;
   city: string;
@@ -55,6 +54,7 @@ export interface OrganizationWithLocation extends Organization {
   location?: LocationWithDetails;
 }
 
+// Rename OrganizationRelationship to ProfileOrganizationRelationship for consistency with existing code
 export interface ProfileOrganizationRelationship {
   id: string;
   profile_id: string;
