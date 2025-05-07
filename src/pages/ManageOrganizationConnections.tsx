@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
@@ -8,11 +8,10 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import OrganizationCard from "@/components/organizations/OrganizationCard";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
-import { useState } from "react";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { formatLocationWithDetails } from "@/utils/adminFormatters";
+import OrganizationRelationshipList from "@/components/organizations/OrganizationRelationshipList";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
@@ -97,66 +96,36 @@ const ManageOrganizationConnections = () => {
                   </TabsTrigger>
                 </TabsList>
                 
-                <TabsContent value="all" className="space-y-4">
-                  {formattedRelationships.map(relationship => (
-                    <OrganizationCard 
-                      key={relationship.id} 
-                      relationship={relationship}
-                      showActions={true}
-                      onEditClick={() => handleEditClick(relationship)}
-                    />
-                  ))}
+                <TabsContent value="all">
+                  <OrganizationRelationshipList 
+                    relationships={formattedRelationships}
+                    onEditClick={handleEditClick}
+                    emptyMessage="No organizations"
+                  />
                 </TabsContent>
                 
-                <TabsContent value="current" className="space-y-4">
-                  {currentRelationships.length > 0 ? (
-                    currentRelationships.map(relationship => (
-                      <OrganizationCard 
-                        key={relationship.id} 
-                        relationship={relationship}
-                        showActions={true}
-                        onEditClick={() => handleEditClick(relationship)}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No current organizations
-                    </div>
-                  )}
+                <TabsContent value="current">
+                  <OrganizationRelationshipList 
+                    relationships={currentRelationships}
+                    onEditClick={handleEditClick}
+                    emptyMessage="No current organizations"
+                  />
                 </TabsContent>
                 
-                <TabsContent value="former" className="space-y-4">
-                  {formerRelationships.length > 0 ? (
-                    formerRelationships.map(relationship => (
-                      <OrganizationCard 
-                        key={relationship.id} 
-                        relationship={relationship}
-                        showActions={true}
-                        onEditClick={() => handleEditClick(relationship)}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No former organizations
-                    </div>
-                  )}
+                <TabsContent value="former">
+                  <OrganizationRelationshipList 
+                    relationships={formerRelationships}
+                    onEditClick={handleEditClick}
+                    emptyMessage="No former organizations"
+                  />
                 </TabsContent>
                 
-                <TabsContent value="ally" className="space-y-4">
-                  {allyRelationships.length > 0 ? (
-                    allyRelationships.map(relationship => (
-                      <OrganizationCard 
-                        key={relationship.id} 
-                        relationship={relationship}
-                        showActions={true}
-                        onEditClick={() => handleEditClick(relationship)}
-                      />
-                    ))
-                  ) : (
-                    <div className="text-center py-8 text-gray-500">
-                      No allied organizations
-                    </div>
-                  )}
+                <TabsContent value="ally">
+                  <OrganizationRelationshipList 
+                    relationships={allyRelationships}
+                    onEditClick={handleEditClick}
+                    emptyMessage="No allied organizations"
+                  />
                 </TabsContent>
               </Tabs>
             ) : (
