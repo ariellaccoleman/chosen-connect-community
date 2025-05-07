@@ -2,12 +2,14 @@
 import { ShieldCheck } from "lucide-react";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface OrganizationAdminAlertProps {
   isAdmin: boolean;
+  organizationId?: string;
 }
 
-const OrganizationAdminAlert = ({ isAdmin }: OrganizationAdminAlertProps) => {
+const OrganizationAdminAlert = ({ isAdmin, organizationId }: OrganizationAdminAlertProps) => {
   if (!isAdmin) return null;
   
   return (
@@ -16,9 +18,17 @@ const OrganizationAdminAlert = ({ isAdmin }: OrganizationAdminAlertProps) => {
       <AlertTitle>Organization Admin</AlertTitle>
       <AlertDescription>
         You have admin access to this organization.
-        <Button variant="link" className="p-0 h-auto text-blue-600 pl-1">
-          Edit Organization Details
-        </Button>
+        {organizationId && (
+          <Button 
+            variant="link" 
+            className="p-0 h-auto text-blue-600 pl-1"
+            asChild
+          >
+            <Link to={`/organizations/${organizationId}/edit`}>
+              Edit Organization Details
+            </Link>
+          </Button>
+        )}
       </AlertDescription>
     </Alert>
   );

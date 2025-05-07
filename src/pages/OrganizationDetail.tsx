@@ -112,7 +112,7 @@ const OrganizationDetail = () => {
           )}
         </div>
 
-        <OrganizationAdminAlert isAdmin={isOrgAdmin} />
+        <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />
         
         {/* Show organization admins */}
         {id && <OrganizationAdmins organizationId={id} />}

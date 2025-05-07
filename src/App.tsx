@@ -12,6 +12,7 @@ import Dashboard from "./pages/Dashboard";
 import ProfileEdit from "./pages/ProfileEdit";
 import Organizations from "./pages/Organizations";
 import OrganizationDetail from "./pages/OrganizationDetail";
+import OrganizationEdit from "./pages/OrganizationEdit";
 import ManageOrganizationConnections from "./pages/ManageOrganizationConnections";
 import CommunityDirectory from "./pages/CommunityDirectory";
 import CreateOrganization from "./pages/CreateOrganization";
@@ -142,6 +143,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/organizations/:id/edit" 
+        element={
+          <ProtectedRoute>
+            <OrganizationEdit />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/organizations/manage" 
         element={
           <ProtectedRoute>
@@ -160,9 +169,9 @@ const AppRoutes = () => {
       <Route 
         path="/admin" 
         element={
-          <ProtectedRoute>
+          <AdminRoute>
             <AdminDashboard />
-          </ProtectedRoute>
+          </AdminRoute>
         } 
       />
       <Route 
