@@ -10,6 +10,9 @@ import ProfileOrganizationLinks from "./ProfileOrganizationLinks";
 import ProfileFormActions from "./form/ProfileFormActions";
 import { profileSchema, ProfileFormValues } from "./schema/profileSchema";
 
+// Re-export the type for backward compatibility
+export type { ProfileFormValues } from "./schema/profileSchema";
+
 interface ProfileFormProps {
   profile: ProfileWithDetails | null;
   isSubmitting: boolean;
