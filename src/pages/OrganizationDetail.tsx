@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Organization, OrganizationWithLocation } from "@/types";
+import { Organization, OrganizationWithLocation, LocationWithDetails } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building, Link as LinkIcon, MapPin, ShieldCheck } from "lucide-react";
@@ -42,7 +42,11 @@ const OrganizationDetail = () => {
 
         // Format the location
         if (data && data.location) {
-          data.location.formatted_location = formatLocation(data.location);
+          const locationWithDetails: LocationWithDetails = {
+            ...data.location,
+            formatted_location: formatLocation(data.location)
+          };
+          data.location = locationWithDetails;
         }
 
         setOrganization(data);
@@ -104,7 +108,7 @@ const OrganizationDetail = () => {
               )}
               <div>
                 <h1 className="text-2xl font-bold">{organization.name}</h1>
-                {organization.location && (
+                {organization.location && organization.location.formatted_location && (
                   <div className="flex items-center text-sm text-gray-500 mt-1">
                     <MapPin className="h-4 w-4 mr-1" />
                     {organization.location.formatted_location}

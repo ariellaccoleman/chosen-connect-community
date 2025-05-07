@@ -1,6 +1,7 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { OrganizationAdmin, OrganizationAdminWithDetails } from '@/types';
+import { OrganizationAdmin, OrganizationAdminWithDetails, ProfileWithDetails } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 import { formatLocation } from '@/utils/formatters';
 
@@ -36,20 +37,31 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
       return data.map(admin => {
         // Format profile
         if (admin.profile) {
+          // Need to cast to ProfileWithDetails since the raw data doesn't include our extended fields
+          const profileWithDetails = admin.profile as ProfileWithDetails;
+          
           // Create full_name from first_name and last_name
-          admin.profile.full_name = [admin.profile.first_name, admin.profile.last_name]
+          profileWithDetails.full_name = [profileWithDetails.first_name, profileWithDetails.last_name]
             .filter(Boolean)
             .join(' ');
             
           // Format location if it exists
           if (admin.profile.location_id && admin.profile.location) {
-            admin.profile.location.formatted_location = formatLocation(admin.profile.location);
+            profileWithDetails.location = {
+              ...admin.profile.location,
+              formatted_location: formatLocation(admin.profile.location)
+            };
           }
+          
+          admin.profile = profileWithDetails;
         }
         
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location.formatted_location = formatLocation(admin.organization.location);
+          admin.organization.location = {
+            ...admin.organization.location,
+            formatted_location: formatLocation(admin.organization.location)
+          };
         }
         
         return admin;
@@ -87,9 +99,14 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
       return data.map(admin => {
         // Format profile
         if (admin.profile) {
-          admin.profile.full_name = [admin.profile.first_name, admin.profile.last_name]
+          // Need to cast to ProfileWithDetails since the raw data doesn't include our extended fields
+          const profileWithDetails = admin.profile as ProfileWithDetails;
+          
+          profileWithDetails.full_name = [profileWithDetails.first_name, profileWithDetails.last_name]
             .filter(Boolean)
             .join(' ');
+            
+          admin.profile = profileWithDetails;
         }
         
         return admin;
@@ -126,7 +143,10 @@ export const useUserAdminRequests = (userId: string | undefined) => {
       return data.map(admin => {
         // Format organization
         if (admin.organization && admin.organization.location) {
-          admin.organization.location.formatted_location = formatLocation(admin.organization.location);
+          admin.organization.location = {
+            ...admin.organization.location,
+            formatted_location: formatLocation(admin.organization.location)
+          };
         }
         
         return admin;
