@@ -10,6 +10,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Edit, Briefcase, Link } from "lucide-react";
 import OrganizationCard from "@/components/organizations/OrganizationCard";
+import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatLocationWithDetails } from "@/utils/adminFormatters";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,13 +20,19 @@ const Dashboard = () => {
   const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
 
-  // We don't need this useEffect anymore since we're using ProtectedRoute
-  // to handle the redirection in App.tsx
-  // useEffect(() => {
-  //   if (!loading && !user) {
-  //     navigate("/auth");
-  //   }
-  // }, [user, loading, navigate]);
+  // Format relationships to ensure they meet the ProfileOrganizationRelationshipWithDetails type
+  const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
+    // Ensure the organization and its location have the expected structure
+    const organization = {
+      ...rel.organization,
+      location: rel.organization.location ? formatLocationWithDetails(rel.organization.location) : undefined
+    };
+    
+    return {
+      ...rel,
+      organization
+    };
+  });
 
   if (isLoadingProfile) {
     return (
@@ -55,9 +64,9 @@ const Dashboard = () => {
       .toUpperCase();
   };
 
-  const currentOrgs = relationships.filter(rel => rel.connection_type === 'current');
-  const formerOrgs = relationships.filter(rel => rel.connection_type === 'former');
-  const allyOrgs = relationships.filter(rel => rel.connection_type === 'ally');
+  const currentOrgs = formattedRelationships.filter(rel => rel.connection_type === 'current');
+  const formerOrgs = formattedRelationships.filter(rel => rel.connection_type === 'former');
+  const allyOrgs = formattedRelationships.filter(rel => rel.connection_type === 'ally');
 
   return (
     <DashboardLayout>
@@ -168,7 +177,7 @@ const Dashboard = () => {
               <CardContent>
                 {isLoadingRelationships ? (
                   <p>Loading organizations...</p>
-                ) : relationships.length > 0 ? (
+                ) : formattedRelationships.length > 0 ? (
                   <div className="space-y-6">
                     {currentOrgs.length > 0 && (
                       <div>
@@ -233,12 +242,6 @@ const Dashboard = () => {
       </div>
     </DashboardLayout>
   );
-};
-
-// Helper function to format website URLs
-const formatWebsiteUrl = (url: string | null | undefined): string => {
-  if (!url) return '';
-  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
 
 export default Dashboard;

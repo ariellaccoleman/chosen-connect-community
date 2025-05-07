@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import OrganizationHeader from "./organization/OrganizationHeader";
 import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
+import { formatLocationWithDetails } from "@/utils/adminFormatters";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 interface ProfileOrganizationLinksProps {
@@ -32,12 +33,26 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   
   const { data: organizations = [], isLoading: isLoadingOrgs } = useOrganizations();
-  const { data: userRelationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
+  const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
   
   // Filter out organizations that the user already has a relationship with
   const availableOrganizations = organizations.filter(
-    org => !userRelationships.some(rel => rel.organization_id === org.id)
+    org => !relationships.some(rel => rel.organization_id === org.id)
   );
+
+  // Format relationships to ensure they meet the ProfileOrganizationRelationshipWithDetails type
+  const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
+    // Ensure the organization and its location have the expected structure
+    const organization = {
+      ...rel.organization,
+      location: rel.organization.location ? formatLocationWithDetails(rel.organization.location) : undefined
+    };
+    
+    return {
+      ...rel,
+      organization
+    };
+  });
 
   const handleAddOrganization = (data: {
     organizationId: string;
@@ -65,7 +80,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <OrganizationList
-          relationships={userRelationships as ProfileOrganizationRelationshipWithDetails[]}
+          relationships={formattedRelationships}
           isLoading={isLoadingRelationships}
           onManageClick={() => form.setValue("navigateToManageOrgs", true)}
         />

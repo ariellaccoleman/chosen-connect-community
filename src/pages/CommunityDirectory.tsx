@@ -14,8 +14,10 @@ const CommunityDirectory = () => {
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useProfiles(user?.id || "");
 
-  // Fetch all community profiles
-  const { data: profiles, isLoading } = useCommunityProfiles(searchQuery);
+  // Fetch all community profiles with proper filter object
+  const { data: profiles, isLoading } = useCommunityProfiles({ 
+    search: searchQuery 
+  });
 
   // Combine and deduplicate profiles
   const allProfiles = profiles || [];

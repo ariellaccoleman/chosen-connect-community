@@ -1,9 +1,9 @@
 
 import { Button } from "@/components/ui/button";
-import { OrganizationRelationshipWithDetails } from "@/types";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 interface OrganizationListProps {
-  relationships: OrganizationRelationshipWithDetails[];
+  relationships: ProfileOrganizationRelationshipWithDetails[];
   isLoading: boolean;
   onManageClick: () => void;
 }

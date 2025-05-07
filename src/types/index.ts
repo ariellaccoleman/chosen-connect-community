@@ -1,3 +1,4 @@
+
 export interface Location {
   id: string;
   city: string;
@@ -11,6 +12,8 @@ export interface Location {
 export interface LocationWithDetails extends Location {
   formatted_location: string;
 }
+
+export type MembershipTier = "free" | "community" | "pro" | "partner";
 
 export interface Profile {
   id: string;
@@ -29,7 +32,7 @@ export interface Profile {
   created_at?: string;
   updated_at?: string;
   is_approved?: boolean;
-  membership_tier?: string;
+  membership_tier?: MembershipTier;
 }
 
 export interface ProfileWithDetails extends Profile {

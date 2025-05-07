@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile } from '@/types';
+import { Profile, MembershipTier } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useUpdateProfile = () => {
@@ -26,9 +26,11 @@ export const useUpdateProfile = () => {
       delete cleanedProfileData.navigateToManageOrgs;
       
       // Ensure membership_tier is a valid enum value if it exists
-      if (cleanedProfileData.membership_tier && 
-          !["free", "community", "pro", "partner"].includes(cleanedProfileData.membership_tier)) {
-        cleanedProfileData.membership_tier = "free";
+      if (cleanedProfileData.membership_tier) {
+        const validTiers: MembershipTier[] = ["free", "community", "pro", "partner"];
+        if (!validTiers.includes(cleanedProfileData.membership_tier as MembershipTier)) {
+          cleanedProfileData.membership_tier = "free" as MembershipTier;
+        }
       }
       
       // First check if the profile exists
