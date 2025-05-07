@@ -38,7 +38,6 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
         // Format profile
         const profileData = admin.profile || {};
         const profileWithDetails: ProfileWithDetails = {
-          ...profileData,
           id: profileData.id || '',
           email: profileData.email || '',
           first_name: profileData.first_name || '',
@@ -51,20 +50,31 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
           website_url: profileData.website_url || null,
           role: profileData.role || 'member',
           location_id: profileData.location_id || null,
+          company: profileData.company || null,
+          created_at: profileData.created_at || '',
+          is_approved: profileData.is_approved || false,
+          membership_tier: profileData.membership_tier || 'free',
           full_name: [profileData.first_name, profileData.last_name]
             .filter(Boolean)
             .join(' ')
         };
-            
+        
+        // Handle location for profile if it exists
         if (profileData.location_id && profileData.location) {
           const locationData = profileData.location || {};
           const locationWithDetails: LocationWithDetails = {
-            ...locationData,
             id: locationData.id || '',
             city: locationData.city || '',
             region: locationData.region || '',
             country: locationData.country || '',
-            formatted_location: formatLocation(locationData)
+            full_name: locationData.full_name,
+            formatted_location: formatLocation({
+              city: locationData.city,
+              region: locationData.region,
+              country: locationData.country,
+              id: locationData.id,
+              full_name: locationData.full_name
+            })
           };
           profileWithDetails.location = locationWithDetails;
         }
@@ -75,12 +85,18 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
         if (admin.organization && admin.organization.location) {
           const locationData = admin.organization.location || {};
           const locationWithDetails: LocationWithDetails = {
-            ...locationData,
             id: locationData.id || '',
             city: locationData.city || '',
             region: locationData.region || '',
             country: locationData.country || '',
-            formatted_location: formatLocation(locationData)
+            full_name: locationData.full_name,
+            formatted_location: formatLocation({
+              city: locationData.city,
+              region: locationData.region,
+              country: locationData.country,
+              id: locationData.id,
+              full_name: locationData.full_name
+            })
           };
           admin.organization.location = locationWithDetails;
         }
@@ -121,7 +137,6 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
         // Format profile
         const profileData = admin.profile || {};
         const profileWithDetails: ProfileWithDetails = {
-          ...profileData,
           id: profileData.id || '',
           email: profileData.email || '',
           first_name: profileData.first_name || '',
@@ -134,6 +149,10 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
           website_url: profileData.website_url || null,
           role: profileData.role || 'member',
           location_id: profileData.location_id || null,
+          company: profileData.company || null,
+          created_at: profileData.created_at || '',
+          is_approved: profileData.is_approved || false,
+          membership_tier: profileData.membership_tier || 'free',
           full_name: [profileData.first_name, profileData.last_name]
             .filter(Boolean)
             .join(' ')
@@ -141,7 +160,27 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
         
         admin.profile = profileWithDetails;
         
-        return admin;
+        // Handle location for organization if it exists
+        if (admin.organization && admin.organization.location) {
+          const locationData = admin.organization.location || {};
+          const locationWithDetails: LocationWithDetails = {
+            id: locationData.id || '',
+            city: locationData.city || '',
+            region: locationData.region || '',
+            country: locationData.country || '',
+            full_name: locationData.full_name,
+            formatted_location: formatLocation({
+              city: locationData.city,
+              region: locationData.region,
+              country: locationData.country,
+              id: locationData.id,
+              full_name: locationData.full_name
+            })
+          };
+          admin.organization.location = locationWithDetails;
+        }
+        
+        return admin as OrganizationAdminWithDetails;
       });
     },
     enabled: !!organizationId,
@@ -162,7 +201,8 @@ export const useUserAdminRequests = (userId: string | undefined) => {
           organization:organizations(
             *,
             location:locations(*)
-          )
+          ),
+          profile:profiles(*)
         `)
         .eq('profile_id', userId)
         .order('created_at', { ascending: false });
@@ -173,21 +213,53 @@ export const useUserAdminRequests = (userId: string | undefined) => {
       }
       
       return data.map(admin => {
+        // Create profile with details
+        const profileData = admin.profile || {};
+        const profileWithDetails: ProfileWithDetails = {
+          id: profileData.id || '',
+          email: profileData.email || '',
+          first_name: profileData.first_name || '',
+          last_name: profileData.last_name || '',
+          avatar_url: profileData.avatar_url || null,
+          headline: profileData.headline || null,
+          bio: profileData.bio || null,
+          linkedin_url: profileData.linkedin_url || null,
+          twitter_url: profileData.twitter_url || null,
+          website_url: profileData.website_url || null,
+          role: profileData.role || 'member',
+          location_id: profileData.location_id || null,
+          company: profileData.company || null,
+          created_at: profileData.created_at || '',
+          is_approved: profileData.is_approved || false,
+          membership_tier: profileData.membership_tier || 'free',
+          full_name: [profileData.first_name, profileData.last_name]
+            .filter(Boolean)
+            .join(' ')
+        };
+        
+        admin.profile = profileWithDetails;
+
         // Format organization
         if (admin.organization && admin.organization.location) {
           const locationData = admin.organization.location || {};
           const locationWithDetails: LocationWithDetails = {
-            ...locationData,
             id: locationData.id || '',
             city: locationData.city || '',
             region: locationData.region || '',
             country: locationData.country || '',
-            formatted_location: formatLocation(locationData)
+            full_name: locationData.full_name,
+            formatted_location: formatLocation({
+              city: locationData.city,
+              region: locationData.region,
+              country: locationData.country,
+              id: locationData.id,
+              full_name: locationData.full_name
+            })
           };
           admin.organization.location = locationWithDetails;
         }
         
-        return admin;
+        return admin as OrganizationAdminWithDetails;
       });
     },
     enabled: !!userId,

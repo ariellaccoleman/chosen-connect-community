@@ -1,60 +1,65 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { ProfileWithDetails } from "@/types";
+import { ProfileWithDetails, LocationWithDetails } from "@/types";
+import { formatLocation } from "@/utils/formatters";
 
-export const useCommunityProfiles = (searchQuery: string = "") => {
+export const useCommunityProfiles = (filters: {
+  search?: string;
+  limit?: number;
+  excludeId?: string;
+}) => {
   return useQuery({
-    queryKey: ["community-profiles", searchQuery],
+    queryKey: ["community-profiles", filters],
     queryFn: async () => {
-      console.log("Fetching community profiles with search:", searchQuery);
-      
       let query = supabase
         .from("profiles")
-        .select(`
-          *,
-          location:locations(*)
-        `);
+        .select(
+          `*,
+          location:locations(*)`
+        )
+        .eq("is_approved", true);
 
-      // Apply search filter if query exists
-      if (searchQuery) {
+      if (filters.search) {
         query = query.or(
-          `first_name.ilike.%${searchQuery}%,last_name.ilike.%${searchQuery}%,headline.ilike.%${searchQuery}%,bio.ilike.%${searchQuery}%`
+          `first_name.ilike.%${filters.search}%,last_name.ilike.%${filters.search}%,headline.ilike.%${filters.search}%`
         );
       }
 
-      const { data, error } = await query.order("first_name");
+      if (filters.excludeId) {
+        query = query.neq("id", filters.excludeId);
+      }
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("Error fetching profiles:", error);
         throw error;
       }
 
-      // Ensure data is an array, even if it's null or undefined
-      const profiles = data || [];
-      
-      console.log("Found profiles:", profiles.length);
-      
-      return profiles.map((profile: ProfileWithDetails) => {
-        // Format full name
-        profile.full_name = [profile.first_name, profile.last_name]
-          .filter(Boolean)
-          .join(" ");
+      // Map to ProfileWithDetails format and add formatted fields
+      return (data || []).map((profile) => {
+        // Create the formatted profile with all required fields
+        const profileWithDetails: ProfileWithDetails = {
+          ...profile,
+          full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+        };
 
-        // Format location if available
-        if (profile.location) {
-          profile.location.formatted_location = [
-            profile.location.city,
-            profile.location.region,
-            profile.location.country,
-          ]
-            .filter(Boolean)
-            .join(", ");
+        if (profile.location_id && profile.location) {
+          // Format the location data
+          const locationWithDetails: LocationWithDetails = {
+            ...profile.location,
+            formatted_location: formatLocation(profile.location)
+          };
+          profileWithDetails.location = locationWithDetails;
         }
 
-        return profile;
+        return profileWithDetails;
       });
     },
-    refetchOnWindowFocus: false,
   });
 };

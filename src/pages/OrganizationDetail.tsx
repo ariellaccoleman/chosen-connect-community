@@ -7,7 +7,7 @@ import { OrganizationWithLocation, LocationWithDetails } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building, Link as LinkIcon, MapPin, ShieldCheck } from "lucide-react";
-import { formatLocation } from "@/utils/formatters";
+import { formatLocation, formatWebsiteUrl } from "@/utils/formatters";
 import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import RequestAdminAccessButton from "@/components/organizations/RequestAdminAccessButton";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";

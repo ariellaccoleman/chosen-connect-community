@@ -1,3 +1,4 @@
+
 export interface Location {
   id: string;
   city: string;
@@ -23,6 +24,10 @@ export interface Profile {
   website_url: string | null;
   role: "admin" | "member";
   location_id: string | null;
+  company?: string | null;
+  created_at?: string;
+  is_approved?: boolean;
+  membership_tier?: string;
 }
 
 export interface ProfileWithDetails extends Profile {
@@ -56,6 +61,11 @@ export interface ProfileOrganizationRelationship {
   created_at: string;
 }
 
+// Define the type being used in the components
+export interface OrganizationRelationshipWithDetails extends ProfileOrganizationRelationship {
+  organization: OrganizationWithLocation;
+}
+
 export interface ProfileOrganizationRelationshipWithDetails extends ProfileOrganizationRelationship {
   organization: OrganizationWithLocation;
 }
@@ -67,6 +77,7 @@ export interface OrganizationAdmin {
   role: string;
   is_approved: boolean;
   created_at: string;
+  can_edit_profile?: boolean;
 }
 
 export interface OrganizationAdminWithDetails extends OrganizationAdmin {
