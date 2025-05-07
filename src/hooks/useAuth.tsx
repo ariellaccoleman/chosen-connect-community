@@ -52,7 +52,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           data: {
             first_name: firstName,
             last_name: lastName
-          }
+          },
+          emailRedirectTo: `${window.location.origin}/auth` // Use the dynamic origin for redirect
         }
       });
       

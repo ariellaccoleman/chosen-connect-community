@@ -2,7 +2,9 @@
 // This is an edge function that will be triggered when a new user is created
 // It will create a profile record with first_name and last_name from the user metadata
 
+// @ts-ignore: Deno-specific import
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore: Deno-specific import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.8.0";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
