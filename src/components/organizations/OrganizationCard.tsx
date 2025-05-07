@@ -24,7 +24,12 @@ const OrganizationCard = ({
   if (!relationship.organization) return null;
   
   const organization = relationship.organization;
-  const { data: isAdmin = false } = useIsOrganizationAdmin(user?.id, organization.id);
+  
+  // Force a query with both parameters defined to ensure we get the correct result
+  const { data: isAdmin = false } = useIsOrganizationAdmin(
+    user?.id || '',
+    organization.id || ''
+  );
   
   const orgInitials = organization.name
     .split(' ')

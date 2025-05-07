@@ -60,7 +60,11 @@ const OrganizationItem = ({ relationship, userId, onManageClick }: OrganizationI
   const org = relationship.organization;
   if (!org) return null;
   
-  const { data: isAdmin = false } = useIsOrganizationAdmin(userId, org.id);
+  // Force a query with both parameters defined to ensure we get the correct result
+  const { data: isAdmin = false } = useIsOrganizationAdmin(
+    userId || '', 
+    org.id || ''
+  );
   
   return (
     <div className="flex flex-col p-4 border rounded-md space-y-3">
