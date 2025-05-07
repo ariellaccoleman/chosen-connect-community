@@ -60,3 +60,18 @@ export type ProfileWithDetails = Profile & {
   full_name?: string;
   organizations?: OrganizationRelationshipWithDetails[];
 };
+
+export type OrganizationAdmin = {
+  id: string;
+  profile_id: string | null;
+  organization_id: string | null;
+  role: string | null;
+  is_approved: boolean | null;
+  can_edit_profile: boolean | null;
+  created_at: string | null;
+};
+
+export type OrganizationAdminWithDetails = OrganizationAdmin & {
+  profile?: ProfileWithDetails | null;
+  organization?: OrganizationWithLocation | null;
+};

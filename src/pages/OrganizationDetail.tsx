@@ -1,182 +1,68 @@
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { useAddOrganizationRelationship, useUserOrganizationRelationships } from "@/hooks/useOrganizations";
+import { supabase } from "@/integrations/supabase/client";
+import { Organization, OrganizationWithLocation } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Briefcase, Link, Plus, User, Users } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { OrganizationWithLocation, ProfileWithDetails } from "@/types";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { ArrowLeft, Building, Link as LinkIcon, MapPin, ShieldCheck } from "lucide-react";
+import { formatLocation } from "@/utils/formatters";
+import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
+import RequestAdminAccessButton from "@/components/organizations/RequestAdminAccessButton";
+import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isConnectionDialogOpen, setIsConnectionDialogOpen] = useState(false);
-  const [connectionType, setConnectionType] = useState<"current" | "former" | "ally">("current");
-  const [department, setDepartment] = useState("");
-  const [notes, setNotes] = useState("");
-  
-  const { data: organization, isLoading } = useQuery({
-    queryKey: ['organization', id],
-    queryFn: async () => {
-      if (!id) return null;
-      
-      const { data, error } = await supabase
-        .from('organizations')
-        .select(`
-          *,
-          location:locations(*)
-        `)
-        .eq('id', id)
-        .single();
-      
-      if (error) {
-        console.error('Error fetching organization:', error);
-        return null;
-      }
-      
-      if (!data) return null;
-      
-      // Format location if available
-      if (data.location) {
-        const location = data.location;
-        return {
-          ...data,
-          location: {
-            ...location,
-            formatted_location: [location.city, location.region, location.country]
-              .filter(Boolean)
-              .join(', ')
-          }
-        } as OrganizationWithLocation;
-      }
-      
-      return data as OrganizationWithLocation;
-    },
-    enabled: !!id,
-  });
+  const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
 
-  // Query to get all community members associated with this organization
-  const { data: communityMembers = [], isLoading: isLoadingMembers } = useQuery({
-    queryKey: ['organization-members', id],
-    queryFn: async () => {
-      if (!id) return [];
-      
-      const { data, error } = await supabase
-        .from('org_relationships')
-        .select(`
-          *,
-          profile:profiles(
+  useEffect(() => {
+    const fetchOrganization = async () => {
+      if (!id) return;
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("organizations")
+          .select(`
             *,
             location:locations(*)
-          )
-        `)
-        .eq('organization_id', id);
-      
-      if (error) {
-        console.error('Error fetching organization members:', error);
-        return [];
-      }
+          `)
+          .eq("id", id)
+          .single();
 
-      // Format the profiles for display
-      return data.map(relationship => {
-        // Ensure profile exists
-        if (!relationship.profile) return relationship;
-        
-        const profile = relationship.profile as ProfileWithDetails;
-        
-        // Add full_name to profile - make sure this is explicitly set
-        profile.full_name = [profile.first_name, profile.last_name]
-          .filter(Boolean)
-          .join(' ');
-        
-        // Format location if available
-        if (profile.location) {
-          profile.location.formatted_location = [
-            profile.location.city,
-            profile.location.region,
-            profile.location.country
-          ]
-            .filter(Boolean)
-            .join(', ');
+        if (error) {
+          throw error;
         }
-        
-        return {
-          ...relationship,
-          profile
-        };
-      }).filter(item => item.profile); // Only include items that have profiles
-    },
-    enabled: !!id,
-  });
-  
-  const { data: userRelationships = [] } = useUserOrganizationRelationships(user?.id);
-  const addRelationship = useAddOrganizationRelationship();
-  
-  // Check if user already has a relationship with this organization
-  const existingRelationship = userRelationships.find(
-    (rel) => rel.organization?.id === id
-  );
 
-  const handleAddRelationship = async () => {
-    if (!user?.id || !id) return;
-    
-    try {
-      await addRelationship.mutateAsync({
-        profile_id: user.id,
-        organization_id: id,
-        connection_type: connectionType,
-        department: department || null,
-        notes: notes || null
-      });
-      
-      setIsConnectionDialogOpen(false);
-      // Clear form
-      setConnectionType("current");
-      setDepartment("");
-      setNotes("");
-    } catch (error) {
-      console.error("Error adding relationship:", error);
-    }
-  };
+        // Format the location
+        if (data && data.location) {
+          data.location.formatted_location = formatLocation(data.location);
+        }
 
-  const orgInitials = organization?.name
-    ? organization.name
-        .split(' ')
-        .map(word => word[0])
-        .join('')
-        .substring(0, 2)
-        .toUpperCase()
-    : "??";
+        setOrganization(data);
+      } catch (error) {
+        console.error("Error fetching organization:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  if (isLoading) {
+    fetchOrganization();
+  }, [id]);
+
+  if (loading) {
     return (
       <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <p>Loading organization details...</p>
+        <div className="container mx-auto py-6 max-w-3xl">
+          <div className="flex justify-center items-center h-64">
+            <p>Loading organization...</p>
+          </div>
         </div>
       </DashboardLayout>
     );
@@ -185,19 +71,9 @@ const OrganizationDetail = () => {
   if (!organization) {
     return (
       <DashboardLayout>
-        <div className="container mx-auto py-6">
-          <Button variant="ghost" onClick={() => navigate("/organizations")} className="mb-6">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Organizations
-          </Button>
-          <div className="text-center py-12">
-            <p className="text-lg text-gray-600">Organization not found</p>
-            <Button 
-              onClick={() => navigate("/organizations")} 
-              className="mt-4 bg-chosen-blue"
-            >
-              View All Organizations
-            </Button>
+        <div className="container mx-auto py-6 max-w-3xl">
+          <div className="flex justify-center items-center h-64">
+            <p>Organization not found</p>
           </div>
         </div>
       </DashboardLayout>
@@ -206,235 +82,84 @@ const OrganizationDetail = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-5xl">
+      <div className="container mx-auto py-6 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate("/organizations")} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Organizations
         </Button>
-        
-        <div className="flex flex-col md:flex-row gap-8">
-          <div className="md:w-1/3">
-            <Card>
-              <CardContent className="pt-6">
-                <div className="flex flex-col items-center">
-                  <Avatar className="h-32 w-32 mb-4">
-                    <AvatarImage src={organization.logo_url || organization.logo_api_url || ""} />
-                    <AvatarFallback className="bg-chosen-blue text-white text-3xl">
-                      {orgInitials}
-                    </AvatarFallback>
-                  </Avatar>
-                  <h1 className="text-2xl font-bold text-center">{organization.name}</h1>
-                  {organization.location && (
-                    <p className="text-gray-500 text-center mt-1">
-                      {organization.location.formatted_location}
-                    </p>
-                  )}
-                  
-                  {!existingRelationship && user && (
-                    <Button 
-                      className="mt-6 w-full bg-chosen-blue"
-                      onClick={() => setIsConnectionDialogOpen(true)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Connect with this Organization
-                    </Button>
-                  )}
-                  
-                  {existingRelationship && (
-                    <div className="mt-6 p-4 bg-green-50 rounded-md border border-green-200 w-full">
-                      <p className="text-green-800 text-sm font-medium flex items-center">
-                        <Briefcase className="h-4 w-4 mr-2" />
-                        You're connected to this organization
-                      </p>
-                      <p className="text-green-700 text-xs mt-1">
-                        {existingRelationship.connection_type === 'current' && 'Current member'}
-                        {existingRelationship.connection_type === 'former' && 'Former member'}
-                        {existingRelationship.connection_type === 'ally' && 'Allied organization'}
-                      </p>
-                      <Button 
-                        className="mt-3 w-full" 
-                        size="sm" 
-                        variant="outline"
-                        onClick={() => navigate('/organizations/manage')}
-                      >
-                        Manage Connection
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {organization.website_url && (
-                    <a 
-                      href={organization.website_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="mt-4 flex items-center text-chosen-blue hover:text-chosen-navy"
-                    >
-                      <Link className="mr-2 h-4 w-4" />
-                      Visit Website
-                    </a>
-                  )}
+
+        <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
+          <div className="flex items-start justify-between mb-4">
+            <div className="flex items-center gap-4">
+              {organization.logo_url ? (
+                <img
+                  src={organization.logo_url}
+                  alt={organization.name}
+                  className="h-16 w-16 rounded-md object-contain bg-gray-50"
+                />
+              ) : (
+                <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center">
+                  <Building className="h-8 w-8 text-gray-400" />
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <div className="md:w-2/3">
-            <Card>
-              <CardHeader>
-                <CardTitle>About {organization.name}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {organization.description ? (
-                  <p className="whitespace-pre-wrap">{organization.description}</p>
-                ) : (
-                  <p className="text-gray-500 italic">No description available</p>
+              )}
+              <div>
+                <h1 className="text-2xl font-bold">{organization.name}</h1>
+                {organization.location && (
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    {organization.location.formatted_location}
+                  </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
             
-            {/* Community members section */}
-            <Card className="mt-8">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle className="flex items-center">
-                      <Users className="mr-2 h-5 w-5" />
-                      Community Members
-                    </CardTitle>
-                    <CardDescription>People connected to this organization</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {isLoadingMembers ? (
-                  <div className="text-center py-4">Loading community members...</div>
-                ) : communityMembers.length > 0 ? (
-                  <div className="space-y-4">
-                    {communityMembers.map((relationship) => {
-                      // Ensure we have a profile and it has name properties before accessing
-                      const profile = relationship.profile as ProfileWithDetails;
-                      const profileName = profile ? 
-                        // Create name on the fly if full_name somehow doesn't exist
-                        profile.full_name || [profile.first_name, profile.last_name].filter(Boolean).join(' ') : 
-                        'Unknown Member';
-                        
-                      // Get initials safely
-                      const firstInitial = profile?.first_name?.[0] || '';
-                      const lastInitial = profile?.last_name?.[0] || '';
-                      const initials = (firstInitial + lastInitial) || '??';
-                      
-                      return (
-                        <div key={relationship.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <Avatar>
-                            <AvatarImage src={profile?.avatar_url || ""} />
-                            <AvatarFallback className="bg-chosen-blue text-white">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <div className="flex items-center justify-between">
-                              <div>
-                                <p className="font-medium">{profileName}</p>
-                                {profile?.headline && (
-                                  <p className="text-sm text-gray-500">{profile.headline}</p>
-                                )}
-                              </div>
-                              <span className={`text-xs px-2 py-1 rounded-full ${
-                                relationship.connection_type === 'current' ? 'bg-blue-100 text-blue-800' :
-                                relationship.connection_type === 'former' ? 'bg-gray-100 text-gray-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                                {relationship.connection_type === 'current' ? 'Current' :
-                                 relationship.connection_type === 'former' ? 'Former' : 'Ally'}
-                              </span>
-                            </div>
-                            {relationship.department && (
-                              <p className="text-xs mt-1 flex items-center text-gray-600">
-                                <Briefcase className="h-3 w-3 mr-1" />
-                                {relationship.department}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <Alert className="bg-gray-50 border-gray-200">
-                    <User className="h-4 w-4" />
-                    <AlertTitle>No connected members</AlertTitle>
-                    <AlertDescription>
-                      This organization doesn't have any connected community members yet.
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+            {user && id && (
+              <RequestAdminAccessButton 
+                organizationId={id} 
+                organizationName={organization.name} 
+              />
+            )}
           </div>
-        </div>
-      </div>
-      
-      {/* Connection Dialog */}
-      <Dialog open={isConnectionDialogOpen} onOpenChange={setIsConnectionDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Connect with {organization.name}</DialogTitle>
-            <DialogDescription>
-              Establish your relationship with this organization
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="connection-type">Connection Type</Label>
-              <Select 
-                value={connectionType} 
-                onValueChange={(value: "current" | "former" | "ally") => setConnectionType(value)}
+
+          {isOrgAdmin && (
+            <Alert className="mb-6 bg-blue-50 border-blue-200">
+              <ShieldCheck className="h-4 w-4 text-blue-500" />
+              <AlertTitle>Organization Admin</AlertTitle>
+              <AlertDescription>
+                You have admin access to this organization.
+                <Button variant="link" className="p-0 h-auto text-blue-600 pl-1">
+                  Edit Organization Details
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {organization.description && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-2">About</h2>
+              <p className="text-gray-700">{organization.description}</p>
+            </div>
+          )}
+
+          {organization.website_url && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold mb-2">Website</h2>
+              <a
+                href={organization.website_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:underline flex items-center"
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select connection type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current Member</SelectItem>
-                  <SelectItem value="former">Former Member</SelectItem>
-                  <SelectItem value="ally">Allied Organization</SelectItem>
-                </SelectContent>
-              </Select>
+                <LinkIcon className="h-4 w-4 mr-2" />
+                {organization.website_url}
+              </a>
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="department">Department (Optional)</Label>
-              <Input 
-                id="department" 
-                placeholder="e.g., Marketing, Engineering" 
-                value={department} 
-                onChange={(e) => setDepartment(e.target.value)} 
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea 
-                id="notes" 
-                placeholder="Any additional details about your connection"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConnectionDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              className="bg-chosen-blue" 
-              onClick={handleAddRelationship}
-              disabled={addRelationship.isPending}
-            >
-              {addRelationship.isPending ? "Saving..." : "Save Connection"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          )}
+        </div>
+        
+        {/* Show organization admins */}
+        {id && <OrganizationAdmins organizationId={id} />}
+      </div>
     </DashboardLayout>
   );
 };

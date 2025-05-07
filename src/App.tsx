@@ -18,6 +18,7 @@ import CreateOrganization from "./pages/CreateOrganization";
 import TestDataGenerator from "./pages/TestDataGenerator";
 import About from "./pages/About";
 import CommunityGuide from "./components/community-guide/CommunityGuide";
+import AdminDashboard from "./pages/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,29 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   // If authenticated, show the protected content
+  return <>{children}</>;
+};
+
+// Component that checks if user is admin and redirects accordingly
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading } = useAuth();
+
+  // While checking authentication status, show nothing
+  if (loading) {
+    return null;
+  }
+
+  // If not authenticated, redirect to auth page
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // If not admin, redirect to dashboard
+  if (!user.user_metadata?.role === "admin") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // If authenticated and admin, show the protected content
   return <>{children}</>;
 };
 
@@ -130,6 +154,14 @@ const AppRoutes = () => {
         element={
           <ProtectedRoute>
             <CommunityDirectory />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin" 
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
           </ProtectedRoute>
         } 
       />
