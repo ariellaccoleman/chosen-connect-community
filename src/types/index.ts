@@ -1,11 +1,12 @@
 
-
 export interface Location {
   id: string;
   city: string;
   region: string;
   country: string;
   full_name?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface LocationWithDetails extends Location {
@@ -27,6 +28,7 @@ export interface Profile {
   location_id: string | null;
   company?: string | null;
   created_at?: string;
+  updated_at?: string;
   is_approved?: boolean;
   membership_tier?: string;
 }
@@ -44,8 +46,9 @@ export interface Organization {
   logo_url: string | null;
   logo_api_url: string | null;
   created_at: string;
-  updated_at?: string; // Making updated_at optional to match actual data
+  updated_at?: string; 
   location_id: string | null;
+  is_verified?: boolean | null;
 }
 
 export interface OrganizationWithLocation extends Organization {
@@ -60,6 +63,7 @@ export interface ProfileOrganizationRelationship {
   department: string | null;
   notes: string | null;
   created_at: string;
+  updated_at?: string;
 }
 
 // Define the type being used in the components
@@ -78,6 +82,7 @@ export interface OrganizationAdmin {
   role: string;
   is_approved: boolean;
   created_at: string;
+  updated_at?: string;
   can_edit_profile?: boolean;
 }
 
@@ -90,4 +95,3 @@ export interface SupabaseListResult<T> {
   data: T[] | null;
   error: any;
 }
-

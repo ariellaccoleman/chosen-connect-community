@@ -18,6 +18,7 @@ export type Database = {
           is_public: boolean | null
           name: string | null
           tag_id: string | null
+          updated_at: string | null
         }
         Insert: {
           channel_type?: Database["public"]["Enums"]["chat_channel_type"] | null
@@ -27,6 +28,7 @@ export type Database = {
           is_public?: boolean | null
           name?: string | null
           tag_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           channel_type?: Database["public"]["Enums"]["chat_channel_type"] | null
@@ -36,6 +38,7 @@ export type Database = {
           is_public?: boolean | null
           name?: string | null
           tag_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -61,6 +64,7 @@ export type Database = {
           id: string
           message: string | null
           parent_id: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
@@ -69,6 +73,7 @@ export type Database = {
           id?: string
           message?: string | null
           parent_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
@@ -77,6 +82,7 @@ export type Database = {
           id?: string
           message?: string | null
           parent_id?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -108,18 +114,21 @@ export type Database = {
           channel_id: string | null
           id: string
           joined_at: string | null
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
           channel_id?: string | null
           id?: string
           joined_at?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           channel_id?: string | null
           id?: string
           joined_at?: string | null
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -144,18 +153,21 @@ export type Database = {
           created_at: string | null
           event_id: string | null
           id: string
+          updated_at: string | null
           user_id: string | null
         }
         Insert: {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Update: {
           created_at?: string | null
           event_id?: string | null
           id?: string
+          updated_at?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -186,6 +198,7 @@ export type Database = {
           start_time: string | null
           tag_id: string | null
           title: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -197,6 +210,7 @@ export type Database = {
           start_time?: string | null
           tag_id?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -208,6 +222,7 @@ export type Database = {
           start_time?: string | null
           tag_id?: string | null
           title?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -235,16 +250,22 @@ export type Database = {
       }
       feature_flags: {
         Row: {
+          created_at: string | null
           enabled: boolean | null
           key: string
+          updated_at: string | null
         }
         Insert: {
+          created_at?: string | null
           enabled?: boolean | null
           key: string
+          updated_at?: string | null
         }
         Update: {
+          created_at?: string | null
           enabled?: boolean | null
           key?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -257,6 +278,7 @@ export type Database = {
           is_public: boolean | null
           slug: string
           title: string
+          updated_at: string | null
         }
         Insert: {
           author_id?: string | null
@@ -266,6 +288,7 @@ export type Database = {
           is_public?: boolean | null
           slug: string
           title: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string | null
@@ -275,6 +298,7 @@ export type Database = {
           is_public?: boolean | null
           slug?: string
           title?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -292,18 +316,21 @@ export type Database = {
           id: string
           is_featured: boolean | null
           tag_id: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           id?: string
           is_featured?: boolean | null
           tag_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           id?: string
           is_featured?: boolean | null
           tag_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -319,23 +346,29 @@ export type Database = {
         Row: {
           city: string | null
           country: string | null
+          created_at: string | null
           full_name: string | null
           id: string
           region: string | null
+          updated_at: string | null
         }
         Insert: {
           city?: string | null
           country?: string | null
+          created_at?: string | null
           full_name?: string | null
           id?: string
           region?: string | null
+          updated_at?: string | null
         }
         Update: {
           city?: string | null
           country?: string | null
+          created_at?: string | null
           full_name?: string | null
           id?: string
           region?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -350,6 +383,7 @@ export type Database = {
           notes: string | null
           organization_id: string | null
           profile_id: string | null
+          updated_at: string | null
         }
         Insert: {
           connection_type?:
@@ -361,6 +395,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string | null
           profile_id?: string | null
+          updated_at?: string | null
         }
         Update: {
           connection_type?:
@@ -372,6 +407,7 @@ export type Database = {
           notes?: string | null
           organization_id?: string | null
           profile_id?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -399,6 +435,7 @@ export type Database = {
           organization_id: string | null
           profile_id: string | null
           role: string | null
+          updated_at: string | null
         }
         Insert: {
           can_edit_profile?: boolean | null
@@ -408,6 +445,7 @@ export type Database = {
           organization_id?: string | null
           profile_id?: string | null
           role?: string | null
+          updated_at?: string | null
         }
         Update: {
           can_edit_profile?: boolean | null
@@ -417,6 +455,7 @@ export type Database = {
           organization_id?: string | null
           profile_id?: string | null
           role?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -445,6 +484,7 @@ export type Database = {
           logo_api_url: string | null
           logo_url: string | null
           name: string
+          updated_at: string | null
           website_url: string | null
         }
         Insert: {
@@ -456,6 +496,7 @@ export type Database = {
           logo_api_url?: string | null
           logo_url?: string | null
           name: string
+          updated_at?: string | null
           website_url?: string | null
         }
         Update: {
@@ -467,6 +508,7 @@ export type Database = {
           logo_api_url?: string | null
           logo_url?: string | null
           name?: string
+          updated_at?: string | null
           website_url?: string | null
         }
         Relationships: [
@@ -496,6 +538,7 @@ export type Database = {
           membership_tier: Database["public"]["Enums"]["pricing_tier"] | null
           role: string
           twitter_url: string | null
+          updated_at: string | null
           website_url: string | null
         }
         Insert: {
@@ -514,6 +557,7 @@ export type Database = {
           membership_tier?: Database["public"]["Enums"]["pricing_tier"] | null
           role?: string
           twitter_url?: string | null
+          updated_at?: string | null
           website_url?: string | null
         }
         Update: {
@@ -532,6 +576,7 @@ export type Database = {
           membership_tier?: Database["public"]["Enums"]["pricing_tier"] | null
           role?: string
           twitter_url?: string | null
+          updated_at?: string | null
           website_url?: string | null
         }
         Relationships: [
@@ -551,6 +596,7 @@ export type Database = {
           tag_id: string | null
           target_id: string
           target_type: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -558,6 +604,7 @@ export type Database = {
           tag_id?: string | null
           target_id: string
           target_type?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -565,6 +612,7 @@ export type Database = {
           tag_id?: string | null
           target_id?: string
           target_type?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {
@@ -585,6 +633,7 @@ export type Database = {
           is_public: boolean | null
           name: string
           type: string | null
+          updated_at: string | null
         }
         Insert: {
           created_at?: string | null
@@ -594,6 +643,7 @@ export type Database = {
           is_public?: boolean | null
           name: string
           type?: string | null
+          updated_at?: string | null
         }
         Update: {
           created_at?: string | null
@@ -603,6 +653,7 @@ export type Database = {
           is_public?: boolean | null
           name?: string
           type?: string | null
+          updated_at?: string | null
         }
         Relationships: [
           {

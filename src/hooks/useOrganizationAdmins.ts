@@ -1,8 +1,113 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationAdmin, OrganizationAdminWithDetails, ProfileWithDetails, Location, LocationWithDetails, OrganizationWithLocation } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 import { formatLocation } from '@/utils/formatters';
+
+// Helper function to ensure type safety when accessing object properties
+const safeGet = <T, K extends keyof T>(obj: T | null | undefined, key: K): T[K] | undefined => {
+  if (!obj) return undefined;
+  return obj[key];
+};
+
+// Helper function to create a ProfileWithDetails from response data
+const createProfileWithDetails = (profileData: any): ProfileWithDetails => {
+  if (!profileData) {
+    // Return a minimal valid ProfileWithDetails when no data is provided
+    return {
+      id: '',
+      email: '',
+      first_name: '',
+      last_name: '',
+      avatar_url: null,
+      headline: null,
+      bio: null,
+      linkedin_url: null,
+      twitter_url: null,
+      website_url: null,
+      role: 'member',
+      location_id: null,
+      full_name: ''
+    };
+  }
+  
+  return {
+    id: profileData.id || '',
+    email: profileData.email || '',
+    first_name: profileData.first_name || '',
+    last_name: profileData.last_name || '',
+    avatar_url: profileData.avatar_url,
+    headline: profileData.headline,
+    bio: profileData.bio,
+    linkedin_url: profileData.linkedin_url,
+    twitter_url: profileData.twitter_url,
+    website_url: profileData.website_url,
+    role: (profileData.role as "admin" | "member") || 'member',
+    location_id: profileData.location_id,
+    company: profileData.company,
+    created_at: profileData.created_at,
+    updated_at: profileData.updated_at,
+    is_approved: profileData.is_approved,
+    membership_tier: profileData.membership_tier,
+    full_name: [profileData.first_name, profileData.last_name]
+      .filter(Boolean)
+      .join(' ')
+  };
+};
+
+// Helper function to create LocationWithDetails
+const createLocationWithDetails = (locationData: any): LocationWithDetails | undefined => {
+  if (!locationData) return undefined;
+  
+  return {
+    id: locationData.id || '',
+    city: locationData.city || '',
+    region: locationData.region || '',
+    country: locationData.country || '',
+    full_name: locationData.full_name || '',
+    created_at: locationData.created_at,
+    updated_at: locationData.updated_at,
+    formatted_location: formatLocation({
+      city: locationData.city || '',
+      region: locationData.region || '',
+      country: locationData.country || '',
+      id: locationData.id || '',
+      full_name: locationData.full_name
+    })
+  };
+};
+
+// Helper function to create organization with location
+const createOrganizationWithLocation = (organizationData: any): OrganizationWithLocation => {
+  if (!organizationData) {
+    // Return minimal valid organization when no data is provided
+    return {
+      id: '',
+      name: '',
+      description: null,
+      website_url: null,
+      logo_url: null,
+      logo_api_url: null,
+      created_at: '',
+      updated_at: '',
+      location_id: null,
+      location: undefined
+    };
+  }
+  
+  const org: OrganizationWithLocation = {
+    ...organizationData,
+    location: undefined
+  };
+  
+  // Add location if it exists
+  if (organizationData.location) {
+    org.location = createLocationWithDetails(organizationData.location);
+  }
+  
+  return org;
+};
 
 // Fetch all organization admin requests (for site admins)
 export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved' | 'all' } = {}) => {
@@ -33,88 +138,19 @@ export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved'
         return [];
       }
       
-      return data.map(admin => {
-        // Format profile
-        const profileData = admin.profile || {};
-        const profileWithDetails: ProfileWithDetails = {
-          id: profileData.id || '',
-          email: profileData.email || '',
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          avatar_url: profileData.avatar_url || null,
-          headline: profileData.headline || null,
-          bio: profileData.bio || null,
-          linkedin_url: profileData.linkedin_url || null,
-          twitter_url: profileData.twitter_url || null,
-          website_url: profileData.website_url || null,
-          role: profileData.role || 'member',
-          location_id: profileData.location_id || null,
-          company: profileData.company || null,
-          created_at: profileData.created_at || '',
-          is_approved: profileData.is_approved || false,
-          membership_tier: profileData.membership_tier || 'free',
-          full_name: [profileData.first_name, profileData.last_name]
-            .filter(Boolean)
-            .join(' ')
-        };
-        
-        // Handle location for profile if it exists
-        if (profileData.location_id && profileData.location) {
-          const locationData = profileData.location || {};
-          const locationWithDetails: LocationWithDetails = {
-            id: locationData.id || '',
-            city: locationData.city || '',
-            region: locationData.region || '',
-            country: locationData.country || '',
-            full_name: locationData.full_name || '',
-            formatted_location: formatLocation({
-              city: locationData.city || '',
-              region: locationData.region || '',
-              country: locationData.country || '',
-              id: locationData.id || '',
-              full_name: locationData.full_name
-            })
-          };
-          profileWithDetails.location = locationWithDetails;
-        }
-        
-        // Handle organization
-        let organizationWithLocation: OrganizationWithLocation = {
-          ...admin.organization,
-          location: undefined
-        };
-        
-        // Format organization location
-        if (admin.organization && admin.organization.location) {
-          const locationData = admin.organization.location || {};
-          const locationWithDetails: LocationWithDetails = {
-            id: locationData.id || '',
-            city: locationData.city || '',
-            region: locationData.region || '',
-            country: locationData.country || '',
-            full_name: locationData.full_name || '',
-            formatted_location: formatLocation({
-              city: locationData.city || '',
-              region: locationData.region || '',
-              country: locationData.country || '',
-              id: locationData.id || '',
-              full_name: locationData.full_name
-            })
-          };
-          organizationWithLocation.location = locationWithDetails;
-        }
-        
+      return (data || []).map(admin => {
         // Create the admin details
         const adminWithDetails: OrganizationAdminWithDetails = {
           id: admin.id,
           profile_id: admin.profile_id,
           organization_id: admin.organization_id,
-          role: admin.role,
-          is_approved: admin.is_approved,
-          created_at: admin.created_at,
+          role: admin.role || '',
+          is_approved: admin.is_approved || false,
+          created_at: admin.created_at || '',
+          updated_at: admin.updated_at,
           can_edit_profile: admin.can_edit_profile,
-          profile: profileWithDetails,
-          organization: organizationWithLocation
+          profile: createProfileWithDetails(admin.profile),
+          organization: createOrganizationWithLocation(admin.organization)
         };
         
         return adminWithDetails;
@@ -149,68 +185,19 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
         return [];
       }
       
-      return data.map(admin => {
-        // Format profile
-        const profileData = admin.profile || {};
-        const profileWithDetails: ProfileWithDetails = {
-          id: profileData.id || '',
-          email: profileData.email || '',
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          avatar_url: profileData.avatar_url || null,
-          headline: profileData.headline || null,
-          bio: profileData.bio || null,
-          linkedin_url: profileData.linkedin_url || null,
-          twitter_url: profileData.twitter_url || null,
-          website_url: profileData.website_url || null,
-          role: profileData.role || 'member',
-          location_id: profileData.location_id || null,
-          company: profileData.company || null,
-          created_at: profileData.created_at || '',
-          is_approved: profileData.is_approved || false,
-          membership_tier: profileData.membership_tier || 'free',
-          full_name: [profileData.first_name, profileData.last_name]
-            .filter(Boolean)
-            .join(' ')
-        };
-        
-        // Handle organization
-        let organizationWithLocation: OrganizationWithLocation = {
-          ...admin.organization,
-          location: undefined
-        };
-        
-        // Handle location for organization if it exists
-        if (admin.organization && admin.organization.location) {
-          const locationData = admin.organization.location || {};
-          const locationWithDetails: LocationWithDetails = {
-            id: locationData.id || '',
-            city: locationData.city || '',
-            region: locationData.region || '',
-            country: locationData.country || '',
-            full_name: locationData.full_name || '',
-            formatted_location: formatLocation({
-              city: locationData.city || '',
-              region: locationData.region || '',
-              country: locationData.country || '',
-              id: locationData.id || '',
-              full_name: locationData.full_name
-            })
-          };
-          organizationWithLocation.location = locationWithDetails;
-        }
-        
+      return (data || []).map(admin => {
         // Create the admin details
         const adminWithDetails: OrganizationAdminWithDetails = {
           id: admin.id,
           profile_id: admin.profile_id,
           organization_id: admin.organization_id,
-          role: admin.role,
-          is_approved: admin.is_approved,
-          created_at: admin.created_at,
+          role: admin.role || '',
+          is_approved: admin.is_approved || false,
+          created_at: admin.created_at || '',
+          updated_at: admin.updated_at,
           can_edit_profile: admin.can_edit_profile,
-          profile: profileWithDetails,
-          organization: organizationWithLocation
+          profile: createProfileWithDetails(admin.profile),
+          organization: createOrganizationWithLocation(admin.organization)
         };
         
         return adminWithDetails;
@@ -245,68 +232,19 @@ export const useUserAdminRequests = (userId: string | undefined) => {
         return [];
       }
       
-      return data.map(admin => {
-        // Create profile with details
-        const profileData = admin.profile || {};
-        const profileWithDetails: ProfileWithDetails = {
-          id: profileData.id || '',
-          email: profileData.email || '',
-          first_name: profileData.first_name || '',
-          last_name: profileData.last_name || '',
-          avatar_url: profileData.avatar_url || null,
-          headline: profileData.headline || null,
-          bio: profileData.bio || null,
-          linkedin_url: profileData.linkedin_url || null,
-          twitter_url: profileData.twitter_url || null,
-          website_url: profileData.website_url || null,
-          role: profileData.role || 'member',
-          location_id: profileData.location_id || null,
-          company: profileData.company || null,
-          created_at: profileData.created_at || '',
-          is_approved: profileData.is_approved || false,
-          membership_tier: profileData.membership_tier || 'free',
-          full_name: [profileData.first_name, profileData.last_name]
-            .filter(Boolean)
-            .join(' ')
-        };
-
-        // Handle organization
-        let organizationWithLocation: OrganizationWithLocation = {
-          ...admin.organization,
-          location: undefined
-        };
-
-        // Format organization
-        if (admin.organization && admin.organization.location) {
-          const locationData = admin.organization.location || {};
-          const locationWithDetails: LocationWithDetails = {
-            id: locationData.id || '',
-            city: locationData.city || '',
-            region: locationData.region || '',
-            country: locationData.country || '',
-            full_name: locationData.full_name || '',
-            formatted_location: formatLocation({
-              city: locationData.city || '',
-              region: locationData.region || '',
-              country: locationData.country || '',
-              id: locationData.id || '',
-              full_name: locationData.full_name
-            })
-          };
-          organizationWithLocation.location = locationWithDetails;
-        }
-        
+      return (data || []).map(admin => {
         // Create the admin details
         const adminWithDetails: OrganizationAdminWithDetails = {
           id: admin.id,
           profile_id: admin.profile_id,
           organization_id: admin.organization_id,
-          role: admin.role,
-          is_approved: admin.is_approved,
-          created_at: admin.created_at,
+          role: admin.role || '',
+          is_approved: admin.is_approved || false,
+          created_at: admin.created_at || '',
+          updated_at: admin.updated_at,
           can_edit_profile: admin.can_edit_profile,
-          profile: profileWithDetails,
-          organization: organizationWithLocation
+          profile: createProfileWithDetails(admin.profile),
+          organization: createOrganizationWithLocation(admin.organization)
         };
         
         return adminWithDetails;
