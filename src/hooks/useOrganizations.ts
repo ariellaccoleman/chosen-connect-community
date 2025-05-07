@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Organization, OrganizationWithLocation, ProfileOrganizationRelationship } from '@/types';
@@ -59,17 +60,11 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
       
       return data.map(relationship => {
         if (relationship.organization && relationship.organization.location) {
-          const location = relationship.organization.location;
           return {
             ...relationship,
             organization: {
               ...relationship.organization,
-              location: {
-                ...location,
-                formatted_location: [location.city, location.region, location.country]
-                  .filter(Boolean)
-                  .join(', ')
-              }
+              location: formatLocationWithDetails(relationship.organization.location)
             }
           };
         }

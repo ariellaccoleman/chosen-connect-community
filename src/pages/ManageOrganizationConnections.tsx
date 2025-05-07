@@ -11,14 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrganizationCard from "@/components/organizations/OrganizationCard";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
 import { useState } from "react";
-import { OrganizationRelationshipWithDetails } from "@/types";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { formatLocationWithDetails } from "@/utils/adminFormatters";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
   const [activeTab, setActiveTab] = useState("all");
-  const [relationshipToEdit, setRelationshipToEdit] = useState<OrganizationRelationshipWithDetails | null>(null);
+  const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -26,11 +27,27 @@ const ManageOrganizationConnections = () => {
     }
   }, [user, loading, navigate]);
 
-  const currentRelationships = relationships.filter(rel => rel.connection_type === 'current');
-  const formerRelationships = relationships.filter(rel => rel.connection_type === 'former');
-  const allyRelationships = relationships.filter(rel => rel.connection_type === 'ally');
+  // Format relationships to ensure they have the correct type structure
+  const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
+    // Ensure the organization location has the formatted_location field
+    const organization = {
+      ...rel.organization,
+      location: rel.organization.location 
+        ? formatLocationWithDetails(rel.organization.location) 
+        : undefined
+    };
+    
+    return {
+      ...rel,
+      organization
+    };
+  });
 
-  const handleEditClick = (relationship: OrganizationRelationshipWithDetails) => {
+  const currentRelationships = formattedRelationships.filter(rel => rel.connection_type === 'current');
+  const formerRelationships = formattedRelationships.filter(rel => rel.connection_type === 'former');
+  const allyRelationships = formattedRelationships.filter(rel => rel.connection_type === 'ally');
+
+  const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
     setRelationshipToEdit(relationship);
   };
 
@@ -63,11 +80,11 @@ const ManageOrganizationConnections = () => {
           <CardContent>
             {isLoadingRelationships ? (
               <div className="text-center py-8">Loading your organizations...</div>
-            ) : relationships.length > 0 ? (
+            ) : formattedRelationships.length > 0 ? (
               <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="mb-6">
                   <TabsTrigger value="all">
-                    All ({relationships.length})
+                    All ({formattedRelationships.length})
                   </TabsTrigger>
                   <TabsTrigger value="current">
                     Current ({currentRelationships.length})
@@ -81,7 +98,7 @@ const ManageOrganizationConnections = () => {
                 </TabsList>
                 
                 <TabsContent value="all" className="space-y-4">
-                  {relationships.map(relationship => (
+                  {formattedRelationships.map(relationship => (
                     <OrganizationCard 
                       key={relationship.id} 
                       relationship={relationship}

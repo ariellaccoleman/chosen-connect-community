@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -175,12 +176,6 @@ const OrganizationDetail = () => {
       </div>
     </DashboardLayout>
   );
-};
-
-// Helper function to format website URLs
-const formatWebsiteUrl = (url: string): string => {
-  if (!url) return '';
-  return url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
 };
 
 export default OrganizationDetail;
