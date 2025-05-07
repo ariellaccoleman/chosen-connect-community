@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Organization, OrganizationWithLocation, OrganizationRelationship } from '@/types';
@@ -90,12 +91,51 @@ export const useAddOrganizationRelationship = () => {
   
   return useMutation({
     mutationFn: async (relationship: Partial<OrganizationRelationship>) => {
+      console.log('Adding organization relationship:', relationship);
+      
+      if (!relationship.profile_id) {
+        throw new Error('Profile ID is required');
+      }
+      
+      // First check if the profile exists
+      const { data: existingProfile, error: profileCheckError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', relationship.profile_id)
+        .maybeSingle();
+      
+      if (profileCheckError) {
+        console.error('Error checking profile existence:', profileCheckError);
+        throw profileCheckError;
+      }
+      
+      // If profile doesn't exist, create a minimal one
+      if (!existingProfile) {
+        console.log('Profile does not exist, creating a minimal profile first');
+        const { error: profileCreateError } = await supabase
+          .from('profiles')
+          .insert({ 
+            id: relationship.profile_id 
+          });
+        
+        if (profileCreateError) {
+          console.error('Error creating profile:', profileCreateError);
+          throw profileCreateError;
+        }
+        console.log('Successfully created minimal profile');
+      }
+      
+      // Now create the organization relationship
       const { error } = await supabase
         .from('org_relationships')
         .insert(relationship);
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error adding organization relationship:', error);
+        throw error;
+      }
       
+      console.log('Successfully added organization relationship');
       return true;
     },
     ...createMutationHandlers({
