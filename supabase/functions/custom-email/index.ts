@@ -38,19 +38,19 @@ serve(async (req) => {
 
     switch (type) {
       case "confirmation":
-        subject = "Welcome to Chosen - Please Confirm Your Email";
+        subject = "Welcome to CHOSEN - Please Confirm Your Email";
         emailContent = await renderAsync(
           ConfirmationEmail({ confirmLink: actionLink, firstName: additionalData?.firstName || "" })
         );
         break;
       case "magic_link":
-        subject = "Your Magic Sign-in Link for Chosen";
+        subject = "Your Magic Sign-in Link for CHOSEN";
         emailContent = await renderAsync(
           MagicLinkEmail({ signInLink: actionLink })
         );
         break;
       case "reset_password":
-        subject = "Reset Your Chosen Password";
+        subject = "Reset Your CHOSEN Password";
         emailContent = await renderAsync(
           ResetPasswordEmail({ resetLink: actionLink })
         );
@@ -61,7 +61,7 @@ serve(async (req) => {
 
     // Send the email using Resend
     const { data, error } = await resend.emails.send({
-      from: "Chosen Community <noreply@chosen.community>",
+      from: "CHOSEN Community <noreply@chosen.community>",
       to: [email],
       subject: subject,
       html: emailContent,

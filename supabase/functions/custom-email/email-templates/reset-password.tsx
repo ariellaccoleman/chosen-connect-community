@@ -24,7 +24,7 @@ export const ResetPasswordEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>Reset your CHOSEN password</Preview>
+      <Preview>Reset your CHOSEN Community password securely</Preview>
       <Body style={main}>
         <Container style={container}>
           <Img
@@ -36,8 +36,8 @@ export const ResetPasswordEmail = ({
           />
           <Heading style={heading}>Reset Your Password</Heading>
           <Text style={paragraph}>
-            You recently requested to reset your password for your CHOSEN account.
-            Click the button below to reset it. This link will expire in 1 hour.
+            We received a request to reset the password for your CHOSEN Community account.
+            Click the button below to set a new password. This link will expire in 1 hour.
           </Text>
           <Section style={buttonContainer}>
             <Link
@@ -49,8 +49,14 @@ export const ResetPasswordEmail = ({
             </Link>
           </Section>
           <Text style={paragraph}>
+            If you're having trouble clicking the button, copy and paste this link into your web browser:
+          </Text>
+          <Text style={linkText}>
+            {resetLink}
+          </Text>
+          <Text style={paragraph}>
             If you did not request a password reset, please ignore this email or contact
-            support if you have questions.
+            support if you have questions about account security.
           </Text>
           <Hr style={hr} />
           <Text style={footer}>
@@ -73,6 +79,9 @@ const container = {
   margin: "0 auto",
   padding: "20px 0 48px",
   marginBottom: "64px",
+  maxWidth: "600px",
+  borderRadius: "5px",
+  boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
 };
 
 const logo = {
@@ -84,7 +93,7 @@ const heading = {
   fontSize: "32px",
   lineHeight: "1.3",
   fontWeight: "700",
-  color: "#484848",
+  color: "#2754C5",
   textAlign: "center" as const,
 };
 
@@ -92,11 +101,14 @@ const paragraph = {
   fontSize: "16px",
   lineHeight: "26px",
   color: "#484848",
+  marginBottom: "16px",
+  padding: "0 24px",
 };
 
 const buttonContainer = {
   textAlign: "center" as const,
   marginBottom: "32px",
+  marginTop: "32px",
 };
 
 const button = {
@@ -109,6 +121,17 @@ const button = {
   textAlign: "center" as const,
   display: "block",
   padding: "12px 32px",
+  margin: "0 auto",
+  maxWidth: "240px",
+};
+
+const linkText = {
+  fontSize: "14px",
+  lineHeight: "24px",
+  color: "#2754C5",
+  padding: "0 24px",
+  margin: "12px 0",
+  wordBreak: "break-all" as const,
 };
 
 const hr = {
@@ -121,4 +144,6 @@ const footer = {
   lineHeight: "16px",
   color: "#b4becc",
   textAlign: "center" as const,
+  padding: "0 24px",
 };
+

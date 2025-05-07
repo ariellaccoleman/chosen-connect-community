@@ -28,7 +28,7 @@ export const ConfirmationEmail = ({
   return (
     <Html>
       <Head />
-      <Preview>Welcome to CHOSEN - Please confirm your email</Preview>
+      <Preview>Welcome to CHOSEN - Please confirm your email to join our professional community</Preview>
       <Body style={main}>
         <Container style={container}>
           <Img
@@ -38,7 +38,7 @@ export const ConfirmationEmail = ({
             alt="CHOSEN Logo"
             style={logo}
           />
-          <Heading style={heading}>Confirm your email address</Heading>
+          <Heading style={heading}>Welcome to CHOSEN Community!</Heading>
           <Text style={paragraph}>{greeting}</Text>
           <Text style={paragraph}>
             Thank you for joining CHOSEN, a global professional community for Jews and pro-Israel individuals. 
@@ -53,6 +53,9 @@ export const ConfirmationEmail = ({
               Confirm Email Address
             </Link>
           </Section>
+          <Text style={paragraph}>
+            Once confirmed, you'll gain access to our network of professionals, events, and resources.
+          </Text>
           <Text style={paragraph}>
             If you didn't sign up for CHOSEN, you can safely ignore this email.
           </Text>
@@ -77,6 +80,9 @@ const container = {
   margin: "0 auto",
   padding: "20px 0 48px",
   marginBottom: "64px",
+  maxWidth: "600px",
+  borderRadius: "5px",
+  boxShadow: "0px 2px 8px rgba(0, 0, 0, 0.05)",
 };
 
 const logo = {
@@ -88,7 +94,7 @@ const heading = {
   fontSize: "32px",
   lineHeight: "1.3",
   fontWeight: "700",
-  color: "#484848",
+  color: "#2754C5",
   textAlign: "center" as const,
 };
 
@@ -96,11 +102,14 @@ const paragraph = {
   fontSize: "16px",
   lineHeight: "26px",
   color: "#484848",
+  marginBottom: "16px",
+  padding: "0 24px",
 };
 
 const buttonContainer = {
   textAlign: "center" as const,
   marginBottom: "32px",
+  marginTop: "32px",
 };
 
 const button = {
@@ -113,6 +122,8 @@ const button = {
   textAlign: "center" as const,
   display: "block",
   padding: "12px 32px",
+  margin: "0 auto",
+  maxWidth: "240px",
 };
 
 const hr = {
@@ -125,4 +136,6 @@ const footer = {
   lineHeight: "16px",
   color: "#b4becc",
   textAlign: "center" as const,
+  padding: "0 24px",
 };
+
