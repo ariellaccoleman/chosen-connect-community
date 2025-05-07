@@ -96,7 +96,8 @@ const OrganizationCard = ({
             </Link>
           </Button>
           
-          {showActions && onEditClick && (
+          {/* Always show Edit Relationship button, not just when showActions is true */}
+          {onEditClick && (
             <Button 
               variant="outline" 
               size="sm" 

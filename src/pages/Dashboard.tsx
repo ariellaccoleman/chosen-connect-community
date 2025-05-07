@@ -1,5 +1,4 @@
-
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useProfiles";
@@ -13,12 +12,14 @@ import OrganizationCard from "@/components/organizations/OrganizationCard";
 import { formatWebsiteUrl } from "@/utils/formatters";
 import { formatLocationWithDetails } from "@/utils/adminFormatters";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
+  const [selectedRelationship, setSelectedRelationship] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
 
   // Format relationships to ensure they meet the ProfileOrganizationRelationshipWithDetails type
   const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
@@ -67,6 +68,14 @@ const Dashboard = () => {
   const currentOrgs = formattedRelationships.filter(rel => rel.connection_type === 'current');
   const formerOrgs = formattedRelationships.filter(rel => rel.connection_type === 'former');
   const allyOrgs = formattedRelationships.filter(rel => rel.connection_type === 'ally');
+
+  const handleEditRelationship = (relationship: ProfileOrganizationRelationshipWithDetails) => {
+    setSelectedRelationship(relationship);
+  };
+
+  const handleCloseDialog = () => {
+    setSelectedRelationship(null);
+  };
 
   return (
     <DashboardLayout>
@@ -187,7 +196,7 @@ const Dashboard = () => {
                             <OrganizationCard 
                               key={relationship.id} 
                               relationship={relationship} 
-                              showActions={false}
+                              onEditClick={() => handleEditRelationship(relationship)}
                             />
                           ))}
                         </div>
@@ -202,7 +211,7 @@ const Dashboard = () => {
                             <OrganizationCard 
                               key={relationship.id} 
                               relationship={relationship} 
-                              showActions={false}
+                              onEditClick={() => handleEditRelationship(relationship)}
                             />
                           ))}
                         </div>
@@ -217,7 +226,7 @@ const Dashboard = () => {
                             <OrganizationCard 
                               key={relationship.id} 
                               relationship={relationship} 
-                              showActions={false}
+                              onEditClick={() => handleEditRelationship(relationship)}
                             />
                           ))}
                         </div>
@@ -239,6 +248,15 @@ const Dashboard = () => {
             </Card>
           </div>
         </div>
+
+        {/* Edit Relationship Dialog */}
+        {selectedRelationship && (
+          <EditRelationshipDialog
+            relationship={selectedRelationship}
+            isOpen={!!selectedRelationship}
+            onClose={handleCloseDialog}
+          />
+        )}
       </div>
     </DashboardLayout>
   );
