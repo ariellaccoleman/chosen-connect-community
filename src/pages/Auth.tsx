@@ -5,6 +5,7 @@ import { Navigate, useSearchParams } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@/hooks/useAuth";
+import { useUpdateProfile } from "@/hooks/useProfileMutations";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -56,6 +57,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState<"login" | "signup" | "forgotPassword" | "resetPassword">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateProfile = useUpdateProfile();
   
   // Check for password reset or email confirmation parameters
   useEffect(() => {
@@ -114,7 +116,29 @@ const Auth = () => {
   const onSignupSubmit = async (data: SignupValues) => {
     setIsSubmitting(true);
     try {
-      await signUp(data.email, data.password, data.firstName, data.lastName);
+      // First sign up the user
+      const { user: newUser } = await signUp(data.email, data.password, data.firstName, data.lastName);
+      
+      // If signup was successful and we have a user ID, ensure profile record exists
+      if (newUser?.id) {
+        try {
+          // Create/update profile with first and last name
+          await updateProfile.mutateAsync({
+            profileId: newUser.id,
+            profileData: {
+              first_name: data.firstName,
+              last_name: data.lastName,
+              email: data.email
+            }
+          });
+          console.log('Profile created/updated successfully during signup');
+        } catch (profileError) {
+          console.error('Error creating profile during signup:', profileError);
+          // We don't want to block signup if profile creation fails
+          // The edge function should handle this as a fallback
+        }
+      }
+      
       // After successful signup, switch to login mode
       setAuthMode("login");
     } catch (error) {
