@@ -60,8 +60,9 @@ serve(async (req) => {
     }
 
     // Send the email using Resend
+    // Use "onboarding@resend.dev" which is pre-verified with Resend
     const { data, error } = await resend.emails.send({
-      from: "CHOSEN Community <noreply@chosen.community>",
+      from: "CHOSEN Community <onboarding@resend.dev>",
       to: [email],
       subject: subject,
       html: emailContent,

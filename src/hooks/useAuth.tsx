@@ -60,7 +60,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Send custom confirmation email
       try {
+        // Make sure to use the fully qualified URL with the protocol
         const confirmationURL = `${window.location.origin}/auth?confirmation=true`;
+        console.log("Sending confirmation email with URL:", confirmationURL);
+        
         await supabase.functions.invoke('custom-email', {
           body: {
             type: 'confirmation',
@@ -69,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             additionalData: { firstName }
           }
         });
+        console.log("Custom email function called successfully");
       } catch (emailError) {
         console.error("Error sending custom confirmation email:", emailError);
         // Continue with signup even if custom email fails
