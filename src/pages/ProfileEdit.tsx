@@ -36,6 +36,7 @@ const ProfileEdit = () => {
         website_url: data.website_url || null,
         avatar_url: data.avatar_url || null,
         location_id: data.location_id || null,
+        role: data.role || "member", // Include the role field with default "member"
       };
       
       await updateProfile.mutateAsync({

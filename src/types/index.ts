@@ -1,4 +1,3 @@
-
 export type Profile = {
   id: string;
   first_name: string | null;
@@ -11,6 +10,7 @@ export type Profile = {
   avatar_url: string | null;
   location_id: string | null;
   email: string | null;
+  role: string | null;
 };
 
 export type Location = {

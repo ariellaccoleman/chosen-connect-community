@@ -20,6 +20,7 @@ export const profileSchema = z.object({
   website_url: z.string().url("Must be a valid URL").optional().or(z.string().length(0)),
   avatar_url: z.string().optional(),
   location_id: z.string().optional(),
+  role: z.enum(["admin", "member"]).default("member"),
   
   // Special fields for UI actions only - not stored in profiles table
   // These are used for special actions, not actual profile data
