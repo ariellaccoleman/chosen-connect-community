@@ -91,6 +91,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Continue with signup even if custom email fails
       }
       
+      // Call handle_new_user directly to create the profile
+      try {
+        // Call the edge function directly to create profile
+        const { data: profileData, error: profileError } = await supabase.functions.invoke('handle_new_user', {
+          body: {
+            userId: data.user?.id,
+            firstName: firstName,
+            lastName: lastName,
+            email: email
+          }
+        });
+
+        if (profileError) {
+          console.error("Error creating user profile:", profileError);
+          // Continue with signup even if profile creation fails initially
+        } else {
+          console.log("Profile creation response:", profileData);
+        }
+      } catch (profileError) {
+        console.error("Error invoking handle_new_user function:", profileError);
+        // Continue with signup even if profile creation fails
+      }
+      
       toast.success("Sign up successful. Please check your email for verification.");
     } catch (error: any) {
       toast.error(error.message || "An error occurred during sign up");
