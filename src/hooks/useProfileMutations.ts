@@ -13,9 +13,17 @@ export const useUpdateProfile = () => {
       profileData 
     }: { 
       profileId: string, 
-      profileData: Partial<Profile> 
+      profileData: Partial<Profile> & { [key: string]: any } 
     }) => {
       console.log('Updating profile with data:', profileData);
+      
+      // Filter out non-profile fields that may come from form data
+      // These fields are used for UI actions, not actual profile data
+      const cleanedProfileData = { ...profileData };
+      
+      // Remove fields that are not part of the profiles table
+      delete cleanedProfileData.addOrganizationRelationship;
+      delete cleanedProfileData.navigateToManageOrgs;
       
       // First check if the profile exists
       const { data: existingProfile, error: checkError } = await supabase
@@ -38,7 +46,7 @@ export const useUpdateProfile = () => {
           .from('profiles')
           .insert({ 
             id: profileId, 
-            ...profileData 
+            ...cleanedProfileData 
           })
           .select();
           
@@ -53,7 +61,7 @@ export const useUpdateProfile = () => {
         console.log('Profile exists, updating');
         const { data, error: updateError } = await supabase
           .from('profiles')
-          .update(profileData)
+          .update(cleanedProfileData)
           .eq('id', profileId)
           .select();
         

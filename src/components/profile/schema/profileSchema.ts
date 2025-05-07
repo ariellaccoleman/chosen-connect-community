@@ -9,6 +9,7 @@ export const organizationRelationshipSchema = z.object({
   notes: z.string().nullable()
 });
 
+// These are the fields that exist in the profiles table
 export const profileSchema = z.object({
   first_name: z.string().min(1, "First name is required"),
   last_name: z.string().min(1, "Last name is required"),
@@ -19,7 +20,9 @@ export const profileSchema = z.object({
   website_url: z.string().url("Must be a valid URL").optional().or(z.string().length(0)),
   avatar_url: z.string().optional(),
   location_id: z.string().optional(),
-  // These fields are used for special actions, not actual profile data
+  
+  // Special fields for UI actions only - not stored in profiles table
+  // These are used for special actions, not actual profile data
   addOrganizationRelationship: organizationRelationshipSchema.optional(),
   navigateToManageOrgs: z.boolean().optional()
 });

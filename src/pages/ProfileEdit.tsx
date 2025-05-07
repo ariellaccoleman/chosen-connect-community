@@ -25,19 +25,22 @@ const ProfileEdit = () => {
     if (!user?.id) return;
 
     try {
+      // Extract only profile-related fields for the update operation
+      const profileData = {
+        first_name: data.first_name,
+        last_name: data.last_name,
+        headline: data.headline || null,
+        bio: data.bio || null,
+        linkedin_url: data.linkedin_url || null,
+        twitter_url: data.twitter_url || null,
+        website_url: data.website_url || null,
+        avatar_url: data.avatar_url || null,
+        location_id: data.location_id || null,
+      };
+      
       await updateProfile.mutateAsync({
         profileId: user.id,
-        profileData: {
-          ...data,
-          // Clean empty strings to null for optional fields
-          headline: data.headline || null,
-          bio: data.bio || null,
-          linkedin_url: data.linkedin_url || null,
-          twitter_url: data.twitter_url || null,
-          website_url: data.website_url || null,
-          avatar_url: data.avatar_url || null,
-          location_id: data.location_id || null,
-        }
+        profileData: profileData
       });
       
       navigate("/dashboard");
