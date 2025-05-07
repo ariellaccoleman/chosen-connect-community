@@ -1,4 +1,5 @@
 
+
 export interface Location {
   id: string;
   city: string;
@@ -43,7 +44,7 @@ export interface Organization {
   logo_url: string | null;
   logo_api_url: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at?: string; // Making updated_at optional to match actual data
   location_id: string | null;
 }
 
@@ -89,3 +90,4 @@ export interface SupabaseListResult<T> {
   data: T[] | null;
   error: any;
 }
+

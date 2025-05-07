@@ -1,4 +1,5 @@
 
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { ProfileWithDetails, LocationWithDetails } from "@/types";
@@ -47,14 +48,18 @@ export const useCommunityProfiles = (filters: {
         const profileWithDetails: ProfileWithDetails = {
           ...profile,
           full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+          location: undefined // Initialize as undefined, will populate if exists
         };
 
         if (profile.location_id && profile.location) {
+          const locationData = profile.location as Location;
+          
           // Format the location data
           const locationWithDetails: LocationWithDetails = {
-            ...profile.location,
-            formatted_location: formatLocation(profile.location)
+            ...locationData,
+            formatted_location: formatLocation(locationData)
           };
+          
           profileWithDetails.location = locationWithDetails;
         }
 
@@ -63,3 +68,4 @@ export const useCommunityProfiles = (filters: {
     },
   });
 };
+

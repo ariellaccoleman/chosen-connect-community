@@ -1,9 +1,8 @@
-
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { OrganizationWithLocation, LocationWithDetails } from "@/types";
+import { OrganizationWithLocation, LocationWithDetails, Location } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Building, Link as LinkIcon, MapPin, ShieldCheck } from "lucide-react";
@@ -43,15 +42,21 @@ const OrganizationDetail = () => {
         }
 
         // Format the location
+        const organizationWithLocation: OrganizationWithLocation = {
+          ...data,
+          location: undefined
+        };
+
         if (data && data.location) {
+          const locationData = data.location as Location;
           const locationWithDetails: LocationWithDetails = {
-            ...data.location,
-            formatted_location: formatLocation(data.location)
+            ...locationData,
+            formatted_location: formatLocation(locationData)
           };
-          data.location = locationWithDetails;
+          organizationWithLocation.location = locationWithDetails;
         }
 
-        setOrganization(data);
+        setOrganization(organizationWithLocation);
       } catch (error) {
         console.error("Error fetching organization:", error);
       } finally {

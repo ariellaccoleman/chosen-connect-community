@@ -21,6 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import OrganizationHeader from "./organization/OrganizationHeader";
 import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -64,7 +65,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <OrganizationList
-          relationships={userRelationships}
+          relationships={userRelationships as ProfileOrganizationRelationshipWithDetails[]}
           isLoading={isLoadingRelationships}
           onManageClick={() => form.setValue("navigateToManageOrgs", true)}
         />
