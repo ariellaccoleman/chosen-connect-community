@@ -1,12 +1,17 @@
 
 // @ts-ignore: Deno-specific import
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// @ts-ignore: Deno-specific import
 import { renderAsync } from "npm:@react-email/render@0.0.10";
+// @ts-ignore: Deno-specific import
 import { Resend } from "npm:resend@2.0.0";
 // @ts-ignore: Deno-specific import
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.8.0";
+// @ts-ignore: Deno-specific import
 import { ConfirmationEmail } from "./email-templates/confirmation.tsx";
+// @ts-ignore: Deno-specific import
 import { MagicLinkEmail } from "./email-templates/magic-link.tsx";
+// @ts-ignore: Deno-specific import
 import { ResetPasswordEmail } from "./email-templates/reset-password.tsx";
 
 // Initialize Resend email service
