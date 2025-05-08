@@ -42,9 +42,9 @@ const AvatarUpload = ({ avatarUrl, firstName, lastName, onAvatarChange }: Avatar
         throw new Error("Please select an image file.");
       }
 
-      // Check file size (limit to 2MB)
-      if (file.size > 2 * 1024 * 1024) {
-        throw new Error("File size must be less than 2MB.");
+      // Check file size (limit to 8MB)
+      if (file.size > 8 * 1024 * 1024) {
+        throw new Error("File size must be less than 8MB.");
       }
 
       const { error: uploadError, data } = await supabase.storage
@@ -119,7 +119,7 @@ const AvatarUpload = ({ avatarUrl, firstName, lastName, onAvatarChange }: Avatar
       />
       
       <p className="text-xs text-muted-foreground">
-        Upload an image (max 2MB)
+        Upload an image (max 8MB)
       </p>
     </div>
   );
