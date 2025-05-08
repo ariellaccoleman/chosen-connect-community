@@ -77,12 +77,23 @@ const AvatarUpload = ({ avatarUrl, firstName, lastName, onAvatarChange }: Avatar
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <Avatar className="h-32 w-32">
-        <AvatarImage src={avatarUrl || ""} />
-        <AvatarFallback className="bg-chosen-gold text-chosen-navy text-2xl">
-          {firstInitial}{lastInitial}
-        </AvatarFallback>
-      </Avatar>
+      <div className="w-32 h-32 relative bg-gray-50 rounded-full overflow-hidden">
+        {avatarUrl ? (
+          <div className="h-full w-full flex items-center justify-center bg-gray-100">
+            <img 
+              src={avatarUrl} 
+              alt="Profile avatar" 
+              className="object-cover w-full h-full"
+            />
+          </div>
+        ) : (
+          <Avatar className="h-32 w-32">
+            <AvatarFallback className="bg-chosen-gold text-chosen-navy text-2xl">
+              {firstInitial}{lastInitial}
+            </AvatarFallback>
+          </Avatar>
+        )}
+      </div>
       
       <div className="flex gap-2">
         <Button 

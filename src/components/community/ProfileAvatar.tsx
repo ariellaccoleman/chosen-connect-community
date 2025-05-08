@@ -17,11 +17,22 @@ export const ProfileAvatar = ({ profile }: ProfileAvatarProps) => {
   };
 
   return (
-    <Avatar className="h-16 w-16">
-      <AvatarImage src={profile.avatar_url || ""} />
-      <AvatarFallback className="bg-chosen-blue text-white text-xl">
-        {getInitials()}
-      </AvatarFallback>
-    </Avatar>
+    <div className="w-16 h-16 relative bg-gray-50 rounded-full overflow-hidden">
+      {profile.avatar_url ? (
+        <div className="h-full w-full flex items-center justify-center">
+          <img 
+            src={profile.avatar_url} 
+            alt={`${profile.full_name || 'User'} avatar`}
+            className="object-cover w-full h-full"
+          />
+        </div>
+      ) : (
+        <Avatar className="h-16 w-16">
+          <AvatarFallback className="bg-chosen-blue text-white text-xl">
+            {getInitials()}
+          </AvatarFallback>
+        </Avatar>
+      )}
+    </div>
   );
 };

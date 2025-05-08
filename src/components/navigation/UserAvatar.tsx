@@ -5,7 +5,7 @@ import { Profile } from "@/types";
 interface UserAvatarProps {
   profile?: Profile | null;
   size?: "sm" | "md" | "lg";
-  className?: string; // Add className to the props interface
+  className?: string;
 }
 
 const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) => {
@@ -23,14 +23,27 @@ const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) =
     md: "h-10 w-10",
     lg: "h-12 w-12"
   };
+  
+  const containerClass = `relative rounded-full overflow-hidden ${sizeClasses[size]} ${className}`;
 
   return (
-    <Avatar className={`${sizeClasses[size]} ${className}`}>
-      <AvatarImage src={profile?.avatar_url || ""} />
-      <AvatarFallback className="bg-chosen-blue text-white">
-        {getInitials()}
-      </AvatarFallback>
-    </Avatar>
+    <div className={containerClass}>
+      {profile?.avatar_url ? (
+        <div className="h-full w-full flex items-center justify-center">
+          <img 
+            src={profile.avatar_url} 
+            alt="User avatar"
+            className="object-cover w-full h-full" 
+          />
+        </div>
+      ) : (
+        <Avatar className={`${sizeClasses[size]}`}>
+          <AvatarFallback className="bg-chosen-blue text-white">
+            {getInitials()}
+          </AvatarFallback>
+        </Avatar>
+      )}
+    </div>
   );
 };
 
