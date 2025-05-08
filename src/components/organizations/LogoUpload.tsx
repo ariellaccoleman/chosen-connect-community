@@ -32,7 +32,7 @@ const LogoUpload = ({ logoUrl, organizationName, onLogoChange }: LogoUploadProps
 
       const file = event.target.files[0];
       const fileExt = file.name.split('.').pop();
-      const filePath = `org_logos/${organizationName.replace(/\s+/g, '_')}_${Date.now()}.${fileExt}`;
+      const filePath = `${organizationName.replace(/\s+/g, '_')}_${Date.now()}.${fileExt}`;
 
       // Check if file is an image
       if (!file.type.match('image.*')) {
@@ -45,7 +45,7 @@ const LogoUpload = ({ logoUrl, organizationName, onLogoChange }: LogoUploadProps
       }
 
       const { error: uploadError, data } = await supabase.storage
-        .from("avatars")
+        .from("org_logos")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) {
@@ -53,7 +53,7 @@ const LogoUpload = ({ logoUrl, organizationName, onLogoChange }: LogoUploadProps
       }
 
       // Get the public URL
-      const { data: publicURL } = supabase.storage.from("avatars").getPublicUrl(filePath);
+      const { data: publicURL } = supabase.storage.from("org_logos").getPublicUrl(filePath);
       
       if (publicURL) {
         onLogoChange(publicURL.publicUrl);
