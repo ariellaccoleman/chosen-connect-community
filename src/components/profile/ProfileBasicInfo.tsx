@@ -12,6 +12,10 @@ interface ProfileBasicInfoProps {
 }
 
 const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
+  const handleAvatarChange = (url: string) => {
+    form.setValue("avatar_url", url);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -26,6 +30,7 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
           avatarUrl={form.watch("avatar_url")}
           firstName={form.watch("first_name")}
           lastName={form.watch("last_name")}
+          onAvatarChange={handleAvatarChange}
         />
 
         {/* Name Fields */}

@@ -37,24 +37,6 @@ const ProfileFields = ({ form }: ProfileFieldsProps) => {
         )}
       />
       
-      {/* Avatar URL */}
-      <FormField
-        control={form.control}
-        name="avatar_url"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Avatar URL</FormLabel>
-            <FormControl>
-              <Input placeholder="https://example.com/avatar.jpg" {...field} />
-            </FormControl>
-            <FormDescription>
-              URL to your profile image
-            </FormDescription>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      
       {/* Bio */}
       <FormField
         control={form.control}

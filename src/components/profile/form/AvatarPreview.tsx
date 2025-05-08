@@ -1,24 +1,22 @@
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import AvatarUpload from "./AvatarUpload";
 
 interface AvatarPreviewProps {
   avatarUrl?: string | null;
   firstName?: string | null;
   lastName?: string | null;
+  onAvatarChange: (url: string) => void;
 }
 
-const AvatarPreview = ({ avatarUrl, firstName, lastName }: AvatarPreviewProps) => {
-  const firstInitial = firstName?.[0] || '';
-  const lastInitial = lastName?.[0] || '';
-  
+const AvatarPreview = ({ avatarUrl, firstName, lastName, onAvatarChange }: AvatarPreviewProps) => {
   return (
     <div className="flex justify-center mb-4">
-      <Avatar className="h-32 w-32">
-        <AvatarImage src={avatarUrl || ""} />
-        <AvatarFallback className="bg-chosen-gold text-chosen-navy text-2xl">
-          {firstInitial}{lastInitial}
-        </AvatarFallback>
-      </Avatar>
+      <AvatarUpload
+        avatarUrl={avatarUrl}
+        firstName={firstName}
+        lastName={lastName}
+        onAvatarChange={onAvatarChange}
+      />
     </div>
   );
 };
