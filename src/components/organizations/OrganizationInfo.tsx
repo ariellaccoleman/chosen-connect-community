@@ -2,6 +2,7 @@
 import { Building, LinkIcon, MapPin } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
 import { formatWebsiteUrl } from "@/utils/formatters";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface OrganizationInfoProps {
   organization: OrganizationWithLocation;
@@ -13,11 +14,15 @@ const OrganizationInfo = ({ organization }: OrganizationInfoProps) => {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-4">
         <div className="flex items-center gap-4">
           {organization.logo_url ? (
-            <img
-              src={organization.logo_url}
-              alt={organization.name}
-              className="h-16 w-16 rounded-md object-contain bg-gray-50"
-            />
+            <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-50 border">
+              <AspectRatio ratio={1} className="h-full w-full">
+                <img
+                  src={organization.logo_url}
+                  alt={organization.name}
+                  className="h-full w-full object-contain"
+                />
+              </AspectRatio>
+            </div>
           ) : (
             <div className="h-16 w-16 rounded-md bg-gray-100 flex items-center justify-center">
               <Building className="h-8 w-8 text-gray-400" />

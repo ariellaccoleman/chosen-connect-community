@@ -24,12 +24,14 @@ import {
 import { formatLocation } from "@/utils/formatters";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useAuth } from "@/hooks/useAuth";
+import LogoUpload from "@/components/organizations/LogoUpload";
 
 // Define form schema
 const organizationSchema = z.object({
   name: z.string().min(2, { message: "Name must be at least 2 characters" }),
   description: z.string().optional(),
   website_url: z.string().url({ message: "Please enter a valid URL" }).optional().nullable(),
+  logo_url: z.string().optional().nullable(),
 });
 
 type OrganizationFormValues = z.infer<typeof organizationSchema>;
@@ -49,6 +51,7 @@ const OrganizationEdit = () => {
       name: "",
       description: "",
       website_url: "",
+      logo_url: "",
     },
   });
 
@@ -92,6 +95,7 @@ const OrganizationEdit = () => {
           name: data.name,
           description: data.description || "",
           website_url: data.website_url || "",
+          logo_url: data.logo_url || "",
         });
         
       } catch (error) {
@@ -121,6 +125,10 @@ const OrganizationEdit = () => {
     }
   }, [isOrgAdmin, loading, navigate, id, toast]);
 
+  const handleLogoChange = (url: string) => {
+    form.setValue("logo_url", url, { shouldValidate: true });
+  };
+
   const onSubmit = async (data: OrganizationFormValues) => {
     if (!id) return;
     
@@ -131,6 +139,7 @@ const OrganizationEdit = () => {
           name: data.name,
           description: data.description,
           website_url: data.website_url,
+          logo_url: data.logo_url,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
@@ -190,6 +199,15 @@ const OrganizationEdit = () => {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="mb-6">
+                <FormLabel className="block mb-2">Organization Logo</FormLabel>
+                <LogoUpload
+                  logoUrl={form.watch("logo_url") || ""}
+                  organizationName={form.watch("name")}
+                  onLogoChange={handleLogoChange}
+                />
+              </div>
+
               <FormField
                 control={form.control}
                 name="name"
