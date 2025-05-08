@@ -58,12 +58,14 @@ const Auth = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateProfile = useUpdateProfile();
   
-  // Check for password reset or email confirmation parameters
+  // Check for password reset, email confirmation, or signup tab parameters
   useEffect(() => {
     if (searchParams.has('reset')) {
       setAuthMode("resetPassword");
     } else if (searchParams.has('confirmation')) {
       toast.info("Please check your email to confirm your account");
+    } else if (searchParams.has('tab') && searchParams.get('tab') === 'signup') {
+      setAuthMode("signup");
     }
   }, [searchParams]);
 
