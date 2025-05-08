@@ -6,7 +6,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Upload, X } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
-import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface AvatarUploadProps {
   avatarUrl: string | null | undefined;
@@ -78,20 +77,12 @@ const AvatarUpload = ({ avatarUrl, firstName, lastName, onAvatarChange }: Avatar
 
   return (
     <div className="flex flex-col items-center space-y-4">
-      <div className="w-32 h-32">
-        <AspectRatio ratio={1 / 1} className="bg-muted rounded-full overflow-hidden">
-          <Avatar className="h-full w-full">
-            <AvatarImage 
-              src={avatarUrl || ""} 
-              className="object-cover w-full h-full"
-              style={{ width: '400px', height: '400px' }} 
-            />
-            <AvatarFallback className="bg-chosen-gold text-chosen-navy text-2xl">
-              {firstInitial}{lastInitial}
-            </AvatarFallback>
-          </Avatar>
-        </AspectRatio>
-      </div>
+      <Avatar className="h-32 w-32">
+        <AvatarImage src={avatarUrl || ""} />
+        <AvatarFallback className="bg-chosen-gold text-chosen-navy text-2xl">
+          {firstInitial}{lastInitial}
+        </AvatarFallback>
+      </Avatar>
       
       <div className="flex gap-2">
         <Button 
@@ -128,7 +119,7 @@ const AvatarUpload = ({ avatarUrl, firstName, lastName, onAvatarChange }: Avatar
       />
       
       <p className="text-xs text-muted-foreground">
-        Upload an image (max 8MB, will be resized to 400×400)
+        Upload an image (max 8MB)
       </p>
     </div>
   );
