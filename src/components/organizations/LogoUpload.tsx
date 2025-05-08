@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AspectRatio } from "@/components/ui/aspect-ratio";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Upload, X, Building } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
@@ -77,11 +76,13 @@ const LogoUpload = ({ logoUrl, organizationName, onLogoChange }: LogoUploadProps
       <div className="w-32 h-32 relative bg-gray-50 rounded-md border overflow-hidden">
         <AspectRatio ratio={1} className="h-full w-full">
           {logoUrl ? (
-            <img 
-              src={logoUrl} 
-              alt={`${organizationName} logo`}
-              className="object-contain h-full w-full"
-            />
+            <div className="h-full w-full flex items-center justify-center bg-gray-100">
+              <img 
+                src={logoUrl} 
+                alt={`${organizationName} logo`}
+                className="object-contain max-h-full max-w-full"
+              />
+            </div>
           ) : (
             <div className="h-full w-full flex items-center justify-center bg-gray-100">
               <Building className="h-16 w-16 text-gray-400" />
