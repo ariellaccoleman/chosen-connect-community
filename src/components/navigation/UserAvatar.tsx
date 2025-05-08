@@ -1,11 +1,12 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Profile } from "@/types";
+import { AspectRatio } from "@/components/ui/aspect-ratio";
 
 interface UserAvatarProps {
   profile?: Profile | null;
   size?: "sm" | "md" | "lg";
-  className?: string; // Add className to the props interface
+  className?: string;
 }
 
 const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) => {
@@ -25,12 +26,19 @@ const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) =
   };
 
   return (
-    <Avatar className={`${sizeClasses[size]} ${className}`}>
-      <AvatarImage src={profile?.avatar_url || ""} />
-      <AvatarFallback className="bg-chosen-blue text-white">
-        {getInitials()}
-      </AvatarFallback>
-    </Avatar>
+    <div className={sizeClasses[size]}>
+      <AspectRatio ratio={1 / 1} className={`bg-muted rounded-full overflow-hidden ${className}`}>
+        <Avatar className="h-full w-full">
+          <AvatarImage 
+            src={profile?.avatar_url || ""} 
+            className="object-cover w-full h-full" 
+          />
+          <AvatarFallback className="bg-chosen-blue text-white">
+            {getInitials()}
+          </AvatarFallback>
+        </Avatar>
+      </AspectRatio>
+    </div>
   );
 };
 
