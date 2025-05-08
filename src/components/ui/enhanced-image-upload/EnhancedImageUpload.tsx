@@ -5,6 +5,7 @@ import { toast } from '@/components/ui/sonner';
 import { ImageCropper } from './ImageCropper';
 import { Button } from '@/components/ui/button';
 import { Upload, X, Move, CropIcon } from 'lucide-react';
+import { compressImage } from './imageUtils';
 
 interface EnhancedImageUploadProps {
   imageUrl: string | null | undefined;
@@ -30,22 +31,63 @@ export const EnhancedImageUpload = ({
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const [cropperOpen, setCropperOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
     const file = acceptedFiles[0];
     
     if (!file) return;
     
     // Check file size
     if (file.size > maxSizeInMB * 1024 * 1024) {
-      toast.error(`File size must be less than ${maxSizeInMB}MB.`);
+      try {
+        // Attempt to compress the file if it's too large
+        setIsCompressing(true);
+        toast.info("Optimizing image size...");
+        
+        const compressedBlob = await compressImage(file);
+        const compressedFile = new File([compressedBlob], file.name, { 
+          type: 'image/jpeg',
+          lastModified: Date.now() 
+        });
+        
+        // Check if compression helped enough
+        if (compressedFile.size > maxSizeInMB * 1024 * 1024) {
+          toast.error(`File is still too large after compression. Maximum size is ${maxSizeInMB}MB.`);
+          setIsCompressing(false);
+          return;
+        }
+        
+        // Continue with compressed file
+        const objectUrl = URL.createObjectURL(compressedFile);
+        setTempImageUrl(objectUrl);
+        setCropperOpen(true);
+        toast.success("Image optimized successfully!");
+      } catch (error) {
+        console.error("Error compressing image:", error);
+        toast.error(`File size must be less than ${maxSizeInMB}MB.`);
+      } finally {
+        setIsCompressing(false);
+      }
       return;
     }
 
-    // Create temporary URL for preview
-    const objectUrl = URL.createObjectURL(file);
-    setTempImageUrl(objectUrl);
-    setCropperOpen(true);
+    // For smaller images, we'll still optimize but without showing compression message
+    try {
+      setIsCompressing(true);
+      const compressedBlob = await compressImage(file);
+      const objectUrl = URL.createObjectURL(compressedBlob);
+      setTempImageUrl(objectUrl);
+      setCropperOpen(true);
+    } catch (error) {
+      // Fallback to original file if compression fails
+      const objectUrl = URL.createObjectURL(file);
+      setTempImageUrl(objectUrl);
+      setCropperOpen(true);
+      console.error("Error in image optimization:", error);
+    } finally {
+      setIsCompressing(false);
+    }
   }, [maxSizeInMB]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -53,8 +95,9 @@ export const EnhancedImageUpload = ({
     accept: {
       'image/*': acceptedFileTypes
     },
-    maxSize: maxSizeInMB * 1024 * 1024,
-    multiple: false
+    maxSize: maxSizeInMB * 1024 * 1024 * 2, // Allow for files twice the size limit to attempt compression
+    multiple: false,
+    disabled: isCompressing
   });
 
   const handleCropComplete = (croppedImage: string) => {
@@ -66,8 +109,6 @@ export const EnhancedImageUpload = ({
       URL.revokeObjectURL(tempImageUrl);
       setTempImageUrl(null);
     }
-    
-    toast.success("Image cropped successfully!");
   };
 
   const handleCropCancel = () => {
@@ -124,7 +165,12 @@ export const EnhancedImageUpload = ({
           </div>
         ) : (
           <div className="h-full w-full flex flex-col items-center justify-center text-gray-400 p-4">
-            {isDragActive ? (
+            {isCompressing ? (
+              <div className="flex flex-col items-center text-center">
+                <div className="w-8 h-8 border-2 border-t-blue-500 border-blue-200 rounded-full animate-spin mb-2" />
+                <p className="text-sm text-center">Optimizing image...</p>
+              </div>
+            ) : isDragActive ? (
               <>
                 <Move className="h-8 w-8 mb-2" />
                 <p className="text-sm text-center">Drop image here</p>
@@ -134,7 +180,7 @@ export const EnhancedImageUpload = ({
                 {placeholderIcon || <Upload className="h-8 w-8 mb-2" />}
                 <p className="text-sm text-center">Drag & drop or click to upload</p>
                 <p className="text-xs text-center text-muted-foreground mt-1">
-                  Max size: {maxSizeInMB}MB
+                  Max size: {maxSizeInMB}MB (Large images will be optimized automatically)
                 </p>
               </>
             )}
