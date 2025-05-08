@@ -103,8 +103,10 @@ export const ImageCropper = ({
       };
     } catch (error) {
       console.error("Error processing cropped image:", error);
-      // Fallback to uncompressed if compression fails
-      canvas.toDataURL('image/jpeg', 0.85);
+      // Fixed: Define canvas properly within the error handling scope
+      const canvas = document.createElement('canvas');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      onCropComplete(dataUrl);
       setIsProcessing(false);
     }
   };
