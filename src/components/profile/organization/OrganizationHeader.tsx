@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface OrganizationHeaderProps {
   onAddOrgClick: () => void;
@@ -15,6 +16,7 @@ const OrganizationHeader = ({
   availableOrgsCount 
 }: OrganizationHeaderProps) => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   return (
     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-2 sm:space-y-0">

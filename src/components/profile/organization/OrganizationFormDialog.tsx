@@ -12,6 +12,9 @@ import {
   SelectValue
 } from "@/components/ui/select";
 import { OrganizationWithLocation } from "@/types";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface OrganizationFormDialogProps {
   organizations: OrganizationWithLocation[];
@@ -35,6 +38,7 @@ const OrganizationFormDialog = ({
   const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">("current");
   const [department, setDepartment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const isMobile = useIsMobile();
 
   const handleSubmit = () => {
     onSubmit({
@@ -50,6 +54,100 @@ const OrganizationFormDialog = ({
     setDepartment("");
     setNotes("");
   };
+
+  if (isMobile) {
+    return (
+      <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Organization Connection</DialogTitle>
+            <DialogDescription>Connect your profile to an organization</DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-medium">Organization</label>
+              <Select 
+                value={selectedOrgId} 
+                onValueChange={setSelectedOrgId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select an organization" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoadingOrgs ? (
+                    <div className="p-2">Loading...</div>
+                  ) : organizations.length === 0 ? (
+                    <div className="p-2">No organizations available</div>
+                  ) : (
+                    organizations.map((org) => (
+                      <SelectItem key={org.id} value={org.id}>
+                        {org.name}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Connection Type</label>
+              <Select 
+                value={connectionType} 
+                onValueChange={(value: "current" | "former" | "connected_insider") => setConnectionType(value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select connection type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="current">Current Member</SelectItem>
+                  <SelectItem value="former">Former Member</SelectItem>
+                  <SelectItem value="connected_insider">Connected Insider</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Department (Optional)</label>
+              <Input 
+                placeholder="E.g., Engineering, Marketing" 
+                value={department} 
+                onChange={(e) => setDepartment(e.target.value)} 
+              />
+            </div>
+            
+            <div>
+              <label className="text-sm font-medium">Notes (Optional)</label>
+              <Textarea 
+                placeholder="Any additional details about your connection" 
+                value={notes} 
+                onChange={(e) => setNotes(e.target.value)} 
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex justify-end pt-2">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={onClose}
+              className="mr-2"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleSubmit}
+              disabled={!selectedOrgId}
+              className="bg-chosen-blue hover:bg-chosen-navy"
+            >
+              Add Connection
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <div className="border rounded-md p-4 mt-4 space-y-4">
