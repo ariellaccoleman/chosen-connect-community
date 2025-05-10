@@ -14,6 +14,8 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
+  
+  const isAdmin = user?.user_metadata?.role === "admin";
 
   if (!isOpen) return null;
 
@@ -42,6 +44,15 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           >
             Edit Profile
           </Link>
+          {isAdmin && (
+            <Link 
+              to="/admin" 
+              className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+              onClick={onClose}
+            >
+              Admin Panel
+            </Link>
+          )}
           <Link 
             to="/organizations" 
             className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"

@@ -1,7 +1,7 @@
 
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, ShieldCheck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useProfiles";
 import UserAvatar from "./UserAvatar";
@@ -17,6 +17,8 @@ const DesktopNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
+  
+  const isAdmin = user?.user_metadata?.role === "admin";
 
   if (user) {
     return (
@@ -48,6 +50,17 @@ const DesktopNav = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>Edit Profile</span>
               </DropdownMenuItem>
+              
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                    <ShieldCheck className="mr-2 h-4 w-4" />
+                    <span>Admin Panel</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+              
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => signOut()}>
                 <LogOut className="mr-2 h-4 w-4" />
