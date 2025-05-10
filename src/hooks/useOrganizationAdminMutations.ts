@@ -4,6 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrganizationAdmin } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
+// Valid organization admin roles
+const VALID_ROLES = ['owner', 'admin', 'editor'];
+
 // Create a new organization admin request
 export const useCreateAdminRequest = () => {
   const queryClient = useQueryClient();
@@ -14,16 +17,28 @@ export const useCreateAdminRequest = () => {
       organization_id: string;
       role?: string;
     }) => {
+      // Validate role before submitting
+      const role = request.role || 'editor';
+      if (!VALID_ROLES.includes(role)) {
+        throw new Error(`Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+      }
+      
       const { error } = await supabase
         .from('organization_admins')
         .insert({
           profile_id: request.profile_id,
           organization_id: request.organization_id,
-          role: request.role || 'editor',
+          role: role,
           is_approved: false
         });
       
-      if (error) throw error;
+      if (error) {
+        // Provide a clearer error message
+        if (error.message.includes('organization_admins_role_check')) {
+          throw new Error(`Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+        }
+        throw error;
+      }
       
       return true;
     },
@@ -50,12 +65,23 @@ export const useUpdateAdminRequest = () => {
       requestId: string, 
       updates: Partial<OrganizationAdmin> 
     }) => {
+      // Validate role if it's being updated
+      if (updates.role && !VALID_ROLES.includes(updates.role)) {
+        throw new Error(`Invalid role: "${updates.role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+      }
+      
       const { error } = await supabase
         .from('organization_admins')
         .update(updates)
         .eq('id', requestId);
       
-      if (error) throw error;
+      if (error) {
+        // Provide a clearer error message
+        if (error.message.includes('organization_admins_role_check')) {
+          throw new Error(`Invalid role: "${updates.role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+        }
+        throw error;
+      }
       
       return true;
     },

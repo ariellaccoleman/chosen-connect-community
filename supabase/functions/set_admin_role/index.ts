@@ -7,6 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const VALID_ROLES = ['admin', 'editor', 'owner'];
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -20,7 +22,7 @@ serve(async (req) => {
     );
 
     // Get the request body
-    const { email } = await req.json();
+    const { email, role = 'admin' } = await req.json();
     
     if (!email) {
       return new Response(
@@ -31,8 +33,21 @@ serve(async (req) => {
         }
       );
     }
+    
+    // Validate role
+    if (!VALID_ROLES.includes(role)) {
+      return new Response(
+        JSON.stringify({ 
+          error: `Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}` 
+        }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400 
+        }
+      );
+    }
 
-    console.log(`Attempting to set user ${email} as admin`);
+    console.log(`Attempting to set user ${email} as ${role}`);
 
     // Get the user by email - explicitly filter by the exact email
     const { data: userData, error: userError } = await supabaseClient.auth
@@ -71,7 +86,7 @@ serve(async (req) => {
       user.id,
       {
         user_metadata: { 
-          role: 'admin',
+          role: role,
           ...user.user_metadata 
         }
       }
@@ -88,11 +103,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Successfully set ${email} as admin`);
+    console.log(`Successfully set ${email} as ${role}`);
 
     return new Response(
       JSON.stringify({ 
-        message: `Successfully set ${email} as admin`, 
+        message: `Successfully set ${email} as ${role}`, 
         user: data 
       }),
       { 
