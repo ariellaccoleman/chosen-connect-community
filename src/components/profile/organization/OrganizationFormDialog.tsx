@@ -37,18 +37,24 @@ const OrganizationFormDialog = ({
   const [notes, setNotes] = useState<string>("");
 
   const handleSubmit = () => {
-    onSubmit({
-      organizationId: selectedOrgId,
-      connectionType,
-      department: department || null,
-      notes: notes || null
-    });
-    
-    // Reset form fields
-    setSelectedOrgId("");
-    setConnectionType("current");
-    setDepartment("");
-    setNotes("");
+    // Only submit if an organization is selected
+    if (selectedOrgId) {
+      onSubmit({
+        organizationId: selectedOrgId,
+        connectionType,
+        department: department || null,
+        notes: notes || null
+      });
+      
+      // Reset form fields
+      setSelectedOrgId("");
+      setConnectionType("current");
+      setDepartment("");
+      setNotes("");
+      
+      // Close the dialog after submission
+      onClose();
+    }
   };
 
   return (
@@ -131,7 +137,6 @@ const OrganizationFormDialog = ({
             type="button" 
             onClick={handleSubmit}
             disabled={!selectedOrgId}
-            className="bg-chosen-blue hover:bg-chosen-navy"
           >
             Add Connection
           </Button>

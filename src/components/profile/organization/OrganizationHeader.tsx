@@ -24,7 +24,7 @@ const OrganizationHeader = ({
           type="button" 
           variant="outline" 
           size="sm"
-          onClick={onAddOrgClick}
+          onClick={() => onAddOrgClick()} // Ensure this triggers properly
           disabled={isAddingNew || availableOrgsCount === 0}
           className="w-full sm:w-auto"
         >

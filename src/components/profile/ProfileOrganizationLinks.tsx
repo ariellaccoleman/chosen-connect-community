@@ -66,14 +66,20 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
       department: data.department,
       notes: data.notes
     });
-    setIsAddingNew(false);
+    setIsAddingNew(false); // Ensure dialog closes after form submission
+  };
+
+  // Make sure that clicking the button in OrganizationHeader shows the dialog
+  const toggleAddOrganization = () => {
+    console.log("Toggle add organization dialog"); // Debug log
+    setIsAddingNew(true);
   };
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <OrganizationHeader
-          onAddOrgClick={() => setIsAddingNew(true)}
+          onAddOrgClick={toggleAddOrganization}
           isAddingNew={isAddingNew}
           availableOrgsCount={availableOrganizations.length}
         />
