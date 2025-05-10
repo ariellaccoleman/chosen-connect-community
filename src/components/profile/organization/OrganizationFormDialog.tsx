@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -74,10 +73,8 @@ const OrganizationFormDialog = ({
     setDepartment("");
     setNotes("");
     
-    // Make sure to close on desktop too
-    if (!isMobile) {
-      onClose();
-    }
+    // Close the dialog/form regardless of mobile or desktop
+    onClose();
   };
 
   const renderOrgSelector = () => {
