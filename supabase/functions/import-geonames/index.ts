@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Prepare data for batch insert
+    // Prepare data for batch insert - IMPORTANT: Don't include full_name, it's generated
     const locationsToInsert = cities.map((city) => ({
       city: city.name || '',
       region: city.adminName1 || '',
@@ -159,11 +159,7 @@ Deno.serve(async (req) => {
       admin_code1: city.adminCode1 || null,
       admin_code2: city.adminCode2 || null,
       admin_name2: city.adminName2 || null,
-      timezone: city.timezone?.timeZoneId || null,
-      // Generate a full_name that includes all location components
-      full_name: [city.name, city.adminName1, city.countryName]
-        .filter(Boolean)
-        .join(', ')
+      timezone: city.timezone?.timeZoneId || null
     }));
     
     // Insert into the locations table
