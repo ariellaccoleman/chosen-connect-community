@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,7 @@ interface OrganizationFormDialogProps {
   onClose: () => void;
   onSubmit: (data: {
     organizationId: string;
-    connectionType: "current" | "former" | "ally";
+    connectionType: "current" | "former" | "connected_insider";
     department: string | null;
     notes: string | null;
   }) => void;
@@ -32,7 +31,7 @@ const OrganizationFormDialog = ({
   onSubmit
 }: OrganizationFormDialogProps) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
-  const [connectionType, setConnectionType] = useState<"current" | "former" | "ally">("current");
+  const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">("current");
   const [department, setDepartment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
 
@@ -95,7 +94,7 @@ const OrganizationFormDialog = ({
           <label className="text-sm font-medium">Connection Type</label>
           <Select 
             value={connectionType} 
-            onValueChange={(value: "current" | "former" | "ally") => setConnectionType(value)}
+            onValueChange={(value: "current" | "former" | "connected_insider") => setConnectionType(value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select connection type" />
@@ -103,7 +102,7 @@ const OrganizationFormDialog = ({
             <SelectContent>
               <SelectItem value="current">Current Member</SelectItem>
               <SelectItem value="former">Former Member</SelectItem>
-              <SelectItem value="ally">Allied Organization</SelectItem>
+              <SelectItem value="connected_insider">Connected Insider</SelectItem>
             </SelectContent>
           </Select>
         </div>

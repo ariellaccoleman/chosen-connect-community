@@ -4,7 +4,7 @@ import * as z from "zod";
 // Define the organization relationship schema separately
 export const organizationRelationshipSchema = z.object({
   organizationId: z.string(),
-  connectionType: z.enum(["current", "former", "ally"]),
+  connectionType: z.enum(["current", "former", "connected_insider"]),
   department: z.string().nullable(),
   notes: z.string().nullable()
 });

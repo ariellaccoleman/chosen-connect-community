@@ -41,7 +41,7 @@ const OrganizationCard = ({
   const connectionLabel = {
     current: "Current",
     former: "Former",
-    ally: "Allied Organization"
+    connected_insider: "Connected Insider"
   }[relationship.connection_type || "current"];
   
   return (

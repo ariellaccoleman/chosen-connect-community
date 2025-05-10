@@ -43,7 +43,7 @@ const OrganizationDetail = () => {
   
   // State for the connection dialog
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [connectionType, setConnectionType] = useState<"current" | "former" | "ally">("current");
+  const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">("current");
   
   // Get user's relationships and admin requests
   const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
@@ -63,7 +63,7 @@ const OrganizationDetail = () => {
         department: null,
         notes: null
       });
-      toast.success(`Connected to ${organization.name} as a ${connectionType === "current" ? "current employee" : connectionType === "former" ? "former employee" : "ally"}`);
+      toast.success(`Connected to ${organization.name} as a ${connectionType === "current" ? "current employee" : connectionType === "former" ? "former employee" : "connected insider"}`);
       setIsDialogOpen(false);
     } catch (error) {
       console.error("Error connecting to organization:", error);
@@ -190,14 +190,14 @@ const OrganizationDetail = () => {
               <label htmlFor="connection-type" className="text-sm font-medium">
                 Connection Type
               </label>
-              <Select value={connectionType} onValueChange={(value) => setConnectionType(value as "current" | "former" | "ally")}>
+              <Select value={connectionType} onValueChange={(value) => setConnectionType(value as "current" | "former" | "connected_insider")}>
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select connection type" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="current">Current Employee</SelectItem>
                   <SelectItem value="former">Former Employee</SelectItem>
-                  <SelectItem value="ally">Ally Organization</SelectItem>
+                  <SelectItem value="connected_insider">Connected Insider</SelectItem>
                 </SelectContent>
               </Select>
             </div>

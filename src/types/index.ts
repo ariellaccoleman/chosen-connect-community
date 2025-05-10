@@ -62,7 +62,7 @@ export interface ProfileOrganizationRelationship {
   id: string;
   profile_id: string;
   organization_id: string;
-  connection_type: "current" | "former" | "ally";
+  connection_type: "current" | "former" | "connected_insider";
   department: string | null;
   notes: string | null;
   created_at: string;
