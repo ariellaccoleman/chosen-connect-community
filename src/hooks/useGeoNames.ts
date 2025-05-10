@@ -16,6 +16,8 @@ export const useGeoNames = () => {
     setIsImporting(true);
     
     try {
+      console.log('Calling import-geonames function with params:', { country, maxResults, minPopulation });
+      
       const { data, error } = await supabase.functions.invoke('import-geonames', {
         body: {
           country,
@@ -26,15 +28,29 @@ export const useGeoNames = () => {
       
       if (error) {
         console.error('Error importing locations:', error);
-        toast.error('Failed to import locations from GeoNames');
+        
+        // Provide more specific error messages based on the error type
+        if (error.message?.includes('JWT')) {
+          toast.error('Authentication error. Please sign in again.');
+        } else if (error.message?.includes('network')) {
+          toast.error('Network error. Please check your internet connection.');
+        } else {
+          toast.error(`Failed to import locations: ${error.message || 'Unknown error'}`);
+        }
+        
         return { success: false, error };
+      }
+      
+      if (!data || !data.count) {
+        toast.info(`No locations found for ${country} with population >= ${minPopulation}`);
+        return { success: true, data: { count: 0 } };
       }
       
       toast.success(`Successfully imported ${data.count} locations from GeoNames`);
       return { success: true, data };
     } catch (error) {
       console.error('Exception importing locations:', error);
-      toast.error('An error occurred while importing locations');
+      toast.error(`An unexpected error occurred: ${error.message || 'Unknown error'}`);
       return { success: false, error };
     } finally {
       setIsImporting(false);

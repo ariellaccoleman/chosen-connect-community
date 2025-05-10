@@ -12,7 +12,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/hooks/useAuth';
 
 const CountryCodes = [
   { code: 'US', name: 'United States' },
@@ -32,13 +34,26 @@ const CountryCodes = [
 const LocationImporter = () => {
   const [selectedCountry, setSelectedCountry] = useState('US');
   const [minPopulation, setMinPopulation] = useState(15000);
+  const [error, setError] = useState<string | null>(null);
   const { importLocations, isImporting } = useGeoNames();
+  const { user } = useAuth();
 
   const handleImport = async () => {
-    await importLocations({
-      country: selectedCountry,
-      minPopulation
-    });
+    setError(null);
+    
+    if (!user) {
+      setError("You must be logged in to import locations");
+      return;
+    }
+    
+    try {
+      await importLocations({
+        country: selectedCountry,
+        minPopulation
+      });
+    } catch (err) {
+      setError(`Failed to import: ${err.message || 'Unknown error'}`);
+    }
   };
 
   return (
@@ -50,6 +65,13 @@ const LocationImporter = () => {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-2">
           <Label htmlFor="country">Country</Label>
           <select
@@ -57,6 +79,7 @@ const LocationImporter = () => {
             className="w-full rounded-md border border-gray-300 p-2"
             value={selectedCountry}
             onChange={(e) => setSelectedCountry(e.target.value)}
+            disabled={isImporting}
           >
             {CountryCodes.map((country) => (
               <option key={country.code} value={country.code}>
@@ -73,6 +96,8 @@ const LocationImporter = () => {
             type="number"
             value={minPopulation}
             onChange={(e) => setMinPopulation(Number(e.target.value))}
+            disabled={isImporting}
+            min={0}
           />
         </div>
       </CardContent>
