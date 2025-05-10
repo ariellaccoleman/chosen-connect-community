@@ -1,5 +1,5 @@
+
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
-import { decompress } from 'https://deno.land/x/zip@v1.2.3/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,8 +59,7 @@ Deno.serve(async (req) => {
       batchSize = 1000,
       country = null,
       offset = 0,
-      limit = 5000,
-      useTextFile = false // New parameter to determine if we use the .txt file directly
+      limit = 5000
     } = requestData;
     
     console.log('Processing geonames with params:', {
@@ -68,8 +67,7 @@ Deno.serve(async (req) => {
       batchSize,
       country,
       offset,
-      limit,
-      useTextFile
+      limit
     });
     
     // Initialize import statistics
@@ -80,85 +78,34 @@ Deno.serve(async (req) => {
     let importStatus = [];
     
     try {
-      let citiesText;
+      // First load country info mapping
+      const countryInfoMap = await loadCountryInfoMapping(supabase);
       
-      if (useTextFile) {
-        // Try to get the text file directly if requested
-        console.log('Fetching cities1000.txt directly from storage');
-        
-        const { data: textData, error: textError } = await supabase
-          .storage
-          .from('location-data')
-          .download('cities1000.txt');
-        
-        if (textError) {
-          console.error('Error fetching text file from storage:', textError);
-          return new Response(JSON.stringify({
-            error: 'Failed to fetch text file from storage',
-            details: textError.message
-          }), {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json'
-            },
-            status: 500
-          });
-        }
-        
-        // Convert text file to string
-        citiesText = new TextDecoder().decode(await textData.arrayBuffer());
-        console.log(`Read ${citiesText.length} characters from cities1000.txt`);
-      } else {
-        // Otherwise, try the zip file
-        console.log('Fetching cities1000.zip from storage');
-        
-        const { data: zipData, error: zipError } = await supabase
-          .storage
-          .from('location-data')
-          .download('cities1000.zip');
-        
-        if (zipError) {
-          console.error('Error fetching zip file from storage:', zipError);
-          return new Response(JSON.stringify({
-            error: 'Failed to fetch zip file from storage',
-            details: zipError.message
-          }), {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json'
-            },
-            status: 500
-          });
-        }
-        
-        // Convert zip file to bytes
-        const zipFileBytes = await zipData.arrayBuffer();
-        console.log(`Read ${zipFileBytes.byteLength} bytes from cities1000.zip`);
-        
-        try {
-          // Decompress the zip file
-          const decompressedFiles = await decompress(new Uint8Array(zipFileBytes));
-          console.log(`Decompressed ${Object.keys(decompressedFiles).length} files from zip`);
-          
-          if (!decompressedFiles['cities1000.txt']) {
-            throw new Error('cities1000.txt not found in the zip file');
-          }
-          
-          citiesText = new TextDecoder().decode(decompressedFiles['cities1000.txt']);
-        } catch (decompressError) {
-          console.error('Error decompressing zip file:', decompressError);
-          return new Response(JSON.stringify({
-            error: 'Failed to decompress zip file',
-            details: decompressError.message
-          }), {
-            headers: {
-              ...corsHeaders,
-              'Content-Type': 'application/json'
-            },
-            status: 500
-          });
-        }
+      // Get the cities text file directly
+      console.log('Fetching cities1000.txt directly from storage');
+      
+      const { data: textData, error: textError } = await supabase
+        .storage
+        .from('location-data')
+        .download('cities1000.txt');
+      
+      if (textError) {
+        console.error('Error fetching text file from storage:', textError);
+        return new Response(JSON.stringify({
+          error: 'Failed to fetch text file from storage',
+          details: textError.message
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          },
+          status: 500
+        });
       }
+      
+      // Convert text file to string
+      const citiesText = new TextDecoder().decode(await textData.arrayBuffer());
+      console.log(`Read ${citiesText.length} characters from cities1000.txt`);
       
       // Process the text content
       if (!citiesText) {
@@ -211,24 +158,9 @@ Deno.serve(async (req) => {
           continue;
         }
         
-        // Simplistic country name mapping for common countries
-        const countryNames: Record<string, string> = {
-          'US': 'United States',
-          'GB': 'United Kingdom',
-          'CA': 'Canada',
-          'AU': 'Australia',
-          'DE': 'Germany',
-          'FR': 'France',
-          'ES': 'Spain',
-          'IT': 'Italy',
-          'JP': 'Japan',
-          'CN': 'China',
-          'IN': 'India',
-          'BR': 'Brazil',
-          // Add more as needed
-        };
+        // Get country name from our mapping
+        const countryName = countryInfoMap[countryCode] || countryCode;
         
-        const countryName = countryNames[countryCode] || countryCode;
         // For region, we'll just use the admin1 code for now
         const region = admin1Code || '';
         
@@ -336,6 +268,54 @@ Deno.serve(async (req) => {
     });
   }
 });
+
+// Function to load country info mapping from countryInfo.txt
+async function loadCountryInfoMapping(supabase) {
+  try {
+    console.log('Loading country info mapping from countryInfo.txt');
+    
+    const { data: textData, error: textError } = await supabase
+      .storage
+      .from('location-data')
+      .download('countryInfo.txt');
+    
+    if (textError) {
+      console.error('Error fetching countryInfo.txt from storage:', textError);
+      return {}; // Return empty mapping on error
+    }
+    
+    // Convert text file to string
+    const countryInfoText = new TextDecoder().decode(await textData.arrayBuffer());
+    console.log(`Read ${countryInfoText.length} characters from countryInfo.txt`);
+    
+    // Parse the country info
+    const countryMap = {};
+    const lines = countryInfoText.split('\n');
+    
+    for (const line of lines) {
+      // Skip comment lines
+      if (line.trim().startsWith('#')) continue;
+      
+      const fields = line.split('\t');
+      if (fields.length >= 5) {
+        // ISO code is the first field, country name is the 5th field (index 4)
+        const isoCode = fields[0];
+        const countryName = fields[4];
+        
+        if (isoCode && countryName) {
+          countryMap[isoCode] = countryName;
+        }
+      }
+    }
+    
+    console.log(`Loaded ${Object.keys(countryMap).length} country code mappings`);
+    return countryMap;
+    
+  } catch (error) {
+    console.error('Error loading country info mapping:', error);
+    return {}; // Return empty mapping on error
+  }
+}
 
 // Helper function to process a batch of locations
 async function processLocationBatch(supabase, locations) {

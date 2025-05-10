@@ -50,7 +50,6 @@ const LocationImporter = () => {
   const [fileCountry, setFileCountry] = useState<string | null>(null);
   const [fileLimit, setFileLimit] = useState(5000);
   const [fileOffset, setFileOffset] = useState(0);
-  const [useTextFile, setUseTextFile] = useState(false);
   
   const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
@@ -93,8 +92,7 @@ const LocationImporter = () => {
           minPopulation: fileMinPopulation,
           country: fileCountry,
           offset: fileOffset,
-          limit: fileLimit,
-          useTextFile: useTextFile
+          limit: fileLimit
         });
       }
     } catch (err) {
@@ -227,7 +225,7 @@ const LocationImporter = () => {
             <Alert className="mb-4">
               <File className="h-4 w-4" />
               <AlertDescription>
-                Import directly from the local cities1000.zip file for faster processing and better reliability.
+                Import directly from the cities1000.txt file for faster processing and better reliability.
               </AlertDescription>
             </Alert>
             
@@ -286,17 +284,6 @@ const LocationImporter = () => {
                     max={20000}
                   />
                 </div>
-              </div>
-              
-              {/* New option to use text file directly */}
-              <div className="flex items-center gap-2 pt-2">
-                <Switch 
-                  id="use-text-file" 
-                  checked={useTextFile}
-                  onCheckedChange={setUseTextFile}
-                  disabled={isImporting}
-                />
-                <Label htmlFor="use-text-file">Use cities1000.txt directly (skip ZIP decompression)</Label>
               </div>
             </div>
           </TabsContent>
