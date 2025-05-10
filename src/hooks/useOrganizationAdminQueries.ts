@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationAdminWithDetails } from '@/types';
@@ -70,6 +69,90 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
   });
 };
 
+// NEW: Fetch pending admin requests for a specific organization
+export const usePendingOrganizationAdmins = (organizationId: string | undefined) => {
+  return useQuery({
+    queryKey: ['organization-admins', 'pending', organizationId],
+    queryFn: async (): Promise<OrganizationAdminWithDetails[]> => {
+      if (!organizationId) return [];
+      
+      const { data, error } = await supabase
+        .from('organization_admins')
+        .select(`
+          *,
+          profile:profiles(*),
+          organization:organizations(
+            *,
+            location:locations(*)
+          )
+        `)
+        .eq('organization_id', organizationId)
+        .eq('is_approved', false)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Error fetching pending organization admins:', error);
+        return [];
+      }
+      
+      return (data || []).map(admin => formatAdminWithDetails(admin));
+    },
+    enabled: !!organizationId,
+  });
+};
+
+// Check if user is admin for a specific organization
+export const useIsOrganizationAdmin = (userId: string | undefined, organizationId: string | undefined) => {
+  return useQuery({
+    queryKey: ['is-organization-admin', userId, organizationId],
+    queryFn: async (): Promise<boolean> => {
+      if (!userId || !organizationId) return false;
+      
+      const { data, error } = await supabase
+        .from('organization_admins')
+        .select('id')
+        .eq('profile_id', userId)
+        .eq('organization_id', organizationId)
+        .eq('is_approved', true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking if user is organization admin:', error);
+        return false;
+      }
+      
+      return !!data;
+    },
+    enabled: !!userId && !!organizationId,
+  });
+};
+
+// NEW: Check if user has a specific role in an organization
+export const useOrganizationRole = (userId: string | undefined, organizationId: string | undefined) => {
+  return useQuery({
+    queryKey: ['organization-role', userId, organizationId],
+    queryFn: async (): Promise<string | null> => {
+      if (!userId || !organizationId) return null;
+      
+      const { data, error } = await supabase
+        .from('organization_admins')
+        .select('role')
+        .eq('profile_id', userId)
+        .eq('organization_id', organizationId)
+        .eq('is_approved', true)
+        .maybeSingle();
+      
+      if (error) {
+        console.error('Error checking organization role:', error);
+        return null;
+      }
+      
+      return data?.role || null;
+    },
+    enabled: !!userId && !!organizationId,
+  });
+};
+
 // Fetch user's admin requests (for current user)
 export const useUserAdminRequests = (userId: string | undefined) => {
   return useQuery({
@@ -98,31 +181,5 @@ export const useUserAdminRequests = (userId: string | undefined) => {
       return (data || []).map(admin => formatAdminWithDetails(admin));
     },
     enabled: !!userId,
-  });
-};
-
-// Check if user is admin for a specific organization
-export const useIsOrganizationAdmin = (userId: string | undefined, organizationId: string | undefined) => {
-  return useQuery({
-    queryKey: ['is-organization-admin', userId, organizationId],
-    queryFn: async (): Promise<boolean> => {
-      if (!userId || !organizationId) return false;
-      
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select('id')
-        .eq('profile_id', userId)
-        .eq('organization_id', organizationId)
-        .eq('is_approved', true)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking if user is organization admin:', error);
-        return false;
-      }
-      
-      return !!data;
-    },
-    enabled: !!userId && !!organizationId,
   });
 };
