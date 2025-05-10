@@ -6,7 +6,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ConnectionTypeSelector } from "@/components/profile/organization/ConnectionTypeSelector";
+import ConnectionTypeSelector from "@/components/profile/organization/ConnectionTypeSelector";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 const formSchema = z.object({
