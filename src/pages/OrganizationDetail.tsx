@@ -142,14 +142,13 @@ const OrganizationDetail = () => {
   return (
     <DashboardLayout>
       <div className="container mx-auto py-6 px-4 max-w-3xl">
-        <Button variant="ghost" onClick={() => navigate("/organizations")} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Organizations
-        </Button>
-
-        <OrganizationInfo organization={organization} />
-        
-        <div className="flex justify-end mt-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
+          <Button variant="ghost" onClick={() => navigate("/organizations")} className="mb-0">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Organizations
+          </Button>
+          
+          {/* Move admin buttons or connection button to top row */}
           {user && id && (
             hasRelationship ? (
               <RequestAdminAccessButton 
@@ -169,7 +168,10 @@ const OrganizationDetail = () => {
           )}
         </div>
 
-        <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />
+        {/* Move admin alert to the top below the buttons */}
+        {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
+
+        <OrganizationInfo organization={organization} />
         
         {/* Show organization admins */}
         {id && <OrganizationAdmins organizationId={id} />}
