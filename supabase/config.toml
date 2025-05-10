@@ -4,7 +4,7 @@ project_id = "nvaqqkffmfuxdnwnqhxo"
 [api]
 enabled = true
 port = 54321
-schemas = ["public", "storage"]
+schemas = ["public", "storage", "graphql_public"]
 
 [db]
 port = 54322
@@ -18,19 +18,26 @@ api_url = "http://localhost"
 enabled = true
 port = 54324
 
+[storage]
+enabled = true
+
 [auth]
 enabled = true
 site_url = "http://localhost:3000"
 
-[storage]
+[auth.email]
 enabled = true
-
-[realtime]
-enabled = true
+double_confirm_changes = true
+double_confirm_delete = true
 
 [analytics]
 enabled = false
 port = 54327
 
-[functions.set_admin_role]
+[experimental]
+vault_enabled = false
+config_enabled = false
+
+[functions]
+[functions.import-geonames]
 verify_jwt = true
