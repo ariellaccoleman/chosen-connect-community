@@ -23,19 +23,15 @@ const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) =
     md: "h-10 w-10",
     lg: "h-12 w-12"
   };
-  
-  const containerClass = `relative rounded-full overflow-hidden ${sizeClasses[size]} ${className}`;
 
   return (
-    <div className={containerClass}>
+    <div className={`${sizeClasses[size]} ${className}`}>
       {profile?.avatar_url ? (
-        <div className="h-full w-full flex items-center justify-center">
-          <img 
-            src={profile.avatar_url} 
-            alt="User avatar"
-            className="object-cover w-full h-full" 
-          />
-        </div>
+        <img 
+          src={profile.avatar_url} 
+          alt="User avatar"
+          className="object-cover w-full h-full rounded-full" 
+        />
       ) : (
         <Avatar className={`${sizeClasses[size]}`}>
           <AvatarFallback className="bg-chosen-blue text-white">
