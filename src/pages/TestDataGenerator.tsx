@@ -4,7 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardContent, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { generateTestData } from "@/utils/generateTestData";
+import { generateTestData } from "@/utils/testData";
 import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
