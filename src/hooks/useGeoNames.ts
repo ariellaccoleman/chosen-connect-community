@@ -12,6 +12,7 @@ interface ImportGeoNamesParams {
   startRow?: number;
   maxBatches?: number;
   continueToken?: string | null;
+  forceContinue?: boolean;
 }
 
 interface ImportResult {
@@ -47,6 +48,7 @@ export const useGeoNames = () => {
     continuationToken: string | null;
   } | null>(null);
 
+  // Function to import from the GeoNames API
   const importLocations = async ({ 
     country, 
     maxResults = 1000, 
@@ -55,7 +57,8 @@ export const useGeoNames = () => {
     batchSize = 1000,
     startRow = 0,
     maxBatches = 5,
-    continueToken = null
+    continueToken = null,
+    forceContinue = false
   }: ImportGeoNamesParams): Promise<ImportResult> => {
     setIsImporting(true);
     
@@ -72,7 +75,8 @@ export const useGeoNames = () => {
         batchSize,
         startRow,
         maxBatches,
-        continueToken
+        continueToken,
+        forceContinue
       });
       
       const { data, error } = await supabase.functions.invoke('import-geonames', {
@@ -83,7 +87,8 @@ export const useGeoNames = () => {
           batchSize,
           startRow,
           maxBatches,
-          continueToken
+          continueToken,
+          forceContinue
         }
       });
       
@@ -146,15 +151,101 @@ export const useGeoNames = () => {
     }
   };
   
-  const continueImport = async (): Promise<ImportResult | null> => {
-    if (!importProgress || !importProgress.hasMoreData || !importProgress.continuationToken) {
-      toast.error('No import to continue');
+  // Function to import from local cities1000.zip file
+  const importLocationsFromFile = async ({
+    minPopulation = 15000,
+    batchSize = 1000,
+    country = null,
+    offset = 0,
+    limit = 5000
+  }: {
+    minPopulation?: number;
+    batchSize?: number;
+    country?: string | null;
+    offset?: number;
+    limit?: number;
+  }): Promise<ImportResult> => {
+    setIsImporting(true);
+    
+    try {
+      console.log('Importing locations from local file with params:', { 
+        minPopulation,
+        batchSize,
+        country,
+        offset,
+        limit
+      });
+      
+      const { data, error } = await supabase.functions.invoke('import-local-geonames', {
+        body: {
+          minPopulation,
+          batchSize,
+          country,
+          offset,
+          limit
+        }
+      });
+      
+      if (error) {
+        console.error('Error importing locations from file:', error);
+        toast.error(`Failed to import locations from file: ${error.message || 'Unknown error'}`);
+        return { success: false, error };
+      }
+      
+      if (!data || (!data.count && data.count !== 0)) {
+        const source = country ? `for ${country}` : 'from file';
+        toast.info(`No locations found ${source} with population >= ${minPopulation}`);
+        return { success: true, data: { count: 0 } };
+      }
+      
+      // Update progress state
+      setImportProgress({
+        inserted: data.count || 0,
+        updated: data.updated || 0,
+        skipped: data.skipped || 0,
+        total: data.total || 0,
+        hasMoreData: data.hasMoreData || false,
+        nextStartRow: data.nextOffset || null,
+        continuationToken: data.continuationToken || null
+      });
+      
+      // Enhanced success message with more details
+      let successMessage = `Successfully imported ${data.count} locations from file`;
+      if (data.updated && data.updated > 0) {
+        successMessage += `, updated ${data.updated} existing records`;
+      }
+      if (data.skipped && data.skipped > 0) {
+        successMessage += ` (${data.skipped} skipped)`;
+      }
+      
+      if (data.hasMoreData) {
+        successMessage += '. More data available.';
+      }
+      
+      toast.success(successMessage);
+      return { 
+        success: true, 
+        ...data 
+      };
+    } catch (error) {
+      console.error('Exception importing locations from file:', error);
+      toast.error(`An unexpected error occurred: ${error.message || 'Unknown error'}`);
+      return { success: false, error };
+    } finally {
+      setIsImporting(false);
+    }
+  };
+  
+  const continueImport = async (forceContinue = false): Promise<ImportResult | null> => {
+    if (!importProgress || (!importProgress.hasMoreData && !forceContinue) || !importProgress.continuationToken) {
+      toast.error('No import to continue or continuation not possible');
       return null;
     }
     
     return importLocations({
       continueToken: importProgress.continuationToken,
-      globalImport: true // The continuation token contains all necessary state
+      globalImport: true, // The continuation token contains all necessary state
+      forceContinue
     });
   };
 
@@ -164,6 +255,7 @@ export const useGeoNames = () => {
 
   return {
     importLocations,
+    importLocationsFromFile,
     continueImport,
     resetImportProgress,
     isImporting,

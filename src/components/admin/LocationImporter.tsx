@@ -12,11 +12,12 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw } from 'lucide-react';
+import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw, Database, FileZip } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
 
 const CountryCodes = [
   { code: 'US', name: 'United States' },
@@ -40,10 +41,17 @@ const LocationImporter = () => {
   const [batchSize, setBatchSize] = useState(1000);
   const [maxBatches, setMaxBatches] = useState(5);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'country' | 'global'>('country');
+  const [activeTab, setActiveTab] = useState<'country' | 'global' | 'file'>('file');
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [forceContinue, setForceContinue] = useState(false);
   
-  const { importLocations, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
+  // File import specific settings
+  const [fileMinPopulation, setFileMinPopulation] = useState(15000);
+  const [fileCountry, setFileCountry] = useState<string | null>(null);
+  const [fileLimit, setFileLimit] = useState(5000);
+  const [fileOffset, setFileOffset] = useState(0);
+  
+  const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
 
   // Calculate total imported percentage for progress bar
@@ -72,12 +80,19 @@ const LocationImporter = () => {
           batchSize,
           maxBatches
         });
-      } else {
+      } else if (activeTab === 'global') {
         await importLocations({
           globalImport: true,
           minPopulation: globalMinPopulation,
           batchSize,
           maxBatches
+        });
+      } else if (activeTab === 'file') {
+        await importLocationsFromFile({
+          minPopulation: fileMinPopulation,
+          country: fileCountry,
+          offset: fileOffset,
+          limit: fileLimit
         });
       }
     } catch (err) {
@@ -94,7 +109,7 @@ const LocationImporter = () => {
     }
     
     try {
-      await continueImport();
+      await continueImport(forceContinue);
     } catch (err) {
       setError(`Failed to continue import: ${err.message || 'Unknown error'}`);
     }
@@ -105,7 +120,7 @@ const LocationImporter = () => {
       <CardHeader>
         <CardTitle>Import Locations</CardTitle>
         <CardDescription>
-          Import locations from GeoNames database
+          Import locations from GeoNames database or local file
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -129,7 +144,7 @@ const LocationImporter = () => {
               <div>Skipped: <span className="font-medium">{importProgress.skipped}</span></div>
               <div>Total: <span className="font-medium">{importProgress.total}</span></div>
             </div>
-            <div className="flex gap-2 mt-2">
+            <div className="flex flex-wrap gap-2 mt-2">
               {importProgress.hasMoreData && (
                 <Button 
                   onClick={handleContinueImport} 
@@ -142,6 +157,32 @@ const LocationImporter = () => {
                   Continue Import
                 </Button>
               )}
+              
+              {/* Force continue option */}
+              {importProgress.continuationToken && !importProgress.hasMoreData && (
+                <div className="flex items-center gap-2">
+                  <Switch 
+                    id="force-continue" 
+                    checked={forceContinue}
+                    onCheckedChange={setForceContinue}
+                  />
+                  <Label htmlFor="force-continue" className="text-sm">Force continue</Label>
+                  
+                  {forceContinue && (
+                    <Button 
+                      onClick={handleContinueImport} 
+                      disabled={isImporting} 
+                      size="sm"
+                      variant="outline"
+                      className="flex gap-1"
+                    >
+                      <RotateCw className="h-4 w-4" />
+                      Force Continue
+                    </Button>
+                  )}
+                </div>
+              )}
+              
               <Button 
                 onClick={resetImportProgress} 
                 variant="outline" 
@@ -152,14 +193,100 @@ const LocationImporter = () => {
                 Reset
               </Button>
             </div>
+            
+            {/* Debug info for continuation token */}
+            {showAdvanced && importProgress.continuationToken && (
+              <div className="mt-2 p-2 bg-muted rounded-md text-xs break-all">
+                <div className="font-semibold mb-1">Continuation Token:</div>
+                <div>{importProgress.continuationToken}</div>
+              </div>
+            )}
           </div>
         )}
         
-        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'country' | 'global')}>
-          <TabsList className="grid grid-cols-2 mb-4">
-            <TabsTrigger value="country">By Country</TabsTrigger>
-            <TabsTrigger value="global">Global Import</TabsTrigger>
+        <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'country' | 'global' | 'file')}>
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="file">
+              <FileZip className="h-4 w-4 mr-2" />
+              Local File
+            </TabsTrigger>
+            <TabsTrigger value="country">
+              <Database className="h-4 w-4 mr-2" />
+              API By Country
+            </TabsTrigger>
+            <TabsTrigger value="global">
+              <Globe className="h-4 w-4 mr-2" />
+              API Global
+            </TabsTrigger>
           </TabsList>
+          
+          {/* File import tab */}
+          <TabsContent value="file" className="space-y-4">
+            <Alert className="mb-4">
+              <FileZip className="h-4 w-4" />
+              <AlertDescription>
+                Import directly from the local cities1000.zip file for faster processing and better reliability.
+              </AlertDescription>
+            </Alert>
+            
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="file-min-population">Minimum Population</Label>
+                <Input
+                  id="file-min-population"
+                  type="number"
+                  value={fileMinPopulation}
+                  onChange={(e) => setFileMinPopulation(Number(e.target.value))}
+                  disabled={isImporting}
+                  min={0}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="file-country">Country (optional)</Label>
+                <select
+                  id="file-country"
+                  className="w-full rounded-md border border-gray-300 p-2"
+                  value={fileCountry || ""}
+                  onChange={(e) => setFileCountry(e.target.value || null)}
+                  disabled={isImporting}
+                >
+                  <option value="">All Countries</option>
+                  {CountryCodes.map((country) => (
+                    <option key={country.code} value={country.code}>
+                      {country.name} ({country.code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="file-offset">Start Offset</Label>
+                  <Input
+                    id="file-offset"
+                    type="number"
+                    value={fileOffset}
+                    onChange={(e) => setFileOffset(Number(e.target.value))}
+                    disabled={isImporting}
+                    min={0}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="file-limit">Record Limit</Label>
+                  <Input
+                    id="file-limit"
+                    type="number"
+                    value={fileLimit}
+                    onChange={(e) => setFileLimit(Number(e.target.value))}
+                    disabled={isImporting}
+                    min={100}
+                    max={20000}
+                  />
+                </div>
+              </div>
+            </div>
+          </TabsContent>
           
           <TabsContent value="country" className="space-y-4">
             <div className="space-y-2">
@@ -310,7 +437,9 @@ const LocationImporter = () => {
               Importing...
             </>
           ) : (
-            activeTab === 'country' ? 'Import Country Locations' : 'Import Global Locations'
+            activeTab === 'country' ? 'Import Country Locations' : (
+              activeTab === 'global' ? 'Import Global Locations' : 'Import From File'
+            )
           )}
         </Button>
       </CardFooter>

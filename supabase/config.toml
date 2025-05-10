@@ -1,43 +1,7 @@
 
+# This file was created by Lovable. Edit it carefully.
 project_id = "nvaqqkffmfuxdnwnqhxo"
 
-[api]
-enabled = true
-port = 54321
-schemas = ["public", "storage", "graphql_public"]
-
-[db]
-port = 54322
-
-[studio]
-enabled = true
-port = 54323
-api_url = "http://localhost"
-
-[inbucket]
-enabled = true
-port = 54324
-
-[storage]
-enabled = true
-
-[auth]
-enabled = true
-site_url = "http://localhost:3000"
-
-[auth.email]
-enabled = true
-double_confirm_changes = true
-double_confirm_delete = true
-
-[analytics]
-enabled = false
-port = 54327
-
-[experimental]
-vault_enabled = false
-config_enabled = false
-
-[functions]
 [functions.import-geonames]
-verify_jwt = true
+
+[functions.import-local-geonames]
