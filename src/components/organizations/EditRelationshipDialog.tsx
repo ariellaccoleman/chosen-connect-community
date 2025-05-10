@@ -46,8 +46,8 @@ const EditRelationshipDialog = ({
   isOpen,
   onClose
 }: EditRelationshipDialogProps) => {
-  const [connectionType, setConnectionType] = useState<"current" | "former" | "ally">(
-    (relationship.connection_type as "current" | "former" | "ally") || "current"
+  const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">(
+    (relationship.connection_type as "current" | "former" | "connected_insider") || "current"
   );
   const [department, setDepartment] = useState(relationship.department || "");
   const [notes, setNotes] = useState(relationship.notes || "");
@@ -58,7 +58,7 @@ const EditRelationshipDialog = ({
 
   useEffect(() => {
     // Reset form when relationship changes
-    setConnectionType((relationship.connection_type as "current" | "former" | "ally") || "current");
+    setConnectionType((relationship.connection_type as "current" | "former" | "connected_insider") || "current");
     setDepartment(relationship.department || "");
     setNotes(relationship.notes || "");
   }, [relationship]);
@@ -107,7 +107,7 @@ const EditRelationshipDialog = ({
               <Label htmlFor="connection-type">Connection Type</Label>
               <Select 
                 value={connectionType} 
-                onValueChange={(value: "current" | "former" | "ally") => setConnectionType(value)}
+                onValueChange={(value: "current" | "former" | "connected_insider") => setConnectionType(value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select connection type" />
@@ -115,7 +115,7 @@ const EditRelationshipDialog = ({
                 <SelectContent>
                   <SelectItem value="current">Current Member</SelectItem>
                   <SelectItem value="former">Former Member</SelectItem>
-                  <SelectItem value="ally">Allied Organization</SelectItem>
+                  <SelectItem value="connected_insider">Connected Insider</SelectItem>
                 </SelectContent>
               </Select>
             </div>

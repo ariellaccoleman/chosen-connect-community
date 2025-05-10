@@ -49,7 +49,13 @@ export const useAddOrganizationRelationship = () => {
       // Now create the organization relationship
       const { error } = await supabase
         .from('org_relationships')
-        .insert(relationship);
+        .insert({
+          profile_id: relationship.profile_id,
+          organization_id: relationship.organization_id,
+          connection_type: relationship.connection_type,
+          department: relationship.department,
+          notes: relationship.notes
+        });
       
       if (error) {
         console.error('Error adding organization relationship:', error);
@@ -85,7 +91,11 @@ export const useUpdateOrganizationRelationship = () => {
     }) => {
       const { error } = await supabase
         .from('org_relationships')
-        .update(relationshipData)
+        .update({
+          connection_type: relationshipData.connection_type,
+          department: relationshipData.department,
+          notes: relationshipData.notes
+        })
         .eq('id', relationshipId);
       
       if (error) throw error;

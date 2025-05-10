@@ -56,7 +56,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
 
   const handleAddOrganization = (data: {
     organizationId: string;
-    connectionType: "current" | "former" | "ally";
+    connectionType: "current" | "former" | "connected_insider";
     department: string | null;
     notes: string | null;
   }) => {

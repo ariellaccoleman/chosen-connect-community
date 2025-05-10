@@ -53,7 +53,7 @@ const ProfileEdit = () => {
   
   const handleAddOrganization = async (data: {
     organizationId: string;
-    connectionType: "current" | "former" | "ally";
+    connectionType: "current" | "former" | "connected_insider";
     department: string | null;
     notes: string | null;
   }) => {

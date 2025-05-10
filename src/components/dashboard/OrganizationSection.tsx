@@ -28,7 +28,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
   // Group organizations by connection type
   const currentOrgs = relationships.filter(rel => rel.connection_type === 'current');
   const formerOrgs = relationships.filter(rel => rel.connection_type === 'former');
-  const allyOrgs = relationships.filter(rel => rel.connection_type === 'ally');
+  const connectedInsiderOrgs = relationships.filter(rel => rel.connection_type === 'connected_insider');
   
   return (
     <>
@@ -69,10 +69,10 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
                 />
               )}
               
-              {allyOrgs.length > 0 && (
+              {connectedInsiderOrgs.length > 0 && (
                 <OrganizationGroup 
-                  title="Allied"
-                  relationships={allyOrgs} 
+                  title="Connected Insider"
+                  relationships={connectedInsiderOrgs} 
                   onEditClick={handleEditRelationship} 
                 />
               )}

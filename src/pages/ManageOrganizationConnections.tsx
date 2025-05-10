@@ -44,7 +44,7 @@ const ManageOrganizationConnections = () => {
 
   const currentRelationships = formattedRelationships.filter(rel => rel.connection_type === 'current');
   const formerRelationships = formattedRelationships.filter(rel => rel.connection_type === 'former');
-  const allyRelationships = formattedRelationships.filter(rel => rel.connection_type === 'ally');
+  const connectedInsiderRelationships = formattedRelationships.filter(rel => rel.connection_type === 'connected_insider');
 
   const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
     setRelationshipToEdit(relationship);
@@ -91,8 +91,8 @@ const ManageOrganizationConnections = () => {
                   <TabsTrigger value="former">
                     Former ({formerRelationships.length})
                   </TabsTrigger>
-                  <TabsTrigger value="ally">
-                    Allied ({allyRelationships.length})
+                  <TabsTrigger value="connected_insider">
+                    Connected Insider ({connectedInsiderRelationships.length})
                   </TabsTrigger>
                 </TabsList>
                 
@@ -120,11 +120,11 @@ const ManageOrganizationConnections = () => {
                   />
                 </TabsContent>
                 
-                <TabsContent value="ally">
+                <TabsContent value="connected_insider">
                   <OrganizationRelationshipList 
-                    relationships={allyRelationships}
+                    relationships={connectedInsiderRelationships}
                     onEditClick={handleEditClick}
-                    emptyMessage="No allied organizations"
+                    emptyMessage="No connected insider organizations"
                   />
                 </TabsContent>
               </Tabs>

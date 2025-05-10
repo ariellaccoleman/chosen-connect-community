@@ -20,7 +20,7 @@ interface ProfileFormProps {
   onCancel: () => void;
   onAddOrganization?: (data: { 
     organizationId: string; 
-    connectionType: "current" | "former" | "ally"; 
+    connectionType: "current" | "former" | "connected_insider"; 
     department: string | null; 
     notes: string | null
   }) => void;
@@ -91,7 +91,7 @@ function useFormWatchEffects(
   form: ReturnType<typeof useForm<ProfileFormValues>>,
   onAddOrganization?: (data: { 
     organizationId: string; 
-    connectionType: "current" | "former" | "ally"; 
+    connectionType: "current" | "former" | "connected_insider"; 
     department: string | null; 
     notes: string | null
   }) => void,
