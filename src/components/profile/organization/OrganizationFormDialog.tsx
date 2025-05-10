@@ -113,7 +113,6 @@ const OrganizationFormDialog = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
-                {/* Fixed Command component implementation with proper structure */}
                 <Command>
                   <CommandInput 
                     placeholder="Search organizations..." 
@@ -161,8 +160,8 @@ const OrganizationFormDialog = ({
                 <SelectValue placeholder="Select connection type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="current">Current Member</SelectItem>
-                <SelectItem value="former">Former Member</SelectItem>
+                <SelectItem value="current">Current Employee</SelectItem>
+                <SelectItem value="former">Former Employee</SelectItem>
                 <SelectItem value="connected_insider">Connected Insider</SelectItem>
               </SelectContent>
             </Select>

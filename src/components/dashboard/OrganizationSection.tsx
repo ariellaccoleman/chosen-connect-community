@@ -55,7 +55,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
             <div className="space-y-6">
               {currentOrgs.length > 0 && (
                 <OrganizationGroup 
-                  title="Current"
+                  title="Current Employee"
                   relationships={currentOrgs} 
                   onEditClick={handleEditRelationship} 
                 />
@@ -63,7 +63,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
               
               {formerOrgs.length > 0 && (
                 <OrganizationGroup 
-                  title="Former"
+                  title="Former Employee"
                   relationships={formerOrgs} 
                   onEditClick={handleEditRelationship} 
                 />

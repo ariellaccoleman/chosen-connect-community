@@ -89,8 +89,8 @@ const EditRelationshipDialog = ({ relationship, isOpen, onClose }: EditRelations
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="current">Current Organization</SelectItem>
-                        <SelectItem value="former">Former Organization</SelectItem>
+                        <SelectItem value="current">Current Employee</SelectItem>
+                        <SelectItem value="former">Former Employee</SelectItem>
                         <SelectItem value="connected_insider">Connected Insider</SelectItem>
                       </SelectContent>
                     </Select>

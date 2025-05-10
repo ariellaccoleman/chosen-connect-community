@@ -133,13 +133,13 @@ const ManageOrganizationConnections = () => {
                     All ({formattedRelationships.length})
                   </TabsTrigger>
                   <TabsTrigger value="current">
-                    Current ({currentRelationships.length})
+                    Current Employees ({currentRelationships.length})
                   </TabsTrigger>
                   <TabsTrigger value="former">
-                    Former ({formerRelationships.length})
+                    Former Employees ({formerRelationships.length})
                   </TabsTrigger>
                   <TabsTrigger value="connected_insider">
-                    Connected Insider ({connectedInsiderRelationships.length})
+                    Connected Insiders ({connectedInsiderRelationships.length})
                   </TabsTrigger>
                 </TabsList>
                 
