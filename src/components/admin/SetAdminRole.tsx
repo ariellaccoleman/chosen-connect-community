@@ -8,12 +8,17 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const SetAdminRole = () => {
   const { user } = useAuth();
-  const [email, setEmail] = useState("drcoleman@gmail.com");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSetAdmin = async () => {
     if (!user || user.user_metadata?.role !== "admin") {
       toast.error("You must be an admin to perform this action");
+      return;
+    }
+
+    if (!email.trim()) {
+      toast.error("Please enter an email address");
       return;
     }
 
@@ -40,13 +45,6 @@ export const SetAdminRole = () => {
       setIsLoading(false);
     }
   };
-
-  // Execute automatically for drcoleman@gmail.com
-  if (user && user.user_metadata?.role === "admin" && !isLoading) {
-    setTimeout(() => {
-      handleSetAdmin();
-    }, 500);
-  }
 
   return (
     <div className="space-y-4 p-4 border rounded-md">
