@@ -34,9 +34,11 @@ serve(async (req) => {
 
     console.log(`Attempting to set user ${email} as admin`);
 
-    // Get the user by email
+    // Get the user by email - explicitly filter by the exact email
     const { data: userData, error: userError } = await supabaseClient.auth
-      .admin.listUsers({ filter: { email } });
+      .admin.listUsers({ 
+        filter: { email: email } 
+      });
     
     if (userError || !userData || userData.users.length === 0) {
       console.error("Error finding user:", userError || "User not found");
@@ -49,14 +51,29 @@ serve(async (req) => {
       );
     }
 
-    const user = userData.users[0];
+    // Get the first user that exactly matches the email
+    const user = userData.users.find(u => u.email === email);
+    
+    if (!user) {
+      return new Response(
+        JSON.stringify({ error: "User not found with exact email match" }),
+        { 
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 404 
+        }
+      );
+    }
+
     console.log(`Found user with ID: ${user.id}`);
 
     // Update the user's metadata to include admin role
     const { data, error } = await supabaseClient.auth.admin.updateUserById(
       user.id,
       {
-        user_metadata: { role: 'admin', ...user.user_metadata }
+        user_metadata: { 
+          role: 'admin',
+          ...user.user_metadata 
+        }
       }
     );
 
@@ -74,7 +91,10 @@ serve(async (req) => {
     console.log(`Successfully set ${email} as admin`);
 
     return new Response(
-      JSON.stringify({ message: `Successfully set ${email} as admin`, user: data }),
+      JSON.stringify({ 
+        message: `Successfully set ${email} as admin`, 
+        user: data 
+      }),
       { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200 

@@ -30,6 +30,9 @@ export const SetAdminRole = () => {
       }
 
       toast.success(data.message || `Successfully set ${email} as admin`);
+      
+      // Log the full response to help with debugging
+      console.log("Set admin response:", data);
     } catch (error) {
       console.error("Error:", error);
       toast.error("An unexpected error occurred");
