@@ -23,6 +23,7 @@ import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
 import { formatLocationWithDetails } from "@/utils/adminFormatters";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { useToggle } from "@/hooks/useToggle";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -66,13 +67,13 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
       department: data.department,
       notes: data.notes
     });
-    setIsAddingNew(false); // Ensure dialog closes after form submission
+    setIsAddingNew(false); // Close the dialog after form submission
   };
 
-  // Make sure that clicking the button in OrganizationHeader shows the dialog
+  // Toggle function to show the add organization dialog
   const toggleAddOrganization = () => {
     console.log("Toggle add organization dialog"); // Debug log
-    setIsAddingNew(true);
+    setIsAddingNew(true); // Set state to show dialog
   };
 
   return (
@@ -91,15 +92,14 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
           onManageClick={() => form.setValue("navigateToManageOrgs", true)}
         />
 
-        {/* Add New Organization Form */}
-        {isAddingNew && (
-          <OrganizationFormDialog
-            organizations={availableOrganizations}
-            isLoadingOrgs={isLoadingOrgs}
-            onClose={() => setIsAddingNew(false)}
-            onSubmit={handleAddOrganization}
-          />
-        )}
+        {/* Always render the dialog but control visibility with isAddingNew */}
+        <OrganizationFormDialog
+          organizations={availableOrganizations}
+          isLoadingOrgs={isLoadingOrgs}
+          onClose={() => setIsAddingNew(false)}
+          onSubmit={handleAddOrganization}
+          isOpen={isAddingNew}
+        />
 
         <FormDescription>
           Manage your organization connections or add new ones. You can add more details and edit existing connections from the "Manage Organizations" page.
