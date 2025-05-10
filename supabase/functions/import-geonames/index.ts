@@ -54,12 +54,12 @@ Deno.serve(async (req) => {
     
     // Parse the request body
     const requestData = await req.json();
-    const { country, maxResults = 1000, minPopulation = 15000 } = requestData;
+    const { country, maxResults = 1000, minPopulation = 15000, globalImport = false } = requestData;
     
-    if (!country) {
-      console.error('Missing country parameter');
+    if (!country && !globalImport) {
+      console.error('Missing country parameter or globalImport flag');
       return new Response(JSON.stringify({
-        error: 'Country parameter is required'
+        error: 'Either country parameter or globalImport flag is required'
       }), {
         headers: {
           ...corsHeaders,
@@ -68,8 +68,6 @@ Deno.serve(async (req) => {
         status: 400
       });
     }
-    
-    console.log(`Fetching cities for country: ${country}, minPopulation: ${minPopulation}`);
     
     // Fetch cities from GeoNames API
     const geoNamesUsername = Deno.env.get('GEONAMES_USERNAME');
@@ -86,7 +84,16 @@ Deno.serve(async (req) => {
       });
     }
     
-    const geoNamesUrl = `http://api.geonames.org/searchJSON?country=${country}&cities=cities1000&maxRows=${maxResults}&username=${geoNamesUsername}&orderby=population&style=full`;
+    let geoNamesUrl;
+    if (globalImport) {
+      console.log(`Fetching global cities with minimum population: ${minPopulation}`);
+      // Use cities1000 dataset (cities with population > 1000)
+      geoNamesUrl = `http://api.geonames.org/searchJSON?cities=cities1000&maxRows=${maxResults}&username=${geoNamesUsername}&orderby=population&style=full`;
+    } else {
+      console.log(`Fetching cities for country: ${country}, minPopulation: ${minPopulation}`);
+      geoNamesUrl = `http://api.geonames.org/searchJSON?country=${country}&cities=cities1000&maxRows=${maxResults}&username=${geoNamesUsername}&orderby=population&style=full`;
+    }
+    
     console.log(`Calling GeoNames API: ${geoNamesUrl}`);
     
     const response = await fetch(geoNamesUrl);
@@ -127,9 +134,10 @@ Deno.serve(async (req) => {
     console.log(`Filtered to ${cities.length} cities with population >= ${minPopulation}`);
     
     if (cities.length === 0) {
+      const source = globalImport ? 'globally' : `for ${country}`;
       return new Response(JSON.stringify({
         success: true,
-        message: `No cities found for ${country} with population >= ${minPopulation}`,
+        message: `No cities found ${source} with population >= ${minPopulation}`,
         count: 0
       }), {
         headers: {
@@ -179,9 +187,10 @@ Deno.serve(async (req) => {
         }
       }
       
+      const source = globalImport ? 'globally' : `for ${country}`;
       return new Response(JSON.stringify({
         success: true,
-        message: `Successfully imported cities from GeoNames for ${country}`,
+        message: `Successfully imported cities from GeoNames ${source}`,
         count: insertedCount,
         total: locationsToInsert.length,
         skipped: skippedCount

@@ -4,25 +4,42 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
 interface ImportGeoNamesParams {
-  country: string;
+  country?: string;
   maxResults?: number;
   minPopulation?: number;
+  globalImport?: boolean;
 }
 
 export const useGeoNames = () => {
   const [isImporting, setIsImporting] = useState(false);
 
-  const importLocations = async ({ country, maxResults = 1000, minPopulation = 15000 }: ImportGeoNamesParams) => {
+  const importLocations = async ({ 
+    country, 
+    maxResults = 1000, 
+    minPopulation = 15000,
+    globalImport = false
+  }: ImportGeoNamesParams) => {
     setIsImporting(true);
     
     try {
-      console.log('Calling import-geonames function with params:', { country, maxResults, minPopulation });
+      if (!globalImport && !country) {
+        toast.error('Either country or globalImport parameter must be provided');
+        return { success: false, error: 'Missing parameters' };
+      }
+      
+      console.log('Calling import-geonames function with params:', { 
+        country, 
+        maxResults, 
+        minPopulation,
+        globalImport
+      });
       
       const { data, error } = await supabase.functions.invoke('import-geonames', {
         body: {
           country,
           maxResults,
-          minPopulation
+          minPopulation,
+          globalImport
         }
       });
       
@@ -42,7 +59,8 @@ export const useGeoNames = () => {
       }
       
       if (!data || !data.count) {
-        toast.info(`No locations found for ${country} with population >= ${minPopulation}`);
+        const source = globalImport ? 'globally' : `for ${country}`;
+        toast.info(`No locations found ${source} with population >= ${minPopulation}`);
         return { success: true, data: { count: 0 } };
       }
       
