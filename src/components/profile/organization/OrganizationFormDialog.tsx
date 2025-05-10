@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -25,6 +25,7 @@ import {
   CommandGroup,
   CommandInput,
   CommandItem,
+  CommandList,
 } from "@/components/ui/command";
 import {
   Popover,
@@ -112,33 +113,39 @@ const OrganizationFormDialog = ({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-full p-0">
+                {/* Fixed Command component implementation with proper structure */}
                 <Command>
-                  <CommandInput placeholder="Search organizations..." />
-                  <CommandEmpty>
-                    {isLoadingOrgs 
-                      ? "Loading..." 
-                      : "No organizations found."}
-                  </CommandEmpty>
-                  <CommandGroup className="max-h-64 overflow-y-auto">
-                    {organizations.map((org) => (
-                      <CommandItem
-                        key={org.id}
-                        value={org.name}
-                        onSelect={() => {
-                          setSelectedOrgId(org.id);
-                          setOpen(false);
-                        }}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedOrgId === org.id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {org.name}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
+                  <CommandInput 
+                    placeholder="Search organizations..." 
+                    className="h-9"
+                  />
+                  <CommandList>
+                    <CommandEmpty>
+                      {isLoadingOrgs 
+                        ? "Loading..." 
+                        : "No organizations found."}
+                    </CommandEmpty>
+                    <CommandGroup className="max-h-64 overflow-y-auto">
+                      {organizations.map((org) => (
+                        <CommandItem
+                          key={org.id}
+                          value={org.name}
+                          onSelect={() => {
+                            setSelectedOrgId(org.id);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedOrgId === org.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {org.name}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
                 </Command>
               </PopoverContent>
             </Popover>
