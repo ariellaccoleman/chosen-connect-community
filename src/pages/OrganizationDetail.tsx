@@ -12,7 +12,6 @@ import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
-import PendingAdminRequests from "@/components/organizations/PendingAdminRequests";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +20,6 @@ const OrganizationDetail = () => {
   const [loading, setLoading] = useState(true);
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   const { data: userRole } = useOrganizationRole(user?.id, id);
-  const isOrgOwner = userRole === "owner";
   
   // Get user's relationships
   const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
@@ -109,11 +107,6 @@ const OrganizationDetail = () => {
         {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
 
         <OrganizationInfo organization={organization} />
-        
-        {/* Show pending admin requests only to organization owners */}
-        {isOrgOwner && id && (
-          <PendingAdminRequests organizationId={id} />
-        )}
         
         {/* Show organization admins */}
         {id && <OrganizationAdmins organizationId={id} />}
