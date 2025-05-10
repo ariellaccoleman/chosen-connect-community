@@ -148,43 +148,34 @@ Deno.serve(async (req) => {
     
     // Insert into the locations table
     try {
-      let insertedCount = 0;
+      // Use upsert operation with the ON CONFLICT DO NOTHING clause
+      // This leverages our new unique constraint
       const batchSize = 100;
+      let insertedCount = 0;
+      let skippedCount = 0;
       
-      // Process locations in batches to avoid overloading the database
+      // Process locations in batches
       for (let i = 0; i < locationsToInsert.length; i += batchSize) {
         const batch = locationsToInsert.slice(i, i + batchSize);
-        console.log(`Processing batch ${i / batchSize + 1} of ${Math.ceil(locationsToInsert.length / batchSize)}`);
+        console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(locationsToInsert.length / batchSize)}`);
         
-        // For each location in the batch, check if it already exists
-        for (const location of batch) {
-          const { data: existingLocations, error: checkError } = await supabase
-            .from('locations')
-            .select('id')
-            .eq('city', location.city)
-            .eq('region', location.region)
-            .eq('country', location.country)
-            .limit(1);
-          
-          if (checkError) {
-            console.error('Error checking for existing location:', checkError);
-            continue;
-          }
-          
-          // Only insert if the location doesn't exist
-          if (!existingLocations || existingLocations.length === 0) {
-            const { error: insertError } = await supabase
-              .from('locations')
-              .insert(location);
-            
-            if (insertError) {
-              console.error('Error inserting location:', insertError);
-            } else {
-              insertedCount++;
-            }
-          } else {
-            console.log(`Location already exists: ${location.city}, ${location.region}, ${location.country}`);
-          }
+        const { data: insertResult, error: insertError } = await supabase
+          .from('locations')
+          .upsert(batch, { 
+            onConflict: 'city,region,country', 
+            ignoreDuplicates: true 
+          })
+          .select();
+        
+        if (insertError) {
+          console.error('Error upserting locations:', insertError);
+          continue;
+        }
+        
+        // Count how many new records were inserted
+        if (insertResult) {
+          insertedCount += insertResult.length;
+          skippedCount += batch.length - insertResult.length;
         }
       }
       
@@ -193,7 +184,7 @@ Deno.serve(async (req) => {
         message: `Successfully imported cities from GeoNames for ${country}`,
         count: insertedCount,
         total: locationsToInsert.length,
-        skipped: locationsToInsert.length - insertedCount
+        skipped: skippedCount
       }), {
         headers: {
           ...corsHeaders,
