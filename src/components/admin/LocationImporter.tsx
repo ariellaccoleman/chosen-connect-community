@@ -35,7 +35,7 @@ const CountryCodes = [
 const LocationImporter = () => {
   const [selectedCountry, setSelectedCountry] = useState('US');
   const [minPopulation, setMinPopulation] = useState(15000);
-  const [globalMinPopulation, setGlobalMinPopulation] = useState(100000);
+  const [globalMinPopulation, setGlobalMinPopulation] = useState(15000);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'country' | 'global'>('country');
   const { importLocations, isImporting } = useGeoNames();
@@ -123,13 +123,13 @@ const LocationImporter = () => {
             <Alert className="mb-4">
               <Globe className="h-4 w-4" />
               <AlertDescription>
-                Global import will retrieve cities from around the world. Consider using a higher population threshold to limit the amount of data.
+                Global import will retrieve cities from around the world. Consider using a higher population threshold if needed.
               </AlertDescription>
             </Alert>
             
             <div className="space-y-2">
               <Label htmlFor="global-min-population">
-                Minimum Population (recommended: 100,000+)
+                Minimum Population
               </Label>
               <Input
                 id="global-min-population"
