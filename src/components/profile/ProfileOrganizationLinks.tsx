@@ -21,9 +21,7 @@ import { useAuth } from "@/hooks/useAuth";
 import OrganizationHeader from "./organization/OrganizationHeader";
 import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
-import { formatLocationWithDetails } from "@/utils/adminFormatters";
-import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { useToggle } from "@/hooks/useToggle";
+import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -36,24 +34,9 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const { data: organizations = [], isLoading: isLoadingOrgs } = useOrganizations();
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
   
-  // Filter out organizations that the user already has a relationship with
-  const availableOrganizations = organizations.filter(
-    org => !relationships.some(rel => rel.organization_id === org.id)
-  );
-
-  // Format relationships to ensure they meet the ProfileOrganizationRelationshipWithDetails type
-  const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
-    // Ensure the organization and its location have the expected structure
-    const organization = {
-      ...rel.organization,
-      location: rel.organization.location ? formatLocationWithDetails(rel.organization.location) : undefined
-    };
-    
-    return {
-      ...rel,
-      organization
-    };
-  });
+  // Use our utility functions to format and filter organizations
+  const formattedRelationships = formatOrganizationRelationships(relationships);
+  const availableOrganizations = filterAvailableOrganizations(organizations, relationships);
 
   const handleAddOrganization = (data: {
     organizationId: string;

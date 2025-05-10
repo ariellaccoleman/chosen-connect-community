@@ -8,12 +8,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { formatLocationWithDetails } from "@/utils/adminFormatters";
-import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
 import { toast } from "@/components/ui/sonner";
 import OrganizationTabs from "@/components/organizations/OrganizationTabs";
 import OrganizationConnectionsHeader from "@/components/organizations/OrganizationConnectionsHeader";
 import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
+import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
@@ -33,26 +32,11 @@ const ManageOrganizationConnections = () => {
     }
   }, [user, loading, navigate]);
 
-  // Format relationships to ensure they have the correct type structure
-  const formattedRelationships: ProfileOrganizationRelationshipWithDetails[] = relationships.map(rel => {
-    // Ensure the organization location has the formatted_location field
-    const organization = {
-      ...rel.organization,
-      location: rel.organization.location 
-        ? formatLocationWithDetails(rel.organization.location) 
-        : undefined
-    };
-    
-    return {
-      ...rel,
-      organization
-    };
-  });
-
-  // Calculate available organizations (ones user is not already connected to)
-  const availableOrganizations = allOrganizations.filter(
-    org => !relationships.some(rel => rel.organization_id === org.id)
-  );
+  // Use our utility function to format relationships
+  const formattedRelationships = formatOrganizationRelationships(relationships);
+  
+  // Calculate available organizations using our utility function
+  const availableOrganizations = filterAvailableOrganizations(allOrganizations, relationships);
 
   const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
     setRelationshipToEdit(relationship);

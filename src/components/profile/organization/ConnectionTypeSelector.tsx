@@ -12,6 +12,7 @@ interface ConnectionTypeSelectorProps {
   onChange: (value: "current" | "former" | "connected_insider") => void;
 }
 
+// Default export the component
 const ConnectionTypeSelector = ({ value, onChange }: ConnectionTypeSelectorProps) => {
   return (
     <div className="space-y-2">
@@ -33,4 +34,8 @@ const ConnectionTypeSelector = ({ value, onChange }: ConnectionTypeSelectorProps
   );
 };
 
+// Also export named for backward compatibility
+export { ConnectionTypeSelector };
+
+// Default export for easier importing
 export default ConnectionTypeSelector;
