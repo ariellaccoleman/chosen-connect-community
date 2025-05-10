@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { X } from "lucide-react";
+import { useState, useEffect } from "react";
+import { X, Check, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,13 @@ import { OrganizationWithLocation } from "@/types";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
 
 interface OrganizationFormDialogProps {
   organizations: OrganizationWithLocation[];
@@ -35,10 +42,22 @@ const OrganizationFormDialog = ({
   onSubmit
 }: OrganizationFormDialogProps) => {
   const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [selectedOrgName, setSelectedOrgName] = useState<string>("");
   const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">("current");
   const [department, setDepartment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
+  const [open, setOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  // Set organization name when selectedOrgId changes
+  useEffect(() => {
+    if (selectedOrgId) {
+      const selectedOrg = organizations.find(org => org.id === selectedOrgId);
+      if (selectedOrg) {
+        setSelectedOrgName(selectedOrg.name);
+      }
+    }
+  }, [selectedOrgId, organizations]);
 
   const handleSubmit = () => {
     onSubmit({
@@ -50,10 +69,57 @@ const OrganizationFormDialog = ({
     
     // Reset form fields
     setSelectedOrgId("");
+    setSelectedOrgName("");
     setConnectionType("current");
     setDepartment("");
     setNotes("");
   };
+
+  const renderOrgSelector = () => (
+    <div>
+      <label className="text-sm font-medium">Organization</label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between text-left"
+          >
+            {selectedOrgName || "Select an organization"}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search organizations..." />
+            <CommandEmpty>
+              {isLoadingOrgs ? "Loading..." : "No organization found"}
+            </CommandEmpty>
+            <CommandGroup className="max-h-60 overflow-auto">
+              {organizations.map((org) => (
+                <CommandItem
+                  key={org.id}
+                  value={org.name}
+                  onSelect={() => {
+                    setSelectedOrgId(org.id);
+                    setSelectedOrgName(org.name);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={`mr-2 h-4 w-4 ${
+                      selectedOrgId === org.id ? "opacity-100" : "opacity-0"
+                    }`}
+                  />
+                  {org.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  );
 
   if (isMobile) {
     return (
@@ -65,30 +131,7 @@ const OrganizationFormDialog = ({
           </DialogHeader>
           
           <div className="space-y-3">
-            <div>
-              <label className="text-sm font-medium">Organization</label>
-              <Select 
-                value={selectedOrgId} 
-                onValueChange={setSelectedOrgId}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select an organization" />
-                </SelectTrigger>
-                <SelectContent>
-                  {isLoadingOrgs ? (
-                    <div className="p-2">Loading...</div>
-                  ) : organizations.length === 0 ? (
-                    <div className="p-2">No organizations available</div>
-                  ) : (
-                    organizations.map((org) => (
-                      <SelectItem key={org.id} value={org.id}>
-                        {org.name}
-                      </SelectItem>
-                    ))
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
+            {renderOrgSelector()}
             
             <div>
               <label className="text-sm font-medium">Connection Type</label>
@@ -164,30 +207,7 @@ const OrganizationFormDialog = ({
       </div>
       
       <div className="space-y-3">
-        <div>
-          <label className="text-sm font-medium">Organization</label>
-          <Select 
-            value={selectedOrgId} 
-            onValueChange={setSelectedOrgId}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select an organization" />
-            </SelectTrigger>
-            <SelectContent>
-              {isLoadingOrgs ? (
-                <div className="p-2">Loading...</div>
-              ) : organizations.length === 0 ? (
-                <div className="p-2">No organizations available</div>
-              ) : (
-                organizations.map((org) => (
-                  <SelectItem key={org.id} value={org.id}>
-                    {org.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-        </div>
+        {renderOrgSelector()}
         
         <div>
           <label className="text-sm font-medium">Connection Type</label>
