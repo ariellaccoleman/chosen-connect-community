@@ -139,18 +139,18 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Prepare data for batch insert
+    // Prepare data for batch insert - REMOVING full_name which is a generated column
     const locationsToInsert = cities.map((city) => ({
       city: city.name || '',
       region: city.adminName1 || '',
-      country: city.countryName || '',
-      full_name: `${city.name || ''}, ${city.adminName1 || ''}, ${city.countryName || ''}`
+      country: city.countryName || ''
+      // No longer including full_name as it's a generated column
     }));
     
     // Insert into the locations table
     try {
       const { data: insertData, error } = await supabase.from('locations').upsert(locationsToInsert, {
-        onConflict: 'full_name',
+        onConflict: 'city,region,country', // Change conflict resolution to use these columns
         ignoreDuplicates: true
       });
       
