@@ -30,10 +30,10 @@ const DesktopNav = () => {
           <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
         </div>
         
-        <div className="hidden md:flex items-center">
+        <div className="hidden md:flex items-center pr-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button variant="ghost" className="relative h-10 w-10 rounded-full overflow-hidden">
                 <UserAvatar profile={profile} />
               </Button>
             </DropdownMenuTrigger>
@@ -81,7 +81,7 @@ const DesktopNav = () => {
         <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
       </div>
       
-      <div className="hidden md:flex items-center space-x-4">
+      <div className="hidden md:flex items-center space-x-4 pr-4">
         <Button 
           variant="outline" 
           className="border-chosen-blue text-chosen-blue hover:bg-chosen-blue hover:text-white"
