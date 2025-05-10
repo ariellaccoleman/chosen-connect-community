@@ -536,7 +536,6 @@ export type Database = {
           linkedin_url: string | null
           location_id: string | null
           membership_tier: Database["public"]["Enums"]["pricing_tier"] | null
-          role: string
           twitter_url: string | null
           updated_at: string | null
           website_url: string | null
@@ -555,7 +554,6 @@ export type Database = {
           linkedin_url?: string | null
           location_id?: string | null
           membership_tier?: Database["public"]["Enums"]["pricing_tier"] | null
-          role?: string
           twitter_url?: string | null
           updated_at?: string | null
           website_url?: string | null
@@ -574,7 +572,6 @@ export type Database = {
           linkedin_url?: string | null
           location_id?: string | null
           membership_tier?: Database["public"]["Enums"]["pricing_tier"] | null
-          role?: string
           twitter_url?: string | null
           updated_at?: string | null
           website_url?: string | null

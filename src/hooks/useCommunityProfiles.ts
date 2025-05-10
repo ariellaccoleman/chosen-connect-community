@@ -47,7 +47,6 @@ export const useCommunityProfiles = (filters: {
         const profileWithDetails: ProfileWithDetails = {
           ...profile,
           full_name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-          role: (profile.role as "admin" | "member") || "member",
           location: undefined // Initialize as undefined, will populate if exists
         };
 

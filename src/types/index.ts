@@ -26,7 +26,6 @@ export interface Profile {
   linkedin_url: string | null;
   twitter_url: string | null;
   website_url: string | null;
-  role: "admin" | "member";
   location_id: string | null;
   company?: string | null;
   created_at?: string;
@@ -37,6 +36,7 @@ export interface Profile {
 
 export interface ProfileWithDetails extends Profile {
   full_name: string;
+  role?: "admin" | "member"; // Keep for compatibility with user.user_metadata.role
   location?: LocationWithDetails;
 }
 
