@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { X, Check, Search } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -73,6 +73,11 @@ const OrganizationFormDialog = ({
     setConnectionType("current");
     setDepartment("");
     setNotes("");
+    
+    // Make sure to close on desktop too
+    if (!isMobile) {
+      onClose();
+    }
   };
 
   const renderOrgSelector = () => {
