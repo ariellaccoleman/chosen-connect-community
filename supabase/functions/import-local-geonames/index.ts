@@ -59,7 +59,8 @@ Deno.serve(async (req) => {
       batchSize = 1000,
       country = null,
       offset = 0,
-      limit = 5000
+      limit = 5000,
+      useTextFile = false // New parameter to determine if we use the .txt file directly
     } = requestData;
     
     console.log('Processing geonames with params:', {
@@ -67,7 +68,8 @@ Deno.serve(async (req) => {
       batchSize,
       country,
       offset,
-      limit
+      limit,
+      useTextFile
     });
     
     // Initialize import statistics
@@ -78,43 +80,93 @@ Deno.serve(async (req) => {
     let importStatus = [];
     
     try {
-      // Instead of reading from local file, fetch from storage
-      console.log('Fetching cities1000.zip from storage');
+      let citiesText;
       
-      const { data: fileData, error: fileError } = await supabase
-        .storage
-        .from('location-data')
-        .download('cities1000.zip');
-      
-      if (fileError) {
-        console.error('Error fetching file from storage:', fileError);
-        return new Response(JSON.stringify({
-          error: 'Failed to fetch file from storage',
-          details: fileError.message
-        }), {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          },
-          status: 500
-        });
+      if (useTextFile) {
+        // Try to get the text file directly if requested
+        console.log('Fetching cities1000.txt directly from storage');
+        
+        const { data: textData, error: textError } = await supabase
+          .storage
+          .from('location-data')
+          .download('cities1000.txt');
+        
+        if (textError) {
+          console.error('Error fetching text file from storage:', textError);
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch text file from storage',
+            details: textError.message
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            },
+            status: 500
+          });
+        }
+        
+        // Convert text file to string
+        citiesText = new TextDecoder().decode(await textData.arrayBuffer());
+        console.log(`Read ${citiesText.length} characters from cities1000.txt`);
+      } else {
+        // Otherwise, try the zip file
+        console.log('Fetching cities1000.zip from storage');
+        
+        const { data: zipData, error: zipError } = await supabase
+          .storage
+          .from('location-data')
+          .download('cities1000.zip');
+        
+        if (zipError) {
+          console.error('Error fetching zip file from storage:', zipError);
+          return new Response(JSON.stringify({
+            error: 'Failed to fetch zip file from storage',
+            details: zipError.message
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            },
+            status: 500
+          });
+        }
+        
+        // Convert zip file to bytes
+        const zipFileBytes = await zipData.arrayBuffer();
+        console.log(`Read ${zipFileBytes.byteLength} bytes from cities1000.zip`);
+        
+        try {
+          // Decompress the zip file
+          const decompressedFiles = await decompress(new Uint8Array(zipFileBytes));
+          console.log(`Decompressed ${Object.keys(decompressedFiles).length} files from zip`);
+          
+          if (!decompressedFiles['cities1000.txt']) {
+            throw new Error('cities1000.txt not found in the zip file');
+          }
+          
+          citiesText = new TextDecoder().decode(decompressedFiles['cities1000.txt']);
+        } catch (decompressError) {
+          console.error('Error decompressing zip file:', decompressError);
+          return new Response(JSON.stringify({
+            error: 'Failed to decompress zip file',
+            details: decompressError.message
+          }), {
+            headers: {
+              ...corsHeaders,
+              'Content-Type': 'application/json'
+            },
+            status: 500
+          });
+        }
       }
       
-      // Convert file to ArrayBuffer
-      const zipFileBytes = await fileData.arrayBuffer();
-      console.log(`Read ${zipFileBytes.byteLength} bytes from cities1000.zip`);
-      
-      // Decompress the zip file
-      const decompressedFiles = await decompress(new Uint8Array(zipFileBytes));
-      console.log(`Decompressed ${Object.keys(decompressedFiles).length} files from zip`);
-      
-      if (!decompressedFiles['cities1000.txt']) {
-        throw new Error('cities1000.txt not found in the zip file');
+      // Process the text content
+      if (!citiesText) {
+        throw new Error('Failed to get cities data from storage');
       }
       
-      const citiesText = new TextDecoder().decode(decompressedFiles['cities1000.txt']);
       const lines = citiesText.split('\n');
-      console.log(`Total lines in cities1000.txt: ${lines.length}`);
+      console.log(`Total lines in cities data: ${lines.length}`);
       
       // Apply offset and limit
       const maxIndex = Math.min(offset + limit, lines.length);
@@ -158,10 +210,6 @@ Deno.serve(async (req) => {
         if (country && countryCode !== country) {
           continue;
         }
-        
-        // Get country and region names from country code and admin codes
-        // Note: In a real implementation, you'd want to map these codes to actual names
-        // For now, we'll use the codes as is
         
         // Simplistic country name mapping for common countries
         const countryNames: Record<string, string> = {

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -157,13 +156,15 @@ export const useGeoNames = () => {
     batchSize = 1000,
     country = null,
     offset = 0,
-    limit = 5000
+    limit = 5000,
+    useTextFile = false
   }: {
     minPopulation?: number;
     batchSize?: number;
     country?: string | null;
     offset?: number;
     limit?: number;
+    useTextFile?: boolean;
   }): Promise<ImportResult> => {
     setIsImporting(true);
     
@@ -173,7 +174,8 @@ export const useGeoNames = () => {
         batchSize,
         country,
         offset,
-        limit
+        limit,
+        useTextFile
       });
       
       const { data, error } = await supabase.functions.invoke('import-local-geonames', {
@@ -182,7 +184,8 @@ export const useGeoNames = () => {
           batchSize,
           country,
           offset,
-          limit
+          limit,
+          useTextFile
         }
       });
       
