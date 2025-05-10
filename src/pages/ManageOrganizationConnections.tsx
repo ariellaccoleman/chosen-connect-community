@@ -2,16 +2,19 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
+import { useUserOrganizationRelationships, useAddOrganizationRelationship } from "@/hooks/useOrganizations";
+import { useOrganizations } from "@/hooks/useOrganizationQueries";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, Link2 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { formatLocationWithDetails } from "@/utils/adminFormatters";
 import OrganizationRelationshipList from "@/components/organizations/OrganizationRelationshipList";
+import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
+import { toast } from "@/components/ui/sonner";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
@@ -19,6 +22,11 @@ const ManageOrganizationConnections = () => {
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
   const [activeTab, setActiveTab] = useState("all");
   const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
+  const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
+  
+  // Get organizations for the connect dialog
+  const { data: allOrganizations = [], isLoading: isLoadingOrgs } = useOrganizations();
+  const addRelationship = useAddOrganizationRelationship();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -42,12 +50,41 @@ const ManageOrganizationConnections = () => {
     };
   });
 
+  // Calculate available organizations (ones user is not already connected to)
+  const availableOrganizations = allOrganizations.filter(
+    org => !relationships.some(rel => rel.organization_id === org.id)
+  );
+
   const currentRelationships = formattedRelationships.filter(rel => rel.connection_type === 'current');
   const formerRelationships = formattedRelationships.filter(rel => rel.connection_type === 'former');
   const connectedInsiderRelationships = formattedRelationships.filter(rel => rel.connection_type === 'connected_insider');
 
   const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
     setRelationshipToEdit(relationship);
+  };
+  
+  const handleAddConnection = async (data: {
+    organizationId: string;
+    connectionType: "current" | "former" | "connected_insider";
+    department: string | null;
+    notes: string | null;
+  }) => {
+    if (!user?.id) return;
+    
+    try {
+      await addRelationship.mutateAsync({
+        profile_id: user.id,
+        organization_id: data.organizationId,
+        connection_type: data.connectionType,
+        department: data.department,
+        notes: data.notes
+      });
+      
+      toast.success("Organization connection added successfully");
+      setIsConnectDialogOpen(false);
+    } catch (error) {
+      console.error("Error adding organization connection:", error);
+    }
   };
 
   return (
@@ -60,13 +97,23 @@ const ManageOrganizationConnections = () => {
         
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold font-heading">Your Organizations</h1>
-          <Button 
-            onClick={() => navigate("/organizations/new")} 
-            className="bg-chosen-blue hover:bg-chosen-navy"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add Organization
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => setIsConnectDialogOpen(true)} 
+              className="bg-chosen-blue hover:bg-chosen-navy"
+              disabled={availableOrganizations.length === 0}
+            >
+              <Link2 className="mr-2 h-4 w-4" />
+              Connect to Org
+            </Button>
+            <Button 
+              onClick={() => navigate("/organizations/new")} 
+              className="bg-chosen-blue hover:bg-chosen-navy"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add Organization
+            </Button>
+          </div>
         </div>
         
         <Card>
@@ -151,6 +198,15 @@ const ManageOrganizationConnections = () => {
           onClose={() => setRelationshipToEdit(null)}
         />
       )}
+      
+      {/* Connect to Organization Dialog */}
+      <OrganizationFormDialog
+        organizations={availableOrganizations}
+        isLoadingOrgs={isLoadingOrgs}
+        onClose={() => setIsConnectDialogOpen(false)}
+        onSubmit={handleAddConnection}
+        isOpen={isConnectDialogOpen}
+      />
     </DashboardLayout>
   );
 };
