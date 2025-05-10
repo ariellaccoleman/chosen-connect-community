@@ -4,7 +4,9 @@ export {
   useOrganizationAdmins,
   useOrganizationAdminsByOrg,
   useUserAdminRequests,
-  useIsOrganizationAdmin
+  useIsOrganizationAdmin,
+  usePendingOrganizationAdmins,  // Add the missing export
+  useOrganizationRole           // Add the missing export
 } from './useOrganizationAdminQueries';
 
 export {
