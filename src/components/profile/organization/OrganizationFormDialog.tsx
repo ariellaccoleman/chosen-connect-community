@@ -1,16 +1,8 @@
 
 import { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from "@/components/ui/select";
 import { OrganizationWithLocation } from "@/types";
 import {
   Dialog,
@@ -19,20 +11,8 @@ import {
   DialogTitle,
   DialogFooter
 } from "@/components/ui/dialog";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import OrganizationSelector from "./OrganizationSelector";
+import ConnectionTypeSelector from "./ConnectionTypeSelector";
 
 interface OrganizationFormDialogProps {
   organizations: OrganizationWithLocation[];
@@ -58,7 +38,6 @@ const OrganizationFormDialog = ({
   const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">("current");
   const [department, setDepartment] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
-  const [open, setOpen] = useState(false);
 
   // Reset form when dialog is opened
   useEffect(() => {
@@ -84,9 +63,6 @@ const OrganizationFormDialog = ({
     }
   };
 
-  // Find the selected organization name
-  const selectedOrgName = organizations.find(org => org.id === selectedOrgId)?.name || "";
-
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open) onClose();
@@ -97,75 +73,17 @@ const OrganizationFormDialog = ({
         </DialogHeader>
         
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Organization</label>
-            <Popover open={open} onOpenChange={setOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  aria-expanded={open}
-                  className="w-full justify-between"
-                  disabled={isLoadingOrgs || organizations.length === 0}
-                >
-                  {selectedOrgId ? selectedOrgName : "Select an organization..."}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0">
-                <Command>
-                  <CommandInput 
-                    placeholder="Search organizations..." 
-                    className="h-9"
-                  />
-                  <CommandList>
-                    <CommandEmpty>
-                      {isLoadingOrgs 
-                        ? "Loading..." 
-                        : "No organizations found."}
-                    </CommandEmpty>
-                    <CommandGroup className="max-h-64 overflow-y-auto">
-                      {organizations.map((org) => (
-                        <CommandItem
-                          key={org.id}
-                          value={org.name}
-                          onSelect={() => {
-                            setSelectedOrgId(org.id);
-                            setOpen(false);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedOrgId === org.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {org.name}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-          </div>
+          <OrganizationSelector
+            organizations={organizations}
+            isLoadingOrgs={isLoadingOrgs}
+            selectedOrgId={selectedOrgId}
+            onSelectOrg={setSelectedOrgId}
+          />
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Connection Type</label>
-            <Select 
-              value={connectionType} 
-              onValueChange={(value: "current" | "former" | "connected_insider") => setConnectionType(value)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select connection type" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="current">Current Employee</SelectItem>
-                <SelectItem value="former">Former Employee</SelectItem>
-                <SelectItem value="connected_insider">Connected Insider</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <ConnectionTypeSelector
+            value={connectionType}
+            onChange={setConnectionType}
+          />
           
           <div className="space-y-2">
             <label className="text-sm font-medium">Department (Optional)</label>
