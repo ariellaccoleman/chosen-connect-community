@@ -1,4 +1,3 @@
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { decompress } from 'https://deno.land/x/zip@v1.2.3/mod.ts';
 
@@ -63,7 +62,7 @@ Deno.serve(async (req) => {
       limit = 5000
     } = requestData;
     
-    console.log('Processing local geonames file with params:', {
+    console.log('Processing geonames with params:', {
       minPopulation,
       batchSize,
       country,
@@ -79,12 +78,34 @@ Deno.serve(async (req) => {
     let importStatus = [];
     
     try {
-      // Get the cities1000.zip file from the public directory
-      const zipFileBytes = await Deno.readFile('./location-data/cities1000.zip');
-      console.log(`Read ${zipFileBytes.length} bytes from cities1000.zip`);
+      // Instead of reading from local file, fetch from storage
+      console.log('Fetching cities1000.zip from storage');
+      
+      const { data: fileData, error: fileError } = await supabase
+        .storage
+        .from('location-data')
+        .download('cities1000.zip');
+      
+      if (fileError) {
+        console.error('Error fetching file from storage:', fileError);
+        return new Response(JSON.stringify({
+          error: 'Failed to fetch file from storage',
+          details: fileError.message
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          },
+          status: 500
+        });
+      }
+      
+      // Convert file to ArrayBuffer
+      const zipFileBytes = await fileData.arrayBuffer();
+      console.log(`Read ${zipFileBytes.byteLength} bytes from cities1000.zip`);
       
       // Decompress the zip file
-      const decompressedFiles = await decompress(zipFileBytes);
+      const decompressedFiles = await decompress(new Uint8Array(zipFileBytes));
       console.log(`Decompressed ${Object.keys(decompressedFiles).length} files from zip`);
       
       if (!decompressedFiles['cities1000.txt']) {

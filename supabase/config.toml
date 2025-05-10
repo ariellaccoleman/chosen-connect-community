@@ -5,3 +5,4 @@ project_id = "nvaqqkffmfuxdnwnqhxo"
 [functions.import-geonames]
 
 [functions.import-local-geonames]
+
