@@ -46,13 +46,16 @@ export const useAddOrganizationRelationship = () => {
         console.log('Successfully created minimal profile');
       }
       
+      // Convert "connected_insider" to "ally" for database compatibility
+      const dbConnectionType = relationship.connection_type === "connected_insider" ? "ally" : relationship.connection_type;
+      
       // Now create the organization relationship
       const { error } = await supabase
         .from('org_relationships')
         .insert({
           profile_id: relationship.profile_id,
           organization_id: relationship.organization_id,
-          connection_type: relationship.connection_type,
+          connection_type: dbConnectionType,
           department: relationship.department,
           notes: relationship.notes
         });
@@ -89,10 +92,13 @@ export const useUpdateOrganizationRelationship = () => {
       relationshipId: string, 
       relationshipData: Partial<ProfileOrganizationRelationship> 
     }) => {
+      // Convert "connected_insider" to "ally" for database compatibility
+      const dbConnectionType = relationshipData.connection_type === "connected_insider" ? "ally" : relationshipData.connection_type;
+      
       const { error } = await supabase
         .from('org_relationships')
         .update({
-          connection_type: relationshipData.connection_type,
+          connection_type: dbConnectionType,
           department: relationshipData.department,
           notes: relationshipData.notes
         })

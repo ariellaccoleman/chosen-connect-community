@@ -1,190 +1,200 @@
 
-import { useState, useEffect } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { 
-  useUpdateOrganizationRelationship, 
-  useDeleteOrganizationRelationship 
-} from "@/hooks/useOrganizations";
-import { OrganizationRelationshipWithDetails } from "@/types";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useUpdateOrganizationRelationship, useDeleteOrganizationRelationship } from "@/hooks/useOrganizationMutations";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { Trash2 } from "lucide-react";
+
+const formSchema = z.object({
+  connection_type: z.enum(["current", "former", "connected_insider"]),
+  department: z.string().nullable(),
+  notes: z.string().nullable()
+});
+
+type FormValues = z.infer<typeof formSchema>;
 
 interface EditRelationshipDialogProps {
-  relationship: OrganizationRelationshipWithDetails;
+  relationship: ProfileOrganizationRelationshipWithDetails;
   isOpen: boolean;
   onClose: () => void;
 }
 
-const EditRelationshipDialog = ({
-  relationship,
-  isOpen,
-  onClose
-}: EditRelationshipDialogProps) => {
-  const [connectionType, setConnectionType] = useState<"current" | "former" | "connected_insider">(
-    (relationship.connection_type as "current" | "former" | "connected_insider") || "current"
-  );
-  const [department, setDepartment] = useState(relationship.department || "");
-  const [notes, setNotes] = useState(relationship.notes || "");
-  const [isConfirmDeleteOpen, setIsConfirmDeleteOpen] = useState(false);
-  
+const EditRelationshipDialog = ({ relationship, isOpen, onClose }: EditRelationshipDialogProps) => {
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
   const updateRelationship = useUpdateOrganizationRelationship();
   const deleteRelationship = useDeleteOrganizationRelationship();
 
-  useEffect(() => {
-    // Reset form when relationship changes
-    setConnectionType((relationship.connection_type as "current" | "former" | "connected_insider") || "current");
-    setDepartment(relationship.department || "");
-    setNotes(relationship.notes || "");
-  }, [relationship]);
-
-  const handleSave = async () => {
-    try {
-      await updateRelationship.mutateAsync({
-        relationshipId: relationship.id,
-        relationshipData: {
-          connection_type: connectionType,
-          department: department || null,
-          notes: notes || null
-        }
-      });
-      
-      onClose();
-    } catch (error) {
-      console.error("Error updating relationship:", error);
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      connection_type: relationship.connection_type === 'ally' ? 'connected_insider' : relationship.connection_type,
+      department: relationship.department || "",
+      notes: relationship.notes || ""
     }
+  });
+
+  const handleSubmit = async (values: FormValues) => {
+    await updateRelationship.mutateAsync({
+      relationshipId: relationship.id,
+      relationshipData: {
+        connection_type: values.connection_type,
+        department: values.department || null,
+        notes: values.notes || null
+      }
+    });
+    onClose();
   };
 
   const handleDelete = async () => {
-    try {
-      await deleteRelationship.mutateAsync(relationship.id);
-      setIsConfirmDeleteOpen(false);
-      onClose();
-    } catch (error) {
-      console.error("Error deleting relationship:", error);
-    }
+    await deleteRelationship.mutateAsync(relationship.id);
+    setIsDeleteAlertOpen(false);
+    onClose();
   };
-
-  if (!relationship.organization) return null;
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Edit Connection with {relationship.organization.name}</DialogTitle>
+            <DialogTitle>Edit Organization Connection</DialogTitle>
             <DialogDescription>
-              Update your relationship with this organization
+              Update your relationship with {relationship.organization?.name}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-2">
-              <Label htmlFor="connection-type">Connection Type</Label>
-              <Select 
-                value={connectionType} 
-                onValueChange={(value: "current" | "former" | "connected_insider") => setConnectionType(value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select connection type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current">Current Member</SelectItem>
-                  <SelectItem value="former">Former Member</SelectItem>
-                  <SelectItem value="connected_insider">Connected Insider</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="department">Department (Optional)</Label>
-              <Input 
-                id="department" 
-                placeholder="e.g., Marketing, Engineering" 
-                value={department} 
-                onChange={(e) => setDepartment(e.target.value)} 
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="connection_type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Connection Type</FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      defaultValue={field.value}
+                      disabled={updateRelationship.isPending}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select connection type" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="current">Current Organization</SelectItem>
+                        <SelectItem value="former">Former Organization</SelectItem>
+                        <SelectItem value="connected_insider">Connected Insider</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="notes">Notes (Optional)</Label>
-              <Textarea 
-                id="notes" 
-                placeholder="Any additional details about your connection"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+
+              <FormField
+                control={form.control}
+                name="department"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department (Optional)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Your department" 
+                        {...field} 
+                        value={field.value || ""} 
+                        disabled={updateRelationship.isPending}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-            </div>
-          </div>
-          <DialogFooter className="flex justify-between">
-            <Button 
-              variant="destructive" 
-              onClick={() => setIsConfirmDeleteOpen(true)}
-              disabled={updateRelationship.isPending || deleteRelationship.isPending}
-            >
-              Remove Connection
-            </Button>
-            <div className="flex space-x-2">
-              <Button variant="outline" onClick={onClose}>
-                Cancel
-              </Button>
-              <Button 
-                className="bg-chosen-blue" 
-                onClick={handleSave}
-                disabled={updateRelationship.isPending}
-              >
-                {updateRelationship.isPending ? "Saving..." : "Save Changes"}
-              </Button>
-            </div>
-          </DialogFooter>
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Add notes about your connection" 
+                        className="resize-none" 
+                        {...field} 
+                        value={field.value || ""} 
+                        disabled={updateRelationship.isPending}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      Brief notes about your relationship with this organization.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter className="flex justify-between sm:justify-between">
+                <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      className="bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Remove Connection
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently remove your connection to {relationship.organization?.name}.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={handleDelete}
+                        className="bg-red-600 hover:bg-red-700"
+                        disabled={deleteRelationship.isPending}
+                      >
+                        {deleteRelationship.isPending ? "Removing..." : "Yes, remove it"}
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+
+                <div className="flex gap-2 justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onClose}
+                    disabled={updateRelationship.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit"
+                    disabled={updateRelationship.isPending || !form.formState.isDirty}
+                  >
+                    {updateRelationship.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
-      
-      {/* Confirm Delete Dialog */}
-      <AlertDialog open={isConfirmDeleteOpen} onOpenChange={setIsConfirmDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Remove Connection</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to remove your connection with {relationship.organization.name}? 
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              className="bg-red-600 hover:bg-red-700"
-              onClick={handleDelete}
-            >
-              {deleteRelationship.isPending ? "Removing..." : "Yes, Remove Connection"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 };
