@@ -8,7 +8,7 @@ import { formatLocationWithDetails } from "@/utils/adminFormatters";
  * @returns Formatted relationships with proper location details
  */
 export const formatOrganizationRelationships = (
-  relationships: ProfileOrganizationRelationship[]
+  relationships: any[]
 ): ProfileOrganizationRelationshipWithDetails[] => {
   return relationships.map(rel => {
     // Ensure the organization and its location have the expected structure

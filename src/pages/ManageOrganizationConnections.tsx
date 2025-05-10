@@ -13,6 +13,7 @@ import OrganizationTabs from "@/components/organizations/OrganizationTabs";
 import OrganizationConnectionsHeader from "@/components/organizations/OrganizationConnectionsHeader";
 import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
+import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
@@ -115,7 +116,6 @@ const ManageOrganizationConnections = () => {
         onSubmit={handleAddConnection}
         isOpen={isConnectDialogOpen}
       />
-    </DashboardLayout>
   );
 };
 
