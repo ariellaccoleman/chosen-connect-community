@@ -116,6 +116,7 @@ const ManageOrganizationConnections = () => {
         onSubmit={handleAddConnection}
         isOpen={isConnectDialogOpen}
       />
+    </DashboardLayout>
   );
 };
 
