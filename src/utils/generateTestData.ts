@@ -179,7 +179,7 @@ const createUserOrganizationRelationships = async (
   }
   
   // Second set of organizations: Related to users but not owned
-  const connectionTypes: ("current" | "former" | "ally")[] = ["current", "former", "ally"];
+  const connectionTypes: ("current" | "former" | "connected_insider")[] = ["current", "former", "connected_insider"];
   
   for (let i = ownedCount; i < ownedCount + relatedCount && i < organizations.length; i++) {
     // Use a different user for each relationship to spread the connections
