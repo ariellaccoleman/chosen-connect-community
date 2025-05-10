@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationWithDetails } from '@/types';
@@ -26,6 +25,15 @@ export const useLocations = (searchTerm: string = '') => {
         
         // Map locations to include the formatted_location field, making sure no field is undefined
         return locations.map(location => {
+          // If there's a full_name, prefer that
+          if (location.full_name) {
+            return {
+              ...location,
+              formatted_location: location.full_name
+            };
+          }
+          
+          // Otherwise construct from components
           const city = location.city || '';
           const region = location.region || '';
           const country = location.country || '';

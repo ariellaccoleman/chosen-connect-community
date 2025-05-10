@@ -344,30 +344,51 @@ export type Database = {
       }
       locations: {
         Row: {
+          admin_code1: string | null
+          admin_code2: string | null
+          admin_name2: string | null
           city: string | null
           country: string | null
           created_at: string | null
           full_name: string | null
+          geoname_id: number | null
           id: string
+          latitude: number | null
+          longitude: number | null
           region: string | null
+          timezone: string | null
           updated_at: string | null
         }
         Insert: {
+          admin_code1?: string | null
+          admin_code2?: string | null
+          admin_name2?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           full_name?: string | null
+          geoname_id?: number | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           region?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Update: {
+          admin_code1?: string | null
+          admin_code2?: string | null
+          admin_name2?: string | null
           city?: string | null
           country?: string | null
           created_at?: string | null
           full_name?: string | null
+          geoname_id?: number | null
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           region?: string | null
+          timezone?: string | null
           updated_at?: string | null
         }
         Relationships: []

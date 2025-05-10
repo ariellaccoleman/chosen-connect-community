@@ -10,6 +10,16 @@ interface ImportGeoNamesParams {
   globalImport?: boolean;
 }
 
+interface ImportResult {
+  success: boolean;
+  count?: number;
+  updated?: number;
+  total?: number;
+  skipped?: number;
+  error?: any;
+  data?: any;
+}
+
 export const useGeoNames = () => {
   const [isImporting, setIsImporting] = useState(false);
 
@@ -18,7 +28,7 @@ export const useGeoNames = () => {
     maxResults = 1000, 
     minPopulation = 15000,
     globalImport = false
-  }: ImportGeoNamesParams) => {
+  }: ImportGeoNamesParams): Promise<ImportResult> => {
     setIsImporting(true);
     
     try {
@@ -64,7 +74,16 @@ export const useGeoNames = () => {
         return { success: true, data: { count: 0 } };
       }
       
-      toast.success(`Successfully imported ${data.count} locations from GeoNames`);
+      // Enhanced success message with more details
+      let successMessage = `Successfully imported ${data.count} locations from GeoNames`;
+      if (data.updated && data.updated > 0) {
+        successMessage += `, updated ${data.updated} existing records`;
+      }
+      if (data.skipped && data.skipped > 0) {
+        successMessage += ` (${data.skipped} skipped)`;
+      }
+      
+      toast.success(successMessage);
       return { success: true, data };
     } catch (error) {
       console.error('Exception importing locations:', error);

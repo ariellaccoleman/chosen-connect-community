@@ -151,15 +151,27 @@ Deno.serve(async (req) => {
     const locationsToInsert = cities.map((city) => ({
       city: city.name || '',
       region: city.adminName1 || '',
-      country: city.countryName || ''
+      country: city.countryName || '',
+      // Add the new fields
+      geoname_id: city.geonameId || null,
+      latitude: city.lat || null,
+      longitude: city.lng || null,
+      admin_code1: city.adminCode1 || null,
+      admin_code2: city.adminCode2 || null,
+      admin_name2: city.adminName2 || null,
+      timezone: city.timezone?.timeZoneId || null,
+      // Generate a full_name that includes all location components
+      full_name: [city.name, city.adminName1, city.countryName]
+        .filter(Boolean)
+        .join(', ')
     }));
     
     // Insert into the locations table
     try {
-      // Use upsert operation with the ON CONFLICT DO NOTHING clause
-      // This leverages our new unique constraint
+      // Modified upsert operation - now using geoname_id as the conflict detection
       const batchSize = 100;
       let insertedCount = 0;
+      let updatedCount = 0;
       let skippedCount = 0;
       
       // Process locations in batches
@@ -167,23 +179,43 @@ Deno.serve(async (req) => {
         const batch = locationsToInsert.slice(i, i + batchSize);
         console.log(`Processing batch ${Math.floor(i / batchSize) + 1} of ${Math.ceil(locationsToInsert.length / batchSize)}`);
         
-        const { data: insertResult, error: insertError } = await supabase
-          .from('locations')
-          .upsert(batch, { 
-            onConflict: 'city,region,country', 
-            ignoreDuplicates: true 
-          })
-          .select();
-        
-        if (insertError) {
-          console.error('Error upserting locations:', insertError);
-          continue;
+        // Primary strategy: Use geoname_id for conflict resolution if available
+        const batchWithGeonameIds = batch.filter(location => location.geoname_id !== null);
+        if (batchWithGeonameIds.length > 0) {
+          const { data: insertResultGeoname, error: insertErrorGeoname } = await supabase
+            .from('locations')
+            .upsert(batchWithGeonameIds, { 
+              onConflict: 'geoname_id', 
+              ignoreDuplicates: false // Update existing records
+            })
+            .select();
+          
+          if (insertErrorGeoname) {
+            console.error('Error upserting locations with geoname_id:', insertErrorGeoname);
+          } else if (insertResultGeoname) {
+            insertedCount += insertResultGeoname.length;
+            updatedCount += (batchWithGeonameIds.length - insertResultGeoname.length);
+          }
         }
         
-        // Count how many new records were inserted
-        if (insertResult) {
-          insertedCount += insertResult.length;
-          skippedCount += batch.length - insertResult.length;
+        // Fallback strategy: For entries without geoname_id, use city/region/country
+        const batchWithoutGeonameIds = batch.filter(location => location.geoname_id === null);
+        if (batchWithoutGeonameIds.length > 0) {
+          const { data: insertResultFallback, error: insertErrorFallback } = await supabase
+            .from('locations')
+            .upsert(batchWithoutGeonameIds, { 
+              onConflict: 'city,region,country', 
+              ignoreDuplicates: false // Update existing records
+            })
+            .select();
+          
+          if (insertErrorFallback) {
+            console.error('Error upserting locations without geoname_id:', insertErrorFallback);
+            skippedCount += batchWithoutGeonameIds.length;
+          } else if (insertResultFallback) {
+            insertedCount += insertResultFallback.length;
+            updatedCount += (batchWithoutGeonameIds.length - insertResultFallback.length);
+          }
         }
       }
       
@@ -192,6 +224,7 @@ Deno.serve(async (req) => {
         success: true,
         message: `Successfully imported cities from GeoNames ${source}`,
         count: insertedCount,
+        updated: updatedCount,
         total: locationsToInsert.length,
         skipped: skippedCount
       }), {
