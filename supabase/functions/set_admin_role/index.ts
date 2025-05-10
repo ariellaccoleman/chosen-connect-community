@@ -7,7 +7,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const VALID_ROLES = ['admin', 'editor', 'owner'];
+// Valid site admin roles (distinct from organization admin roles)
+const VALID_SITE_ADMIN_ROLES = ['admin'];
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -35,10 +36,10 @@ serve(async (req) => {
     }
     
     // Validate role
-    if (!VALID_ROLES.includes(role)) {
+    if (!VALID_SITE_ADMIN_ROLES.includes(role)) {
       return new Response(
         JSON.stringify({ 
-          error: `Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}` 
+          error: `Invalid site admin role: "${role}". The only valid site admin role is: ${VALID_SITE_ADMIN_ROLES.join(', ')}` 
         }),
         { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -47,7 +48,7 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Attempting to set user ${email} as ${role}`);
+    console.log(`Attempting to set user ${email} as site ${role}`);
 
     // Get the user by email - explicitly filter by the exact email
     const { data: userData, error: userError } = await supabaseClient.auth
@@ -103,11 +104,11 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Successfully set ${email} as ${role}`);
+    console.log(`Successfully set ${email} as site ${role}`);
 
     return new Response(
       JSON.stringify({ 
-        message: `Successfully set ${email} as ${role}`, 
+        message: `Successfully set ${email} as site ${role}`, 
         user: data 
       }),
       { 

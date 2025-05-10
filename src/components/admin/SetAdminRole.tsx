@@ -14,11 +14,9 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
-// Valid organization admin roles
-const VALID_ROLES = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'editor', label: 'Editor' },
-  { value: 'owner', label: 'Owner' }
+// Valid site admin roles
+const VALID_SITE_ADMIN_ROLES = [
+  { value: 'admin', label: 'Site Admin' }
 ];
 
 export const SetAdminRole = () => {
@@ -29,7 +27,7 @@ export const SetAdminRole = () => {
 
   const handleSetAdmin = async () => {
     if (!user || user.user_metadata?.role !== "admin") {
-      toast.error("You must be an admin to perform this action");
+      toast.error("You must be a site admin to perform this action");
       return;
     }
 
@@ -64,7 +62,11 @@ export const SetAdminRole = () => {
 
   return (
     <div className="space-y-4 p-4 border rounded-md">
-      <h3 className="text-lg font-medium">Set Admin Role</h3>
+      <h3 className="text-lg font-medium">Set Site Admin Role</h3>
+      <p className="text-sm text-muted-foreground">
+        Grant site-wide administrative privileges to a user. This is different from organization admin roles.
+      </p>
+      
       <div className="space-y-4">
         <div className="grid gap-2">
           <Label htmlFor="email">Email Address</Label>
@@ -86,7 +88,7 @@ export const SetAdminRole = () => {
               <SelectValue placeholder="Select role" />
             </SelectTrigger>
             <SelectContent>
-              {VALID_ROLES.map(roleOption => (
+              {VALID_SITE_ADMIN_ROLES.map(roleOption => (
                 <SelectItem key={roleOption.value} value={roleOption.value}>
                   {roleOption.label}
                 </SelectItem>
@@ -94,7 +96,7 @@ export const SetAdminRole = () => {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            Note: Valid roles are Admin, Editor, and Owner
+            Note: This assigns site-wide admin privileges, not organization-specific roles
           </p>
         </div>
 
@@ -103,7 +105,7 @@ export const SetAdminRole = () => {
           disabled={isLoading || !email}
           className="w-full"
         >
-          {isLoading ? "Processing..." : `Set as ${role.charAt(0).toUpperCase() + role.slice(1)}`}
+          {isLoading ? "Processing..." : "Set as Site Admin"}
         </Button>
       </div>
     </div>
