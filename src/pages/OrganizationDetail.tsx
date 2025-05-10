@@ -6,14 +6,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation, LocationWithDetails, Location } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { formatLocation } from "@/utils/formatters";
 import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import RequestAdminAccessButton from "@/components/organizations/RequestAdminAccessButton";
-import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
+import { useIsOrganizationAdmin, useUserAdminRequests } from "@/hooks/useOrganizationAdmins";
 import { useIsMobile } from "@/hooks/use-mobile";
 import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
+import { useAddOrganizationRelationship, useUserOrganizationRelationships } from "@/hooks/useOrganizations";
+import { toast } from "@/components/ui/sonner";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,28 @@ const OrganizationDetail = () => {
   const [loading, setLoading] = useState(true);
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   const isMobile = useIsMobile();
+  
+  // Get user's relationships and admin requests
+  const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
+  const addRelationship = useAddOrganizationRelationship();
+  
+  // Check if user has a relationship with this organization
+  const hasRelationship = relationships.some(rel => rel.organization_id === id);
+
+  const handleConnectToOrg = async () => {
+    if (!user?.id || !id || !organization) return;
+    
+    try {
+      await addRelationship.mutateAsync({
+        profile_id: user.id,
+        organization_id: id,
+        connection_type: 'current'
+      });
+      toast.success(`Connected to ${organization.name}`);
+    } catch (error) {
+      console.error("Error connecting to organization:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchOrganization = async () => {
@@ -105,10 +129,22 @@ const OrganizationDetail = () => {
         
         <div className="flex justify-end mt-4 mb-6">
           {user && id && (
-            <RequestAdminAccessButton 
-              organizationId={id} 
-              organizationName={organization.name} 
-            />
+            hasRelationship ? (
+              <RequestAdminAccessButton 
+                organizationId={id} 
+                organizationName={organization.name} 
+              />
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={handleConnectToOrg} 
+                disabled={addRelationship.isPending}
+                className="flex gap-2 items-center"
+              >
+                <Plus className="h-4 w-4" />
+                Connect with Organization
+              </Button>
+            )
           )}
         </div>
 
