@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useGeoNames } from '@/hooks/useGeoNames';
 import { 
@@ -12,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw, Database, FileZip } from 'lucide-react';
+import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw, Database, File } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -207,7 +206,7 @@ const LocationImporter = () => {
         <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'country' | 'global' | 'file')}>
           <TabsList className="grid grid-cols-3 mb-4">
             <TabsTrigger value="file">
-              <FileZip className="h-4 w-4 mr-2" />
+              <File className="h-4 w-4 mr-2" />
               Local File
             </TabsTrigger>
             <TabsTrigger value="country">
@@ -223,7 +222,7 @@ const LocationImporter = () => {
           {/* File import tab */}
           <TabsContent value="file" className="space-y-4">
             <Alert className="mb-4">
-              <FileZip className="h-4 w-4" />
+              <File className="h-4 w-4" />
               <AlertDescription>
                 Import directly from the local cities1000.zip file for faster processing and better reliability.
               </AlertDescription>
