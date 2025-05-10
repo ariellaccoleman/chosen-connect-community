@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -22,6 +21,7 @@ import { OrganizationAdminWithDetails } from "@/types";
 import { format } from "date-fns";
 import AdminRequestDetails from "@/components/admin/AdminRequestDetails";
 import { SetAdminRole } from "@/components/admin/SetAdminRole";
+import LocationImporter from "@/components/admin/LocationImporter";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -83,8 +83,13 @@ const AdminDashboard = () => {
             <CardTitle>Admin Tools</CardTitle>
             <CardDescription>Special administrative functions</CardDescription>
           </CardHeader>
-          <CardContent>
-            <SetAdminRole />
+          <CardContent className="grid gap-6 md:grid-cols-2">
+            <div>
+              <SetAdminRole />
+            </div>
+            <div>
+              <LocationImporter />
+            </div>
           </CardContent>
         </Card>
 
