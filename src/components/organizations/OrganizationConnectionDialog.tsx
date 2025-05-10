@@ -61,7 +61,7 @@ const OrganizationConnectionDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Declare Inside Connection</DialogTitle>
           <DialogDescription>
