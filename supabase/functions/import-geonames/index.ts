@@ -164,7 +164,7 @@ Deno.serve(async (req) => {
     
     // Insert into the locations table
     try {
-      // Modified upsert operation - now using geoname_id as the conflict detection
+      // Modified upsert operation - using the new unique constraint on geoname_id
       const batchSize = 100;
       let insertedCount = 0;
       let updatedCount = 0;
@@ -181,8 +181,8 @@ Deno.serve(async (req) => {
           const { data: insertResultGeoname, error: insertErrorGeoname } = await supabase
             .from('locations')
             .upsert(batchWithGeonameIds, { 
-              onConflict: 'geoname_id', 
-              ignoreDuplicates: false // Update existing records
+              onConflict: 'geoname_id',  // Now this will work with our unique constraint
+              ignoreDuplicates: false    // Update existing records
             })
             .select();
           
