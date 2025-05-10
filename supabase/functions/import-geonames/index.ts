@@ -149,10 +149,8 @@ Deno.serve(async (req) => {
     
     // Insert into the locations table
     try {
-      const { data: insertData, error } = await supabase.from('locations').upsert(locationsToInsert, {
-        onConflict: 'city,region,country', // Change conflict resolution to use these columns
-        ignoreDuplicates: true
-      });
+      // Use simple insert instead of upsert since we don't have a unique constraint
+      const { data: insertData, error } = await supabase.from('locations').insert(locationsToInsert);
       
       if (error) {
         console.error('Error inserting locations:', error);
