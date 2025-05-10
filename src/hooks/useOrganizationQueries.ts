@@ -63,11 +63,6 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
       }
       
       return data.map(relationship => {
-        // Convert "ally" from database to "connected_insider" for UI display
-        if (relationship.connection_type === 'ally') {
-          relationship.connection_type = 'connected_insider';
-        }
-        
         if (relationship.organization && relationship.organization.location) {
           return {
             ...relationship,

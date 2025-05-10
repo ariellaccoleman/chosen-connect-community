@@ -36,7 +36,7 @@ const EditRelationshipDialog = ({ relationship, isOpen, onClose }: EditRelations
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      connection_type: relationship.connection_type === 'ally' ? 'connected_insider' : relationship.connection_type,
+      connection_type: relationship.connection_type,
       department: relationship.department || "",
       notes: relationship.notes || ""
     }

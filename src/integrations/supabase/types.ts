@@ -671,7 +671,7 @@ export type Database = {
     }
     Enums: {
       chat_channel_type: "group" | "dm"
-      org_connection_type: "current" | "former" | "ally"
+      org_connection_type: "current" | "former" | "connected_insider"
       pricing_tier: "free" | "community" | "pro" | "partner"
     }
     CompositeTypes: {
@@ -789,7 +789,7 @@ export const Constants = {
   public: {
     Enums: {
       chat_channel_type: ["group", "dm"],
-      org_connection_type: ["current", "former", "ally"],
+      org_connection_type: ["current", "former", "connected_insider"],
       pricing_tier: ["free", "community", "pro", "partner"],
     },
   },
