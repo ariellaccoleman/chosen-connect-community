@@ -36,7 +36,7 @@ interface OrganizationFormDialogProps {
 }
 
 const OrganizationFormDialog = ({
-  organizations,
+  organizations = [], // Default to empty array to prevent null/undefined
   isLoadingOrgs,
   onClose,
   onSubmit
@@ -51,7 +51,7 @@ const OrganizationFormDialog = ({
 
   // Set organization name when selectedOrgId changes
   useEffect(() => {
-    if (selectedOrgId) {
+    if (selectedOrgId && Array.isArray(organizations)) {
       const selectedOrg = organizations.find(org => org.id === selectedOrgId);
       if (selectedOrg) {
         setSelectedOrgName(selectedOrg.name);
@@ -75,51 +75,56 @@ const OrganizationFormDialog = ({
     setNotes("");
   };
 
-  const renderOrgSelector = () => (
-    <div>
-      <label className="text-sm font-medium">Organization</label>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between text-left"
-          >
-            {selectedOrgName || "Select an organization"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-full p-0" align="start">
-          <Command>
-            <CommandInput placeholder="Search organizations..." />
-            <CommandEmpty>
-              {isLoadingOrgs ? "Loading..." : "No organization found"}
-            </CommandEmpty>
-            <CommandGroup className="max-h-60 overflow-auto">
-              {organizations.map((org) => (
-                <CommandItem
-                  key={org.id}
-                  value={org.name}
-                  onSelect={() => {
-                    setSelectedOrgId(org.id);
-                    setSelectedOrgName(org.name);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={`mr-2 h-4 w-4 ${
-                      selectedOrgId === org.id ? "opacity-100" : "opacity-0"
-                    }`}
-                  />
-                  {org.name}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
+  const renderOrgSelector = () => {
+    // Ensure organizations is always an array
+    const safeOrganizations = Array.isArray(organizations) ? organizations : [];
+    
+    return (
+      <div>
+        <label className="text-sm font-medium">Organization</label>
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              role="combobox"
+              aria-expanded={open}
+              className="w-full justify-between text-left"
+            >
+              {selectedOrgName || "Select an organization"}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-full p-0" align="start">
+            <Command>
+              <CommandInput placeholder="Search organizations..." />
+              <CommandEmpty>
+                {isLoadingOrgs ? "Loading..." : "No organization found"}
+              </CommandEmpty>
+              <CommandGroup className="max-h-60 overflow-auto">
+                {safeOrganizations.map((org) => (
+                  <CommandItem
+                    key={org.id}
+                    value={org.name}
+                    onSelect={() => {
+                      setSelectedOrgId(org.id);
+                      setSelectedOrgName(org.name);
+                      setOpen(false);
+                    }}
+                  >
+                    <Check
+                      className={`mr-2 h-4 w-4 ${
+                        selectedOrgId === org.id ? "opacity-100" : "opacity-0"
+                      }`}
+                    />
+                    {org.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </Command>
+          </PopoverContent>
+        </Popover>
+      </div>
+    );
+  };
 
   if (isMobile) {
     return (
