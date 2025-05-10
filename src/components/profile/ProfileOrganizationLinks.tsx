@@ -23,7 +23,6 @@ import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
 import { formatLocationWithDetails } from "@/utils/adminFormatters";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -32,7 +31,6 @@ interface ProfileOrganizationLinksProps {
 const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const { user } = useAuth();
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
-  const isMobile = useIsMobile();
   
   const { data: organizations = [], isLoading: isLoadingOrgs } = useOrganizations();
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
