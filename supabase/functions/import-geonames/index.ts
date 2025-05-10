@@ -139,37 +139,61 @@ Deno.serve(async (req) => {
       });
     }
     
-    // Prepare data for batch insert - REMOVING full_name which is a generated column
+    // Prepare data for batch insert
     const locationsToInsert = cities.map((city) => ({
       city: city.name || '',
       region: city.adminName1 || '',
       country: city.countryName || ''
-      // No longer including full_name as it's a generated column
     }));
     
     // Insert into the locations table
     try {
-      // Use simple insert instead of upsert since we don't have a unique constraint
-      const { data: insertData, error } = await supabase.from('locations').insert(locationsToInsert);
+      let insertedCount = 0;
+      const batchSize = 100;
       
-      if (error) {
-        console.error('Error inserting locations:', error);
-        return new Response(JSON.stringify({
-          error: 'Failed to insert locations',
-          details: error
-        }), {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          },
-          status: 500
-        });
+      // Process locations in batches to avoid overloading the database
+      for (let i = 0; i < locationsToInsert.length; i += batchSize) {
+        const batch = locationsToInsert.slice(i, i + batchSize);
+        console.log(`Processing batch ${i / batchSize + 1} of ${Math.ceil(locationsToInsert.length / batchSize)}`);
+        
+        // For each location in the batch, check if it already exists
+        for (const location of batch) {
+          const { data: existingLocations, error: checkError } = await supabase
+            .from('locations')
+            .select('id')
+            .eq('city', location.city)
+            .eq('region', location.region)
+            .eq('country', location.country)
+            .limit(1);
+          
+          if (checkError) {
+            console.error('Error checking for existing location:', checkError);
+            continue;
+          }
+          
+          // Only insert if the location doesn't exist
+          if (!existingLocations || existingLocations.length === 0) {
+            const { error: insertError } = await supabase
+              .from('locations')
+              .insert(location);
+            
+            if (insertError) {
+              console.error('Error inserting location:', insertError);
+            } else {
+              insertedCount++;
+            }
+          } else {
+            console.log(`Location already exists: ${location.city}, ${location.region}, ${location.country}`);
+          }
+        }
       }
       
       return new Response(JSON.stringify({
         success: true,
         message: `Successfully imported cities from GeoNames for ${country}`,
-        count: locationsToInsert.length
+        count: insertedCount,
+        total: locationsToInsert.length,
+        skipped: locationsToInsert.length - insertedCount
       }), {
         headers: {
           ...corsHeaders,
