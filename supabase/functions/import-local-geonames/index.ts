@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
     const requestData = await req.json();
     const { debugMode = false } = requestData;
     
-    console.log('Processing geonames file import with debug mode:', debugMode);
+    if (debugMode) console.log('Processing geonames file import with debug mode:', debugMode);
     
     // Initialize import statistics
     let insertedCount = 0;
@@ -63,14 +63,16 @@ Deno.serve(async (req) => {
     
     try {
       // First load code mappings
-      const countryInfoMap = await loadCountryInfoMapping(supabase);
-      const admin1CodeMap = await loadAdmin1CodeMapping(supabase);
-      const admin2CodeMap = await loadAdmin2CodeMapping(supabase);
+      const countryInfoMap = await loadCountryInfoMapping(supabase, debugMode);
+      const admin1CodeMap = await loadAdmin1CodeMapping(supabase, debugMode);
+      const admin2CodeMap = await loadAdmin2CodeMapping(supabase, debugMode);
       
-      console.log(`Loaded admin mappings: ${Object.keys(admin1CodeMap).length} admin1 codes, ${Object.keys(admin2CodeMap).length} admin2 codes`);
+      if (debugMode) {
+        console.log(`Loaded admin mappings: ${Object.keys(admin1CodeMap).length} admin1 codes, ${Object.keys(admin2CodeMap).length} admin2 codes`);
+      }
       
       // Get the cities text file
-      console.log('Fetching cities1000.txt from storage');
+      if (debugMode) console.log('Fetching cities1000.txt from storage');
       
       const { data: textData, error: textError } = await supabase
         .storage
@@ -93,7 +95,7 @@ Deno.serve(async (req) => {
       
       // Convert text file to string
       const citiesText = new TextDecoder().decode(await textData.arrayBuffer());
-      console.log(`Read ${citiesText.length} characters from cities1000.txt`);
+      if (debugMode) console.log(`Read ${citiesText.length} characters from cities1000.txt`);
       
       // Process the text content
       if (!citiesText) {
@@ -103,7 +105,7 @@ Deno.serve(async (req) => {
       const lines = citiesText.split('\n');
       console.log(`Total lines in cities data: ${lines.length}`);
       
-      const batchSize = 100; // Process in smaller batches for better management
+      const batchSize = 200; // Increase batch size for better performance
       const locationsToProcess = [];
       
       for (let i = 0; i < lines.length; i++) {
@@ -115,7 +117,7 @@ Deno.serve(async (req) => {
         const fields = line.split('\t');
         
         if (fields.length < 19) {
-          console.warn(`Line ${i} has invalid format (${fields.length} fields)`);
+          if (debugMode) console.warn(`Line ${i} has invalid format (${fields.length} fields)`);
           continue;
         }
         
@@ -126,10 +128,10 @@ Deno.serve(async (req) => {
         const countryCode = fields[8];
         const admin1Code = fields[10]; // admin1 code
         const admin2Code = fields[11]; // admin2 code
-        const population = parseInt(fields[14], 10);
         const timezone = fields[17];
         
-        if (debugMode && (i === 0 || i % 1000 === 0 || i === lines.length - 1)) {
+        // Only log occasionally in debug mode to reduce noise
+        if (debugMode && (i === 0 || i % 10000 === 0 || i === lines.length - 1)) {
           console.log(`Processing line ${i}: ${name}, ${countryCode}`);
         }
         
@@ -162,7 +164,7 @@ Deno.serve(async (req) => {
         
         // Process in database batches
         if (locationsToProcess.length >= batchSize || i === lines.length - 1) {
-          if (debugMode) {
+          if (debugMode && locationsToProcess.length > 0) {
             console.log(`Processing database batch of ${locationsToProcess.length} records`);
           }
           
@@ -222,9 +224,9 @@ Deno.serve(async (req) => {
 });
 
 // Helper function to load country info mapping from countryInfo.txt
-async function loadCountryInfoMapping(supabase) {
+async function loadCountryInfoMapping(supabase, debugMode = false) {
   try {
-    console.log('Loading country info mapping from countryInfo.txt');
+    if (debugMode) console.log('Loading country info mapping from countryInfo.txt');
     
     const { data: textData, error: textError } = await supabase
       .storage
@@ -238,7 +240,7 @@ async function loadCountryInfoMapping(supabase) {
     
     // Convert text file to string
     const countryInfoText = new TextDecoder().decode(await textData.arrayBuffer());
-    console.log(`Read ${countryInfoText.length} characters from countryInfo.txt`);
+    if (debugMode) console.log(`Read ${countryInfoText.length} characters from countryInfo.txt`);
     
     // Parse the country info
     const countryMap = {};
@@ -260,7 +262,7 @@ async function loadCountryInfoMapping(supabase) {
       }
     }
     
-    console.log(`Loaded ${Object.keys(countryMap).length} country code mappings`);
+    if (debugMode) console.log(`Loaded ${Object.keys(countryMap).length} country code mappings`);
     return countryMap;
     
   } catch (error) {
@@ -270,9 +272,9 @@ async function loadCountryInfoMapping(supabase) {
 }
 
 // Function to load admin1 code mapping from admin1CodeASCII.txt
-async function loadAdmin1CodeMapping(supabase) {
+async function loadAdmin1CodeMapping(supabase, debugMode = false) {
   try {
-    console.log('Loading admin1 code mapping from admin1CodesASCII.txt');
+    if (debugMode) console.log('Loading admin1 code mapping from admin1CodesASCII.txt');
     
     const { data: textData, error: textError } = await supabase
       .storage
@@ -286,7 +288,7 @@ async function loadAdmin1CodeMapping(supabase) {
     
     // Convert text file to string
     const admin1CodeText = new TextDecoder().decode(await textData.arrayBuffer());
-    console.log(`Read ${admin1CodeText.length} characters from admin1CodesASCII.txt`);
+    if (debugMode) console.log(`Read ${admin1CodeText.length} characters from admin1CodesASCII.txt`);
     
     // Parse the admin1 code info
     // Format: code, name, name_ascii, geonameid
@@ -309,7 +311,7 @@ async function loadAdmin1CodeMapping(supabase) {
       }
     }
     
-    console.log(`Loaded ${Object.keys(admin1Map).length} admin1 code mappings`);
+    if (debugMode) console.log(`Loaded ${Object.keys(admin1Map).length} admin1 code mappings`);
     return admin1Map;
     
   } catch (error) {
@@ -319,9 +321,9 @@ async function loadAdmin1CodeMapping(supabase) {
 }
 
 // Function to load admin2 code mapping from admin2Codes.txt
-async function loadAdmin2CodeMapping(supabase) {
+async function loadAdmin2CodeMapping(supabase, debugMode = false) {
   try {
-    console.log('Loading admin2 code mapping from admin2Codes.txt');
+    if (debugMode) console.log('Loading admin2 code mapping from admin2Codes.txt');
     
     const { data: textData, error: textError } = await supabase
       .storage
@@ -335,7 +337,7 @@ async function loadAdmin2CodeMapping(supabase) {
     
     // Convert text file to string
     const admin2CodeText = new TextDecoder().decode(await textData.arrayBuffer());
-    console.log(`Read ${admin2CodeText.length} characters from admin2Codes.txt`);
+    if (debugMode) console.log(`Read ${admin2CodeText.length} characters from admin2Codes.txt`);
     
     // Parse the admin2 code info
     // Format: code, name, name_ascii, geonameid
@@ -358,7 +360,7 @@ async function loadAdmin2CodeMapping(supabase) {
       }
     }
     
-    console.log(`Loaded ${Object.keys(admin2Map).length} admin2 code mappings`);
+    if (debugMode) console.log(`Loaded ${Object.keys(admin2Map).length} admin2 code mappings`);
     return admin2Map;
     
   } catch (error) {
@@ -380,11 +382,10 @@ async function processLocationBatch(supabase, locations, debugMode = false) {
     
     if (debugMode) {
       console.log(`Processing ${locations.length} locations`);
-      console.log('First location in batch:', locations[0]);
     }
     
     // Use upsert to either insert or update based on geoname_id
-    const { data, error, count } = await supabase
+    const { data, error } = await supabase
       .from('locations')
       .upsert(locations, {
         onConflict: 'geoname_id', // Only use geoname_id as the conflict detection
@@ -395,34 +396,43 @@ async function processLocationBatch(supabase, locations, debugMode = false) {
     if (error) {
       console.error('Error upserting locations:', error);
       
-      // If batch fails, try one by one
-      if (debugMode) {
-        console.log('Attempting individual inserts as batch failed');
-      }
-      
-      for (const location of locations) {
-        try {
-          // Try to insert or update each location
-          const { error } = await supabase
-            .from('locations')
-            .upsert([location], { 
-              onConflict: 'geoname_id',
-              ignoreDuplicates: false
-            });
-          
-          if (error) {
-            if (debugMode) {
-              console.error(`Error upserting location ${location.city}:`, error);
+      // If batch fails, try with smaller batches
+      if (locations.length > 50) {
+        if (debugMode) console.log('Batch failed, splitting into smaller batches');
+        
+        const midPoint = Math.floor(locations.length / 2);
+        const firstHalf = locations.slice(0, midPoint);
+        const secondHalf = locations.slice(midPoint);
+        
+        // Process each half separately
+        const firstResult = await processLocationBatch(supabase, firstHalf, debugMode);
+        const secondResult = await processLocationBatch(supabase, secondHalf, debugMode);
+        
+        // Combine results
+        insertedCount = firstResult.inserted + secondResult.inserted;
+        updatedCount = firstResult.updated + secondResult.updated;
+        skippedCount = firstResult.skipped + secondResult.skipped;
+      } else {
+        // For small batches, try one by one
+        if (debugMode) console.log('Small batch failed, trying individual inserts');
+        
+        for (const location of locations) {
+          try {
+            const { error } = await supabase
+              .from('locations')
+              .upsert([location], { 
+                onConflict: 'geoname_id',
+                ignoreDuplicates: false
+              });
+            
+            if (error) {
+              skippedCount++;
+            } else {
+              insertedCount++;
             }
+          } catch (singleError) {
             skippedCount++;
-          } else {
-            insertedCount++;
           }
-        } catch (singleError) {
-          if (debugMode) {
-            console.error('Error in individual upsert:', singleError);
-          }
-          skippedCount++;
         }
       }
     } else {

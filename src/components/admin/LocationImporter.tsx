@@ -19,7 +19,7 @@ import { Progress } from '@/components/ui/progress';
 
 const LocationImporter = () => {
   const [error, setError] = useState<string | null>(null);
-  const [debugMode, setDebugMode] = useState(true);
+  const [debugMode, setDebugMode] = useState(false);
   
   const { importLocationsFromFile, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();

@@ -26,19 +26,14 @@ export const useGeoNames = () => {
     total: number;
   } | null>(null);
   
-  // Simplified function to import from local cities1000.zip file
   const importLocationsFromFile = async ({
     debugMode = false
   }: ImportFileParams = {}): Promise<ImportResult> => {
     setIsImporting(true);
     
     try {
-      console.log('Importing locations from cities1000.txt file');
-      
       const { data, error } = await supabase.functions.invoke('import-local-geonames', {
-        body: {
-          debugMode
-        }
+        body: { debugMode }
       });
       
       if (error) {
