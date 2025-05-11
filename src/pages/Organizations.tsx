@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -9,17 +10,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
 import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
+import TagFilter from "@/components/filters/TagFilter";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
   const { data: organizations = [], isLoading } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
 
-  const filteredOrganizations = organizations.filter((org) => 
-    org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredOrganizations = organizations.filter((org) => {
+    // Filter by search term
+    const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by selected tag
+    const matchesTag = selectedTagId 
+      ? org.tags?.some(tagAssignment => tagAssignment.tag_id === selectedTagId)
+      : true;
+    
+    return matchesSearch && matchesTag;
+  });
 
   return (
     <DashboardLayout>
@@ -36,7 +47,7 @@ const OrganizationsList = () => {
         </div>
         
         <Card className="mb-6">
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
@@ -46,6 +57,12 @@ const OrganizationsList = () => {
                 className="pl-10"
               />
             </div>
+            
+            <TagFilter 
+              selectedTagId={selectedTagId} 
+              onSelectTag={setSelectedTagId} 
+              entityType="organization"
+            />
           </CardContent>
         </Card>
         
@@ -63,7 +80,7 @@ const OrganizationsList = () => {
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">No organizations found matching your search</p>
+            <p className="text-gray-500">No organizations found matching your criteria</p>
           </div>
         )}
       </div>

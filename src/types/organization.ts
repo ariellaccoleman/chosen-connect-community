@@ -1,29 +1,32 @@
-
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
+import { TagAssignment } from "@/utils/tagUtils";
 
-export interface Organization {
+export type ConnectionType = "current" | "former" | "connected_insider";
+
+export type Organization = {
   id: string;
   name: string;
-  description: string | null;
-  website_url: string | null;
-  logo_url: string | null;
-  logo_api_url: string | null;
+  description?: string;
+  website_url?: string;
+  logo_url?: string;
+  logo_api_url?: string;
+  location_id?: string;
+  is_verified: boolean;
   created_at: string;
-  updated_at?: string; 
-  location_id: string | null;
-  is_verified?: boolean | null;
-}
+  updated_at: string;
+};
 
-export interface OrganizationWithLocation extends Organization {
+export type OrganizationWithLocation = Organization & {
   location?: LocationWithDetails;
-}
+  tags?: TagAssignment[];
+};
 
 export interface ProfileOrganizationRelationship {
   id: string;
   profile_id: string;
   organization_id: string;
-  connection_type: "current" | "former" | "connected_insider";
+  connection_type: ConnectionType;
   department: string | null;
   notes: string | null;
   created_at: string;

@@ -15,7 +15,12 @@ export const useOrganizations = () => {
         .from('organizations')
         .select(`
           *,
-          location:locations(*)
+          location:locations(*),
+          tags:tag_assignments(
+            id,
+            tag_id,
+            tags(*)
+          )
         `)
         .order('name');
       

@@ -7,9 +7,12 @@ import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
 import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
+import TagFilter from "@/components/filters/TagFilter";
+import { Card, CardContent } from "@/components/ui/card";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { user } = useAuth();
   
   // Use the current user's profile separately to ensure we always display it
@@ -18,7 +21,8 @@ const CommunityDirectory = () => {
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
     search: searchQuery,
-    isApproved: true // Explicitly request only approved profiles
+    isApproved: true, // Explicitly request only approved profiles
+    tagId: selectedTagId
   });
 
   useEffect(() => {
@@ -38,7 +42,18 @@ const CommunityDirectory = () => {
           Community Directory
         </h1>
 
-        <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+        <Card className="mb-6">
+          <CardContent className="pt-6 space-y-4">
+            <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            
+            <TagFilter 
+              selectedTagId={selectedTagId} 
+              onSelectTag={setSelectedTagId}
+              entityType="person"
+            />
+          </CardContent>
+        </Card>
+
         <ProfileGrid profiles={allProfiles} isLoading={isLoading} searchQuery={searchQuery} />
       </div>
     </DashboardLayout>

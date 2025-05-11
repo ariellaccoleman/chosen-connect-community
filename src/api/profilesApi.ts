@@ -39,8 +39,10 @@ export const profilesApi = {
     limit?: number;
     excludeId?: string;
     isApproved?: boolean;
+    tagId?: string | null;
   }): Promise<ApiResponse<ProfileWithDetails[]>> {
     return apiClient.query(async (client) => {
+      // Base query
       let query = client
         .from("profiles")
         .select(`
@@ -66,10 +68,27 @@ export const profilesApi = {
       if (params.limit) {
         query = query.limit(params.limit);
       }
-
-      const { data, error } = await query;
+      
+      // Get profiles
+      let { data, error } = await query;
       
       if (error) throw error;
+      
+      // If tag filter is applied, we need to filter the profiles by tag
+      if (params.tagId) {
+        // Get all profiles that have the specified tag
+        const { data: taggedProfiles, error: tagError } = await client
+          .from("tag_assignments")
+          .select("target_id")
+          .eq("tag_id", params.tagId)
+          .eq("target_type", "person");
+        
+        if (tagError) throw tagError;
+        
+        // Filter profiles that have the tag
+        const taggedProfileIds = taggedProfiles.map(p => p.target_id);
+        data = data.filter(profile => taggedProfileIds.includes(profile.id));
+      }
       
       const formattedProfiles = (data || []).map(profile => 
         formatProfileWithDetails(profile)
