@@ -44,6 +44,7 @@ interface ImportResult {
   }>;
   error?: any;
   data?: any;
+  message?: string;
 }
 
 export const useGeoNames = () => {
@@ -204,6 +205,12 @@ export const useGeoNames = () => {
         const source = country ? `for ${country}` : 'from file';
         toast.info(`No response data received when importing locations ${source}`);
         return { success: true, count: 0, total: 0 };
+      }
+      
+      // Check if there was a failure message from the function
+      if (!data.success && data.message) {
+        toast.info(data.message);
+        return data;
       }
       
       if (data.count === 0 && data.filteredLocations === 0) {

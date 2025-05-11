@@ -46,12 +46,12 @@ const LocationImporter = () => {
   const [activeTab, setActiveTab] = useState<'country' | 'global' | 'file'>('file');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [forceContinue, setForceContinue] = useState(false);
-  const [debugMode, setDebugMode] = useState(false);
+  const [debugMode, setDebugMode] = useState(true); // Enable debug mode by default
   
   // File import specific settings
-  const [fileMinPopulation, setFileMinPopulation] = useState(1000); // Lower default for local file import
+  const [fileMinPopulation, setFileMinPopulation] = useState(100); // Much lower threshold for file imports
   const [fileCountry, setFileCountry] = useState<string | null>('IL'); // Default to Israel for testing
-  const [fileLimit, setFileLimit] = useState(10000); // Higher default for file import
+  const [fileLimit, setFileLimit] = useState(20000); // Higher default for file import
   const [fileOffset, setFileOffset] = useState(0);
   
   const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
@@ -235,7 +235,7 @@ const LocationImporter = () => {
               <File className="h-4 w-4" />
               <AlertDescription>
                 Import directly from the cities1000.txt file for faster processing and better reliability.
-                {fileCountry === 'IL' && " Currently set to import cities from Israel."}
+                {fileCountry === 'IL' && " Currently set to import cities from Israel with minimum population of 100."}
               </AlertDescription>
             </Alert>
             
@@ -291,7 +291,7 @@ const LocationImporter = () => {
                     onChange={(e) => setFileLimit(Number(e.target.value))}
                     disabled={isImporting}
                     min={100}
-                    max={20000}
+                    max={50000}
                   />
                 </div>
               </div>

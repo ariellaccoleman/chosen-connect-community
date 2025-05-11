@@ -76,6 +76,7 @@ Deno.serve(async (req) => {
     let totalInsertedCount = 0;
     let totalUpdatedCount = 0;
     let totalSkippedCount = 0;
+    let filteredLocations = 0;
     let importStatus = [];
     
     try {
@@ -145,7 +146,6 @@ Deno.serve(async (req) => {
       
       // Process the lines in batches
       const locationsToProcess = [];
-      let filteredLocations = 0;
       
       for (let i = offset; i < maxIndex; i++) {
         const line = lines[i];
@@ -170,14 +170,34 @@ Deno.serve(async (req) => {
         const population = parseInt(fields[14], 10);
         const timezone = fields[17];
         
+        // Debug some info to understand filtering
+        if (debugMode || (i === offset || i % 1000 === 0)) {
+          console.log(`Examining line ${i}:`);
+          console.log(`  Name: ${name}`);
+          console.log(`  Country: ${countryCode}`);
+          console.log(`  Population: ${population}`);
+          console.log(`  Filters: country=${country}, minPopulation=${minPopulation}`);
+        }
+        
         // Skip locations with population less than minimum
         if (population < minPopulation) {
+          if (debugMode) {
+            console.log(`  Skipping ${name} - population ${population} < ${minPopulation}`);
+          }
           continue;
         }
         
         // Skip if country filter is applied and doesn't match
         if (country && countryCode !== country) {
+          if (debugMode) {
+            console.log(`  Skipping ${name} - country ${countryCode} != ${country}`);
+          }
           continue;
+        }
+        
+        // Log when we find a matching record
+        if (debugMode || (i === offset || i % 1000 === 0)) {
+          console.log(`Found matching record: ${name}, ${countryCode}, population: ${population}`);
         }
         
         filteredLocations++;
@@ -277,8 +297,45 @@ Deno.serve(async (req) => {
         minPopulation
       })) : null;
       
+      // Special handling for no results but still more data to process
+      let effectiveHasMoreData = hasMoreData;
+      
+      // If we didn't find any matching records but there's more data
+      if (filteredLocations === 0 && hasMoreData) {
+        if (debugMode) {
+          console.log(`No matching records found in this batch, but more data exists. Will offer continuation.`);
+        }
+        effectiveHasMoreData = true;
+      }
       // Only say there's more data if we actually processed some locations and there are more lines
-      const effectiveHasMoreData = hasMoreData && filteredLocations > 0;
+      else if (hasMoreData && filteredLocations > 0) {
+        effectiveHasMoreData = true;
+      } else {
+        effectiveHasMoreData = false;
+      }
+      
+      // If we've processed the whole file and found nothing, return a clear message
+      if (filteredLocations === 0 && offset === 0 && maxIndex >= lines.length) {
+        // Especially if a country filter was applied
+        const countryMessage = country ? ` for ${country}` : '';
+        
+        return new Response(JSON.stringify({
+          success: false,
+          message: `No locations found${countryMessage} with population >= ${minPopulation}`,
+          count: 0,
+          updated: 0,
+          skipped: 0,
+          total: 0,
+          filteredLocations: 0,
+          hasMoreData: false,
+          importStatus
+        }), {
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json'
+          }
+        });
+      }
       
       return new Response(JSON.stringify({
         success: true,
