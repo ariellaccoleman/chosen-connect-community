@@ -1,3 +1,4 @@
+
 import { Tag, TagAssignment } from "@/utils/tagUtils";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -244,14 +245,15 @@ export const tagsApi = {
         let usedEntityTypes: string[] = [];
         
         if (Array.isArray(tagData.used_entity_types)) {
-          usedEntityTypes = tagData.used_entity_types;
+          // Convert all elements to strings to ensure type safety
+          usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
         } else if (tagData.used_entity_types) {
           try {
             const parsedValue = typeof tagData.used_entity_types === 'string' 
               ? JSON.parse(tagData.used_entity_types)
               : tagData.used_entity_types;
               
-            usedEntityTypes = Array.isArray(parsedValue) ? parsedValue : [];
+            usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
           } catch (e) {
             console.error("Error parsing used_entity_types:", e);
             usedEntityTypes = [];

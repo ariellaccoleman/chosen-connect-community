@@ -28,10 +28,13 @@ const TagFilter = ({
   entityType,
   className 
 }: TagFilterProps) => {
+  // Pass entityType as targetType to ensure we get the correct tags
   const { data: tags = [], isLoading, error } = useTags({ 
     targetType: entityType,
     enabled: true 
   });
+  
+  console.log("TagFilter entityType:", entityType, "available tags:", tags.length);
 
   // Show error toast only once if tag loading fails
   if (error) {

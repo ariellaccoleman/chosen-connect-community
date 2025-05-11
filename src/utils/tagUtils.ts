@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -263,20 +262,24 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
       // Use type assertion to help TypeScript understand the structure
       const tagData = assignment.tag || {} as Partial<Tag>;
       
-      // Get entity types from tag_entity_types table
-      const loadEntityTypes = async (tagId: string) => {
-        const { data: entityTypes } = await supabase
-          .from('tag_entity_types')
-          .select('entity_type')
-          .eq('tag_id', tagId);
-          
-        return entityTypes ? entityTypes.map(entry => entry.entity_type) : [];
-      };
+      // For backward compatibility, handle the used_entity_types conversion properly
+      let usedEntityTypes: string[] = [];
       
-      // For backward compatibility, still use the used_entity_types from the tag
-      const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
-        ? tagData.used_entity_types 
-        : (tagData.used_entity_types ? [String(tagData.used_entity_types)] : []);
+      if (Array.isArray(tagData.used_entity_types)) {
+        // Ensure all elements are strings
+        usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
+      } else if (tagData.used_entity_types) {
+        try {
+          const parsedValue = typeof tagData.used_entity_types === 'string' 
+            ? JSON.parse(tagData.used_entity_types)
+            : tagData.used_entity_types;
+            
+          usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
+        } catch (e) {
+          console.error("Error parsing used_entity_types:", e);
+          usedEntityTypes = [];
+        }
+      }
         
       return {
         ...assignment,
@@ -376,10 +379,12 @@ const updateTagUsedEntityTypes = async (tagId: string, entityType: string) => {
       return false;
     }
     
-    // Parse used_entity_types array
+    // Parse used_entity_types array with proper type handling
     let usedEntityTypes: string[] = [];
+    
     if (Array.isArray(tagData.used_entity_types)) {
-      usedEntityTypes = tagData.used_entity_types;
+      // Ensure all elements are strings
+      usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
     } else if (tagData.used_entity_types) {
       // Handle case where it might be a JSON string or an object
       try {
@@ -387,7 +392,7 @@ const updateTagUsedEntityTypes = async (tagId: string, entityType: string) => {
           ? JSON.parse(tagData.used_entity_types)
           : tagData.used_entity_types;
           
-        usedEntityTypes = Array.isArray(parsedValue) ? parsedValue : [];
+        usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
       } catch (e) {
         console.error("Error parsing used_entity_types:", e);
         usedEntityTypes = [];
