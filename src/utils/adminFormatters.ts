@@ -7,11 +7,11 @@
 import { 
   formatLocationWithDetails,
   formatAdminWithDetails,
-  formatProfile
+  formatProfileWithDetails  // This is the correct function name based on the formatters.ts file
 } from './formatters';
 
 export {
   formatLocationWithDetails,
   formatAdminWithDetails,
-  formatProfile
+  formatProfileWithDetails as formatProfile  // Re-export with the old name for backward compatibility
 };
