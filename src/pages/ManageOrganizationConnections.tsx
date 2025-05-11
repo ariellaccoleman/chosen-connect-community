@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,20 +68,20 @@ const ManageOrganizationConnections = () => {
 
   return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-5xl">
+      <div className="container mx-auto py-6 max-w-5xl px-4">
         <OrganizationConnectionsHeader
           onConnectClick={() => setIsConnectDialogOpen(true)}
           availableOrganizationsCount={availableOrganizations.length}
         />
         
-        <Card>
+        <Card className="overflow-hidden">
           <CardHeader>
             <CardTitle>Manage Organization Connections</CardTitle>
             <CardDescription>
               Update or remove your connections to organizations
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="overflow-x-auto">
             {isLoadingRelationships ? (
               <div className="text-center py-8">Loading your organizations...</div>
             ) : formattedRelationships.length > 0 ? (

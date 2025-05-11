@@ -21,12 +21,12 @@ const OrganizationConnectionsHeader = ({
         Back to Dashboard
       </Button>
       
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
         <h1 className="text-3xl font-bold font-heading">Your Organizations</h1>
-        <div className="flex space-x-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <Button 
             onClick={onConnectClick} 
-            className="bg-chosen-blue hover:bg-chosen-navy"
+            className="bg-chosen-blue hover:bg-chosen-navy flex-1 sm:flex-none"
             disabled={availableOrganizationsCount === 0}
           >
             <Link2 className="mr-2 h-4 w-4" />
@@ -34,7 +34,7 @@ const OrganizationConnectionsHeader = ({
           </Button>
           <Button 
             onClick={() => navigate("/organizations/new")} 
-            className="bg-chosen-blue hover:bg-chosen-navy"
+            className="bg-chosen-blue hover:bg-chosen-navy flex-1 sm:flex-none"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Organization
