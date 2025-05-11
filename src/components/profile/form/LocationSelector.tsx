@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { 
   FormField,
@@ -15,7 +15,7 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocations } from "@/hooks/useLocations";
 import { LocationWithDetails } from "@/types";
-import { ProfileFormValues } from "../ProfileForm";
+import { ProfileFormValues } from "../schema/profileSchema";
 
 interface LocationSelectorProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -24,11 +24,37 @@ interface LocationSelectorProps {
 const LocationSelector = ({ form }: LocationSelectorProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const [open, setOpen] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState<LocationWithDetails | null>(null);
   
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
   
   // Ensure locations is always a valid array
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
+
+  // Effect to fetch the selected location when the component mounts
+  useEffect(() => {
+    const locationId = form.getValues("location_id");
+    if (locationId && !selectedLocation) {
+      // Find the location in the current locations array
+      const location = locations.find(loc => loc.id === locationId);
+      if (location) {
+        setSelectedLocation(location);
+      } else if (locationId) {
+        // If the location isn't in the current results, fetch it specifically
+        const fetchLocation = async () => {
+          try {
+            const { data: specificLocation } = await useLocations(undefined, locationId).refetch();
+            if (specificLocation && specificLocation.length > 0) {
+              setSelectedLocation(specificLocation[0]);
+            }
+          } catch (error) {
+            console.error("Error fetching specific location:", error);
+          }
+        };
+        fetchLocation();
+      }
+    }
+  }, [form, locations, selectedLocation]);
   
   return (
     <FormField
@@ -49,9 +75,9 @@ const LocationSelector = ({ form }: LocationSelectorProps) => {
                     !field.value && "text-muted-foreground"
                   )}
                 >
-                  {field.value && locations.length > 0
-                    ? locations.find((location) => location.id === field.value)?.formatted_location || "Select location..."
-                    : "Select location..."}
+                  {field.value && (selectedLocation ? selectedLocation.formatted_location : 
+                    locations.find((location) => location.id === field.value)?.formatted_location) || 
+                    "Select location..."}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </FormControl>
@@ -87,6 +113,7 @@ const LocationSelector = ({ form }: LocationSelectorProps) => {
                                 value={displayValue}
                                 onSelect={() => {
                                   form.setValue("location_id", location.id);
+                                  setSelectedLocation(location);
                                   setOpen(false);
                                 }}
                               >

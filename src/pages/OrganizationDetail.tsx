@@ -15,7 +15,7 @@ import OrganizationTags from "@/components/organizations/OrganizationTags";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);

@@ -2,14 +2,18 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { LocationWithDetails } from '@/types';
 
-export const useLocations = (searchTerm: string = '') => {
+export const useLocations = (searchTerm: string = '', specificId?: string) => {
   return useQuery({
-    queryKey: ['locations', searchTerm],
+    queryKey: ['locations', searchTerm, specificId],
     queryFn: async (): Promise<LocationWithDetails[]> => {
       try {
         let query = supabase.from('locations').select('*');
         
-        if (searchTerm) {
+        if (specificId) {
+          // If a specific ID is provided, fetch just that location
+          query = query.eq('id', specificId);
+        } else if (searchTerm) {
+          // Otherwise use search term if provided
           query = query.or(`city.ilike.%${searchTerm}%,region.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
         }
         

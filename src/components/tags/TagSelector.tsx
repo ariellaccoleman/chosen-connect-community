@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useAuth } from "@/hooks/useAuth";
-import { Check, Plus, Tag } from "lucide-react";
+import { Check, Plus, Tag as TagIcon } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,9 +13,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { TAG_TYPES, createTag, fetchTags, Tag } from "@/utils/tagUtils";
+import { TAG_TYPES, createTag, fetchTags } from "@/utils/tagUtils";
+import type { Tag } from "@/utils/tagUtils";
 
 interface TagSelectorProps {
   targetType: "person" | "organization";
@@ -108,7 +109,7 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
             aria-expanded={open}
             className="w-full justify-between"
           >
-            <Tag className="mr-2 h-4 w-4 shrink-0" />
+            <TagIcon className="mr-2 h-4 w-4 shrink-0" />
             <span className="truncate">Select or create a tag</span>
           </Button>
         </PopoverTrigger>
