@@ -83,17 +83,16 @@ export const getSelectionTags = async (options: {
     // First try to get from cache if we have a simple query
     if (options.targetType && !options.searchQuery && !options.type && 
         options.isPublic === undefined && !options.createdBy) {
+      // Use more reliable function-based caching since the 'cache' table isn't in TypeScript types
       const cacheKey = `selection_tags_${options.targetType}`;
-      const { data: cachedData } = await client
-        .from('cache')
-        .select('data, updated_at')
-        .eq('key', cacheKey)
-        .maybeSingle();
       
-      // Use cache if it's less than 5 minutes old
-      if (cachedData && 
-          ((new Date().getTime() - new Date(cachedData.updated_at).getTime()) < 5 * 60 * 1000)) {
-        return createSuccessResponse(cachedData.data || []);
+      // Check if we have a cached result using a custom query
+      const { data: cachedResults } = await client.rpc('get_cached_tags', { 
+        cache_key: cacheKey 
+      });
+      
+      if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+        return createSuccessResponse(cachedResults);
       }
     }
     
@@ -131,13 +130,11 @@ export const getSelectionTags = async (options: {
       // Cache the result if it's a simple query
       if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
-        await client
-          .from('cache')
-          .upsert({ 
-            key: cacheKey, 
-            data: data, 
-            updated_at: new Date().toISOString() 
-          }, { onConflict: 'key' });
+        // Use a function to update the cache since we don't have the cache table in TypeScript types
+        await client.rpc('update_tag_cache', { 
+          cache_key: cacheKey, 
+          cache_data: data || [] 
+        });
       }
       
       return createSuccessResponse(data || []);
