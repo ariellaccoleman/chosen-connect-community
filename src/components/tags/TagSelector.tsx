@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { TAG_TYPES, createTag, fetchTags } from "@/utils/tagUtils";
+import { TAG_TYPES, fetchTags, createTag } from "@/utils/tagUtils";
 import type { Tag } from "@/utils/tagUtils";
 
 interface TagSelectorProps {
@@ -50,12 +50,14 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
 
   // Load tags based on search criteria
   useEffect(() => {
+    if (!user?.id) return;
+
     const loadTags = async () => {
       const fetchedTags = await fetchTags({ 
         type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
         searchQuery: searchValue,
-        // For non-admins, only show public tags or tags they created
-        ...(isAdmin ? {} : { isPublic: true })
+        // Include all tags that are either public or created by the current user
+        // For admins, show all tags
       });
       setTags(fetchedTags);
     };
@@ -63,25 +65,35 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
     // Add a small delay to avoid too many requests while typing
     const timeoutId = setTimeout(loadTags, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchValue, targetType, isAdmin]);
+  }, [searchValue, targetType, isAdmin, user?.id]);
 
   // Handle creating a new tag
   const handleCreateTag = async (values: CreateTagFormValues) => {
-    if (!user?.id) return;
+    if (!user?.id) {
+      toast.error("You must be logged in to create tags");
+      return;
+    }
     
-    const newTag = await createTag({
-      name: values.name,
-      description: values.description || null,
-      type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
-      is_public: values.is_public,
-      created_by: user.id,
-    });
+    try {
+      const newTag = await createTag({
+        name: values.name,
+        description: values.description || null,
+        type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
+        is_public: values.is_public,
+        created_by: user.id,
+      });
 
-    if (newTag) {
-      toast.success(`Tag "${newTag.name}" created successfully`);
-      form.reset();
-      setIsCreateDialogOpen(false);
-      onTagSelected(newTag);
+      if (newTag) {
+        toast.success(`Tag "${newTag.name}" created successfully`);
+        form.reset();
+        setIsCreateDialogOpen(false);
+        onTagSelected(newTag);
+      } else {
+        toast.error("Failed to create tag");
+      }
+    } catch (error) {
+      console.error("Error creating tag:", error);
+      toast.error("Failed to create tag. Please try again.");
     }
   };
 
@@ -94,6 +106,11 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
 
   // Open the create tag dialog and populate with current search term
   const handleOpenCreateDialog = () => {
+    if (!user?.id) {
+      toast.error("You must be logged in to create tags");
+      return;
+    }
+    
     form.setValue("name", searchValue);
     setIsCreateDialogOpen(true);
     setOpen(false);
@@ -124,15 +141,22 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
               <CommandEmpty>
                 <div className="py-6 text-center text-sm">
                   <p className="text-muted-foreground">No tags found</p>
-                  <Button
-                    variant="outline"
-                    className="mt-2"
-                    size="sm"
-                    onClick={handleOpenCreateDialog}
-                  >
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create "{searchValue}"
-                  </Button>
+                  {user && (
+                    <Button
+                      variant="outline"
+                      className="mt-2"
+                      size="sm"
+                      onClick={handleOpenCreateDialog}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Create "{searchValue}"
+                    </Button>
+                  )}
+                  {!user && (
+                    <p className="text-muted-foreground mt-2">
+                      Please log in to create tags
+                    </p>
+                  )}
                 </div>
               </CommandEmpty>
               <CommandGroup>
@@ -159,7 +183,7 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
                   </CommandItem>
                 ))}
               </CommandGroup>
-              {searchValue && (
+              {searchValue && user && (
                 <div className="p-2 border-t">
                   <Button
                     variant="outline"

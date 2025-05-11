@@ -76,6 +76,7 @@ export const fetchTags = async (options: {
 
 /**
  * Create a new tag
+ * Note: created_by must be set to auth.uid() to satisfy RLS
  */
 export const createTag = async (tagData: {
   name: string;
@@ -85,9 +86,22 @@ export const createTag = async (tagData: {
   created_by: string;
 }) => {
   try {
+    // Make sure created_by matches the authenticated user
+    const { data: authData } = await supabase.auth.getSession();
+    if (!authData.session?.user.id) {
+      handleError(new Error("User not authenticated"), "Authentication required");
+      return null;
+    }
+    
+    // Ensure created_by matches the current user's ID
+    const safeTagData = {
+      ...tagData,
+      created_by: authData.session.user.id
+    };
+    
     const { data, error } = await supabase
       .from("tags")
-      .insert(tagData)
+      .insert(safeTagData)
       .select()
       .single();
     
@@ -109,9 +123,12 @@ export const createTag = async (tagData: {
  */
 export const updateTag = async (tagId: string, updates: Partial<Tag>) => {
   try {
+    // Remove created_by from updates to prevent unauthorized changes
+    const { created_by, ...safeUpdates } = updates;
+    
     const { data, error } = await supabase
       .from("tags")
-      .update(updates)
+      .update(safeUpdates)
       .eq("id", tagId)
       .select()
       .single();
@@ -201,6 +218,16 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
     if (existingAssignment) {
       logger.info("Tag assignment already exists");
       return existingAssignment;
+    }
+    
+    // Verify permissions before creating assignment
+    if (entityType === "person") {
+      // Check if user is trying to assign a tag to themselves
+      const { data: authData } = await supabase.auth.getSession();
+      if (!authData.session || entityId !== authData.session.user.id) {
+        logger.error("Unauthorized: Cannot assign tags to other people's profiles");
+        return null;
+      }
     }
     
     // Create new assignment

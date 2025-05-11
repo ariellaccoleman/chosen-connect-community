@@ -2,7 +2,8 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
-import { Tag, TagAssignment, assignTag, fetchEntityTags, removeTagAssignment } from "@/utils/tagUtils";
+import { TagAssignment } from "@/utils/tagUtils";
+import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";
 import TagList from "./TagList";
 import TagSelector from "./TagSelector";
 import { Button } from "@/components/ui/button";
@@ -21,60 +22,46 @@ const EntityTagManager = ({
   isAdmin = false,
   className
 }: EntityTagManagerProps) => {
-  const [tagAssignments, setTagAssignments] = useState<TagAssignment[]>([]);
   const [isAdding, setIsAdding] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+  const { data: tagAssignments = [], isLoading } = useEntityTags(entityId, entityType);
+  const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
-  // Fetch existing tags for this entity
-  const fetchTags = async () => {
-    setIsLoading(true);
-    const assignments = await fetchEntityTags(
-      entityId, 
-      entityType // Use the entityType passed from props directly
-    );
-    setTagAssignments(assignments);
-    setIsLoading(false);
-  };
-  
-  useEffect(() => {
-    if (entityId) {
-      fetchTags();
-    }
-  }, [entityId, entityType]);
+  // Check if user can manage tags
+  const canManageTags = isAdmin || (entityType === "person" && user?.id === entityId);
   
   // Handle adding a new tag
-  const handleTagSelected = async (tag: Tag) => {
+  const handleTagSelected = async (tag: any) => {
     if (!user?.id || !entityId) {
       toast.error("You must be logged in to add tags");
       return;
     }
     
-    const result = await assignTag(
-      tag.id, 
-      entityId, 
-      entityType // Use the entityType passed from props directly
-    );
-    
-    if (result) {
+    try {
+      await assignTag({
+        tagId: tag.id, 
+        entityId, 
+        entityType
+      });
+      
       toast.success(`Tag "${tag.name}" added successfully`);
-      fetchTags(); // Refresh tag assignments
       setIsAdding(false);
+    } catch (error) {
+      console.error("Error assigning tag:", error);
+      toast.error("Failed to add tag. Please try again.");
     }
   };
   
   // Handle removing a tag
   const handleRemoveTag = async (assignmentId: string) => {
-    const success = await removeTagAssignment(assignmentId);
-    
-    if (success) {
+    try {
+      await removeTagAssignment(assignmentId);
       toast.success("Tag removed successfully");
-      setTagAssignments(prev => prev.filter(assignment => assignment.id !== assignmentId));
+    } catch (error) {
+      console.error("Error removing tag:", error);
+      toast.error("Failed to remove tag. Please try again.");
     }
   };
-  
-  // Check if user can manage tags
-  const canManageTags = isAdmin || user?.id === entityId;
   
   if (isLoading) {
     return <div className="py-2">Loading tags...</div>;
@@ -110,6 +97,7 @@ const EntityTagManager = ({
               size="sm"
               onClick={() => setIsAdding(true)}
               className="mt-2"
+              disabled={isAssigning || isRemoving}
             >
               <Plus className="mr-2 h-4 w-4" />
               Add Tag
