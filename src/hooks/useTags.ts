@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
@@ -158,7 +157,7 @@ export const useTagAssignmentMutations = () => {
       return removeTagAssignment(assignmentId);
     },
     onSuccess: () => {
-      // Since we don't know which entity this was for, we invalidate all entity-tags queries
+      // Since we don’t know which entity this was for, we invalidate all entity-tags queries
       queryClient.invalidateQueries({ queryKey: ["entity-tags"] });
     },
     onError: (error) => {

@@ -34,8 +34,6 @@ const TagFilter = ({
     enabled: true 
   });
   
-  console.log("TagFilter entityType:", entityType, "available tags:", tags.length);
-
   // Show error toast only once if tag loading fails
   if (error) {
     console.error("Error loading tags:", error);
