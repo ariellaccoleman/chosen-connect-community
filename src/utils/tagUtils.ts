@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -64,11 +63,8 @@ export const fetchTags = async (options: {
     
     // Fix entity type filtering - using separate OR conditions
     if (options.targetType) {
-      // Use proper filter syntax with two separate conditions
-      query = query.or([
-        `used_entity_types::jsonb @> '["${options.targetType}"]'`, 
-        'used_entity_types::jsonb = \'[]\''
-      ]);
+      // Use proper filter syntax with a single string condition
+      query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb = '[]'`);
     }
     
     const { data, error } = await query.order("name");

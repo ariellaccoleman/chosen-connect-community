@@ -1,4 +1,3 @@
-
 import { Tag, TagAssignment } from "@/utils/tagUtils";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -39,11 +38,8 @@ export const tagsApi = {
       
       // Fix entity type filtering - using separate OR conditions
       if (options.targetType) {
-        // Use proper filter syntax with two separate conditions
-        query = query.or([
-          `used_entity_types::jsonb @> '["${options.targetType}"]'`,
-          'used_entity_types::jsonb = \'[]\''
-        ]);
+        // Use proper filter syntax with a single string condition
+        query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb = '[]'`);
       }
       
       const { data, error } = await query.order('name');
