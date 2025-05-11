@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw, Database, File } from 'lucide-react';
+import { Loader2, AlertCircle, Globe, RefreshCcw, RotateCw, Database, File, Bug } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -32,6 +32,7 @@ const CountryCodes = [
   { code: 'CN', name: 'China' },
   { code: 'IN', name: 'India' },
   { code: 'BR', name: 'Brazil' },
+  { code: 'AT', name: 'Austria' }, // Added this for easier testing
 ];
 
 const LocationImporter = () => {
@@ -44,12 +45,14 @@ const LocationImporter = () => {
   const [activeTab, setActiveTab] = useState<'country' | 'global' | 'file'>('file');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [forceContinue, setForceContinue] = useState(false);
+  const [debugMode, setDebugMode] = useState(false);
   
   // File import specific settings
   const [fileMinPopulation, setFileMinPopulation] = useState(15000);
   const [fileCountry, setFileCountry] = useState<string | null>(null);
   const [fileLimit, setFileLimit] = useState(5000);
   const [fileOffset, setFileOffset] = useState(0);
+  const [forceUpdateNames, setForceUpdateNames] = useState(false);
   
   const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
@@ -92,7 +95,9 @@ const LocationImporter = () => {
           minPopulation: fileMinPopulation,
           country: fileCountry,
           offset: fileOffset,
-          limit: fileLimit
+          limit: fileLimit,
+          forceUpdateNames,
+          debugMode
         });
       }
     } catch (err) {
@@ -285,9 +290,33 @@ const LocationImporter = () => {
                   />
                 </div>
               </div>
+              
+              <div className="flex items-center space-x-2 pt-2">
+                <Switch 
+                  id="force-update-names" 
+                  checked={forceUpdateNames}
+                  onCheckedChange={setForceUpdateNames}
+                  disabled={isImporting}
+                />
+                <Label htmlFor="force-update-names">Force update admin names</Label>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Switch 
+                  id="debug-mode" 
+                  checked={debugMode}
+                  onCheckedChange={setDebugMode}
+                  disabled={isImporting}
+                />
+                <Label htmlFor="debug-mode" className="flex items-center gap-1">
+                  <Bug className="h-4 w-4" /> 
+                  Debug mode
+                </Label>
+              </div>
             </div>
           </TabsContent>
           
+          {/* Country import tab */}
           <TabsContent value="country" className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="country">Country</Label>

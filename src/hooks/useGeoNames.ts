@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
@@ -14,6 +15,17 @@ interface ImportGeoNamesParams {
   forceContinue?: boolean;
 }
 
+interface ImportFileParams {
+  minPopulation?: number;
+  batchSize?: number;
+  country?: string | null;
+  offset?: number;
+  limit?: number;
+  useTextFile?: boolean;
+  forceUpdateNames?: boolean;
+  debugMode?: boolean;
+}
+
 interface ImportResult {
   success: boolean;
   count?: number;
@@ -24,7 +36,7 @@ interface ImportResult {
   nextStartRow?: number | null;
   continuationToken?: string | null;
   importStatus?: Array<{
-    batch: number;
+    batch: number | string;
     startRow: number;
     processed: number;
     inserted: number;
@@ -157,15 +169,10 @@ export const useGeoNames = () => {
     country = null,
     offset = 0,
     limit = 5000,
-    useTextFile = false
-  }: {
-    minPopulation?: number;
-    batchSize?: number;
-    country?: string | null;
-    offset?: number;
-    limit?: number;
-    useTextFile?: boolean;
-  }): Promise<ImportResult> => {
+    useTextFile = false,
+    forceUpdateNames = false,
+    debugMode = false
+  }: ImportFileParams): Promise<ImportResult> => {
     setIsImporting(true);
     
     try {
@@ -175,7 +182,9 @@ export const useGeoNames = () => {
         country,
         offset,
         limit,
-        useTextFile
+        useTextFile,
+        forceUpdateNames,
+        debugMode
       });
       
       const { data, error } = await supabase.functions.invoke('import-local-geonames', {
@@ -185,7 +194,9 @@ export const useGeoNames = () => {
           country,
           offset,
           limit,
-          useTextFile
+          useTextFile,
+          forceUpdateNames,
+          debugMode
         }
       });
       
@@ -213,7 +224,7 @@ export const useGeoNames = () => {
       });
       
       // Enhanced success message with more details
-      let successMessage = `Successfully imported ${data.count} locations from file`;
+      let successMessage = `Successfully imported ${data.count} locations`;
       if (data.updated && data.updated > 0) {
         successMessage += `, updated ${data.updated} existing records`;
       }
