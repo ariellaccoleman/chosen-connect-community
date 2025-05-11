@@ -1,32 +1,8 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { profilesApi } from '@/api';
 import { ProfileWithDetails } from '@/types';
-
-// Format profile with details (same as the helper in useProfileQueries.ts)
-const formatProfileData = (data: any): ProfileWithDetails | null => {
-  if (!data) return null;
-  
-  const profile = data as ProfileWithDetails;
-  
-  // Format full name
-  profile.full_name = [profile.first_name, profile.last_name]
-    .filter(Boolean)
-    .join(' ');
-  
-  // Format location if available
-  if (profile.location) {
-    profile.location.formatted_location = [
-      profile.location.city, 
-      profile.location.region, 
-      profile.location.country
-    ]
-      .filter(Boolean)
-      .join(', ');
-  }
-  
-  return profile;
-};
+import { showErrorToast } from '@/api/core/errorHandler';
 
 // Hook to fetch a public profile by ID
 export const usePublicProfile = (profileId: string | undefined) => {
@@ -35,21 +11,14 @@ export const usePublicProfile = (profileId: string | undefined) => {
     queryFn: async (): Promise<ProfileWithDetails | null> => {
       if (!profileId) return null;
       
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          location:locations(*)
-        `)
-        .eq('id', profileId)
-        .maybeSingle();
+      const response = await profilesApi.getProfileById(profileId);
       
-      if (error) {
-        console.error('Error fetching public profile:', error);
-        throw error;
+      if (response.error) {
+        showErrorToast(response.error);
+        return null;
       }
       
-      return formatProfileData(data);
+      return response.data;
     },
     enabled: !!profileId,
   });
