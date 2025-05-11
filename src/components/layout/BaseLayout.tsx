@@ -6,13 +6,14 @@ import Footer from "@/components/Footer";
 interface BaseLayoutProps {
   children: ReactNode;
   className?: string;
+  includeNavbar?: boolean;
 }
 
-const BaseLayout = ({ children, className = "" }: BaseLayoutProps) => {
+const BaseLayout = ({ children, className = "", includeNavbar = true }: BaseLayoutProps) => {
   return (
     <div className={`flex flex-col min-h-screen ${className}`}>
-      <Navbar />
-      <main className="flex-grow pt-16">
+      {includeNavbar && <Navbar />}
+      <main className={`flex-grow ${includeNavbar ? 'pt-16' : ''}`}>
         {children}
       </main>
       <Footer />
