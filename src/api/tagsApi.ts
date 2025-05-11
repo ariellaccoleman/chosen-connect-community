@@ -155,8 +155,8 @@ export const tagsApi = {
     updates: Partial<Tag>
   ): Promise<ApiResponse<Tag>> {
     return apiClient.query(async (client) => {
-      // Don't allow direct updates to used_entity_types from this API
-      const { used_entity_types, ...safeUpdates } = updates;
+      // Only allow safe properties to be updated
+      const { created_by, ...safeUpdates } = updates;
       
       const { data, error } = await client
         .from('tags')

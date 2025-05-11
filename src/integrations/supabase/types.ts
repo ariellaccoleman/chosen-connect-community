@@ -687,7 +687,6 @@ export type Database = {
           name: string
           type: string | null
           updated_at: string | null
-          used_entity_types: Json | null
         }
         Insert: {
           created_at?: string | null
@@ -698,7 +697,6 @@ export type Database = {
           name: string
           type?: string | null
           updated_at?: string | null
-          used_entity_types?: Json | null
         }
         Update: {
           created_at?: string | null
@@ -709,7 +707,6 @@ export type Database = {
           name?: string
           type?: string | null
           updated_at?: string | null
-          used_entity_types?: Json | null
         }
         Relationships: [
           {

@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { TAG_TYPES, fetchTags, createTag, getTagDisplayName } from "@/utils/tagUtils";
+import { TAG_TYPES, fetchTags, createTag, getTagEntityTypes } from "@/utils/tagUtils";
 import type { Tag } from "@/utils/tagUtils";
 
 interface TagSelectorProps {
@@ -113,12 +113,25 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
     setOpen(false);
   };
 
-  // Determine if a tag is from a different entity type
-  const isFromDifferentEntityType = (tag: Tag): boolean => {
-    if (!tag.used_entity_types || tag.used_entity_types.length === 0) {
+  // Function to check if a tag is used with a different entity type
+  const isFromDifferentEntityType = async (tag: Tag): Promise<boolean> => {
+    const entityTypes = await getTagEntityTypes(tag.id);
+    if (!entityTypes || entityTypes.length === 0) {
       return false;
     }
-    return !tag.used_entity_types.includes(targetType);
+    return !entityTypes.includes(targetType);
+  };
+
+  // Function to format entity types for display
+  const formatEntityTypes = async (tag: Tag): Promise<string | null> => {
+    const entityTypes = await getTagEntityTypes(tag.id);
+    if (!entityTypes || entityTypes.length === 0 || entityTypes.includes(targetType)) {
+      return null;
+    }
+    
+    return entityTypes
+      .map(type => type === "person" ? "People" : "Organizations")
+      .join(", ");
   };
 
   return (
@@ -165,36 +178,57 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
                 </div>
               </CommandEmpty>
               <CommandGroup>
-                {tags.map((tag) => (
-                  <CommandItem
-                    key={tag.id}
-                    value={tag.name}
-                    onSelect={() => handleSelectTag(tag)}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="flex flex-col">
-                      <div className="flex items-center">
-                        <span>{tag.name}</span>
-                        {isFromDifferentEntityType(tag) && (
-                          <span className="ml-2 text-xs text-muted-foreground">
-                            ({tag.used_entity_types?.map(type => type === "person" ? "People" : "Organizations").join(", ")})
+                {tags.map((tag) => {
+                  // We need to use state for entity type info
+                  const [entityTypeInfo, setEntityTypeInfo] = useState<string | null>(null);
+                  const [isDifferentType, setIsDifferentType] = useState(false);
+                  
+                  // Get entity type info when tag is rendered
+                  useEffect(() => {
+                    const getInfo = async () => {
+                      const isDifferent = await isFromDifferentEntityType(tag);
+                      setIsDifferentType(isDifferent);
+                      
+                      if (isDifferent) {
+                        const typeInfo = await formatEntityTypes(tag);
+                        setEntityTypeInfo(typeInfo);
+                      }
+                    };
+                    
+                    getInfo();
+                  }, [tag.id]);
+                  
+                  return (
+                    <CommandItem
+                      key={tag.id}
+                      value={tag.name}
+                      onSelect={() => handleSelectTag(tag)}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="flex flex-col">
+                        <div className="flex items-center">
+                          <span>{tag.name}</span>
+                          {isDifferentType && entityTypeInfo && (
+                            <span className="ml-2 text-xs text-muted-foreground">
+                              ({entityTypeInfo})
+                            </span>
+                          )}
+                        </div>
+                        
+                        {tag.description && (
+                          <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                            {tag.description}
                           </span>
                         )}
                       </div>
-                      
-                      {tag.description && (
-                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
-                          {tag.description}
+                      {tag.is_public && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                          Public
                         </span>
                       )}
-                    </div>
-                    {tag.is_public && (
-                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                        Public
-                      </span>
-                    )}
-                  </CommandItem>
-                ))}
+                    </CommandItem>
+                  );
+                })}
               </CommandGroup>
               {searchValue && user && (
                 <div className="p-2 border-t">

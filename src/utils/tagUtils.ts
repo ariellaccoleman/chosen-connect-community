@@ -11,9 +11,6 @@ export type Tag = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  
-  /** @deprecated Use tag_entity_types table instead */
-  used_entity_types?: string[] | null;
 };
 
 export type TagAssignment = {
@@ -192,8 +189,8 @@ export const createTag = async (tagData: {
  */
 export const updateTag = async (tagId: string, updates: Partial<Tag>) => {
   try {
-    // Remove created_by and used_entity_types from updates to prevent unauthorized changes
-    const { created_by, used_entity_types, ...safeUpdates } = updates;
+    // Remove created_by from updates to prevent unauthorized changes
+    const { created_by, ...safeUpdates } = updates;
     
     const { data, error } = await supabase
       .from("tags")
