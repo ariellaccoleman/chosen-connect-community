@@ -21,6 +21,7 @@ export const useTags = (options: {
   isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
+  targetType?: "person" | "organization";
   enabled?: boolean;
 } = {}) => {
   return useQuery({
@@ -136,6 +137,8 @@ export const useTagAssignmentMutations = () => {
       queryClient.invalidateQueries({ 
         queryKey: ["entity-tags", variables.entityId, variables.entityType] 
       });
+      // Also invalidate tags query as used_entity_types might have changed
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
     onError: (error) => {
       console.error("Error in assignTagMutation:", error);

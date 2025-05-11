@@ -15,6 +15,7 @@ export const tagsApi = {
     isPublic?: boolean;
     createdBy?: string;
     searchQuery?: string;
+    targetType?: string; // New parameter for entity type filtering
   } = {}): Promise<ApiResponse<Tag[]>> {
     return apiClient.query(async (client) => {
       let query = client.from('tags').select('*');
@@ -34,6 +35,11 @@ export const tagsApi = {
       
       if (options.searchQuery) {
         query = query.ilike('name', `%${options.searchQuery}%`);
+      }
+      
+      // Apply entity type filter using the jsonb contains operator if provided
+      if (options.targetType) {
+        query = query.or(`used_entity_types.cs.{"${options.targetType}"},used_entity_types.eq.[]`);
       }
       
       const { data, error } = await query.order('name');
@@ -85,7 +91,8 @@ export const tagsApi = {
           description: tagData.description,
           type: tagData.type,
           is_public: tagData.is_public,
-          created_by: tagData.created_by
+          created_by: tagData.created_by,
+          used_entity_types: [] // Initialize with empty array
         })
         .select()
         .single();
@@ -104,9 +111,12 @@ export const tagsApi = {
     updates: Partial<Tag>
   ): Promise<ApiResponse<Tag>> {
     return apiClient.query(async (client) => {
+      // Don't allow direct updates to used_entity_types from this API
+      const { used_entity_types, ...safeUpdates } = updates;
+      
       const { data, error } = await client
         .from('tags')
-        .update(updates)
+        .update(safeUpdates)
         .eq('id', tagId)
         .select()
         .single();
@@ -142,6 +152,7 @@ export const tagsApi = {
     entityType: "person" | "organization"
   ): Promise<ApiResponse<TagAssignment>> {
     return apiClient.query(async (client) => {
+      // First, create the tag assignment
       const { data, error } = await client
         .from('tag_assignments')
         .insert({
@@ -153,6 +164,28 @@ export const tagsApi = {
         .single();
       
       if (error) throw error;
+      
+      // Then, update the used_entity_types for this tag if needed
+      // First check if the tag already has this entity type
+      const { data: tagData } = await client
+        .from('tags')
+        .select('used_entity_types')
+        .eq('id', tagId)
+        .single();
+      
+      // If the tag doesn't have this entity type yet, add it
+      if (tagData && 
+        (!tagData.used_entity_types || 
+          !tagData.used_entity_types.includes(entityType))) {
+        
+        const updatedEntityTypes = tagData.used_entity_types || [];
+        updatedEntityTypes.push(entityType);
+        
+        await client
+          .from('tags')
+          .update({ used_entity_types: updatedEntityTypes })
+          .eq('id', tagId);
+      }
       
       return createSuccessResponse(data);
     });

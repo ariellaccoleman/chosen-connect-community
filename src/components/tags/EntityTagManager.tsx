@@ -98,6 +98,7 @@ const EntityTagManager = ({
       <TagList 
         tagAssignments={tagAssignments} 
         onRemove={(isEditing && canManageTags) ? handleRemoveTag : undefined}
+        currentEntityType={entityType}
       />
       
       {canManageTags && isEditing && (

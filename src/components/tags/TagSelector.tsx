@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { TAG_TYPES, fetchTags, createTag } from "@/utils/tagUtils";
+import { TAG_TYPES, fetchTags, createTag, getTagDisplayName } from "@/utils/tagUtils";
 import type { Tag } from "@/utils/tagUtils";
 
 interface TagSelectorProps {
@@ -52,10 +52,9 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
   useEffect(() => {
     const loadTags = async () => {
       const fetchedTags = await fetchTags({ 
-        type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
+        // We no longer filter by type, to show tags from all entity types
         searchQuery: searchValue,
-        // Include all tags that are either public or created by the current user
-        // For admins, show all tags
+        // Don't filter by target type to show all available tags
       });
       setTags(fetchedTags);
     };
@@ -63,7 +62,7 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
     // Add a small delay to avoid too many requests while typing
     const timeoutId = setTimeout(loadTags, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchValue, targetType, isAdmin, user?.id]);
+  }, [searchValue, isAdmin, user?.id]);
 
   // Handle creating a new tag
   const handleCreateTag = async (values: CreateTagFormValues) => {
@@ -112,6 +111,14 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
     form.setValue("name", searchValue);
     setIsCreateDialogOpen(true);
     setOpen(false);
+  };
+
+  // Determine if a tag is from a different entity type
+  const isFromDifferentEntityType = (tag: Tag): boolean => {
+    if (!tag.used_entity_types || tag.used_entity_types.length === 0) {
+      return false;
+    }
+    return !tag.used_entity_types.includes(targetType);
   };
 
   return (
@@ -166,7 +173,15 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
                     className="flex items-center justify-between"
                   >
                     <div className="flex flex-col">
-                      <span>{tag.name}</span>
+                      <div className="flex items-center">
+                        <span>{tag.name}</span>
+                        {isFromDifferentEntityType(tag) && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            ({tag.used_entity_types?.map(type => type === "person" ? "People" : "Organizations").join(", ")})
+                          </span>
+                        )}
+                      </div>
+                      
                       {tag.description && (
                         <span className="text-xs text-muted-foreground truncate max-w-[200px]">
                           {tag.description}

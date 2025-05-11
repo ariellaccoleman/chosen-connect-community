@@ -9,6 +9,8 @@ interface TagBadgeProps {
   isRemovable?: boolean;
   onRemove?: () => void;
   className?: string;
+  entityType?: string;
+  isFromDifferentEntityType?: boolean;
 }
 
 const TagBadge = ({
@@ -16,6 +18,8 @@ const TagBadge = ({
   isRemovable = false,
   onRemove,
   className,
+  entityType,
+  isFromDifferentEntityType = false,
 }: TagBadgeProps) => {
   return (
     <Badge 
@@ -25,7 +29,14 @@ const TagBadge = ({
         className
       )}
     >
-      <span>{name}</span>
+      <span className="flex items-center">
+        <span>{name}</span>
+        {isFromDifferentEntityType && entityType && (
+          <span className="ml-1 text-xs text-muted-foreground">
+            ({entityType === "person" ? "People" : "Organizations"})
+          </span>
+        )}
+      </span>
       {isRemovable && (
         <button
           onClick={(e) => {
