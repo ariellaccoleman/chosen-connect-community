@@ -136,6 +136,9 @@ export const useTagAssignmentMutations = () => {
       queryClient.invalidateQueries({ 
         queryKey: ["entity-tags", variables.entityId, variables.entityType] 
       });
+    },
+    onError: (error) => {
+      console.error("Error in assignTagMutation:", error);
     }
   });
 
@@ -147,6 +150,9 @@ export const useTagAssignmentMutations = () => {
     onSuccess: () => {
       // Since we don't know which entity this was for, we invalidate all entity-tags queries
       queryClient.invalidateQueries({ queryKey: ["entity-tags"] });
+    },
+    onError: (error) => {
+      console.error("Error in removeAssignmentMutation:", error);
     }
   });
 

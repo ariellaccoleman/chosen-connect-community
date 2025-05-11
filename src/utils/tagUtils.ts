@@ -197,15 +197,27 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
 
 /**
  * Assign a tag to an entity
+ * Modified to handle RLS properly
  */
 export const assignTag = async (tagId: string, entityId: string, entityType: "person" | "organization") => {
   try {
     // Get current auth session
     const { data: authData } = await supabase.auth.getSession();
-    if (!authData.session) {
+    if (!authData.session?.user.id) {
       handleError(new Error("User not authenticated"), "Authentication required");
       return null;
     }
+
+    // Check permissions - users can only modify their own profiles unless they're admins
+    if (entityType === "person" && entityId !== authData.session.user.id) {
+      // For person entities, check if user is assigning to themselves
+      // In a real app, check admin status here, but for simplicity we'll just block it
+      handleError(new Error("Unauthorized operation"), "You can only assign tags to your own profile");
+      return null;
+    }
+    
+    // For organization entities, you might want to check if user is an admin of the org
+    // This would need a more complex check with the organizations tables
     
     // Check if assignment already exists
     const { data: existingAssignment, error: checkError } = await supabase
@@ -256,6 +268,34 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
  */
 export const removeTagAssignment = async (assignmentId: string) => {
   try {
+    // Get current auth session to check permissions
+    const { data: authData } = await supabase.auth.getSession();
+    if (!authData.session?.user.id) {
+      handleError(new Error("User not authenticated"), "Authentication required");
+      return false;
+    }
+    
+    // We need to check if user has permission to remove this tag
+    // First, get the assignment details
+    const { data: assignment, error: fetchError } = await supabase
+      .from("tag_assignments")
+      .select("*")
+      .eq("id", assignmentId)
+      .single();
+      
+    if (fetchError) {
+      handleError(fetchError, "Error fetching tag assignment");
+      return false;
+    }
+    
+    // Check if user can remove this tag (if it's their own profile)
+    if (assignment.target_type === "person" && assignment.target_id !== authData.session.user.id) {
+      // In a real app, check admin status here
+      handleError(new Error("Unauthorized operation"), "You can only remove tags from your own profile");
+      return false;
+    }
+
+    // Now perform the delete operation
     const { error } = await supabase
       .from("tag_assignments")
       .delete()
