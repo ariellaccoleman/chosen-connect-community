@@ -1,0 +1,255 @@
+
+import React, { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useAuth } from "@/hooks/useAuth";
+import { Check, Plus, Tag } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Switch } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
+import { TAG_TYPES, createTag, fetchTags, Tag } from "@/utils/tagUtils";
+
+interface TagSelectorProps {
+  targetType: "person" | "organization";
+  onTagSelected: (tag: Tag) => void;
+  isAdmin?: boolean;
+}
+
+const createTagSchema = z.object({
+  name: z.string().min(1, "Name is required").max(100),
+  description: z.string().max(500).nullable().optional(),
+  is_public: z.boolean().default(false),
+});
+
+type CreateTagFormValues = z.infer<typeof createTagSchema>;
+
+const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelectorProps) => {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { user } = useAuth();
+
+  const form = useForm<CreateTagFormValues>({
+    resolver: zodResolver(createTagSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      is_public: false,
+    },
+  });
+
+  // Load tags based on search criteria
+  useEffect(() => {
+    const loadTags = async () => {
+      const fetchedTags = await fetchTags({ 
+        type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
+        searchQuery: searchValue,
+        // For non-admins, only show public tags or tags they created
+        ...(isAdmin ? {} : { isPublic: true })
+      });
+      setTags(fetchedTags);
+    };
+
+    // Add a small delay to avoid too many requests while typing
+    const timeoutId = setTimeout(loadTags, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, targetType, isAdmin]);
+
+  // Handle creating a new tag
+  const handleCreateTag = async (values: CreateTagFormValues) => {
+    if (!user?.id) return;
+    
+    const newTag = await createTag({
+      name: values.name,
+      description: values.description || null,
+      type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
+      is_public: values.is_public,
+      created_by: user.id,
+    });
+
+    if (newTag) {
+      toast.success(`Tag "${newTag.name}" created successfully`);
+      form.reset();
+      setIsCreateDialogOpen(false);
+      onTagSelected(newTag);
+    }
+  };
+
+  // Handle selecting an existing tag
+  const handleSelectTag = (tag: Tag) => {
+    onTagSelected(tag);
+    setSearchValue("");
+    setOpen(false);
+  };
+
+  // Open the create tag dialog and populate with current search term
+  const handleOpenCreateDialog = () => {
+    form.setValue("name", searchValue);
+    setIsCreateDialogOpen(true);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            <Tag className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">Select or create a tag</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[300px]">
+          <Command>
+            <CommandInput
+              placeholder="Search tags..."
+              value={searchValue}
+              onValueChange={setSearchValue}
+            />
+            <CommandList>
+              <CommandEmpty>
+                <div className="py-6 text-center text-sm">
+                  <p className="text-muted-foreground">No tags found</p>
+                  <Button
+                    variant="outline"
+                    className="mt-2"
+                    size="sm"
+                    onClick={handleOpenCreateDialog}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create "{searchValue}"
+                  </Button>
+                </div>
+              </CommandEmpty>
+              <CommandGroup>
+                {tags.map((tag) => (
+                  <CommandItem
+                    key={tag.id}
+                    value={tag.name}
+                    onSelect={() => handleSelectTag(tag)}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex flex-col">
+                      <span>{tag.name}</span>
+                      {tag.description && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                          {tag.description}
+                        </span>
+                      )}
+                    </div>
+                    {tag.is_public && (
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                        Public
+                      </span>
+                    )}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+              {searchValue && (
+                <div className="p-2 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={handleOpenCreateDialog}
+                  >
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create new tag
+                  </Button>
+                </div>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create new tag</DialogTitle>
+            <DialogDescription>
+              Add a new tag for {targetType === "person" ? "people" : "organizations"}.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(handleCreateTag)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {isAdmin && (
+                <FormField
+                  control={form.control}
+                  name="is_public"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between">
+                      <div className="space-y-0.5">
+                        <FormLabel>Make public</FormLabel>
+                        <p className="text-sm text-muted-foreground">
+                          Public tags are available for everyone to select
+                        </p>
+                      </div>
+                      <FormControl>
+                        <Switch 
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">Create Tag</Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
+
+export default TagSelector;

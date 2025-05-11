@@ -7,6 +7,7 @@ import { ProfileWithDetails } from "@/types";
 import ProfileBasicInfo from "./ProfileBasicInfo";
 import ProfileSocialLinks from "./ProfileSocialLinks";
 import ProfileOrganizationLinks from "./ProfileOrganizationLinks";
+import ProfileTags from "./ProfileTags";
 import ProfileFormActions from "./form/ProfileFormActions";
 import { profileSchema, ProfileFormValues } from "./schema/profileSchema";
 
@@ -25,6 +26,7 @@ interface ProfileFormProps {
     notes: string | null
   }) => void;
   onNavigateToManageOrgs?: () => void;
+  isAdmin?: boolean;
 }
 
 const ProfileForm = ({
@@ -33,7 +35,8 @@ const ProfileForm = ({
   onSubmit,
   onCancel,
   onAddOrganization,
-  onNavigateToManageOrgs
+  onNavigateToManageOrgs,
+  isAdmin = false
 }: ProfileFormProps) => {
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -77,6 +80,14 @@ const ProfileForm = ({
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <ProfileBasicInfo form={form} />
         <ProfileSocialLinks form={form} />
+        
+        {profile?.id && (
+          <ProfileTags 
+            profileId={profile.id} 
+            isAdmin={isAdmin}
+          />
+        )}
+        
         <ProfileOrganizationLinks form={form} />
         <ProfileFormActions isSubmitting={isSubmitting} onCancel={onCancel} />
       </form>

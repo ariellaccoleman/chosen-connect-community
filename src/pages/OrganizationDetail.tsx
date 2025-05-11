@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +11,7 @@ import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
+import OrganizationTags from "@/components/organizations/OrganizationTags";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -110,6 +110,12 @@ const OrganizationDetail = () => {
         
         {/* Show organization admins */}
         {id && <OrganizationAdmins organizationId={id} />}
+        
+        {/* In the organization detail section, add the organization tags component */}
+        <OrganizationTags 
+          organizationId={id} 
+          isAdmin={isOrgAdmin || isAdmin}
+        />
       </div>
     </DashboardLayout>
   );

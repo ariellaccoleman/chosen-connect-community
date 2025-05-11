@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ import TestDataGenerator from "./pages/TestDataGenerator";
 import About from "./pages/About";
 import CommunityGuide from "./components/community-guide/CommunityGuide";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminTags from "./pages/AdminTags";
 
 const queryClient = new QueryClient();
 
@@ -182,6 +182,10 @@ const AppRoutes = () => {
             <TestDataGenerator />
           </ProtectedRoute>
         } 
+      />
+      <Route 
+        path="/admin/tags" 
+        element={<AdminTags />} 
       />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

@@ -11,7 +11,7 @@ import { formatWebsiteUrl } from "@/utils/formatters";
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, isAdmin } = useAuth();
   const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const updateProfile = useUpdateProfile();
   const addOrganizationRelationship = useAddOrganizationRelationship();
@@ -101,6 +101,7 @@ const ProfileEdit = () => {
           onCancel={() => navigate("/dashboard")}
           onAddOrganization={handleAddOrganization}
           onNavigateToManageOrgs={handleNavigateToManageOrgs}
+          isAdmin={isAdmin}
         />
       </div>
     </DashboardLayout>
