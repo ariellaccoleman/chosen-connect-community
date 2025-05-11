@@ -62,16 +62,18 @@ export const useOrganizations = () => {
               
               // Transform the tag assignments to match the expected TagAssignment type
               const formattedAssignments = orgTagAssignments.map(ta => {
+                // Create a properly typed tag object with default values
+                const tagData = ta.tag as Tag || {} as Tag;
+                
                 // Ensure used_entity_types is a string array
-                const tag = ta.tag || {};
-                const usedEntityTypes = Array.isArray(tag.used_entity_types) 
-                  ? tag.used_entity_types 
-                  : (tag.used_entity_types ? [String(tag.used_entity_types)] : []);
+                const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
+                  ? tagData.used_entity_types 
+                  : (tagData.used_entity_types ? [String(tagData.used_entity_types)] : []);
                 
                 return {
                   ...ta,
                   tag: {
-                    ...tag,
+                    ...tagData,
                     used_entity_types: usedEntityTypes
                   }
                 } as TagAssignment;
