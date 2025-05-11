@@ -26,7 +26,7 @@ const OrganizationsList = () => {
     
     // Filter by selected tag
     const matchesTag = selectedTagId 
-      ? org.tags?.some(tagAssignment => tagAssignment.tag_id === selectedTagId)
+      ? (org.tags && org.tags.some(tagAssignment => tagAssignment.tag_id === selectedTagId))
       : true;
     
     return matchesSearch && matchesTag;

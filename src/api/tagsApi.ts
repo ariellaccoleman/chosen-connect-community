@@ -37,9 +37,10 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Apply entity type filter using the jsonb contains operator if provided
+      // Apply entity type filter using the jsonb contains operator correctly
       if (options.targetType) {
-        query = query.or(`used_entity_types.cs.{"${options.targetType}"},used_entity_types.eq.[]`);
+        // Use the containment operator for jsonb array correctly
+        query = query.or(`used_entity_types::jsonb @> '[\"${options.targetType}\"]',used_entity_types::jsonb @> '[]'`);
       }
       
       const { data, error } = await query.order('name');

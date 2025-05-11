@@ -61,12 +61,11 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Entity-type filtering is now optional as we want to show tags from other entity types too
-    // but might still want to show only certain entity types
-    if (options.targetType && options.targetType.trim() !== '') {
-      // Now we use the jsonb contains operator @> to check if the used_entity_types array
-      // contains the specified target type
-      query = query.or(`used_entity_types.cs.{"${options.targetType}"},used_entity_types.eq.[]`);
+    // Fix the entity type filtering by using contains operator correctly
+    if (options.targetType) {
+      // Use the containment operator for jsonb array correctly
+      // This checks if the used_entity_types array contains the target type
+      query = query.or(`used_entity_types::jsonb @> '[\"${options.targetType}\"]',used_entity_types::jsonb @> '[]'`);
     }
     
     const { data, error } = await query.order("name");

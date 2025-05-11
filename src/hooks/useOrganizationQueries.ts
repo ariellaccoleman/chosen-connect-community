@@ -11,16 +11,12 @@ export const useOrganizations = () => {
   return useQuery({
     queryKey: ['organizations'],
     queryFn: async (): Promise<OrganizationWithLocation[]> => {
+      // First, fetch organizations with locations
       const { data, error } = await supabase
         .from('organizations')
         .select(`
           *,
-          location:locations(*),
-          tags:tag_assignments(
-            id,
-            tag_id,
-            tags(*)
-          )
+          location:locations(*)
         `)
         .order('name');
       
@@ -29,29 +25,43 @@ export const useOrganizations = () => {
         return [];
       }
       
-      return data.map(org => {
+      // Then, for each organization, fetch its tags separately
+      const orgsWithLocations = data.map(org => {
         // Transform the organization to match the expected type
-        const result: OrganizationWithLocation = {
+        return {
           ...org,
           is_verified: org.is_verified || false,
           created_at: org.created_at || '',
           updated_at: org.updated_at || '',
-          location: undefined, // Default to undefined
-          tags: [] // Default to empty array
-        };
-        
-        // Add formatted location if available
-        if (org.location) {
-          result.location = formatLocationWithDetails(org.location);
-        }
-        
-        // Transform tag_assignments to the expected format
-        if (org.tags && Array.isArray(org.tags)) {
-          result.tags = org.tags;
-        }
-        
-        return result;
+          location: org.location ? formatLocationWithDetails(org.location) : undefined,
+          tags: [] // Initialize with empty array
+        } as OrganizationWithLocation;
       });
+      
+      // Now fetch tag assignments for all organizations in a single query
+      const orgIds = orgsWithLocations.map(org => org.id);
+      
+      if (orgIds.length > 0) {
+        const { data: tagAssignments, error: tagError } = await supabase
+          .from('tag_assignments')
+          .select(`
+            *,
+            tags(*)
+          `)
+          .eq('target_type', 'organization')
+          .in('target_id', orgIds);
+          
+        if (tagError) {
+          console.error('Error fetching organization tags:', tagError);
+        } else if (tagAssignments) {
+          // Map tag assignments to their respective organizations
+          for (const org of orgsWithLocations) {
+            org.tags = tagAssignments.filter(ta => ta.target_id === org.id);
+          }
+        }
+      }
+      
+      return orgsWithLocations;
     },
   });
 };
@@ -90,7 +100,8 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
             is_verified: relationship.organization?.is_verified || false,
             created_at: relationship.organization?.created_at || '',
             updated_at: relationship.organization?.updated_at || '',
-            location: undefined // Default to undefined
+            location: undefined, // Default to undefined
+            tags: [] // Initialize empty tags array
           }
         };
         
