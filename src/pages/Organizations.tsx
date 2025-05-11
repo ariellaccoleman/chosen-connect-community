@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
+import { useTagFilter } from "@/hooks/useTagFilter";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,18 @@ const OrganizationsList = () => {
   const navigate = useNavigate();
   const { data: organizations = [], isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  
+  // Use our new custom hook for tag filtering
+  const { 
+    selectedTagId, 
+    setSelectedTagId, 
+    tags, 
+    isLoading: isTagsLoading, 
+    filterItemsByTag 
+  } = useTagFilter({ 
+    entityType: "organization", 
+    enabled: true 
+  });
 
   // Show error toast if organization loading fails
   if (error) {
@@ -25,19 +37,15 @@ const OrganizationsList = () => {
     toast.error("Failed to load organizations. Please try again.");
   }
 
-  const filteredOrganizations = organizations.filter((org) => {
-    // Filter by search term
-    const matchesSearch = org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  // First filter by search term
+  const searchFilteredOrgs = organizations.filter((org) => {
+    return org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Filter by selected tag
-    const matchesTag = selectedTagId 
-      ? (org.tags && org.tags.some(tagAssignment => tagAssignment.tag_id === selectedTagId))
-      : true;
-    
-    return matchesSearch && matchesTag;
   });
+  
+  // Then apply tag filtering
+  const filteredOrganizations = filterItemsByTag(searchFilteredOrgs);
 
   return (
     <DashboardLayout>
@@ -68,7 +76,8 @@ const OrganizationsList = () => {
             <TagFilter 
               selectedTagId={selectedTagId} 
               onSelectTag={setSelectedTagId} 
-              entityType="organization"
+              tags={tags}
+              isLoading={isTagsLoading}
             />
           </CardContent>
         </Card>

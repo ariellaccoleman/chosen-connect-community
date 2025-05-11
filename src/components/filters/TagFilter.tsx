@@ -1,6 +1,5 @@
 
 import React from "react";
-import { useTags } from "@/hooks/useTags";
 import { Filter } from "lucide-react";
 import {
   Select,
@@ -13,33 +12,22 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
 
 interface TagFilterProps {
   selectedTagId: string | null;
   onSelectTag: (tagId: string | null) => void;
-  entityType?: "person" | "organization";
+  tags: any[];
+  isLoading?: boolean;
   className?: string;
 }
 
 const TagFilter = ({ 
   selectedTagId, 
   onSelectTag, 
-  entityType,
+  tags = [],
+  isLoading = false,
   className 
 }: TagFilterProps) => {
-  // Pass entityType as targetType to ensure we get the correct tags
-  const { data: tags = [], isLoading, error } = useTags({ 
-    targetType: entityType,
-    enabled: true 
-  });
-  
-  // Show error toast only once if tag loading fails
-  if (error) {
-    console.error("Error loading tags:", error);
-    toast.error("Failed to load tags. Please try again.");
-  }
-
   if (isLoading) {
     return (
       <div className={`animate-pulse flex items-center ${className}`}>
