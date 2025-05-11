@@ -11,6 +11,7 @@ interface TagBadgeProps {
   className?: string;
   entityType?: string;
   isFromDifferentEntityType?: boolean;
+  hideEntityType?: boolean; // New prop to hide entity type display
 }
 
 const TagBadge = ({
@@ -20,6 +21,7 @@ const TagBadge = ({
   className,
   entityType,
   isFromDifferentEntityType = false,
+  hideEntityType = false, // Default to showing entity type (for backward compatibility)
 }: TagBadgeProps) => {
   return (
     <Badge 
@@ -31,7 +33,8 @@ const TagBadge = ({
     >
       <span className="flex items-center">
         <span>{name}</span>
-        {isFromDifferentEntityType && entityType && (
+        {/* Only show entity type if isFromDifferentEntityType is true AND hideEntityType is false */}
+        {isFromDifferentEntityType && entityType && !hideEntityType && (
           <span className="ml-1 text-xs text-muted-foreground">
             ({entityType === "person" ? "People" : "Organizations"})
           </span>

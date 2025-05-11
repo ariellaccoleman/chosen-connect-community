@@ -41,6 +41,7 @@ const OrganizationTags = ({ organizationId, isAdmin = false }: OrganizationTagsP
           isAdmin={isAdmin}
           isEditing={isManagingTags}
           onFinishEditing={() => setIsManagingTags(false)}
+          hideEntityType={true} // Hide entity type for organization tags
         />
       </CardContent>
     </Card>

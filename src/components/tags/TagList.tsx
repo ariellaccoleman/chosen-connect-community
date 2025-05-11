@@ -8,13 +8,15 @@ interface TagListProps {
   onRemove?: (assignmentId: string) => void;
   className?: string;
   currentEntityType?: "person" | "organization";
+  hideEntityType?: boolean; // Add option to hide entity type
 }
 
 const TagList = ({ 
   tagAssignments, 
   onRemove, 
   className, 
-  currentEntityType 
+  currentEntityType,
+  hideEntityType = false 
 }: TagListProps) => {
   if (!tagAssignments || tagAssignments.length === 0) {
     return <div className="text-sm text-muted-foreground">No tags assigned</div>;
@@ -36,6 +38,7 @@ const TagList = ({
             onRemove={onRemove ? () => onRemove(assignment.id) : undefined}
             entityType={assignment.target_type}
             isFromDifferentEntityType={isFromDifferentEntityType}
+            hideEntityType={hideEntityType}
           />
         );
       })}
