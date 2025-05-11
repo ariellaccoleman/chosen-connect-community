@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -7,7 +6,7 @@ import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
-import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 
 const ProfileEdit = () => {
   const navigate = useNavigate();

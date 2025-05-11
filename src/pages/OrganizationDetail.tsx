@@ -1,10 +1,11 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation, LocationWithDetails, Location } from "@/types";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { formatLocation } from "@/utils/formatters";
+import { formatLocation } from "@/utils/formatters/locationFormatters";
 import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import { useIsOrganizationAdmin, useOrganizationRole } from "@/hooks/useOrganizationAdmins";
 import OrganizationInfo from "@/components/organizations/OrganizationInfo";

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit } from "lucide-react";
-import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import { ProfileWithDetails } from "@/types";
 import TagList from "@/components/tags/TagList";
 import { useEntityTags } from "@/hooks/useTags";

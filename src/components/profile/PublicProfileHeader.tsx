@@ -1,7 +1,7 @@
 
 import { ProfileWithDetails } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import { Link, Twitter, Globe, Linkedin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 

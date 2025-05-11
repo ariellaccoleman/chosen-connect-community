@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
-import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();

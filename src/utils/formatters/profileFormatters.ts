@@ -23,7 +23,7 @@ export const formatProfileWithDetails = (profileData: any): ProfileWithDetails =
     };
   }
   
-  const formattedProfile = {
+  const formattedProfile: ProfileWithDetails = {
     id: profileData.id || '',
     email: profileData.email || '',
     first_name: profileData.first_name || '',

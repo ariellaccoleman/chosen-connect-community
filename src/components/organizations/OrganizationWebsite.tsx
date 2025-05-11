@@ -1,6 +1,5 @@
-
 import { LinkIcon } from "lucide-react";
-import { formatWebsiteUrl } from "@/utils/formatters";
+import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 
 interface OrganizationWebsiteProps {
   websiteUrl: string | null;

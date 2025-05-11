@@ -21,7 +21,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { formatLocation } from "@/utils/formatters";
+import { formatLocation } from "@/utils/formatters/locationFormatters";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useAuth } from "@/hooks/useAuth";
 import LogoUpload from "@/components/organizations/LogoUpload";
