@@ -41,7 +41,7 @@ export const getFilterTags = async (options: {
         ORDER BY t.name
       `;
       
-      const { data, error } = await client.rpc<Tag[]>('query_tags', { query_text: joinQuery });
+      const { data, error } = await client.rpc<Tag[], RpcFunctions['query_tags']>('query_tags', { query_text: joinQuery });
       
       if (error) throw error;
       
@@ -95,7 +95,7 @@ export const getSelectionTags = async (options: {
       const cacheKey = `selection_tags_${options.targetType}`;
       
       // Check if we have a cached result using a custom query
-      const { data: cachedResults, error: cacheError } = await client.rpc<Tag[]>('get_cached_tags', { 
+      const { data: cachedResults, error: cacheError } = await client.rpc<Tag[], RpcFunctions['get_cached_tags']>('get_cached_tags', { 
         cache_key: cacheKey 
       });
       
@@ -131,7 +131,7 @@ export const getSelectionTags = async (options: {
         ORDER BY t.name
       `;
 
-      const { data, error } = await client.rpc<Tag[]>('query_tags', { query_text: query });
+      const { data, error } = await client.rpc<Tag[], RpcFunctions['query_tags']>('query_tags', { query_text: query });
       
       if (error) throw error;
       
@@ -139,7 +139,7 @@ export const getSelectionTags = async (options: {
       if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
         // Use a function to update the cache since we don't have the cache table in TypeScript types
-        await client.rpc<boolean>('update_tag_cache', { 
+        await client.rpc<boolean, RpcFunctions['update_tag_cache']>('update_tag_cache', { 
           cache_key: cacheKey, 
           cache_data: data || [] 
         });
