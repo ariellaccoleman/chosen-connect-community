@@ -30,14 +30,26 @@ export const useOrganizations = () => {
       }
       
       return data.map(org => {
+        // Transform the organization to match the expected type
+        const result: OrganizationWithLocation = {
+          ...org,
+          is_verified: org.is_verified || false,
+          created_at: org.created_at || '',
+          updated_at: org.updated_at || '',
+        };
+        
+        // Add location if available
         if (org.location) {
-          return {
-            ...org,
-            location: formatLocationWithDetails(org.location)
-          };
+          result.location = formatLocationWithDetails(org.location);
         }
-        return org;
-      }) as OrganizationWithLocation[];
+        
+        // Transform tag_assignments to the expected format
+        if (org.tags) {
+          result.tags = Array.isArray(org.tags) ? org.tags : [];
+        }
+        
+        return result;
+      });
     },
   });
 };
@@ -68,17 +80,24 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
       }
       
       return data.map(relationship => {
+        // Create a properly typed organization with all required fields
+        const typedRelationship: ProfileOrganizationRelationshipWithDetails = {
+          ...relationship,
+          organization: {
+            ...relationship.organization,
+            is_verified: relationship.organization?.is_verified || false,
+            created_at: relationship.organization?.created_at || '',
+            updated_at: relationship.organization?.updated_at || ''
+          }
+        };
+        
+        // Add location if available
         if (relationship.organization && relationship.organization.location) {
-          return {
-            ...relationship,
-            organization: {
-              ...relationship.organization,
-              location: formatLocationWithDetails(relationship.organization.location)
-            }
-          };
+          typedRelationship.organization.location = formatLocationWithDetails(relationship.organization.location);
         }
-        return relationship;
-      }) as ProfileOrganizationRelationshipWithDetails[];
+        
+        return typedRelationship;
+      });
     },
     enabled: !!profileId,
   });

@@ -42,15 +42,17 @@ const OrganizationMembers = ({ organizationId }: OrganizationMembersProps) => {
         // Transform the data to match ProfileOrganizationRelationshipWithDetails
         const formattedMembers = validMembers.map(rel => ({
           ...rel,
-          // Add organization property (required for the type)
+          // Add organization property with all required fields for the type
           organization: {
             id: organizationId,
-            name: '',  // These fields are required but not used in the member display
+            name: '',
+            is_verified: false,
+            created_at: '',
+            updated_at: '',
             description: null,
             website_url: null,
             logo_url: null,
             logo_api_url: null,
-            created_at: '',
             location_id: null
           }
         })) as ProfileOrganizationRelationshipWithDetails[];
