@@ -1,4 +1,3 @@
-
 import { Tag, TagAssignment } from "@/utils/tagUtils";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -38,9 +37,9 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Use the new tag_entity_types table for entity type filtering
+      // Use the tag_entity_types table for entity type filtering
       if (options.targetType) {
-        // Build a query using the new normalized table
+        // Build a query using the normalized table
         const { data: tagIds, error: tagIdsError } = await client
           .from('tag_entity_types')
           .select('tag_id')
@@ -52,12 +51,39 @@ export const tagsApi = {
           // Get tags that either have this entity type or don't have any entity types
           const tagIdsArray = tagIds.map(item => item.tag_id);
           
-          // Find tags that either match these IDs or tags that aren't in the tag_entity_types table
-          query = query.or(`id.in.(${tagIdsArray.join(',')}),not.id.in.(${
-            // Subquery to find all tags that have any entity type
-            `select distinct tag_id from tag_entity_types`
-          })`);
-        } 
+          // Get all tags with any entity type
+          const { data: allTagsWithEntityTypes, error: allTagsError } = await client
+            .from('tag_entity_types')
+            .select('tag_id');
+            
+          if (allTagsError) throw allTagsError;
+          
+          // Get unique tag IDs by converting to a Set and back to an array
+          const uniqueTagIdsWithTypes = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
+          
+          if (uniqueTagIdsWithTypes.length > 0) {
+            // Get tags that either match these IDs or tags that aren't in the tag_entity_types table
+            query = query.or(`id.in.(${tagIdsArray.join(',')}),not.id.in.(${uniqueTagIdsWithTypes.join(',')})`);
+          } else {
+            // If no tags have entity types, just use the ones that match our entity type
+            query = query.in('id', tagIdsArray);
+          }
+        } else {
+          // If no tags have this entity type, get tags without any entity type
+          const { data: allTagsWithEntityTypes, error: allTagsError } = await client
+            .from('tag_entity_types')
+            .select('tag_id');
+            
+          if (allTagsError) throw allTagsError;
+          
+          // Get unique tag IDs by converting to a Set and back to an array
+          const uniqueTagIdsWithTypes = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
+          
+          if (uniqueTagIdsWithTypes.length > 0) {
+            // Get tags that don't have any entity type
+            query = query.not('id', 'in', `(${uniqueTagIdsWithTypes.join(',')})`);
+          }
+        }
       }
       
       const { data, error } = await query.order('name');
@@ -207,7 +233,6 @@ export const tagsApi = {
       }
       
       // For backward compatibility, also update the used_entity_types array
-      // This can be removed later when all code is updated and tested
       const { data: tagData } = await client
         .from('tags')
         .select('used_entity_types')
@@ -216,7 +241,22 @@ export const tagsApi = {
       
       if (tagData) {
         // Cast used_entity_types to string[] to work with it safely
-        const usedEntityTypes = tagData.used_entity_types as string[] || [];
+        let usedEntityTypes: string[] = [];
+        
+        if (Array.isArray(tagData.used_entity_types)) {
+          usedEntityTypes = tagData.used_entity_types;
+        } else if (tagData.used_entity_types) {
+          try {
+            const parsedValue = typeof tagData.used_entity_types === 'string' 
+              ? JSON.parse(tagData.used_entity_types)
+              : tagData.used_entity_types;
+              
+            usedEntityTypes = Array.isArray(parsedValue) ? parsedValue : [];
+          } catch (e) {
+            console.error("Error parsing used_entity_types:", e);
+            usedEntityTypes = [];
+          }
+        }
         
         if (!usedEntityTypes.includes(entityType)) {
           // Create a new array by copying the old one and adding the new entity type

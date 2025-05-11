@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -85,44 +86,43 @@ export const fetchTags = async (options: {
       if (tagIds && tagIds.length > 0) {
         const tagIdsArray = tagIds.map(item => item.tag_id);
         
-        // Get tags that either have this entity type or don't have any entity types
-        // First, get all tag IDs that have any entity type
-        const { data: allTagIdsWithEntityTypes, error: allTagIdsError } = await supabase
+        // Get all tag IDs that have any entity type
+        const { data: allTagsWithEntityTypes, error: allTagsError } = await supabase
           .from('tag_entity_types')
           .select('tag_id');
           
-        if (allTagIdsError) {
-          console.error("Error fetching all tag IDs with entity types:", allTagIdsError);
-          throw allTagIdsError;
+        if (allTagsError) {
+          console.error("Error fetching all tag IDs with entity types:", allTagsError);
+          throw allTagsError;
         }
         
         // Get unique tag IDs by converting to a Set and back to an array
-        const uniqueTagIds = Array.from(new Set(allTagIdsWithEntityTypes?.map(item => item.tag_id) || []));
+        const uniqueTagIdsWithTypes = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
         
-        if (uniqueTagIds.length > 0) {
+        if (uniqueTagIdsWithTypes.length > 0) {
           // Get tags that either match our entity type or don't have any entity type
-          query = query.or(`id.in.(${tagIdsArray.join(',')}),not.id.in.(${uniqueTagIds.join(',')})`);
+          query = query.or(`id.in.(${tagIdsArray.join(',')}),not.id.in.(${uniqueTagIdsWithTypes.join(',')})`);
         } else {
           // If no tags have entity types, just use the ones that match our entity type
           query = query.in('id', tagIdsArray);
         }
       } else {
         // If no tags have this entity type, get tags without any entity type
-        const { data: allTagIdsWithEntityTypes, error: allTagIdsError } = await supabase
+        const { data: allTagsWithEntityTypes, error: allTagsError } = await supabase
           .from('tag_entity_types')
           .select('tag_id');
           
-        if (allTagIdsError) {
-          console.error("Error fetching all tag IDs with entity types:", allTagIdsError);
-          throw allTagIdsError;
+        if (allTagsError) {
+          console.error("Error fetching all tag IDs with entity types:", allTagsError);
+          throw allTagsError;
         }
         
         // Get unique tag IDs by converting to a Set and back to an array
-        const uniqueTagIds = Array.from(new Set(allTagIdsWithEntityTypes?.map(item => item.tag_id) || []));
+        const uniqueTagIdsWithTypes = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
         
-        if (uniqueTagIds.length > 0) {
+        if (uniqueTagIdsWithTypes.length > 0) {
           // Get tags that don't have any entity type
-          query = query.not('id', 'in', `(${uniqueTagIds.join(',')})`);
+          query = query.not('id', 'in', `(${uniqueTagIdsWithTypes.join(',')})`);
         }
       }
     }
@@ -377,9 +377,22 @@ const updateTagUsedEntityTypes = async (tagId: string, entityType: string) => {
     }
     
     // Parse used_entity_types array
-    const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
-      ? tagData.used_entity_types 
-      : (tagData.used_entity_types ? JSON.parse(tagData.used_entity_types) : []);
+    let usedEntityTypes: string[] = [];
+    if (Array.isArray(tagData.used_entity_types)) {
+      usedEntityTypes = tagData.used_entity_types;
+    } else if (tagData.used_entity_types) {
+      // Handle case where it might be a JSON string or an object
+      try {
+        const parsedValue = typeof tagData.used_entity_types === 'string' 
+          ? JSON.parse(tagData.used_entity_types)
+          : tagData.used_entity_types;
+          
+        usedEntityTypes = Array.isArray(parsedValue) ? parsedValue : [];
+      } catch (e) {
+        console.error("Error parsing used_entity_types:", e);
+        usedEntityTypes = [];
+      }
+    }
     
     // Check if this entity type is already in the array
     if (!usedEntityTypes.includes(entityType)) {
