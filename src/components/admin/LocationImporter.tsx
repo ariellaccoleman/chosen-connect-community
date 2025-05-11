@@ -16,6 +16,7 @@ import { Loader2, AlertCircle, RefreshCcw, Bug } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/useAuth';
 import { Progress } from '@/components/ui/progress';
+import { logger } from '@/utils/logger';
 
 const LocationImporter = () => {
   const [error, setError] = useState<string | null>(null);
@@ -23,6 +24,12 @@ const LocationImporter = () => {
   
   const { importLocationsFromFile, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
+
+  // Update logger debug mode when the toggle changes
+  const handleDebugModeChange = (checked: boolean) => {
+    setDebugMode(checked);
+    logger.setDebugEnabled(checked);
+  };
 
   // Calculate total imported percentage for progress bar
   const importedPercentage = importProgress?.total && importProgress.total > 0
@@ -93,7 +100,7 @@ const LocationImporter = () => {
           <Switch 
             id="debug-mode" 
             checked={debugMode}
-            onCheckedChange={setDebugMode}
+            onCheckedChange={handleDebugModeChange}
             disabled={isImporting}
           />
           <Label htmlFor="debug-mode" className="flex items-center gap-1">

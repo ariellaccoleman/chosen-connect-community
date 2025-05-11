@@ -1,5 +1,6 @@
 
 import { toast } from "@/components/ui/sonner";
+import { logger } from "./logger";
 
 /**
  * Helper function to handle toast notifications for mutations
@@ -11,6 +12,8 @@ export const createMutationHandlers = (
     errorMessagePrefix?: string;
     onSuccessCallback?: (data: any, variables: any) => void;
     onErrorCallback?: (error: any) => void;
+    logError?: boolean;
+    logSuccess?: boolean;
   } = {}
 ) => {
   const {
@@ -18,10 +21,17 @@ export const createMutationHandlers = (
     errorMessagePrefix = "Error",
     onSuccessCallback,
     onErrorCallback,
+    logError = true,
+    logSuccess = true,
   } = options;
 
   return {
     onSuccess: (data: any, variables: any) => {
+      // Log success if enabled
+      if (logSuccess && successMessage) {
+        logger.info(`Success: ${successMessage}`, { data });
+      }
+      
       // Show success toast after operation completes successfully
       if (successMessage) {
         toast.success(successMessage);
@@ -33,8 +43,14 @@ export const createMutationHandlers = (
       }
     },
     onError: (error: any) => {
-      // Show error toast
       const errorMessage = error?.message || "An unknown error occurred";
+      
+      // Log error if enabled
+      if (logError) {
+        logger.error(`${errorMessagePrefix}: ${errorMessage}`, error);
+      }
+      
+      // Show error toast
       toast.error(`${errorMessagePrefix}: ${errorMessage}`);
       
       // Call additional error callback if provided

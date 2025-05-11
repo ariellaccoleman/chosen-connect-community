@@ -22,6 +22,7 @@ import OrganizationHeader from "./organization/OrganizationHeader";
 import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
+import { logger } from "@/utils/logger";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -55,8 +56,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
 
   // Toggle function to show the add organization dialog
   const toggleAddOrganization = () => {
-    console.log("Toggle add organization dialog"); // Debug log
-    setIsAddingNew(true); // Set state to show dialog
+    setIsAddingNew(true);
   };
 
   return (

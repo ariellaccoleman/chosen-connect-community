@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { logger } from '@/utils/logger';
+import { handleError } from '@/utils/errorUtils';
 
 interface ImportFileParams {
   debugMode?: boolean;
@@ -30,19 +32,22 @@ export const useGeoNames = () => {
     debugMode = false
   }: ImportFileParams = {}): Promise<ImportResult> => {
     setIsImporting(true);
+    logger.setDebugEnabled(debugMode);
     
     try {
+      logger.info('Starting location import', { debugMode });
+      
       const { data, error } = await supabase.functions.invoke('import-local-geonames', {
         body: { debugMode }
       });
       
       if (error) {
-        console.error('Error importing locations from file:', error);
-        toast.error(`Failed to import locations from file: ${error.message || 'Unknown error'}`);
+        handleError(error, 'Error importing locations from file');
         return { success: false, error };
       }
       
       if (!data) {
+        logger.warn('No response data received when importing locations');
         toast.info('No response data received when importing locations');
         return { success: true, count: 0, total: 0 };
       }
@@ -64,14 +69,14 @@ export const useGeoNames = () => {
         successMessage += ` (${data.skipped} skipped)`;
       }
       
+      logger.info('Import completed successfully', data);
       toast.success(successMessage);
       return { 
         success: true, 
         ...data 
       };
     } catch (error) {
-      console.error('Exception importing locations from file:', error);
-      toast.error(`An unexpected error occurred: ${error.message || 'Unknown error'}`);
+      handleError(error, 'Exception importing locations from file');
       return { success: false, error };
     } finally {
       setIsImporting(false);

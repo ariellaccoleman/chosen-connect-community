@@ -1,6 +1,6 @@
 
 import { OrganizationWithLocation, ProfileOrganizationRelationship, ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { formatLocationWithDetails } from "@/utils/adminFormatters";
+import { formatLocationWithDetails } from "@/utils/formatters";
 
 /**
  * Format organization relationships to ensure they meet the ProfileOrganizationRelationshipWithDetails type
