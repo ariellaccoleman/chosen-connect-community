@@ -50,8 +50,6 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
 
   // Load tags based on search criteria
   useEffect(() => {
-    if (!user?.id) return;
-
     const loadTags = async () => {
       const fetchedTags = await fetchTags({ 
         type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,

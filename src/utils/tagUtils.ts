@@ -200,6 +200,13 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
  */
 export const assignTag = async (tagId: string, entityId: string, entityType: "person" | "organization") => {
   try {
+    // Get current auth session
+    const { data: authData } = await supabase.auth.getSession();
+    if (!authData.session) {
+      handleError(new Error("User not authenticated"), "Authentication required");
+      return null;
+    }
+    
     // Check if assignment already exists
     const { data: existingAssignment, error: checkError } = await supabase
       .from("tag_assignments")
@@ -220,17 +227,7 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
       return existingAssignment;
     }
     
-    // Verify permissions before creating assignment
-    if (entityType === "person") {
-      // Check if user is trying to assign a tag to themselves
-      const { data: authData } = await supabase.auth.getSession();
-      if (!authData.session || entityId !== authData.session.user.id) {
-        logger.error("Unauthorized: Cannot assign tags to other people's profiles");
-        return null;
-      }
-    }
-    
-    // Create new assignment
+    // Create new assignment based on entity type
     const { data, error } = await supabase
       .from("tag_assignments")
       .insert({
