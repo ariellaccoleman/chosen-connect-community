@@ -36,13 +36,10 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Fix entity type filtering - use proper filter syntax for Supabase
+      // Fix entity type filtering
       if (options.targetType) {
-        // We need to use or() with a proper filter syntax that works with Supabase
-        query = query.or(
-          // To fix the TypeScript error, we need to pass a single string with comma-separated conditions
-          `used_entity_types::jsonb ?? '${options.targetType}',used_entity_types::jsonb = '[]'::jsonb`
-        );
+        // First, get tags that have the target entity type in their used_entity_types
+        query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]'::jsonb, used_entity_types::jsonb = '[]'::jsonb`);
       }
       
       const { data, error } = await query.order('name');

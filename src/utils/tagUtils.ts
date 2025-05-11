@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -61,12 +62,12 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering using proper Supabase syntax
+    // Fix entity type filtering - use the contains operator @> for jsonb arrays
     if (options.targetType) {
-      // Use a single string for the or() method, with comma-separated conditions
-      query = query.or(
-        `used_entity_types::jsonb ?? '${options.targetType}',used_entity_types::jsonb = '[]'::jsonb`
-      );
+      // This handles both cases:
+      // 1. Tags that include the targetType in used_entity_types array
+      // 2. Tags that have empty used_entity_types array
+      query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]'::jsonb, used_entity_types::jsonb = '[]'::jsonb`);
     }
     
     const { data, error } = await query.order("name");

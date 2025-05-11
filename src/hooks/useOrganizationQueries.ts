@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from '@/types';
@@ -63,7 +62,6 @@ export const useOrganizations = () => {
               // Transform the tag assignments to match the expected TagAssignment type
               const formattedAssignments = orgTagAssignments.map(ta => {
                 // Create a properly typed tag object with default values
-                // Use a type assertion to help TypeScript understand the structure
                 const tagData = (ta.tag || {}) as Partial<Tag>;
                 
                 // Ensure used_entity_types is always a string array
