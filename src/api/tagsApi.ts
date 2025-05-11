@@ -37,10 +37,18 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Fix entity type filtering with proper SQL syntax
+      // Fix entity type filtering - use separate or() conditions instead of raw SQL
       if (options.targetType) {
-        // Create separate conditions for empty arrays or arrays containing the target type
-        query = query.or(`used_entity_types::jsonb ?| array['${options.targetType}'], used_entity_types::jsonb = '[]'::jsonb`);
+        // First, build the query without the filtering
+        const baseQuery = query;
+        
+        // Then use the filter function with multiple conditions
+        query = baseQuery.or([
+          // Condition 1: Tag is used with this entity type
+          `used_entity_types::jsonb ?? '${options.targetType}'`,
+          // Condition 2: Tag has empty used_entity_types array
+          `used_entity_types::jsonb = '[]'::jsonb`
+        ]);
       }
       
       const { data, error } = await query.order('name');

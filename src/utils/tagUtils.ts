@@ -61,15 +61,22 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering with proper SQL syntax
+    // Fix entity type filtering using Supabase query filter objects 
     if (options.targetType) {
-      // Create separate conditions for empty arrays or arrays containing the target type
-      query = query.or(`used_entity_types::jsonb ?| array['${options.targetType}'], used_entity_types::jsonb = '[]'::jsonb`);
+      // Use filter objects with or() method which is more reliable
+      query = query.or([
+        // Condition 1: used_entity_types contains the targetType
+        `used_entity_types::jsonb ?? '${options.targetType}'`,
+        // Condition 2: used_entity_types is an empty array
+        `used_entity_types::jsonb = '[]'::jsonb`
+      ]);
     }
     
     const { data, error } = await query.order("name");
     
     if (error) {
+      // Log detailed error information for debugging
+      console.error("Error in fetchTags query:", error);
       handleError(error, "Error fetching tags");
       return [];
     }
@@ -192,11 +199,31 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
       .eq("target_type", entityType);
     
     if (error) {
+      console.error("Error fetching entity tags:", error);
       handleError(error, "Error fetching entity tags");
       return [];
     }
     
-    return data as TagAssignment[];
+    // Ensure proper typing for tag assignments
+    const formattedAssignments = (data || []).map(assignment => {
+      const tagData = assignment.tag || {};
+      
+      // Ensure used_entity_types is properly formatted as string[]
+      const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
+        ? tagData.used_entity_types 
+        : (tagData.used_entity_types ? [String(tagData.used_entity_types)] : []);
+        
+      return {
+        ...assignment,
+        updated_at: assignment.updated_at || assignment.created_at,
+        tag: {
+          ...tagData,
+          used_entity_types: usedEntityTypes
+        }
+      } as TagAssignment;
+    });
+    
+    return formattedAssignments;
   } catch (error) {
     handleError(error, "Error in fetchEntityTags");
     return [];
