@@ -23,7 +23,7 @@ export const useOrganizations = () => {
       
       if (orgsError) {
         console.error('Error fetching organizations:', orgsError);
-        return [];
+        throw orgsError; // Throw the error to be handled by the query
       }
       
       // Transform organizations to match the expected type
@@ -57,23 +57,25 @@ export const useOrganizations = () => {
           } else if (tagAssignments) {
             // Map tag assignments to their respective organizations
             orgsWithLocations.forEach(org => {
+              // Find tag assignments for this organization
+              const orgTagAssignments = tagAssignments.filter(ta => ta.target_id === org.id);
+              
               // Transform the tag assignments to match the expected TagAssignment type
-              const formattedAssignments = tagAssignments
-                .filter(ta => ta.target_id === org.id)
-                .map(ta => {
-                  // Ensure used_entity_types is a string array
-                  const usedEntityTypes = Array.isArray(ta.tag.used_entity_types) 
-                    ? ta.tag.used_entity_types 
-                    : (ta.tag.used_entity_types ? [String(ta.tag.used_entity_types)] : []);
-                  
-                  return {
-                    ...ta,
-                    tag: {
-                      ...ta.tag,
-                      used_entity_types: usedEntityTypes
-                    }
-                  } as TagAssignment;
-                });
+              const formattedAssignments = orgTagAssignments.map(ta => {
+                // Ensure used_entity_types is a string array
+                const tag = ta.tag || {};
+                const usedEntityTypes = Array.isArray(tag.used_entity_types) 
+                  ? tag.used_entity_types 
+                  : (tag.used_entity_types ? [String(tag.used_entity_types)] : []);
+                
+                return {
+                  ...ta,
+                  tag: {
+                    ...tag,
+                    used_entity_types: usedEntityTypes
+                  }
+                } as TagAssignment;
+              });
               
               org.tags = formattedAssignments;
             });

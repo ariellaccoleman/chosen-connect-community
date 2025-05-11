@@ -39,8 +39,8 @@ export const tagsApi = {
       
       // Fix entity type filtering with proper SQL syntax
       if (options.targetType) {
-        // Check if the array contains the target type or is empty
-        query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb @> '[]'`);
+        // Use proper PostgreSQL syntax for JSONB contains or empty array
+        query = query.or(`used_entity_types::jsonb ?| array['${options.targetType}', ''], used_entity_types::jsonb = '[]'::jsonb`);
       }
       
       const { data, error } = await query.order('name');
