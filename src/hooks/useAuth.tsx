@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -6,11 +7,15 @@ import { User } from '@supabase/supabase-js';
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, metadata?: { [key: string]: any }) => Promise<void>;
+  signUp: (email: string, password: string, firstName?: string, lastName?: string) => Promise<{ user: User | null } | undefined>;
   logout: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>; // Alias for login
+  signOut: () => Promise<void>; // Alias for logout
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (password: string) => Promise<void>;
   loading: boolean;
   error: Error | null;
-  isAdmin: boolean; // Add isAdmin property
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -78,10 +83,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, metadata?: { [key: string]: any }) => {
+  const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     setLoading(true);
     setError(null);
     try {
+      const metadata: { [key: string]: any } = {};
+      if (firstName) metadata.first_name = firstName;
+      if (lastName) metadata.last_name = lastName;
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -92,13 +101,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         setError(error);
+        return undefined;
       } else {
         setUser(data.user);
         setIsAdmin(data.user?.app_metadata?.role === 'admin');
         navigate('/dashboard');
+        return { user: data.user };
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
+      return undefined;
     } finally {
       setLoading(false);
     }
@@ -123,11 +135,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Add forgotPassword function
+  const forgotPassword = async (email: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      if (error) {
+        setError(error);
+      } else {
+        toast.success("Password reset instructions have been sent to your email");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add resetPassword function
+  const resetPassword = async (password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password,
+      });
+      
+      if (error) {
+        setError(error);
+      } else {
+        toast.success("Password has been updated successfully");
+        navigate('/auth');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create alias functions to maintain compatibility
+  const signIn = login;
+  const signOut = logout;
+
   const value: AuthContextType = {
     user,
     login,
     signUp,
     logout,
+    signIn,
+    signOut,
+    forgotPassword,
+    resetPassword,
     loading,
     error,
     isAdmin,
@@ -147,3 +210,6 @@ export const useAuth = () => {
   }
   return context;
 };
+
+// Import toast
+import { toast } from "@/components/ui/sonner";

@@ -52,7 +52,7 @@ type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
 type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
 
 const Auth = () => {
-  const { user, loading, signIn, signUp, forgotPassword, resetPassword } = useAuth();
+  const { user, loading, login, signUp, forgotPassword, resetPassword } = useAuth();
   const [searchParams] = useSearchParams();
   const [authMode, setAuthMode] = useState<"login" | "signup" | "forgotPassword" | "resetPassword">("login");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,7 +106,7 @@ const Auth = () => {
   const onLoginSubmit = async (data: LoginValues) => {
     setIsSubmitting(true);
     try {
-      await signIn(data.email, data.password);
+      await login(data.email, data.password);
     } catch (error) {
       console.error(error);
     } finally {
