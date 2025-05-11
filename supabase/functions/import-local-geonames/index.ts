@@ -76,7 +76,6 @@ Deno.serve(async (req) => {
     let totalInsertedCount = 0;
     let totalUpdatedCount = 0;
     let totalSkippedCount = 0;
-    let hasMoreData = false;
     let importStatus = [];
     
     try {
@@ -144,11 +143,9 @@ Deno.serve(async (req) => {
       const maxIndex = Math.min(offset + limit, lines.length);
       console.log(`Processing lines from ${offset} to ${maxIndex}`);
       
-      // Check if there are more data beyond this batch
-      hasMoreData = maxIndex < lines.length;
-      
       // Process the lines in batches
       const locationsToProcess = [];
+      let filteredLocations = 0;
       
       for (let i = offset; i < maxIndex; i++) {
         const line = lines[i];
@@ -183,6 +180,8 @@ Deno.serve(async (req) => {
           continue;
         }
         
+        filteredLocations++;
+        
         // Get country name from our mapping
         const countryName = countryInfoMap[countryCode] || countryCode;
         
@@ -203,9 +202,11 @@ Deno.serve(async (req) => {
         // Create a full location name
         const fullName = `${name}, ${fullRegionPath ? fullRegionPath + ', ' : ''}${countryName}`;
         
-        if (debugMode || i % 100 === 0) {
-          console.log(`Processing ${name}, ${admin1Name}, ${countryName} (admin1Key: ${admin1Key}, admin2Key: ${admin2Key})`);
-          console.log(`Full name: ${fullName}`);
+        if (debugMode || (i % 1000 === 0 && i > 0)) {
+          console.log(`Processing ${i}: ${name}, ${admin1Name}, ${countryName}`);
+          if (debugMode) {
+            console.log(`Full name: ${fullName}`);
+          }
         }
         
         // Add the location to the batch
@@ -226,6 +227,7 @@ Deno.serve(async (req) => {
         
         // Process in database batches when we reach batchSize
         if (locationsToProcess.length >= batchSize) {
+          console.log(`Processing database batch of ${locationsToProcess.length} records`);
           const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
           totalInsertedCount += result.inserted;
           totalUpdatedCount += result.updated;
@@ -247,6 +249,7 @@ Deno.serve(async (req) => {
       
       // Process any remaining locations
       if (locationsToProcess.length > 0) {
+        console.log(`Processing final batch of ${locationsToProcess.length} records`);
         const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
         totalInsertedCount += result.inserted;
         totalUpdatedCount += result.updated;
@@ -262,12 +265,20 @@ Deno.serve(async (req) => {
         });
       }
       
-      // Generate continuation token if there's more data
+      // Check if there are more lines to process beyond the current limit
+      const hasMoreData = maxIndex < lines.length;
+      
+      console.log(`Import complete. Filtered locations: ${filteredLocations}, Inserted: ${totalInsertedCount}, Updated: ${totalUpdatedCount}, Skipped: ${totalSkippedCount}`);
+      
+      // Generate continuation token if there's more data and items were actually found
       const continuationToken = hasMoreData ? btoa(JSON.stringify({
         nextOffset: maxIndex,
         country,
         minPopulation
       })) : null;
+      
+      // Only say there's more data if we actually processed some locations and there are more lines
+      const effectiveHasMoreData = hasMoreData && filteredLocations > 0;
       
       return new Response(JSON.stringify({
         success: true,
@@ -276,9 +287,10 @@ Deno.serve(async (req) => {
         updated: totalUpdatedCount,
         skipped: totalSkippedCount,
         total: totalInsertedCount + totalUpdatedCount + totalSkippedCount,
-        hasMoreData,
-        nextOffset: hasMoreData ? maxIndex : null,
-        continuationToken,
+        filteredLocations,
+        hasMoreData: effectiveHasMoreData,
+        nextOffset: effectiveHasMoreData ? maxIndex : null,
+        continuationToken: effectiveHasMoreData ? continuationToken : null,
         importStatus
       }), {
         headers: {
@@ -316,7 +328,7 @@ Deno.serve(async (req) => {
   }
 });
 
-// Function to load country info mapping from countryInfo.txt
+// Helper function to load country info mapping from countryInfo.txt
 async function loadCountryInfoMapping(supabase) {
   try {
     console.log('Loading country info mapping from countryInfo.txt');
@@ -470,7 +482,7 @@ async function loadAdmin2CodeMapping(supabase) {
   }
 }
 
-// Helper function to process a batch of locations - simplified version
+// Helper function to process a batch of locations
 async function processLocationBatch(supabase, locations, debugMode = false) {
   let insertedCount = 0;
   let updatedCount = 0;
@@ -485,21 +497,31 @@ async function processLocationBatch(supabase, locations, debugMode = false) {
       console.log(`Processing database batch ${Math.floor(i / dbBatchSize) + 1} of ${Math.ceil(locations.length / dbBatchSize)}`);
       
       try {
+        if (debugMode) {
+          console.log(`Sample record being inserted:`, dbBatch[0]);
+        }
+        
         // Use upsert to either insert or update based on geoname_id
-        const { data, error } = await supabase
+        const { data, error, count } = await supabase
           .from('locations')
           .upsert(dbBatch, {
             onConflict: 'geoname_id', // Only use geoname_id as the conflict detection
             ignoreDuplicates: false, // Update the record if found
-            returning: 'minimal' // Don't need to return data
+            returning: 'representation' // Return the full records
           });
         
         if (error) {
           console.error('Error upserting locations:', error);
           skippedCount += dbBatch.length;
         } else {
-          // For simplicity, assume all were processed successfully
-          // We don't know exactly how many were inserted vs. updated since we used 'minimal'
+          if (debugMode && data) {
+            console.log(`Upsert returned ${data.length} records`);
+            if (data.length > 0) {
+              console.log(`First returned record:`, data[0]);
+            }
+          }
+          // Since we used 'representation', we know how many records were returned
+          // But we don't know how many were inserted vs updated without more logic
           insertedCount += dbBatch.length;
         }
       } catch (batchError) {

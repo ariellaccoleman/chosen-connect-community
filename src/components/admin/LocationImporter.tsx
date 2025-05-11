@@ -49,16 +49,16 @@ const LocationImporter = () => {
   const [debugMode, setDebugMode] = useState(false);
   
   // File import specific settings
-  const [fileMinPopulation, setFileMinPopulation] = useState(15000);
+  const [fileMinPopulation, setFileMinPopulation] = useState(1000); // Lower default for local file import
   const [fileCountry, setFileCountry] = useState<string | null>('IL'); // Default to Israel for testing
-  const [fileLimit, setFileLimit] = useState(5000);
+  const [fileLimit, setFileLimit] = useState(10000); // Higher default for file import
   const [fileOffset, setFileOffset] = useState(0);
   
   const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
 
   // Calculate total imported percentage for progress bar
-  const importedPercentage = importProgress?.total 
+  const importedPercentage = importProgress?.total && importProgress.total > 0
     ? Math.min(100, Math.round((importProgress.inserted + importProgress.updated) / importProgress.total * 100)) 
     : 0;
 
@@ -147,6 +147,11 @@ const LocationImporter = () => {
               <div>Updated: <span className="font-medium">{importProgress.updated}</span></div>
               <div>Skipped: <span className="font-medium">{importProgress.skipped}</span></div>
               <div>Total: <span className="font-medium">{importProgress.total}</span></div>
+              {importProgress.filteredLocations !== undefined && (
+                <div className="col-span-2">
+                  Filtered: <span className="font-medium">{importProgress.filteredLocations}</span> locations found matching criteria
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2 mt-2">
               {importProgress.hasMoreData && (

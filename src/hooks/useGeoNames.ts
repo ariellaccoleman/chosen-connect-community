@@ -30,6 +30,7 @@ interface ImportResult {
   updated?: number;
   total?: number;
   skipped?: number;
+  filteredLocations?: number;
   hasMoreData?: boolean;
   nextStartRow?: number | null;
   continuationToken?: string | null;
@@ -52,6 +53,7 @@ export const useGeoNames = () => {
     updated: number;
     skipped: number;
     total: number;
+    filteredLocations?: number;
     hasMoreData: boolean;
     nextStartRow: number | null;
     continuationToken: string | null;
@@ -198,18 +200,25 @@ export const useGeoNames = () => {
         return { success: false, error };
       }
       
-      if (!data || (!data.count && data.count !== 0)) {
+      if (!data) {
         const source = country ? `for ${country}` : 'from file';
-        toast.info(`No locations found ${source} with population >= ${minPopulation}`);
-        return { success: true, data: { count: 0 } };
+        toast.info(`No response data received when importing locations ${source}`);
+        return { success: true, count: 0, total: 0 };
       }
       
-      // Update progress state
+      if (data.count === 0 && data.filteredLocations === 0) {
+        const source = country ? `for ${country}` : 'from file';
+        toast.info(`No locations found ${source} with population >= ${minPopulation}`);
+        return { success: true, ...data };
+      }
+      
+      // Update progress state with filtered locations count
       setImportProgress({
         inserted: data.count || 0,
         updated: data.updated || 0,
         skipped: data.skipped || 0,
         total: data.total || 0,
+        filteredLocations: data.filteredLocations,
         hasMoreData: data.hasMoreData || false,
         nextStartRow: data.nextOffset || null,
         continuationToken: data.continuationToken || null
@@ -222,6 +231,10 @@ export const useGeoNames = () => {
       }
       if (data.skipped && data.skipped > 0) {
         successMessage += ` (${data.skipped} skipped)`;
+      }
+      
+      if (data.filteredLocations && data.count === 0) {
+        successMessage = `No new locations were imported. ${data.filteredLocations} locations found didn't need updating.`;
       }
       
       if (data.hasMoreData) {
