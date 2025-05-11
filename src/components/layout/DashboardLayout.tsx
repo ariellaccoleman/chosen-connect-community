@@ -1,9 +1,8 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import BaseLayout from "@/components/layout/BaseLayout";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -13,20 +12,22 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  // Check if user is logged in
-  if (!loading && !user) {
-    navigate("/auth");
+  useEffect(() => {
+    // Only redirect when the auth state is fully loaded and no user exists
+    if (!loading && !user) {
+      navigate("/auth");
+    }
+  }, [user, loading, navigate]);
+
+  // Return null during loading or when no user is authenticated
+  if (loading || !user) {
     return null;
   }
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      <main className="flex-grow pt-16">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <BaseLayout>
+      {children}
+    </BaseLayout>
   );
 };
 

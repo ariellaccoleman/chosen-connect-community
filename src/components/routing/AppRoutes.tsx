@@ -3,139 +3,82 @@ import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import PublicRoute from "./PublicRoute";
-
-import Index from "@/pages/Index";
-import NotFound from "@/pages/NotFound";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import ProfileEdit from "@/pages/ProfileEdit";
-import ProfileView from "@/pages/ProfileView";
-import Organizations from "@/pages/Organizations";
-import OrganizationDetail from "@/pages/OrganizationDetail";
-import OrganizationEdit from "@/pages/OrganizationEdit";
-import ManageOrganizationConnections from "@/pages/ManageOrganizationConnections";
-import CommunityDirectory from "@/pages/CommunityDirectory";
-import CreateOrganization from "@/pages/CreateOrganization";
-import TestDataGenerator from "@/pages/TestDataGenerator";
-import About from "@/pages/About";
-import CommunityGuide from "@/components/community-guide/CommunityGuide";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminTags from "@/pages/AdminTags";
+import routes, { RouteConfig } from "@/config/routes";
+import Layout from "@/components/layout/Layout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import { useLayout } from "@/contexts/LayoutContext";
+import { useEffect } from "react";
 
 const AppRoutes = () => {
+  const { setPageTitle } = useLayout();
+  
+  // Reset page title when component unmounts
+  useEffect(() => {
+    return () => {
+      setPageTitle("");
+    };
+  }, [setPageTitle]);
+
+  // Function to render a route with the appropriate wrapper
+  const renderRoute = (route: RouteConfig) => {
+    const Component = route.component;
+    
+    // Set page title when route changes
+    useEffect(() => {
+      if (route.title) {
+        setPageTitle(route.title);
+      }
+    }, [route.title]);
+
+    // Determine the layout to use
+    const RouteLayout = route.layout === 'none' 
+      ? ({ children }: { children: React.ReactNode }) => <>{children}</>
+      : DashboardLayout;
+    
+    // Apply the appropriate authentication wrapper
+    switch (route.auth) {
+      case "protected":
+        return (
+          <ProtectedRoute>
+            <RouteLayout>
+              <Component />
+            </RouteLayout>
+          </ProtectedRoute>
+        );
+      case "admin":
+        return (
+          <AdminRoute>
+            <RouteLayout>
+              <Component />
+            </RouteLayout>
+          </AdminRoute>
+        );
+      case "public":
+        return (
+          <PublicRoute>
+            <RouteLayout>
+              <Component />
+            </RouteLayout>
+          </PublicRoute>
+        );
+      default:
+        return (
+          <RouteLayout>
+            <Component />
+          </RouteLayout>
+        );
+    }
+  };
+
   return (
     <Routes>
-      <Route path="/auth" element={<Auth />} />
-      <Route 
-        path="/" 
-        element={
-          <PublicRoute>
-            <Index />
-          </PublicRoute>
-        } 
-      />
-      <Route 
-        path="/about" 
-        element={<About />} 
-      />
-      <Route 
-        path="/community-guide" 
-        element={<CommunityGuide />} 
-      />
-      <Route 
-        path="/dashboard" 
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/profile" 
-        element={
-          <ProtectedRoute>
-            <ProfileEdit />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations" 
-        element={
-          <ProtectedRoute>
-            <Organizations />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/new" 
-        element={
-          <ProtectedRoute>
-            <CreateOrganization />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/:id" 
-        element={
-          <ProtectedRoute>
-            <OrganizationDetail />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/:id/edit" 
-        element={
-          <ProtectedRoute>
-            <OrganizationEdit />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/organizations/manage" 
-        element={
-          <ProtectedRoute>
-            <ManageOrganizationConnections />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/directory" 
-        element={
-          <ProtectedRoute>
-            <CommunityDirectory />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/directory/:id" 
-        element={
-          <ProtectedRoute>
-            <ProfileView />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin" 
-        element={
-          <AdminRoute>
-            <AdminDashboard />
-          </AdminRoute>
-        } 
-      />
-      <Route 
-        path="/admin/generate-test-data" 
-        element={
-          <ProtectedRoute>
-            <TestDataGenerator />
-          </ProtectedRoute>
-        } 
-      />
-      <Route 
-        path="/admin/tags" 
-        element={<AdminTags />} 
-      />
-      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-      <Route path="*" element={<NotFound />} />
+      {routes.map((route) => (
+        <Route
+          key={route.path}
+          path={route.path}
+          element={renderRoute(route)}
+        />
+      ))}
     </Routes>
   );
 };

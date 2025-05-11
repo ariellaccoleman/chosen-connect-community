@@ -6,6 +6,7 @@ import { AuthProvider } from "@/providers/AuthProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { LayoutProvider } from "@/contexts/LayoutContext";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -19,11 +20,13 @@ const AppProviders = ({ children }: AppProvidersProps) => {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <AuthProvider>
-          <TooltipProvider>
-            {children}
-            <Toaster />
-            <Sonner />
-          </TooltipProvider>
+          <LayoutProvider>
+            <TooltipProvider>
+              {children}
+              <Toaster />
+              <Sonner />
+            </TooltipProvider>
+          </LayoutProvider>
         </AuthProvider>
       </BrowserRouter>
     </QueryClientProvider>
