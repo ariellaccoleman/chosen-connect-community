@@ -35,10 +35,7 @@ Deno.serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     
     if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('Missing Supabase credentials', { 
-        hasUrl: !!supabaseUrl, 
-        hasKey: !!supabaseServiceKey 
-      });
+      console.error('Missing Supabase credentials');
       return new Response(JSON.stringify({
         error: 'Supabase credentials are not configured properly'
       }), {
@@ -54,60 +51,26 @@ Deno.serve(async (req) => {
     
     // Parse the request body
     const requestData = await req.json();
-    const { 
-      minPopulation = 15000, 
-      batchSize = 1000,
-      country = null,
-      offset = 0,
-      limit = 5000,
-      debugMode = false
-    } = requestData;
+    const { debugMode = false } = requestData;
     
-    console.log('Processing geonames with params:', {
-      minPopulation,
-      batchSize,
-      country,
-      offset,
-      limit,
-      debugMode
-    });
+    console.log('Processing geonames file import with debug mode:', debugMode);
     
     // Initialize import statistics
-    let totalInsertedCount = 0;
-    let totalUpdatedCount = 0;
-    let totalSkippedCount = 0;
-    let filteredLocations = 0;
-    let importStatus = [];
+    let insertedCount = 0;
+    let updatedCount = 0;
+    let skippedCount = 0;
+    let processedCount = 0;
     
     try {
-      // First load country info mapping
+      // First load code mappings
       const countryInfoMap = await loadCountryInfoMapping(supabase);
-      
-      // Load admin1 and admin2 code mappings
       const admin1CodeMap = await loadAdmin1CodeMapping(supabase);
       const admin2CodeMap = await loadAdmin2CodeMapping(supabase);
       
       console.log(`Loaded admin mappings: ${Object.keys(admin1CodeMap).length} admin1 codes, ${Object.keys(admin2CodeMap).length} admin2 codes`);
       
-      if (debugMode) {
-        // Log some sample entries to verify mappings
-        const sampleAdmin1Keys = Object.keys(admin1CodeMap).slice(0, 5);
-        console.log('Sample admin1 mappings:', sampleAdmin1Keys.map(key => ({
-          key,
-          name: admin1CodeMap[key]
-        })));
-        
-        if (country) {
-          console.log(`Admin1 mappings for ${country}:`, 
-            Object.keys(admin1CodeMap)
-              .filter(key => key.startsWith(country + '.'))
-              .map(key => ({ key, name: admin1CodeMap[key] }))
-          );
-        }
-      }
-      
-      // Get the cities text file directly
-      console.log('Fetching cities1000.txt directly from storage');
+      // Get the cities text file
+      console.log('Fetching cities1000.txt from storage');
       
       const { data: textData, error: textError } = await supabase
         .storage
@@ -140,14 +103,10 @@ Deno.serve(async (req) => {
       const lines = citiesText.split('\n');
       console.log(`Total lines in cities data: ${lines.length}`);
       
-      // Apply offset and limit
-      const maxIndex = Math.min(offset + limit, lines.length);
-      console.log(`Processing lines from ${offset} to ${maxIndex}`);
-      
-      // Process the lines in batches
+      const batchSize = 100; // Process in smaller batches for better management
       const locationsToProcess = [];
       
-      for (let i = offset; i < maxIndex; i++) {
+      for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (!line.trim()) continue; // Skip empty lines
         
@@ -170,37 +129,11 @@ Deno.serve(async (req) => {
         const population = parseInt(fields[14], 10);
         const timezone = fields[17];
         
-        // Debug some info to understand filtering
-        if (debugMode || (i === offset || i % 1000 === 0)) {
-          console.log(`Examining line ${i}:`);
-          console.log(`  Name: ${name}`);
-          console.log(`  Country: ${countryCode}`);
-          console.log(`  Population: ${population}`);
-          console.log(`  Filters: country=${country}, minPopulation=${minPopulation}`);
+        if (debugMode && (i === 0 || i % 1000 === 0 || i === lines.length - 1)) {
+          console.log(`Processing line ${i}: ${name}, ${countryCode}`);
         }
         
-        // Skip locations with population less than minimum
-        if (population < minPopulation) {
-          if (debugMode) {
-            console.log(`  Skipping ${name} - population ${population} < ${minPopulation}`);
-          }
-          continue;
-        }
-        
-        // Skip if country filter is applied and doesn't match
-        if (country && countryCode !== country) {
-          if (debugMode) {
-            console.log(`  Skipping ${name} - country ${countryCode} != ${country}`);
-          }
-          continue;
-        }
-        
-        // Log when we find a matching record
-        if (debugMode || (i === offset || i % 1000 === 0)) {
-          console.log(`Found matching record: ${name}, ${countryCode}, population: ${population}`);
-        }
-        
-        filteredLocations++;
+        processedCount++;
         
         // Get country name from our mapping
         const countryName = countryInfoMap[countryCode] || countryCode;
@@ -213,26 +146,10 @@ Deno.serve(async (req) => {
         const admin1Name = admin1CodeMap[admin1Key] || admin1Code;
         const admin2Name = admin2CodeMap[admin2Key] || null;
         
-        // Create a full region path that includes admin1 and admin2 if available
-        let fullRegionPath = admin1Name;
-        if (admin2Name) {
-          fullRegionPath = `${admin2Name}, ${fullRegionPath}`;
-        }
-        
-        // Create a full location name
-        const fullName = `${name}, ${fullRegionPath ? fullRegionPath + ', ' : ''}${countryName}`;
-        
-        if (debugMode || (i % 1000 === 0 && i > 0)) {
-          console.log(`Processing ${i}: ${name}, ${admin1Name}, ${countryName}`);
-          if (debugMode) {
-            console.log(`Full name: ${fullName}`);
-          }
-        }
-        
         // Add the location to the batch
         locationsToProcess.push({
           city: name,
-          region: admin1Name, // Use admin1Name as region instead of admin1Code
+          region: admin1Name,
           country: countryName,
           geoname_id: geonameId,
           latitude: latitude,
@@ -240,115 +157,34 @@ Deno.serve(async (req) => {
           admin_code1: admin1Code,
           admin_code2: admin2Code,
           admin_name2: admin2Name,
-          timezone: timezone,
-          full_name: fullName,
-          full_region_path: fullRegionPath
+          timezone: timezone
         });
         
-        // Process in database batches when we reach batchSize
-        if (locationsToProcess.length >= batchSize) {
-          console.log(`Processing database batch of ${locationsToProcess.length} records`);
-          const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
-          totalInsertedCount += result.inserted;
-          totalUpdatedCount += result.updated;
-          totalSkippedCount += result.skipped;
+        // Process in database batches
+        if (locationsToProcess.length >= batchSize || i === lines.length - 1) {
+          if (debugMode) {
+            console.log(`Processing database batch of ${locationsToProcess.length} records`);
+          }
           
-          importStatus.push({
-            batch: importStatus.length + 1,
-            startRow: offset + importStatus.length * batchSize,
-            processed: locationsToProcess.length,
-            inserted: result.inserted,
-            updated: result.updated,
-            skipped: result.skipped
-          });
+          const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
+          insertedCount += result.inserted;
+          updatedCount += result.updated;
+          skippedCount += result.skipped;
           
           // Clear the batch
           locationsToProcess.length = 0;
         }
       }
       
-      // Process any remaining locations
-      if (locationsToProcess.length > 0) {
-        console.log(`Processing final batch of ${locationsToProcess.length} records`);
-        const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
-        totalInsertedCount += result.inserted;
-        totalUpdatedCount += result.updated;
-        totalSkippedCount += result.skipped;
-        
-        importStatus.push({
-          batch: importStatus.length + 1,
-          startRow: offset + importStatus.length * batchSize,
-          processed: locationsToProcess.length,
-          inserted: result.inserted,
-          updated: result.updated,
-          skipped: result.skipped
-        });
-      }
-      
-      // Check if there are more lines to process beyond the current limit
-      const hasMoreData = maxIndex < lines.length;
-      
-      console.log(`Import complete. Filtered locations: ${filteredLocations}, Inserted: ${totalInsertedCount}, Updated: ${totalUpdatedCount}, Skipped: ${totalSkippedCount}`);
-      
-      // Generate continuation token if there's more data and items were actually found
-      const continuationToken = hasMoreData ? btoa(JSON.stringify({
-        nextOffset: maxIndex,
-        country,
-        minPopulation
-      })) : null;
-      
-      // Special handling for no results but still more data to process
-      let effectiveHasMoreData = hasMoreData;
-      
-      // If we didn't find any matching records but there's more data
-      if (filteredLocations === 0 && hasMoreData) {
-        if (debugMode) {
-          console.log(`No matching records found in this batch, but more data exists. Will offer continuation.`);
-        }
-        effectiveHasMoreData = true;
-      }
-      // Only say there's more data if we actually processed some locations and there are more lines
-      else if (hasMoreData && filteredLocations > 0) {
-        effectiveHasMoreData = true;
-      } else {
-        effectiveHasMoreData = false;
-      }
-      
-      // If we've processed the whole file and found nothing, return a clear message
-      if (filteredLocations === 0 && offset === 0 && maxIndex >= lines.length) {
-        // Especially if a country filter was applied
-        const countryMessage = country ? ` for ${country}` : '';
-        
-        return new Response(JSON.stringify({
-          success: false,
-          message: `No locations found${countryMessage} with population >= ${minPopulation}`,
-          count: 0,
-          updated: 0,
-          skipped: 0,
-          total: 0,
-          filteredLocations: 0,
-          hasMoreData: false,
-          importStatus
-        }), {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
-          }
-        });
-      }
+      console.log(`Import complete. Processed: ${processedCount}, Inserted: ${insertedCount}, Updated: ${updatedCount}, Skipped: ${skippedCount}`);
       
       return new Response(JSON.stringify({
         success: true,
         message: 'Successfully imported locations from file',
-        count: totalInsertedCount,
-        updated: totalUpdatedCount,
-        skipped: totalSkippedCount,
-        total: totalInsertedCount + totalUpdatedCount + totalSkippedCount,
-        filteredLocations,
-        hasMoreData: effectiveHasMoreData,
-        nextOffset: effectiveHasMoreData ? maxIndex : null,
-        continuationToken: effectiveHasMoreData ? continuationToken : null,
-        importStatus
+        count: insertedCount,
+        updated: updatedCount,
+        skipped: skippedCount,
+        total: processedCount
       }), {
         headers: {
           ...corsHeaders,
@@ -469,10 +305,6 @@ async function loadAdmin1CodeMapping(supabase) {
         
         if (codeKey && name) {
           admin1Map[codeKey] = name;
-          // Debug log for specific countries
-          if (codeKey.startsWith('IL.')) {
-            console.log(`Admin1 mapping for Israel: ${codeKey} -> ${name}`);
-          }
         }
       }
     }
@@ -522,10 +354,6 @@ async function loadAdmin2CodeMapping(supabase) {
         
         if (codeKey && name) {
           admin2Map[codeKey] = name;
-          // Debug log for specific countries
-          if (codeKey.startsWith('IL.')) {
-            console.log(`Admin2 mapping for Israel: ${codeKey} -> ${name}`);
-          }
         }
       }
     }
@@ -546,69 +374,60 @@ async function processLocationBatch(supabase, locations, debugMode = false) {
   let skippedCount = 0;
   
   try {
-    // Process in smaller batches for the database
-    const dbBatchSize = 100;
+    if (locations.length === 0) {
+      return { inserted: 0, updated: 0, skipped: 0 };
+    }
     
-    for (let i = 0; i < locations.length; i += dbBatchSize) {
-      const dbBatch = locations.slice(i, i + dbBatchSize);
-      console.log(`Processing database batch ${Math.floor(i / dbBatchSize) + 1} of ${Math.ceil(locations.length / dbBatchSize)}`);
+    if (debugMode) {
+      console.log(`Processing ${locations.length} locations`);
+      console.log('First location in batch:', locations[0]);
+    }
+    
+    // Use upsert to either insert or update based on geoname_id
+    const { data, error, count } = await supabase
+      .from('locations')
+      .upsert(locations, {
+        onConflict: 'geoname_id', // Only use geoname_id as the conflict detection
+        ignoreDuplicates: false, // Update the record if found
+        returning: 'minimal' // Don't return the data to save bandwidth
+      });
+    
+    if (error) {
+      console.error('Error upserting locations:', error);
       
-      try {
-        if (debugMode) {
-          console.log(`Sample record being inserted:`, dbBatch[0]);
-        }
-        
-        // Use upsert to either insert or update based on geoname_id
-        const { data, error, count } = await supabase
-          .from('locations')
-          .upsert(dbBatch, {
-            onConflict: 'geoname_id', // Only use geoname_id as the conflict detection
-            ignoreDuplicates: false, // Update the record if found
-            returning: 'representation' // Return the full records
-          });
-        
-        if (error) {
-          console.error('Error upserting locations:', error);
-          skippedCount += dbBatch.length;
-        } else {
-          if (debugMode && data) {
-            console.log(`Upsert returned ${data.length} records`);
-            if (data.length > 0) {
-              console.log(`First returned record:`, data[0]);
-            }
-          }
-          // Since we used 'representation', we know how many records were returned
-          // But we don't know how many were inserted vs updated without more logic
-          insertedCount += dbBatch.length;
-        }
-      } catch (batchError) {
-        console.error('Error in batch operation:', batchError);
-        
-        // If batch fails, try one by one
+      // If batch fails, try one by one
+      if (debugMode) {
         console.log('Attempting individual inserts as batch failed');
-        
-        for (const location of dbBatch) {
-          try {
-            // Try to insert or update each location
-            const { error } = await supabase
-              .from('locations')
-              .upsert([location], { 
-                onConflict: 'geoname_id',
-                ignoreDuplicates: false
-              });
-            
-            if (error) {
+      }
+      
+      for (const location of locations) {
+        try {
+          // Try to insert or update each location
+          const { error } = await supabase
+            .from('locations')
+            .upsert([location], { 
+              onConflict: 'geoname_id',
+              ignoreDuplicates: false
+            });
+          
+          if (error) {
+            if (debugMode) {
               console.error(`Error upserting location ${location.city}:`, error);
-              skippedCount++;
-            } else {
-              insertedCount++;
             }
-          } catch (singleError) {
-            console.error('Error in individual upsert:', singleError);
             skippedCount++;
+          } else {
+            insertedCount++;
           }
+        } catch (singleError) {
+          if (debugMode) {
+            console.error('Error in individual upsert:', singleError);
+          }
+          skippedCount++;
         }
       }
+    } else {
+      // Batch was successful
+      insertedCount = locations.length;
     }
     
     return {
