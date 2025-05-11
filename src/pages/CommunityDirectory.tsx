@@ -21,16 +21,15 @@ const CommunityDirectory = () => {
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
     search: searchQuery,
-    isApproved: true, // Explicitly request only approved profiles
+    isApproved: true,
     tagId: selectedTagId
   });
 
-  useEffect(() => {
-    if (error) {
-      console.error("Error loading community profiles:", error);
-      toast.error("Failed to load community members. Please try again.");
-    }
-  }, [error]);
+  // Display error message if profile loading fails
+  if (error) {
+    console.error("Error loading community profiles:", error);
+    toast.error("Failed to load community members. Please try again.");
+  }
 
   // Combine and deduplicate profiles
   const allProfiles = profiles || [];

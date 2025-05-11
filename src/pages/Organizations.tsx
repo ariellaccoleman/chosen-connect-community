@@ -11,12 +11,19 @@ import { Briefcase, Search } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
 import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import TagFilter from "@/components/filters/TagFilter";
+import { toast } from "@/components/ui/sonner";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
-  const { data: organizations = [], isLoading } = useOrganizations();
+  const { data: organizations = [], isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+
+  // Show error toast if organization loading fails
+  if (error) {
+    console.error("Error fetching organizations:", error);
+    toast.error("Failed to load organizations. Please try again.");
+  }
 
   const filteredOrganizations = organizations.filter((org) => {
     // Filter by search term

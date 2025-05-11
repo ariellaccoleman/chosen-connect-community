@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X } from "lucide-react";
+import { toast } from "@/components/ui/sonner";
 
 interface TagFilterProps {
   selectedTagId: string | null;
@@ -27,10 +28,16 @@ const TagFilter = ({
   entityType,
   className 
 }: TagFilterProps) => {
-  const { data: tags = [], isLoading } = useTags({ 
+  const { data: tags = [], isLoading, error } = useTags({ 
     targetType: entityType,
     enabled: true 
   });
+
+  // Show error toast only once if tag loading fails
+  if (error) {
+    console.error("Error loading tags:", error);
+    toast.error("Failed to load tags. Please try again.");
+  }
 
   if (isLoading) {
     return (
@@ -44,7 +51,7 @@ const TagFilter = ({
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="flex-1">
         <Select
-          value={selectedTagId || "all"} // Changed from empty string to "all"
+          value={selectedTagId || "all"} 
           onValueChange={(value) => onSelectTag(value === "all" ? null : value)}
         >
           <SelectTrigger className="w-full">
@@ -55,7 +62,7 @@ const TagFilter = ({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="all">All tags</SelectItem> {/* Changed from "" to "all" */}
+              <SelectItem value="all">All tags</SelectItem>
               {tags.length > 0 ? (
                 tags.map((tag) => (
                   <SelectItem key={tag.id} value={tag.id}>

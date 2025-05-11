@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
@@ -27,7 +26,13 @@ export const useTags = (options: {
   return useQuery({
     queryKey: ["tags", options],
     queryFn: () => fetchTags(options),
-    enabled: options.enabled !== false
+    enabled: options.enabled !== false,
+    retry: 1, // Limit retries for failed tag fetching to reduce error logs
+    meta: {
+      onError: (error: any) => {
+        console.error("Error in useTags query:", error);
+      }
+    }
   });
 };
 
