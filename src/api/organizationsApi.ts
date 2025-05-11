@@ -58,13 +58,13 @@ export const organizationsApi = {
       
       if (error) throw error;
       
-      let formattedOrg = data as OrganizationWithLocation;
+      let formattedOrg = null;
       
-      if (data && data.location) {
+      if (data) {
         formattedOrg = {
           ...data,
-          location: formatLocationWithDetails(data.location)
-        };
+          location: data.location ? formatLocationWithDetails(data.location) : undefined
+        } as OrganizationWithLocation;
       }
       
       return createSuccessResponse(formattedOrg);

@@ -1,11 +1,22 @@
 
-import { ProfileWithDetails } from "@/types/profile";
+import { Profile, ProfileWithDetails } from "@/types";
 import { formatLocationWithDetails } from "./locationFormatters";
 
-// Helper function to create a ProfileWithDetails from response data
+/**
+ * Creates a full name from first and last name
+ */
+export const formatFullName = (firstName: string | null | undefined, lastName: string | null | undefined): string => {
+  const first = firstName || '';
+  const last = lastName || '';
+  return [first, last].filter(Boolean).join(' ') || 'Anonymous User';
+};
+
+/**
+ * Formats profile data with additional computed fields
+ */
 export const formatProfileWithDetails = (profileData: any): ProfileWithDetails => {
   if (!profileData) {
-    // Return a minimal valid ProfileWithDetails when no data is provided
+    // Return a minimal valid profile if no data
     return {
       id: '',
       email: '',
@@ -17,15 +28,15 @@ export const formatProfileWithDetails = (profileData: any): ProfileWithDetails =
       linkedin_url: null,
       twitter_url: null,
       website_url: null,
-      role: 'member',
       location_id: null,
-      full_name: ''
+      full_name: 'Unknown User'
     };
   }
-  
-  const formattedProfile: ProfileWithDetails = {
-    id: profileData.id || '',
-    email: profileData.email || '',
+
+  // Extract base profile data
+  const profile: ProfileWithDetails = {
+    id: profileData.id,
+    email: profileData.email,
     first_name: profileData.first_name || '',
     last_name: profileData.last_name || '',
     avatar_url: profileData.avatar_url,
@@ -34,22 +45,22 @@ export const formatProfileWithDetails = (profileData: any): ProfileWithDetails =
     linkedin_url: profileData.linkedin_url,
     twitter_url: profileData.twitter_url,
     website_url: profileData.website_url,
-    role: (profileData.role as "admin" | "member") || 'member',
+    // Include role if it exists
+    ...(profileData.role && { role: profileData.role }),
     location_id: profileData.location_id,
     company: profileData.company,
     created_at: profileData.created_at,
     updated_at: profileData.updated_at,
     is_approved: profileData.is_approved,
     membership_tier: profileData.membership_tier,
-    full_name: [profileData.first_name, profileData.last_name]
-      .filter(Boolean)
-      .join(' ')
+    // Add computed full name
+    full_name: formatFullName(profileData.first_name, profileData.last_name)
   };
 
-  // Add location if it exists
+  // Add formatted location if it exists
   if (profileData.location) {
-    formattedProfile.location = formatLocationWithDetails(profileData.location);
+    profile.location = formatLocationWithDetails(profileData.location);
   }
-  
-  return formattedProfile;
+
+  return profile;
 };

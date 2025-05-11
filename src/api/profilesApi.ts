@@ -91,8 +91,9 @@ export const profilesApi = {
       const cleanedProfileData = { ...profileData };
       
       // Remove fields that are not part of the profiles table
-      delete cleanedProfileData.addOrganizationRelationship;
-      delete cleanedProfileData.navigateToManageOrgs;
+      // These are UI-only fields from the ProfileFormValues type
+      delete (cleanedProfileData as any).addOrganizationRelationship;
+      delete (cleanedProfileData as any).navigateToManageOrgs;
       delete cleanedProfileData.location; // This is handled separately
       
       const { data, error } = await client
