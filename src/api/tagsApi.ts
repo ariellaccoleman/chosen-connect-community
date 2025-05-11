@@ -1,4 +1,3 @@
-
 import { Tag, TagAssignment } from "@/utils/tagUtils";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -37,18 +36,13 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Fix entity type filtering - use separate or() conditions instead of raw SQL
+      // Fix entity type filtering - use proper filter syntax for Supabase
       if (options.targetType) {
-        // First, build the query without the filtering
-        const baseQuery = query;
-        
-        // Then use the filter function with multiple conditions
-        query = baseQuery.or([
-          // Condition 1: Tag is used with this entity type
-          `used_entity_types::jsonb ?? '${options.targetType}'`,
-          // Condition 2: Tag has empty used_entity_types array
-          `used_entity_types::jsonb = '[]'::jsonb`
-        ]);
+        // We need to use or() with a proper filter syntax that works with Supabase
+        query = query.or(
+          // To fix the TypeScript error, we need to pass a single string with comma-separated conditions
+          `used_entity_types::jsonb ?? '${options.targetType}',used_entity_types::jsonb = '[]'::jsonb`
+        );
       }
       
       const { data, error } = await query.order('name');

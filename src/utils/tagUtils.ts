@@ -61,15 +61,12 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering using Supabase query filter objects 
+    // Fix entity type filtering using proper Supabase syntax
     if (options.targetType) {
-      // Use filter objects with or() method which is more reliable
-      query = query.or([
-        // Condition 1: used_entity_types contains the targetType
-        `used_entity_types::jsonb ?? '${options.targetType}'`,
-        // Condition 2: used_entity_types is an empty array
-        `used_entity_types::jsonb = '[]'::jsonb`
-      ]);
+      // Use a single string for the or() method, with comma-separated conditions
+      query = query.or(
+        `used_entity_types::jsonb ?? '${options.targetType}',used_entity_types::jsonb = '[]'::jsonb`
+      );
     }
     
     const { data, error } = await query.order("name");
@@ -206,7 +203,8 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
     
     // Ensure proper typing for tag assignments
     const formattedAssignments = (data || []).map(assignment => {
-      const tagData = assignment.tag || {};
+      // Use type assertion to help TypeScript understand the structure
+      const tagData = assignment.tag || {} as Partial<Tag>;
       
       // Ensure used_entity_types is properly formatted as string[]
       const usedEntityTypes = Array.isArray(tagData.used_entity_types) 

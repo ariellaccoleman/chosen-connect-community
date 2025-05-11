@@ -63,7 +63,8 @@ export const useOrganizations = () => {
               // Transform the tag assignments to match the expected TagAssignment type
               const formattedAssignments = orgTagAssignments.map(ta => {
                 // Create a properly typed tag object with default values
-                const tagData = ta.tag as any || {}; 
+                // Use a type assertion to help TypeScript understand the structure
+                const tagData = (ta.tag || {}) as Partial<Tag>;
                 
                 // Ensure used_entity_types is always a string array
                 const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
@@ -84,7 +85,7 @@ export const useOrganizations = () => {
                     created_by: tagData.created_by || null,
                     created_at: tagData.created_at || '',
                     updated_at: tagData.updated_at || ''
-                  }
+                  } as Tag
                 } as TagAssignment;
               });
               
