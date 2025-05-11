@@ -170,6 +170,14 @@ const AppRoutes = () => {
         } 
       />
       <Route 
+        path="/directory/:id" 
+        element={
+          <ProtectedRoute>
+            <ProfileView />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
         path="/admin" 
         element={
           <AdminRoute>
