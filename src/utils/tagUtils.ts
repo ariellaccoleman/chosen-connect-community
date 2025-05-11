@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -62,11 +61,10 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering by using a corrected syntax
-    // Use a contains operator for jsonb array or check for empty array
+    // Fix entity type filtering with proper SQL syntax
     if (options.targetType) {
-      // Use proper PostgreSQL syntax for JSONB contains
-      query = query.or(`used_entity_types::jsonb ?| array['${options.targetType}', ''], used_entity_types::jsonb = '[]'::jsonb`);
+      // Create separate conditions for empty arrays or arrays containing the target type
+      query = query.or(`used_entity_types::jsonb ?| array['${options.targetType}'], used_entity_types::jsonb = '[]'::jsonb`);
     }
     
     const { data, error } = await query.order("name");
