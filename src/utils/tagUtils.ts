@@ -62,12 +62,14 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering - use the contains operator @> for jsonb arrays
+    // Fix entity type filtering - use proper PostgreSQL syntax for OR conditions
     if (options.targetType) {
-      // This handles both cases:
-      // 1. Tags that include the targetType in used_entity_types array
-      // 2. Tags that have empty used_entity_types array
-      query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]'::jsonb, used_entity_types::jsonb = '[]'::jsonb`);
+      // Use .or() with properly formatted conditions for JSON array containment
+      // Create two separate filter conditions that will be combined with OR
+      const hasEntityType = `used_entity_types::jsonb @> '["${options.targetType}"]'`;
+      const hasEmptyArray = `used_entity_types::jsonb = '[]'`;
+      
+      query = query.or(`${hasEntityType},${hasEmptyArray}`);
     }
     
     const { data, error } = await query.order("name");

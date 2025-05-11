@@ -1,3 +1,4 @@
+
 import { Tag, TagAssignment } from "@/utils/tagUtils";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -36,10 +37,14 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Fix entity type filtering
+      // Fix entity type filtering - use separate OR conditions
       if (options.targetType) {
-        // First, get tags that have the target entity type in their used_entity_types
-        query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]'::jsonb, used_entity_types::jsonb = '[]'::jsonb`);
+        // First OR condition: tags that have the target entity type in their used_entity_types
+        const jsonbQuery = `used_entity_types::jsonb @> '["${options.targetType}"]'`;
+        // Second OR condition: tags that have empty used_entity_types
+        const emptyArrayQuery = `used_entity_types::jsonb = '[]'`;
+        
+        query = query.or(`${jsonbQuery},${emptyArrayQuery}`);
       }
       
       const { data, error } = await query.order('name');
