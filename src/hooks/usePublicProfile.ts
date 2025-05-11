@@ -1,12 +1,34 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ProfileWithDetails, Location } from '@/types';
-import { formatLocationWithDetails } from '@/utils/adminFormatters';
+import { ProfileWithDetails } from '@/types';
 
-/**
- * Hook to fetch a public profile by ID
- */
+// Format profile with details (same as the helper in useProfileQueries.ts)
+const formatProfileData = (data: any): ProfileWithDetails | null => {
+  if (!data) return null;
+  
+  const profile = data as ProfileWithDetails;
+  
+  // Format full name
+  profile.full_name = [profile.first_name, profile.last_name]
+    .filter(Boolean)
+    .join(' ');
+  
+  // Format location if available
+  if (profile.location) {
+    profile.location.formatted_location = [
+      profile.location.city, 
+      profile.location.region, 
+      profile.location.country
+    ]
+      .filter(Boolean)
+      .join(', ');
+  }
+  
+  return profile;
+};
+
+// Hook to fetch a public profile by ID
 export const usePublicProfile = (profileId: string | undefined) => {
   return useQuery({
     queryKey: ['public-profile', profileId],
@@ -23,25 +45,11 @@ export const usePublicProfile = (profileId: string | undefined) => {
         .maybeSingle();
       
       if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
+        console.error('Error fetching public profile:', error);
+        throw error;
       }
       
-      if (!data) return null;
-      
-      // Format profile data
-      const profileWithDetails: ProfileWithDetails = {
-        ...data,
-        full_name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
-        location: undefined
-      };
-      
-      // Format location if available
-      if (data.location_id && data.location) {
-        profileWithDetails.location = formatLocationWithDetails(data.location as unknown as Location);
-      }
-      
-      return profileWithDetails;
+      return formatProfileData(data);
     },
     enabled: !!profileId,
   });
