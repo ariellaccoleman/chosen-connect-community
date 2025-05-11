@@ -5,7 +5,6 @@ import AdminRoute from "./AdminRoute";
 import PublicRoute from "./PublicRoute";
 import routes, { RouteConfig } from "@/config/routes";
 import Layout from "@/components/layout/Layout";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useLayout } from "@/contexts/LayoutContext";
 import { useEffect } from "react";
 
@@ -30,43 +29,23 @@ const AppRoutes = () => {
       }
     }, [route.title]);
 
-    // Determine the layout to use
-    const RouteLayout = route.layout === 'none' 
-      ? ({ children }: { children: React.ReactNode }) => <>{children}</>
-      : DashboardLayout;
+    // For routes using the 'none' layout, render the component directly without any layout
+    if (route.layout === 'none') {
+      return <Component />;
+    }
     
+    // For routes using DashboardLayout (which already includes BaseLayout), 
+    // we don't need to wrap them in another Layout component
     // Apply the appropriate authentication wrapper
     switch (route.auth) {
       case "protected":
-        return (
-          <ProtectedRoute>
-            <RouteLayout>
-              <Component />
-            </RouteLayout>
-          </ProtectedRoute>
-        );
+        return <ProtectedRoute>{<Component />}</ProtectedRoute>;
       case "admin":
-        return (
-          <AdminRoute>
-            <RouteLayout>
-              <Component />
-            </RouteLayout>
-          </AdminRoute>
-        );
+        return <AdminRoute>{<Component />}</AdminRoute>;
       case "public":
-        return (
-          <PublicRoute>
-            <RouteLayout>
-              <Component />
-            </RouteLayout>
-          </PublicRoute>
-        );
+        return <PublicRoute>{<Component />}</PublicRoute>;
       default:
-        return (
-          <RouteLayout>
-            <Component />
-          </RouteLayout>
-        );
+        return <Layout includeNavbar={true}><Component /></Layout>;
     }
   };
 

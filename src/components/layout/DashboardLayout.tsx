@@ -25,7 +25,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   return (
-    <BaseLayout>
+    <BaseLayout includeNavbar={true}>
       {children}
     </BaseLayout>
   );
