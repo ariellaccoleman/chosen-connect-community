@@ -1,5 +1,5 @@
 
-import { Tag, TagAssignment } from "@/utils/tagUtils";
+import { Tag, TagAssignment } from "@/utils/tags";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
 

@@ -1,7 +1,6 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TagAssignment } from '@/utils/tagUtils';
+import { TagAssignment } from '@/utils/tags';
 
 // Hook to fetch tags assigned to a public profile
 export const usePublicProfileTags = (profileId: string | undefined) => {

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { TagAssignment, getTagEntityTypes } from "@/utils/tagUtils";
+import { TagAssignment, getTagEntityTypes } from "@/utils/tags";
 import TagBadge from "./TagBadge";
 
 interface TagListProps {

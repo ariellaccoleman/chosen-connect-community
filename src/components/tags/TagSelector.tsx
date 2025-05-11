@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,8 +14,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { TAG_TYPES, fetchTags, createTag, getTagEntityTypes } from "@/utils/tagUtils";
-import type { Tag } from "@/utils/tagUtils";
+import { TAG_TYPES, fetchTags, createTag, getTagEntityTypes } from "@/utils/tags";
+import type { Tag } from "@/utils/tags";
 
 interface TagSelectorProps {
   targetType: "person" | "organization";

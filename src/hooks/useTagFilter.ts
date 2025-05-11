@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useTags } from "./useTags";
-import { Tag, TagAssignment } from "@/utils/tagUtils";
+import { Tag, TagAssignment } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
 
 interface UseTagFilterOptions {

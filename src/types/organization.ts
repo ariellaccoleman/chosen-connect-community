@@ -1,6 +1,6 @@
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
-import { TagAssignment } from "@/utils/tagUtils";
+import { TagAssignment } from "@/utils/tags";
 
 export type ConnectionType = "current" | "former" | "connected_insider";
 

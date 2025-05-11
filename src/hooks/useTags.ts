@@ -13,7 +13,7 @@ import {
   removeTagAssignment, 
   getTagEntityTypes,
   TAG_TYPES 
-} from "@/utils/tagUtils";
+} from "@/utils/tags";
 
 // Hook for fetching all tags (with optional filters)
 export const useTags = (options: {
