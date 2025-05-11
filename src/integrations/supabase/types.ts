@@ -9,6 +9,24 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      cache: {
+        Row: {
+          data: Json
+          key: string
+          updated_at: string
+        }
+        Insert: {
+          data: Json
+          key: string
+          updated_at?: string
+        }
+        Update: {
+          data?: Json
+          key?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_channels: {
         Row: {
           channel_type: Database["public"]["Enums"]["chat_channel_type"] | null
@@ -723,7 +741,27 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_cached_tags: {
+        Args: { cache_key: string }
+        Returns: Json
+      }
+      query_tags: {
+        Args: { query_text: string }
+        Returns: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          id: string
+          is_public: boolean | null
+          name: string
+          type: string | null
+          updated_at: string | null
+        }[]
+      }
+      update_tag_cache: {
+        Args: { cache_key: string; cache_data: Json }
+        Returns: boolean
+      }
     }
     Enums: {
       chat_channel_type: "group" | "dm"
