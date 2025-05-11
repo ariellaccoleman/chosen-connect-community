@@ -1,3 +1,4 @@
+
 import { Tag } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
@@ -40,7 +41,7 @@ export const getFilterTags = async (options: {
         ORDER BY t.name
       `;
       
-      const { data, error } = await client.rpc<Tag[], 'query_tags'>('query_tags', { query_text: joinQuery });
+      const { data, error } = await client.rpc('query_tags', { query_text: joinQuery }) as { data: Tag[] | null; error: any };
       
       if (error) throw error;
       
@@ -94,9 +95,9 @@ export const getSelectionTags = async (options: {
       const cacheKey = `selection_tags_${options.targetType}`;
       
       // Check if we have a cached result using a custom query
-      const { data: cachedResults, error: cacheError } = await client.rpc<Tag[], 'get_cached_tags'>('get_cached_tags', { 
+      const { data: cachedResults, error: cacheError } = await client.rpc('get_cached_tags', { 
         cache_key: cacheKey 
-      });
+      }) as { data: Tag[] | null; error: any };
       
       if (!cacheError && cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
         return createSuccessResponse(cachedResults);
@@ -130,7 +131,7 @@ export const getSelectionTags = async (options: {
         ORDER BY t.name
       `;
 
-      const { data, error } = await client.rpc<Tag[], 'query_tags'>('query_tags', { query_text: query });
+      const { data, error } = await client.rpc('query_tags', { query_text: query }) as { data: Tag[] | null; error: any };
       
       if (error) throw error;
       
@@ -138,10 +139,10 @@ export const getSelectionTags = async (options: {
       if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
         // Use a function to update the cache since we don't have the cache table in TypeScript types
-        await client.rpc<boolean, 'update_tag_cache'>('update_tag_cache', { 
+        await client.rpc('update_tag_cache', { 
           cache_key: cacheKey, 
           cache_data: data || [] 
-        });
+        }) as { data: boolean | null; error: any };
       }
       
       return createSuccessResponse(data || []);
