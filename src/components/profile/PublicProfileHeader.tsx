@@ -24,7 +24,11 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
         <div className="flex-shrink-0">
           <Avatar className="h-24 w-24">
             {profile.avatar_url ? (
-              <AvatarImage src={profile.avatar_url} alt={profile.full_name || "User"} />
+              <AvatarImage 
+                src={profile.avatar_url} 
+                alt={profile.full_name || "User"} 
+                className="object-cover" 
+              />
             ) : (
               <AvatarFallback className="bg-chosen-blue text-white text-3xl">
                 {getInitials()}
