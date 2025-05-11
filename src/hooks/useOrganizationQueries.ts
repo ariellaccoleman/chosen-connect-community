@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from '@/types';
 import { formatLocationWithDetails } from '@/utils/formatters';
+import { Tag, TagAssignment } from '@/utils/tagUtils';
 
 /**
  * Hook to fetch all organizations
@@ -56,7 +57,25 @@ export const useOrganizations = () => {
           } else if (tagAssignments) {
             // Map tag assignments to their respective organizations
             orgsWithLocations.forEach(org => {
-              org.tags = tagAssignments.filter(ta => ta.target_id === org.id);
+              // Transform the tag assignments to match the expected TagAssignment type
+              const formattedAssignments = tagAssignments
+                .filter(ta => ta.target_id === org.id)
+                .map(ta => {
+                  // Ensure used_entity_types is a string array
+                  const usedEntityTypes = Array.isArray(ta.tag.used_entity_types) 
+                    ? ta.tag.used_entity_types 
+                    : (ta.tag.used_entity_types ? [String(ta.tag.used_entity_types)] : []);
+                  
+                  return {
+                    ...ta,
+                    tag: {
+                      ...ta.tag,
+                      used_entity_types: usedEntityTypes
+                    }
+                  } as TagAssignment;
+                });
+              
+              org.tags = formattedAssignments;
             });
           }
         } catch (error) {
