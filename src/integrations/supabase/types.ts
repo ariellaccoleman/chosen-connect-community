@@ -351,6 +351,7 @@ export type Database = {
           country: string | null
           created_at: string | null
           full_name: string | null
+          full_region_path: string | null
           geoname_id: number | null
           id: string
           latitude: number | null
@@ -367,6 +368,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           full_name?: string | null
+          full_region_path?: string | null
           geoname_id?: number | null
           id?: string
           latitude?: number | null
@@ -383,6 +385,7 @@ export type Database = {
           country?: string | null
           created_at?: string | null
           full_name?: string | null
+          full_region_path?: string | null
           geoname_id?: number | null
           id?: string
           latitude?: number | null

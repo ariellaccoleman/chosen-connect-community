@@ -32,7 +32,8 @@ const CountryCodes = [
   { code: 'CN', name: 'China' },
   { code: 'IN', name: 'India' },
   { code: 'BR', name: 'Brazil' },
-  { code: 'AT', name: 'Austria' }, // Added this for easier testing
+  { code: 'IL', name: 'Israel' }, // Added Israel for testing
+  { code: 'AT', name: 'Austria' },
 ];
 
 const LocationImporter = () => {
@@ -49,10 +50,9 @@ const LocationImporter = () => {
   
   // File import specific settings
   const [fileMinPopulation, setFileMinPopulation] = useState(15000);
-  const [fileCountry, setFileCountry] = useState<string | null>(null);
+  const [fileCountry, setFileCountry] = useState<string | null>('IL'); // Default to Israel for testing
   const [fileLimit, setFileLimit] = useState(5000);
   const [fileOffset, setFileOffset] = useState(0);
-  const [forceUpdateNames, setForceUpdateNames] = useState(false);
   
   const { importLocations, importLocationsFromFile, continueImport, resetImportProgress, isImporting, importProgress } = useGeoNames();
   const { user } = useAuth();
@@ -96,7 +96,6 @@ const LocationImporter = () => {
           country: fileCountry,
           offset: fileOffset,
           limit: fileLimit,
-          forceUpdateNames,
           debugMode
         });
       }
@@ -231,6 +230,7 @@ const LocationImporter = () => {
               <File className="h-4 w-4" />
               <AlertDescription>
                 Import directly from the cities1000.txt file for faster processing and better reliability.
+                {fileCountry === 'IL' && " Currently set to import cities from Israel."}
               </AlertDescription>
             </Alert>
             
@@ -289,16 +289,6 @@ const LocationImporter = () => {
                     max={20000}
                   />
                 </div>
-              </div>
-              
-              <div className="flex items-center space-x-2 pt-2">
-                <Switch 
-                  id="force-update-names" 
-                  checked={forceUpdateNames}
-                  onCheckedChange={setForceUpdateNames}
-                  disabled={isImporting}
-                />
-                <Label htmlFor="force-update-names">Force update admin names</Label>
               </div>
               
               <div className="flex items-center space-x-2">

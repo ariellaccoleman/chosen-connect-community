@@ -21,8 +21,6 @@ interface ImportFileParams {
   country?: string | null;
   offset?: number;
   limit?: number;
-  useTextFile?: boolean;
-  forceUpdateNames?: boolean;
   debugMode?: boolean;
 }
 
@@ -162,15 +160,13 @@ export const useGeoNames = () => {
     }
   };
   
-  // Function to import from local cities1000.zip file
+  // Function to import from local cities1000.zip file with simplified approach
   const importLocationsFromFile = async ({
     minPopulation = 15000,
     batchSize = 1000,
     country = null,
     offset = 0,
     limit = 5000,
-    useTextFile = false,
-    forceUpdateNames = false,
     debugMode = false
   }: ImportFileParams): Promise<ImportResult> => {
     setIsImporting(true);
@@ -182,8 +178,6 @@ export const useGeoNames = () => {
         country,
         offset,
         limit,
-        useTextFile,
-        forceUpdateNames,
         debugMode
       });
       
@@ -194,8 +188,6 @@ export const useGeoNames = () => {
           country,
           offset,
           limit,
-          useTextFile,
-          forceUpdateNames,
           debugMode
         }
       });

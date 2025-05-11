@@ -60,7 +60,6 @@ Deno.serve(async (req) => {
       country = null,
       offset = 0,
       limit = 5000,
-      forceUpdateNames = false,
       debugMode = false
     } = requestData;
     
@@ -70,7 +69,6 @@ Deno.serve(async (req) => {
       country,
       offset,
       limit,
-      forceUpdateNames,
       debugMode
     });
     
@@ -196,8 +194,18 @@ Deno.serve(async (req) => {
         const admin1Name = admin1CodeMap[admin1Key] || admin1Code;
         const admin2Name = admin2CodeMap[admin2Key] || null;
         
+        // Create a full region path that includes admin1 and admin2 if available
+        let fullRegionPath = admin1Name;
+        if (admin2Name) {
+          fullRegionPath = `${admin2Name}, ${fullRegionPath}`;
+        }
+        
+        // Create a full location name
+        const fullName = `${name}, ${fullRegionPath ? fullRegionPath + ', ' : ''}${countryName}`;
+        
         if (debugMode || i % 100 === 0) {
           console.log(`Processing ${name}, ${admin1Name}, ${countryName} (admin1Key: ${admin1Key}, admin2Key: ${admin2Key})`);
+          console.log(`Full name: ${fullName}`);
         }
         
         // Add the location to the batch
@@ -211,12 +219,14 @@ Deno.serve(async (req) => {
           admin_code1: admin1Code,
           admin_code2: admin2Code,
           admin_name2: admin2Name,
-          timezone: timezone
+          timezone: timezone,
+          full_name: fullName,
+          full_region_path: fullRegionPath
         });
         
         // Process in database batches when we reach batchSize
         if (locationsToProcess.length >= batchSize) {
-          const result = await processLocationBatch(supabase, locationsToProcess, forceUpdateNames, debugMode);
+          const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
           totalInsertedCount += result.inserted;
           totalUpdatedCount += result.updated;
           totalSkippedCount += result.skipped;
@@ -237,7 +247,7 @@ Deno.serve(async (req) => {
       
       // Process any remaining locations
       if (locationsToProcess.length > 0) {
-        const result = await processLocationBatch(supabase, locationsToProcess, forceUpdateNames, debugMode);
+        const result = await processLocationBatch(supabase, locationsToProcess, debugMode);
         totalInsertedCount += result.inserted;
         totalUpdatedCount += result.updated;
         totalSkippedCount += result.skipped;
@@ -252,27 +262,11 @@ Deno.serve(async (req) => {
         });
       }
       
-      // If requested, update existing locations with proper admin names
-      if (forceUpdateNames) {
-        const backfillResult = await backfillAdminNames(supabase, admin1CodeMap, admin2CodeMap, country, debugMode);
-        totalUpdatedCount += backfillResult.updated;
-        
-        importStatus.push({
-          batch: 'backfill',
-          startRow: 0,
-          processed: backfillResult.processed,
-          inserted: 0,
-          updated: backfillResult.updated,
-          skipped: backfillResult.skipped
-        });
-      }
-      
       // Generate continuation token if there's more data
       const continuationToken = hasMoreData ? btoa(JSON.stringify({
         nextOffset: maxIndex,
         country,
-        minPopulation,
-        forceUpdateNames
+        minPopulation
       })) : null;
       
       return new Response(JSON.stringify({
@@ -406,9 +400,9 @@ async function loadAdmin1CodeMapping(supabase) {
         
         if (codeKey && name) {
           admin1Map[codeKey] = name;
-          // Debug log for specific country
-          if (codeKey.startsWith('AT.')) {
-            console.log(`Admin1 mapping: ${codeKey} -> ${name}`);
+          // Debug log for specific countries
+          if (codeKey.startsWith('IL.')) {
+            console.log(`Admin1 mapping for Israel: ${codeKey} -> ${name}`);
           }
         }
       }
@@ -459,6 +453,10 @@ async function loadAdmin2CodeMapping(supabase) {
         
         if (codeKey && name) {
           admin2Map[codeKey] = name;
+          // Debug log for specific countries
+          if (codeKey.startsWith('IL.')) {
+            console.log(`Admin2 mapping for Israel: ${codeKey} -> ${name}`);
+          }
         }
       }
     }
@@ -472,8 +470,8 @@ async function loadAdmin2CodeMapping(supabase) {
   }
 }
 
-// Helper function to process a batch of locations
-async function processLocationBatch(supabase, locations, forceUpdateNames = false, debugMode = false) {
+// Helper function to process a batch of locations - simplified version
+async function processLocationBatch(supabase, locations, debugMode = false) {
   let insertedCount = 0;
   let updatedCount = 0;
   let skippedCount = 0;
@@ -486,149 +484,49 @@ async function processLocationBatch(supabase, locations, forceUpdateNames = fals
       const dbBatch = locations.slice(i, i + dbBatchSize);
       console.log(`Processing database batch ${Math.floor(i / dbBatchSize) + 1} of ${Math.ceil(locations.length / dbBatchSize)}`);
       
-      // First, try to find existing records by geoname_id
-      if (forceUpdateNames) {
-        for (const location of dbBatch) {
-          if (!location.geoname_id) continue;
-          
-          // Check if this location exists with geoname_id but different region name
-          const { data: existingData, error: findError } = await supabase
-            .from('locations')
-            .select('*')
-            .eq('geoname_id', location.geoname_id)
-            .limit(1);
-            
-          if (findError) {
-            console.error(`Error finding location with geoname_id ${location.geoname_id}:`, findError);
-            skippedCount++;
-            continue;
-          }
-          
-          if (existingData && existingData.length > 0) {
-            const existing = existingData[0];
-            
-            // If region or admin_name2 is different, update it
-            if (existing.region !== location.region || 
-                (location.admin_name2 && existing.admin_name2 !== location.admin_name2)) {
-              
-              if (debugMode) {
-                console.log(`Updating location ${existing.id}:`, {
-                  oldRegion: existing.region,
-                  newRegion: location.region,
-                  oldAdmin2: existing.admin_name2,
-                  newAdmin2: location.admin_name2
-                });
-              }
-              
-              const { error: updateError } = await supabase
-                .from('locations')
-                .update({
-                  region: location.region,
-                  admin_name2: location.admin_name2
-                })
-                .eq('id', existing.id);
-              
-              if (updateError) {
-                console.error(`Error updating location ${existing.id}:`, updateError);
-                skippedCount++;
-              } else {
-                updatedCount++;
-              }
-            } else {
-              // Already has correct names
-              skippedCount++;
-            }
-            
-            // Remove from batch as we've handled it separately
-            dbBatch.splice(dbBatch.indexOf(location), 1);
-            i--;
-          }
+      try {
+        // Use upsert to either insert or update based on geoname_id
+        const { data, error } = await supabase
+          .from('locations')
+          .upsert(dbBatch, {
+            onConflict: 'geoname_id', // Only use geoname_id as the conflict detection
+            ignoreDuplicates: false, // Update the record if found
+            returning: 'minimal' // Don't need to return data
+          });
+        
+        if (error) {
+          console.error('Error upserting locations:', error);
+          skippedCount += dbBatch.length;
+        } else {
+          // For simplicity, assume all were processed successfully
+          // We don't know exactly how many were inserted vs. updated since we used 'minimal'
+          insertedCount += dbBatch.length;
         }
-      }
-      
-      // Now proceed with the regular upsert for remaining locations
-      if (dbBatch.length > 0) {
-        try {
-          // Try inserting by geoname_id first for locations with geoname_id
-          const batchWithGeonameIds = dbBatch.filter(location => location.geoname_id !== null);
-          if (batchWithGeonameIds.length > 0) {
-            const { data: insertResultGeoname, error: insertErrorGeoname } = await supabase
+      } catch (batchError) {
+        console.error('Error in batch operation:', batchError);
+        
+        // If batch fails, try one by one
+        console.log('Attempting individual inserts as batch failed');
+        
+        for (const location of dbBatch) {
+          try {
+            // Try to insert or update each location
+            const { error } = await supabase
               .from('locations')
-              .upsert(batchWithGeonameIds, { 
+              .upsert([location], { 
                 onConflict: 'geoname_id',
-                ignoreDuplicates: false // Update existing records
-              })
-              .select();
+                ignoreDuplicates: false
+              });
             
-            if (insertErrorGeoname) {
-              console.error('Error upserting locations with geoname_id:', insertErrorGeoname);
-              skippedCount += batchWithGeonameIds.length;
-            } else if (insertResultGeoname) {
-              insertedCount += insertResultGeoname.length;
-              updatedCount += (batchWithGeonameIds.length - insertResultGeoname.length);
-            }
-          }
-          
-          // Fallback strategy: For entries without geoname_id, use city/region/country
-          const batchWithoutGeonameIds = dbBatch.filter(location => location.geoname_id === null);
-          if (batchWithoutGeonameIds.length > 0) {
-            const { data: insertResultFallback, error: insertErrorFallback } = await supabase
-              .from('locations')
-              .upsert(batchWithoutGeonameIds, { 
-                onConflict: 'city,region,country', 
-                ignoreDuplicates: false // Update existing records
-              })
-              .select();
-            
-            if (insertErrorFallback) {
-              console.error('Error upserting locations without geoname_id:', insertErrorFallback);
-              skippedCount += batchWithoutGeonameIds.length;
-            } else if (insertResultFallback) {
-              insertedCount += insertResultFallback.length;
-              updatedCount += (batchWithoutGeonameIds.length - insertResultFallback.length);
-            }
-          }
-        } catch (batchError) {
-          console.error('Error in batch operation:', batchError);
-          
-          // If batch fails, try inserting one by one
-          console.log('Attempting individual inserts as batch failed');
-          
-          for (const location of dbBatch) {
-            try {
-              if (location.geoname_id) {
-                const { error: singleError } = await supabase
-                  .from('locations')
-                  .upsert([location], { 
-                    onConflict: 'geoname_id',
-                    ignoreDuplicates: false
-                  });
-                
-                if (singleError) {
-                  console.error(`Error inserting with geoname_id ${location.geoname_id}:`, singleError);
-                  skippedCount++;
-                } else {
-                  insertedCount++;
-                }
-              } else {
-                const { error: singleError } = await supabase
-                  .from('locations')
-                  .upsert([location], { 
-                    onConflict: 'city,region,country',
-                    ignoreDuplicates: false
-                  });
-                
-                if (singleError) {
-                  console.error(`Error inserting ${location.city}, ${location.region}, ${location.country}:`, singleError);
-                  skippedCount++;
-                } else {
-                  insertedCount++;
-                }
-              }
-            } catch (individualError) {
-              console.error('Error in individual insert:', individualError);
+            if (error) {
+              console.error(`Error upserting location ${location.city}:`, error);
               skippedCount++;
+            } else {
+              insertedCount++;
             }
+          } catch (singleError) {
+            console.error('Error in individual upsert:', singleError);
+            skippedCount++;
           }
         }
       }
@@ -647,108 +545,6 @@ async function processLocationBatch(supabase, locations, forceUpdateNames = fals
       inserted: insertedCount,
       updated: updatedCount,
       skipped: skippedCount
-    };
-  }
-}
-
-// Function to backfill admin names for existing locations
-async function backfillAdminNames(supabase, admin1CodeMap, admin2CodeMap, country = null, debugMode = false) {
-  let updatedCount = 0;
-  let skippedCount = 0;
-  let processedCount = 0;
-  
-  try {
-    console.log('Starting backfill of admin names for existing locations');
-    
-    // Query existing locations that might need updating
-    let query = supabase
-      .from('locations')
-      .select('*')
-      .not('admin_code1', 'is', null); // Only get locations with admin codes
-    
-    if (country) {
-      query = query.eq('country', country);
-    }
-    
-    // Get the locations in batches to avoid timeouts
-    const { data: locations, error: queryError } = await query.limit(1000);
-    
-    if (queryError) {
-      console.error('Error querying locations for backfill:', queryError);
-      return { updated: 0, skipped: 0, processed: 0 };
-    }
-    
-    console.log(`Found ${locations.length} locations to potentially update`);
-    
-    // Process the locations
-    for (const location of locations) {
-      processedCount++;
-      
-      // Skip if we don't have the necessary codes
-      if (!location.admin_code1 || !location.country) {
-        skippedCount++;
-        continue;
-      }
-      
-      // Create lookup keys
-      const admin1Key = `${location.country}.${location.admin_code1}`;
-      const admin1Name = admin1CodeMap[admin1Key];
-      
-      let admin2Name = null;
-      if (location.admin_code2) {
-        const admin2Key = `${location.country}.${location.admin_code1}.${location.admin_code2}`;
-        admin2Name = admin2CodeMap[admin2Key];
-      }
-      
-      // Check if we need to update
-      const needsUpdate = (admin1Name && location.region !== admin1Name) || 
-                          (admin2Name && location.admin_name2 !== admin2Name);
-      
-      if (needsUpdate) {
-        if (debugMode) {
-          console.log(`Updating ${location.city}, ${location.region} to ${admin1Name}`, {
-            id: location.id,
-            oldRegion: location.region,
-            newRegion: admin1Name,
-            oldAdmin2: location.admin_name2,
-            newAdmin2: admin2Name
-          });
-        }
-        
-        const updates: any = {};
-        if (admin1Name) updates.region = admin1Name;
-        if (admin2Name) updates.admin_name2 = admin2Name;
-        
-        const { error: updateError } = await supabase
-          .from('locations')
-          .update(updates)
-          .eq('id', location.id);
-        
-        if (updateError) {
-          console.error(`Error updating location ${location.id}:`, updateError);
-          skippedCount++;
-        } else {
-          updatedCount++;
-        }
-      } else {
-        skippedCount++;
-      }
-    }
-    
-    console.log(`Backfill complete: ${updatedCount} updated, ${skippedCount} skipped`);
-    
-    return {
-      updated: updatedCount,
-      skipped: skippedCount,
-      processed: processedCount
-    };
-    
-  } catch (error) {
-    console.error('Error in backfillAdminNames:', error);
-    return {
-      updated: updatedCount,
-      skipped: skippedCount,
-      processed: processedCount
     };
   }
 }
