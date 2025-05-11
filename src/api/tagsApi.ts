@@ -174,17 +174,19 @@ export const tagsApi = {
         .single();
       
       // If the tag doesn't have this entity type yet, add it
-      if (tagData && 
-        (!tagData.used_entity_types || 
-          !tagData.used_entity_types.includes(entityType))) {
+      if (tagData) {
+        // Cast used_entity_types to string[] to work with it safely
+        const usedEntityTypes = tagData.used_entity_types as string[] || [];
         
-        const updatedEntityTypes = tagData.used_entity_types || [];
-        updatedEntityTypes.push(entityType);
-        
-        await client
-          .from('tags')
-          .update({ used_entity_types: updatedEntityTypes })
-          .eq('id', tagId);
+        if (!usedEntityTypes.includes(entityType)) {
+          // Create a new array by copying the old one and adding the new entity type
+          const updatedEntityTypes = [...usedEntityTypes, entityType];
+          
+          await client
+            .from('tags')
+            .update({ used_entity_types: updatedEntityTypes })
+            .eq('id', tagId);
+        }
       }
       
       return createSuccessResponse(data);
