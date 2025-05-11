@@ -1,3 +1,4 @@
+
 import { Tag } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
@@ -5,6 +6,13 @@ import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 /**
  * API functions for retrieving tags with various filters
  */
+
+// Type definition for RPC functions to fix TypeScript errors
+type RpcFunctions = {
+  query_tags: (args: { query_text: string }) => Promise<Tag[]>;
+  get_cached_tags: (args: { cache_key: string }) => Promise<Tag[]>;
+  update_tag_cache: (args: { cache_key: string, cache_data: Tag[] }) => Promise<boolean>;
+}
 
 /**
  * Get tags for filtering purposes - returns only tags that have been assigned to entities
@@ -33,7 +41,7 @@ export const getFilterTags = async (options: {
         ORDER BY t.name
       `;
       
-      const { data, error } = await client.rpc('query_tags', { query_text: joinQuery });
+      const { data, error } = await client.rpc<Tag[]>('query_tags', { query_text: joinQuery });
       
       if (error) throw error;
       
@@ -87,11 +95,11 @@ export const getSelectionTags = async (options: {
       const cacheKey = `selection_tags_${options.targetType}`;
       
       // Check if we have a cached result using a custom query
-      const { data: cachedResults } = await client.rpc('get_cached_tags', { 
+      const { data: cachedResults, error: cacheError } = await client.rpc<Tag[]>('get_cached_tags', { 
         cache_key: cacheKey 
       });
       
-      if (cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
+      if (!cacheError && cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
         return createSuccessResponse(cachedResults);
       }
     }
@@ -123,7 +131,7 @@ export const getSelectionTags = async (options: {
         ORDER BY t.name
       `;
 
-      const { data, error } = await client.rpc('query_tags', { query_text: query });
+      const { data, error } = await client.rpc<Tag[]>('query_tags', { query_text: query });
       
       if (error) throw error;
       
@@ -131,7 +139,7 @@ export const getSelectionTags = async (options: {
       if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
         // Use a function to update the cache since we don't have the cache table in TypeScript types
-        await client.rpc('update_tag_cache', { 
+        await client.rpc<boolean>('update_tag_cache', { 
           cache_key: cacheKey, 
           cache_data: data || [] 
         });
