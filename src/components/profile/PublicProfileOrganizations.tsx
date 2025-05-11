@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { Briefcase, Building2 } from "lucide-react";
+import { Briefcase, Building2, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -73,7 +73,7 @@ const PublicProfileOrganizations = ({ relationships, isLoading }: PublicProfileO
         {alliedOrgs.length > 0 && (
           <OrganizationGroup 
             title="Connected Insider" 
-            icon={<Link className="h-5 w-5" />}
+            icon={<ExternalLink className="h-5 w-5" />}
             relationships={alliedOrgs} 
           />
         )}
