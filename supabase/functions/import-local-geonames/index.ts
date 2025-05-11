@@ -81,6 +81,12 @@ Deno.serve(async (req) => {
       // First load country info mapping
       const countryInfoMap = await loadCountryInfoMapping(supabase);
       
+      // Load admin1 and admin2 code mappings
+      const admin1CodeMap = await loadAdmin1CodeMapping(supabase);
+      const admin2CodeMap = await loadAdmin2CodeMapping(supabase);
+      
+      console.log(`Loaded admin mappings: ${Object.keys(admin1CodeMap).length} admin1 codes, ${Object.keys(admin2CodeMap).length} admin2 codes`);
+      
       // Get the cities text file directly
       console.log('Fetching cities1000.txt directly from storage');
       
@@ -161,19 +167,27 @@ Deno.serve(async (req) => {
         // Get country name from our mapping
         const countryName = countryInfoMap[countryCode] || countryCode;
         
-        // For region, we'll just use the admin1 code for now
-        const region = admin1Code || '';
+        // Create lookup keys for admin1 and admin2 names
+        const admin1Key = `${countryCode}.${admin1Code}`;
+        const admin2Key = `${countryCode}.${admin1Code}.${admin2Code}`;
+        
+        // Get admin names from our mappings
+        const admin1Name = admin1CodeMap[admin1Key] || admin1Code;
+        const admin2Name = admin2CodeMap[admin2Key] || null;
+        
+        console.log(`Processing ${name}, ${admin1Name}, ${countryName} (admin1Key: ${admin1Key}, admin2Key: ${admin2Key})`);
         
         // Add the location to the batch
         locationsToProcess.push({
           city: name,
-          region: region,
+          region: admin1Name, // Use admin1Name as region instead of admin1Code
           country: countryName,
           geoname_id: geonameId,
           latitude: latitude,
           longitude: longitude,
           admin_code1: admin1Code,
           admin_code2: admin2Code,
+          admin_name2: admin2Name,
           timezone: timezone
         });
         
@@ -317,6 +331,104 @@ async function loadCountryInfoMapping(supabase) {
   }
 }
 
+// Function to load admin1 code mapping from admin1CodeASCII.txt
+async function loadAdmin1CodeMapping(supabase) {
+  try {
+    console.log('Loading admin1 code mapping from admin1CodeASCII.txt');
+    
+    const { data: textData, error: textError } = await supabase
+      .storage
+      .from('location-data')
+      .download('admin1CodesASCII.txt');
+    
+    if (textError) {
+      console.error('Error fetching admin1CodesASCII.txt from storage:', textError);
+      return {}; // Return empty mapping on error
+    }
+    
+    // Convert text file to string
+    const admin1CodeText = new TextDecoder().decode(await textData.arrayBuffer());
+    console.log(`Read ${admin1CodeText.length} characters from admin1CodesASCII.txt`);
+    
+    // Parse the admin1 code info
+    // Format: code, name, name_ascii, geonameid
+    const admin1Map = {};
+    const lines = admin1CodeText.split('\n');
+    
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      
+      const fields = line.split('\t');
+      if (fields.length >= 2) {
+        // Admin code key is the first field (e.g., "AT.02")
+        // Name is the second field
+        const codeKey = fields[0].trim();
+        const name = fields[1].trim();
+        
+        if (codeKey && name) {
+          admin1Map[codeKey] = name;
+        }
+      }
+    }
+    
+    console.log(`Loaded ${Object.keys(admin1Map).length} admin1 code mappings`);
+    return admin1Map;
+    
+  } catch (error) {
+    console.error('Error loading admin1 code mapping:', error);
+    return {}; // Return empty mapping on error
+  }
+}
+
+// Function to load admin2 code mapping from admin2Codes.txt
+async function loadAdmin2CodeMapping(supabase) {
+  try {
+    console.log('Loading admin2 code mapping from admin2Codes.txt');
+    
+    const { data: textData, error: textError } = await supabase
+      .storage
+      .from('location-data')
+      .download('admin2Codes.txt');
+    
+    if (textError) {
+      console.error('Error fetching admin2Codes.txt from storage:', textError);
+      return {}; // Return empty mapping on error
+    }
+    
+    // Convert text file to string
+    const admin2CodeText = new TextDecoder().decode(await textData.arrayBuffer());
+    console.log(`Read ${admin2CodeText.length} characters from admin2Codes.txt`);
+    
+    // Parse the admin2 code info
+    // Format: code, name, name_ascii, geonameid
+    const admin2Map = {};
+    const lines = admin2CodeText.split('\n');
+    
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      
+      const fields = line.split('\t');
+      if (fields.length >= 2) {
+        // Admin code key is the first field (e.g., "AT.02.207")
+        // Name is the second field
+        const codeKey = fields[0].trim();
+        const name = fields[1].trim();
+        
+        if (codeKey && name) {
+          admin2Map[codeKey] = name;
+        }
+      }
+    }
+    
+    console.log(`Loaded ${Object.keys(admin2Map).length} admin2 code mappings`);
+    return admin2Map;
+    
+  } catch (error) {
+    console.error('Error loading admin2 code mapping:', error);
+    return {}; // Return empty mapping on error
+  }
+}
+
 // Helper function to process a batch of locations
 async function processLocationBatch(supabase, locations) {
   let insertedCount = 0;
@@ -388,3 +500,4 @@ async function processLocationBatch(supabase, locations) {
     };
   }
 }
+
