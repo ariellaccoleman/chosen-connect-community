@@ -1,8 +1,9 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from '@/types';
 import { formatLocationWithDetails } from '@/utils/formatters';
-import { Tag, TagAssignment } from '@/utils/tagUtils';
+import { Tag, TagAssignment, getTagEntityTypes } from '@/utils/tagUtils';
 
 /**
  * Hook to fetch all organizations
@@ -64,16 +65,10 @@ export const useOrganizations = () => {
                 // Create a properly typed tag object with default values
                 const tagData = (ta.tag || {}) as Partial<Tag>;
                 
-                // Ensure used_entity_types is always a string array
-                const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
-                  ? tagData.used_entity_types 
-                  : (tagData.used_entity_types ? [String(tagData.used_entity_types)] : []);
-                
                 return {
                   ...ta,
                   tag: {
                     ...tagData,
-                    used_entity_types: usedEntityTypes,
                     // Ensure all required Tag properties have default values
                     id: tagData.id || '',
                     name: tagData.name || '',
