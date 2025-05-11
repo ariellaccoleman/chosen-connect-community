@@ -155,7 +155,7 @@ export const deleteTag = async (tagId: string) => {
 /**
  * Fetch tag assignments for a specific entity
  */
-export const fetchEntityTags = async (entityId: string, entityType: string) => {
+export const fetchEntityTags = async (entityId: string, entityType: "person" | "organization") => {
   try {
     const { data, error } = await supabase
       .from("tag_assignments")
@@ -181,7 +181,7 @@ export const fetchEntityTags = async (entityId: string, entityType: string) => {
 /**
  * Assign a tag to an entity
  */
-export const assignTag = async (tagId: string, entityId: string, entityType: string) => {
+export const assignTag = async (tagId: string, entityId: string, entityType: "person" | "organization") => {
   try {
     // Check if assignment already exists
     const { data: existingAssignment, error: checkError } = await supabase

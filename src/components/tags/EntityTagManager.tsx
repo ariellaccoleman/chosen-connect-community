@@ -31,7 +31,7 @@ const EntityTagManager = ({
     setIsLoading(true);
     const assignments = await fetchEntityTags(
       entityId, 
-      entityType === "person" ? "profile" : "organization"
+      entityType // Use the entityType passed from props directly
     );
     setTagAssignments(assignments);
     setIsLoading(false);
@@ -53,7 +53,7 @@ const EntityTagManager = ({
     const result = await assignTag(
       tag.id, 
       entityId, 
-      entityType === "person" ? "profile" : "organization"
+      entityType // Use the entityType passed from props directly
     );
     
     if (result) {

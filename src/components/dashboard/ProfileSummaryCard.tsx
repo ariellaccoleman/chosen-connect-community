@@ -18,7 +18,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
   const navigate = useNavigate();
   const { data: tagAssignments = [], isLoading: isLoadingTags } = useEntityTags(
     profile.id,
-    "profile",
+    "person", // Changed from "profile" to "person" to match EntityTagManager
     { enabled: !!profile.id }
   );
   

@@ -33,7 +33,7 @@ export const useTags = (options: {
 // Hook for fetching tags assigned to a specific entity
 export const useEntityTags = (
   entityId?: string,
-  entityType?: "profile" | "organization",
+  entityType?: "person" | "organization",
   options: { enabled?: boolean } = {}
 ) => {
   return useQuery({
