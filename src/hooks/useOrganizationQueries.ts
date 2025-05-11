@@ -2,7 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from '@/types';
-import { formatLocationWithDetails } from '@/utils/adminFormatters';
+import { formatLocationWithDetails } from '@/utils/formatters';
 
 /**
  * Hook to fetch all organizations
@@ -36,16 +36,18 @@ export const useOrganizations = () => {
           is_verified: org.is_verified || false,
           created_at: org.created_at || '',
           updated_at: org.updated_at || '',
+          location: undefined, // Default to undefined
+          tags: [] // Default to empty array
         };
         
-        // Add location if available
+        // Add formatted location if available
         if (org.location) {
           result.location = formatLocationWithDetails(org.location);
         }
         
         // Transform tag_assignments to the expected format
-        if (org.tags) {
-          result.tags = Array.isArray(org.tags) ? org.tags : [];
+        if (org.tags && Array.isArray(org.tags)) {
+          result.tags = org.tags;
         }
         
         return result;
@@ -80,18 +82,19 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
       }
       
       return data.map(relationship => {
-        // Create a properly typed organization with all required fields
+        // Create a properly typed organization relationship
         const typedRelationship: ProfileOrganizationRelationshipWithDetails = {
           ...relationship,
           organization: {
             ...relationship.organization,
             is_verified: relationship.organization?.is_verified || false,
             created_at: relationship.organization?.created_at || '',
-            updated_at: relationship.organization?.updated_at || ''
+            updated_at: relationship.organization?.updated_at || '',
+            location: undefined // Default to undefined
           }
         };
         
-        // Add location if available
+        // Add properly formatted location if available
         if (relationship.organization && relationship.organization.location) {
           typedRelationship.organization.location = formatLocationWithDetails(relationship.organization.location);
         }
