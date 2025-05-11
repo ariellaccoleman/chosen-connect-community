@@ -128,7 +128,7 @@ export const useTagAssignmentMutations = () => {
     }: {
       tagId: string;
       entityId: string;
-      entityType: "profile" | "organization";
+      entityType: "person" | "organization"; // Updated from "profile" | "organization" to "person" | "organization"
     }) => {
       return assignTag(tagId, entityId, entityType);
     },
