@@ -22,16 +22,6 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
         
         <ProfileBio profile={profile} />
         
-        {profile.tags && profile.tags.length > 0 && (
-          <div className="mt-3">
-            <TagList 
-              tagAssignments={profile.tags} 
-              currentEntityType="person"
-              hideEntityType={true}
-            />
-          </div>
-        )}
-        
         <ProfileSocialLinks profile={profile} />
       </div>
     </Link>

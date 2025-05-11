@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles } from "@/hooks/useProfiles";
@@ -7,12 +7,10 @@ import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
 import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
-import TagFilter from "@/components/filters/TagFilter";
 import { Card, CardContent } from "@/components/ui/card";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { user } = useAuth();
   
   // Use the current user's profile separately to ensure we always display it
@@ -21,8 +19,7 @@ const CommunityDirectory = () => {
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
     search: searchQuery,
-    isApproved: true,
-    tagId: selectedTagId
+    isApproved: true
   });
 
   // Display error message if profile loading fails
@@ -42,14 +39,8 @@ const CommunityDirectory = () => {
         </h1>
 
         <Card className="mb-6">
-          <CardContent className="pt-6 space-y-4">
+          <CardContent className="pt-6">
             <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-            
-            <TagFilter 
-              selectedTagId={selectedTagId} 
-              onSelectTag={setSelectedTagId}
-              entityType="person"
-            />
           </CardContent>
         </Card>
 

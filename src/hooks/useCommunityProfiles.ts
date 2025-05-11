@@ -9,7 +9,6 @@ export const useCommunityProfiles = (filters: {
   limit?: number;
   excludeId?: string;
   isApproved?: boolean;
-  tagId?: string | null;
 }) => {
   return useQuery({
     queryKey: ["community-profiles", filters],
