@@ -24,6 +24,14 @@ export type TagAssignment = {
   tag?: Tag;
 };
 
+export type TagEntityType = {
+  id: string;
+  tag_id: string;
+  entity_type: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export const TAG_TYPES = {
   PERSON: "person",
   ORGANIZATION: "organization",
@@ -40,9 +48,8 @@ export const fetchTags = async (options: {
   targetType?: "person" | "organization"; // Parameter for filtering by entity type
 } = {}) => {
   try {
-    let query = supabase
-      .from("tags")
-      .select("*");
+    // Start with base query
+    let query = supabase.from("tags").select("*");
     
     // Apply filters if provided
     if (options.type) {
@@ -61,16 +68,67 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix entity type filtering - using separate OR conditions
+    // Use the new tag_entity_types table for entity type filtering
     if (options.targetType) {
-      // Use proper filter syntax with a single string condition
-      query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb = '[]'`);
+      // First get all tag IDs that have this entity type
+      const { data: tagIds, error: tagIdsError } = await supabase
+        .from('tag_entity_types')
+        .select('tag_id')
+        .eq('entity_type', options.targetType);
+        
+      if (tagIdsError) {
+        console.error("Error fetching tag IDs for entity type:", tagIdsError);
+        throw tagIdsError;
+      }
+      
+      // If we have tags with this entity type
+      if (tagIds && tagIds.length > 0) {
+        const tagIdsArray = tagIds.map(item => item.tag_id);
+        
+        // Get tags that either have this entity type or don't have any entity types
+        // First, get all tag IDs that have any entity type
+        const { data: allTagIdsWithEntityTypes, error: allTagIdsError } = await supabase
+          .from('tag_entity_types')
+          .select('tag_id')
+          .distinct();
+          
+        if (allTagIdsError) {
+          console.error("Error fetching all tag IDs with entity types:", allTagIdsError);
+          throw allTagIdsError;
+        }
+        
+        if (allTagIdsWithEntityTypes && allTagIdsWithEntityTypes.length > 0) {
+          const allTagIds = allTagIdsWithEntityTypes.map(item => item.tag_id);
+          
+          // Get tags that either match our entity type or don't have any entity type
+          query = query.or(`id.in.(${tagIdsArray.join(',')}),not.id.in.(${allTagIds.join(',')})`);
+        } else {
+          // If no tags have entity types, just use the ones that match our entity type
+          query = query.in('id', tagIdsArray);
+        }
+      } else {
+        // If no tags have this entity type, get tags without any entity type
+        const { data: allTagIdsWithEntityTypes, error: allTagIdsError } = await supabase
+          .from('tag_entity_types')
+          .select('tag_id')
+          .distinct();
+          
+        if (allTagIdsError) {
+          console.error("Error fetching all tag IDs with entity types:", allTagIdsError);
+          throw allTagIdsError;
+        }
+        
+        if (allTagIdsWithEntityTypes && allTagIdsWithEntityTypes.length > 0) {
+          const allTagIds = allTagIdsWithEntityTypes.map(item => item.tag_id);
+          // Get tags that don't have any entity type
+          query = query.not('id', 'in', `(${allTagIds.join(',')})`);
+        }
+      }
     }
     
     const { data, error } = await query.order("name");
     
     if (error) {
-      // Log detailed error information for debugging
       console.error("Error in fetchTags query:", error);
       handleError(error, "Error fetching tags");
       return [];
@@ -204,7 +262,17 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
       // Use type assertion to help TypeScript understand the structure
       const tagData = assignment.tag || {} as Partial<Tag>;
       
-      // Ensure used_entity_types is properly formatted as string[]
+      // Get entity types from tag_entity_types table
+      const loadEntityTypes = async (tagId: string) => {
+        const { data: entityTypes } = await supabase
+          .from('tag_entity_types')
+          .select('entity_type')
+          .eq('tag_id', tagId);
+          
+        return entityTypes ? entityTypes.map(entry => entry.entity_type) : [];
+      };
+      
+      // For backward compatibility, still use the used_entity_types from the tag
       const usedEntityTypes = Array.isArray(tagData.used_entity_types) 
         ? tagData.used_entity_types 
         : (tagData.used_entity_types ? [String(tagData.used_entity_types)] : []);
@@ -227,55 +295,113 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
 };
 
 /**
- * Update the used_entity_types array for a tag
+ * Get entity types for a specific tag from the tag_entity_types table
  */
-const updateTagUsedEntityTypes = async (tagId: string, entityType: string) => {
+const getTagEntityTypes = async (tagId: string): Promise<string[]> => {
   try {
-    // First, get the current tag data
-    const { data: tagData, error: fetchError } = await supabase
-      .from("tags")
-      .select("used_entity_types")
-      .eq("id", tagId)
-      .single();
+    const { data, error } = await supabase
+      .from('tag_entity_types')
+      .select('entity_type')
+      .eq('tag_id', tagId);
+      
+    if (error) {
+      handleError(error, "Error fetching tag entity types");
+      return [];
+    }
     
-    if (fetchError) {
-      handleError(fetchError, "Error fetching tag data");
+    return data.map(item => item.entity_type);
+  } catch (error) {
+    handleError(error, "Error in getTagEntityTypes");
+    return [];
+  }
+};
+
+/**
+ * Update the tag_entity_types table for a tag
+ */
+const updateTagEntityType = async (tagId: string, entityType: string) => {
+  try {
+    // Check if this entity type already exists for this tag
+    const { data: existingType, error: checkError } = await supabase
+      .from('tag_entity_types')
+      .select('id')
+      .eq('tag_id', tagId)
+      .eq('entity_type', entityType)
+      .maybeSingle();
+      
+    if (checkError) {
+      handleError(checkError, "Error checking tag entity type");
       return false;
     }
     
-    // Check if the entity type is already in the used_entity_types array
-    let usedEntityTypes = tagData.used_entity_types || [];
-    if (!Array.isArray(usedEntityTypes)) {
-      usedEntityTypes = [];
-    }
-    
-    if (!usedEntityTypes.includes(entityType)) {
-      // Add the entity type to the array and update the tag
-      usedEntityTypes.push(entityType);
-      
-      const { error: updateError } = await supabase
-        .from("tags")
-        .update({ used_entity_types: usedEntityTypes })
-        .eq("id", tagId);
-      
-      if (updateError) {
-        handleError(updateError, "Error updating tag used_entity_types");
+    // If entity type doesn't exist for this tag, add it
+    if (!existingType) {
+      const { error: insertError } = await supabase
+        .from('tag_entity_types')
+        .insert({
+          tag_id: tagId,
+          entity_type: entityType
+        });
+        
+      if (insertError) {
+        handleError(insertError, "Error adding tag entity type");
         return false;
       }
       
-      logger.info(`Updated used_entity_types for tag ${tagId}: added ${entityType}`);
+      logger.info(`Added entity type ${entityType} to tag ${tagId}`);
     }
     
     return true;
   } catch (error) {
-    handleError(error, "Error in updateTagUsedEntityTypes");
+    handleError(error, "Error in updateTagEntityType");
+    return false;
+  }
+};
+
+/**
+ * Remove a tag entity type if no more assignments with that type exist
+ */
+const removeTagEntityTypeIfUnused = async (tagId: string, entityType: string) => {
+  try {
+    // Check if there are any assignments with this tag and entity type
+    const { data: assignments, error: checkError } = await supabase
+      .from('tag_assignments')
+      .select('id')
+      .eq('tag_id', tagId)
+      .eq('target_type', entityType)
+      .limit(1);
+      
+    if (checkError) {
+      handleError(checkError, "Error checking tag assignments");
+      return false;
+    }
+    
+    // If no assignments found, remove the entity type for this tag
+    if (!assignments || assignments.length === 0) {
+      const { error: removeError } = await supabase
+        .from('tag_entity_types')
+        .delete()
+        .eq('tag_id', tagId)
+        .eq('entity_type', entityType);
+        
+      if (removeError) {
+        handleError(removeError, "Error removing tag entity type");
+        return false;
+      }
+      
+      logger.info(`Removed entity type ${entityType} from tag ${tagId}`);
+    }
+    
+    return true;
+  } catch (error) {
+    handleError(error, "Error in removeTagEntityTypeIfUnused");
     return false;
   }
 };
 
 /**
  * Assign a tag to an entity
- * Modified to handle RLS properly and update used_entity_types
+ * Modified to handle RLS properly and update tag_entity_types
  */
 export const assignTag = async (tagId: string, entityId: string, entityType: "person" | "organization") => {
   try {
@@ -293,9 +419,6 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
       handleError(new Error("Unauthorized operation"), "You can only assign tags to your own profile");
       return null;
     }
-    
-    // For organization entities, you might want to check if user is an admin of the org
-    // This would need a more complex check with the organizations tables
     
     // Check if assignment already exists
     const { data: existingAssignment, error: checkError } = await supabase
@@ -333,7 +456,10 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
       return null;
     }
     
-    // Update the tag's used_entity_types array to include this entity type
+    // Update the tag_entity_types table
+    await updateTagEntityType(tagId, entityType);
+    
+    // For backward compatibility, also update the used_entity_types array
     await updateTagUsedEntityTypes(tagId, entityType);
     
     logger.info(`Tag assigned: ${tagId} to ${entityType} ${entityId}`);
@@ -385,6 +511,38 @@ export const removeTagAssignment = async (assignmentId: string) => {
     if (error) {
       handleError(error, "Error removing tag assignment");
       return false;
+    }
+    
+    // Check if we should also remove this entity type from the tag
+    await removeTagEntityTypeIfUnused(assignment.tag_id, assignment.target_type);
+    
+    // For backward compatibility, also update the used_entity_types array
+    const { data: tagData } = await supabase
+      .from("tags")
+      .select("used_entity_types")
+      .eq("id", assignment.tag_id)
+      .single();
+      
+    if (tagData && tagData.used_entity_types) {
+      const usedEntityTypes = tagData.used_entity_types as string[];
+      
+      // Check if there are other assignments of this type for this tag
+      const { data: otherAssignments, error: checkError } = await supabase
+        .from("tag_assignments")
+        .select("id")
+        .eq("tag_id", assignment.tag_id)
+        .eq("target_type", assignment.target_type)
+        .neq("id", assignmentId)
+        .limit(1);
+        
+      if (!checkError && (!otherAssignments || otherAssignments.length === 0)) {
+        const updatedEntityTypes = usedEntityTypes.filter(t => t !== assignment.target_type);
+        
+        await supabase
+          .from("tags")
+          .update({ used_entity_types: updatedEntityTypes })
+          .eq("id", assignment.tag_id);
+      }
     }
     
     logger.info(`Tag assignment removed: ${assignmentId}`);

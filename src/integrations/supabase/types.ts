@@ -645,6 +645,38 @@ export type Database = {
           },
         ]
       }
+      tag_entity_types: {
+        Row: {
+          created_at: string
+          entity_type: string
+          id: string
+          tag_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          entity_type: string
+          id?: string
+          tag_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          entity_type?: string
+          id?: string
+          tag_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_entity_types_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tags: {
         Row: {
           created_at: string | null
