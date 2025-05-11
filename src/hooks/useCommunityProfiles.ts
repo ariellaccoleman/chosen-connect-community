@@ -1,26 +1,28 @@
+import { useQuery } from '@tanstack/react-query';
+import { profilesApi } from '@/api/profilesApi';
+import { ProfileWithDetails } from '@/types';
 
-import { useQuery } from "@tanstack/react-query";
-import { profilesApi } from "@/api";
-import { ProfileWithDetails } from "@/types";
-import { showErrorToast } from "@/api/core/errorHandler";
-
-export const useCommunityProfiles = (filters: {
+interface CommunityProfilesParams {
   search?: string;
   limit?: number;
   excludeId?: string;
   isApproved?: boolean;
-}) => {
+  tagId?: string | null;
+}
+
+export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
+  const queryKey = ['profiles', 'community', params];
+  
   return useQuery({
-    queryKey: ["community-profiles", filters],
-    queryFn: async (): Promise<ProfileWithDetails[]> => {
-      const response = await profilesApi.getCommunityProfiles(filters);
+    queryKey,
+    queryFn: async () => {
+      const response = await profilesApi.getCommunityProfiles(params);
       
       if (response.error) {
-        showErrorToast(response.error);
-        return [];
+        throw response.error;
       }
       
-      return response.data || [];
-    },
+      return response.data;
+    }
   });
 };

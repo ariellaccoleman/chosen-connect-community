@@ -8,10 +8,20 @@ import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { useTagFilter } from "@/hooks/useTagFilter";
+import TagFilter from "@/components/filters/TagFilter";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
+  
+  // Use tag filtering
+  const { 
+    selectedTagId, 
+    setSelectedTagId, 
+    tags, 
+    isLoading: isTagsLoading 
+  } = useTagFilter({ entityType: "person" });
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useProfiles(user?.id || "");
@@ -19,7 +29,8 @@ const CommunityDirectory = () => {
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
     search: searchQuery,
-    isApproved: true
+    isApproved: true,
+    tagId: selectedTagId
   });
 
   // Display error message if profile loading fails
@@ -40,7 +51,19 @@ const CommunityDirectory = () => {
 
         <Card className="mb-6">
           <CardContent className="pt-6">
-            <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+              </div>
+              <div className="md:w-64">
+                <TagFilter
+                  selectedTagId={selectedTagId}
+                  onSelectTag={setSelectedTagId}
+                  tags={tags}
+                  isLoading={isTagsLoading}
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
 
