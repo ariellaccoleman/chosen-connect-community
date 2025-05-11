@@ -1,21 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-
-// Define the tag assignment type
-interface TagAssignment {
-  id: string;
-  tag_id: string;
-  target_id: string;
-  target_type: string;
-  created_at: string;
-  tag: {
-    id: string;
-    name: string;
-    description: string | null;
-    type: string | null;
-  };
-}
+import { TagAssignment } from '@/utils/tagUtils';
 
 // Hook to fetch tags assigned to a public profile
 export const usePublicProfileTags = (profileId: string | undefined) => {
@@ -38,7 +24,12 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
         throw error;
       }
       
-      return data as TagAssignment[];
+      // Ensure the response matches the TagAssignment type from tagUtils
+      return (data as TagAssignment[]).map(assignment => ({
+        ...assignment,
+        // Make sure updated_at is present (required by TagAssignment type)
+        updated_at: assignment.updated_at || assignment.created_at
+      }));
     },
     enabled: !!profileId,
   });
