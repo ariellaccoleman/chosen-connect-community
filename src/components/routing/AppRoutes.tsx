@@ -5,6 +5,7 @@ import AdminRoute from "./AdminRoute";
 import PublicRoute from "./PublicRoute";
 import routes, { RouteConfig } from "@/config/routes";
 import Layout from "@/components/layout/Layout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useLayout } from "@/contexts/LayoutContext";
 import { useEffect } from "react";
 
@@ -34,16 +35,24 @@ const AppRoutes = () => {
       return <Component />;
     }
     
-    // For routes using DashboardLayout (which already includes BaseLayout), 
-    // we don't need to wrap them in another Layout component
+    // For all other routes, apply the appropriate authentication wrapper
+    // AND wrap with the proper layout component
+    const WrappedComponent = () => {
+      return (
+        <DashboardLayout>
+          <Component />
+        </DashboardLayout>
+      );
+    };
+    
     // Apply the appropriate authentication wrapper
     switch (route.auth) {
       case "protected":
-        return <ProtectedRoute>{<Component />}</ProtectedRoute>;
+        return <ProtectedRoute><WrappedComponent /></ProtectedRoute>;
       case "admin":
-        return <AdminRoute>{<Component />}</AdminRoute>;
+        return <AdminRoute><WrappedComponent /></AdminRoute>;
       case "public":
-        return <PublicRoute>{<Component />}</PublicRoute>;
+        return <PublicRoute><WrappedComponent /></PublicRoute>;
       default:
         return <Layout includeNavbar={true}><Component /></Layout>;
     }

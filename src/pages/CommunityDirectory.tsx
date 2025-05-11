@@ -1,6 +1,5 @@
 
 import { useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
@@ -43,33 +42,31 @@ const CommunityDirectory = () => {
   const allProfiles = profiles || [];
 
   return (
-    <DashboardLayout>
-      <div className="container max-w-6xl px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Community Directory
-        </h1>
+    <div className="container max-w-6xl px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        Community Directory
+      </h1>
 
-        <Card className="mb-6">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-              </div>
-              <div className="md:w-64">
-                <TagFilter
-                  selectedTagId={selectedTagId}
-                  onSelectTag={setSelectedTagId}
-                  tags={tags}
-                  isLoading={isTagsLoading}
-                />
-              </div>
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </div>
-          </CardContent>
-        </Card>
+            <div className="md:w-64">
+              <TagFilter
+                selectedTagId={selectedTagId}
+                onSelectTag={setSelectedTagId}
+                tags={tags}
+                isLoading={isTagsLoading}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <ProfileGrid profiles={allProfiles} isLoading={isLoading} searchQuery={searchQuery} />
-      </div>
-    </DashboardLayout>
+      <ProfileGrid profiles={allProfiles} isLoading={isLoading} searchQuery={searchQuery} />
+    </div>
   );
 };
 

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useProfiles";
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import ProfileSummaryCard from "@/components/dashboard/ProfileSummaryCard";
 import OrganizationSection from "@/components/dashboard/OrganizationSection";
@@ -33,48 +32,42 @@ const Dashboard = () => {
 
   if (isLoadingProfile) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <p>Loading...</p>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-full">
+        <p>Loading...</p>
+      </div>
     );
   }
 
   if (!profile) {
     return (
-      <DashboardLayout>
-        <div className="flex flex-col items-center justify-center h-full">
-          <p className="mb-4">Your profile is not complete. Please set up your profile to continue.</p>
-          <Button onClick={() => navigate("/profile")} className="bg-chosen-blue">
-            Set Up Profile
-          </Button>
-        </div>
-      </DashboardLayout>
+      <div className="flex flex-col items-center justify-center h-full">
+        <p className="mb-4">Your profile is not complete. Please set up your profile to continue.</p>
+        <Button onClick={() => navigate("/profile")} className="bg-chosen-blue">
+          Set Up Profile
+        </Button>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 px-4 max-w-7xl">
-        <h1 className="text-3xl font-bold mb-8 font-heading">Your Dashboard</h1>
+    <div className="container mx-auto py-6 px-4 max-w-7xl">
+      <h1 className="text-3xl font-bold mb-8 font-heading">Your Dashboard</h1>
+      
+      <div className="grid gap-6 md:grid-cols-12">
+        {/* Profile Summary Card */}
+        <div className="md:col-span-4">
+          <ProfileSummaryCard profile={profile} />
+        </div>
         
-        <div className="grid gap-6 md:grid-cols-12">
-          {/* Profile Summary Card */}
-          <div className="md:col-span-4">
-            <ProfileSummaryCard profile={profile} />
-          </div>
-          
-          {/* Organizations Section */}
-          <div className="md:col-span-8 space-y-6">
-            <OrganizationSection 
-              relationships={formattedRelationships}
-              isLoading={isLoadingRelationships}
-            />
-          </div>
+        {/* Organizations Section */}
+        <div className="md:col-span-8 space-y-6">
+          <OrganizationSection 
+            relationships={formattedRelationships}
+            isLoading={isLoadingRelationships}
+          />
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 

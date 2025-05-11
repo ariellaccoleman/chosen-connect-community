@@ -2,7 +2,6 @@
 import React, { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 import { useTags, useTagMutations } from "@/hooks/useTags";
@@ -44,20 +43,18 @@ const AdminTags = () => {
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6">
-        <AdminTagsHeader onOpenCreateForm={handleOpenCreateForm} />
-        
-        <TagForm 
-          isOpen={isCreateFormOpen}
-          onClose={handleCloseCreateForm}
-          onSubmit={handleCreateTag}
-          isSubmitting={isCreating}
-        />
+    <div className="container mx-auto py-6">
+      <AdminTagsHeader onOpenCreateForm={handleOpenCreateForm} />
+      
+      <TagForm 
+        isOpen={isCreateFormOpen}
+        onClose={handleCloseCreateForm}
+        onSubmit={handleCreateTag}
+        isSubmitting={isCreating}
+      />
 
-        <TagsTable tags={tags || []} isLoading={isLoading} />
-      </div>
-    </DashboardLayout>
+      <TagsTable tags={tags || []} isLoading={isLoading} />
+    </div>
   );
 };
 

@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile, useUpdateProfile } from "@/hooks/useProfiles";
 import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
 import { formatProfileUrls } from "@/utils/formatters/urlFormatters";
@@ -83,30 +82,26 @@ const ProfileEdit = () => {
 
   if (loading || isLoadingProfile) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-full">
-          <p>Loading...</p>
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-full">
+        <p>Loading...</p>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 px-4 max-w-3xl">
-        <h1 className="text-3xl font-bold mb-6 font-heading">Edit Your Profile</h1>
-        
-        <ProfileForm 
-          profile={profile}
-          isSubmitting={updateProfile.isPending}
-          onSubmit={handleSubmit}
-          onCancel={() => navigate("/dashboard")}
-          onAddOrganization={handleAddOrganization}
-          onNavigateToManageOrgs={handleNavigateToManageOrgs}
-          isAdmin={isAdmin}
-        />
-      </div>
-    </DashboardLayout>
+    <div className="container mx-auto py-6 px-4 max-w-3xl">
+      <h1 className="text-3xl font-bold mb-6 font-heading">Edit Your Profile</h1>
+      
+      <ProfileForm 
+        profile={profile}
+        isSubmitting={updateProfile.isPending}
+        onSubmit={handleSubmit}
+        onCancel={() => navigate("/dashboard")}
+        onAddOrganization={handleAddOrganization}
+        onNavigateToManageOrgs={handleNavigateToManageOrgs}
+        isAdmin={isAdmin}
+      />
+    </div>
   );
 };
 
