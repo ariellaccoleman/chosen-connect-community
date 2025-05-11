@@ -12,7 +12,9 @@ import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
-import OrganizationTags from "@/components/organizations/OrganizationTags";
+import EntityTagManager from "@/components/tags/EntityTagManager";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import OrganizationMembers from "@/components/organizations/OrganizationMembers";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const OrganizationDetail = () => {
@@ -109,30 +111,48 @@ const OrganizationDetail = () => {
         {/* Admin alert below the header */}
         {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-          <TabsList>
-            <TabsTrigger value="details">Details</TabsTrigger>
-            <TabsTrigger value="admins">Admins</TabsTrigger>
-            <TabsTrigger value="tags">Tags</TabsTrigger>
-          </TabsList>
-          
-          <TabsContent value="details">
-            <OrganizationInfo organization={organization} />
-          </TabsContent>
-          
-          <TabsContent value="admins">
-            {id && <OrganizationAdmins organizationId={id} />}
-          </TabsContent>
-          
-          <TabsContent value="tags">
-            {id && (
-              <OrganizationTags 
-                organizationId={id} 
-                isAdmin={isOrgAdmin || isAdmin}
-              />
+        <div className="space-y-6">
+          {/* Organization Info Card with Tags */}
+          <Card>
+            <CardContent className="pt-6">
+              <OrganizationInfo organization={organization} />
+              
+              {/* Tags Section */}
+              <div className="mt-6 border-t pt-6">
+                <h3 className="text-lg font-medium mb-2">Tags</h3>
+                <div className="mt-2">
+                  {id && (
+                    <EntityTagManager 
+                      entityId={id} 
+                      entityType="organization" 
+                      isAdmin={isOrgAdmin || isAdmin}
+                    />
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Tabs for Members and Admin (if admin) */}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="members">Members</TabsTrigger>
+              {(isOrgAdmin || isAdmin) && (
+                <TabsTrigger value="admins">Admins</TabsTrigger>
+              )}
+            </TabsList>
+            
+            <TabsContent value="members">
+              {id && <OrganizationMembers organizationId={id} />}
+            </TabsContent>
+            
+            {(isOrgAdmin || isAdmin) && (
+              <TabsContent value="admins">
+                {id && <OrganizationAdmins organizationId={id} />}
+              </TabsContent>
             )}
-          </TabsContent>
-        </Tabs>
+          </Tabs>
+        </div>
       </div>
     </DashboardLayout>
   );

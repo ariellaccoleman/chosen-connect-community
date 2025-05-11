@@ -10,7 +10,7 @@ interface OrganizationInfoProps {
 
 const OrganizationInfo = ({ organization }: OrganizationInfoProps) => {
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-4 sm:p-6 mb-6">
+    <div>
       <OrganizationHeader organization={organization} />
       <OrganizationDescription description={organization.description} />
       <OrganizationWebsite websiteUrl={organization.website_url} />

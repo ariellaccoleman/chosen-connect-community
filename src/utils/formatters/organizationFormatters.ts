@@ -1,51 +1,41 @@
 
-import { OrganizationWithLocation, OrganizationAdminWithDetails } from "@/types/organization";
+import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { formatLocationWithDetails } from "./locationFormatters";
-import { formatProfileWithDetails } from "./profileFormatters";
 
-// Helper function to create organization with location
-export const formatOrganizationWithLocation = (organizationData: any): OrganizationWithLocation => {
-  if (!organizationData) {
-    // Return minimal valid organization when no data is provided
-    return {
-      id: '',
-      name: '',
-      description: null,
-      website_url: null,
-      logo_url: null,
-      logo_api_url: null,
-      created_at: '',
-      updated_at: '',
-      location_id: null,
-      location: undefined
-    };
-  }
-  
-  const org: OrganizationWithLocation = {
-    ...organizationData,
-    location: undefined
-  };
-  
-  // Add location if it exists
-  if (organizationData.location) {
-    org.location = formatLocationWithDetails(organizationData.location);
-  }
-  
-  return org;
+/**
+ * Format organization relationships to include properly formatted location data
+ */
+export const formatOrganizationRelationships = (
+  relationships: any[]
+): ProfileOrganizationRelationshipWithDetails[] => {
+  return relationships.map(relationship => {
+    if (relationship.organization && relationship.organization.location) {
+      return {
+        ...relationship,
+        organization: {
+          ...relationship.organization,
+          location: formatLocationWithDetails(relationship.organization.location)
+        }
+      };
+    }
+    return relationship;
+  }) as ProfileOrganizationRelationshipWithDetails[];
 };
 
-// Format admin details
-export const formatAdminWithDetails = (admin: any): OrganizationAdminWithDetails => {
-  return {
-    id: admin.id,
-    profile_id: admin.profile_id,
-    organization_id: admin.organization_id,
-    role: admin.role || '',
-    is_approved: admin.is_approved || false,
-    created_at: admin.created_at || '',
-    updated_at: admin.updated_at,
-    can_edit_profile: admin.can_edit_profile,
-    profile: formatProfileWithDetails(admin.profile),
-    organization: formatOrganizationWithLocation(admin.organization)
-  };
+/**
+ * Format connection type for display
+ */
+export const formatConnectionType = (connectionType: string | null | undefined): string => {
+  if (!connectionType) return 'Connected';
+  
+  switch (connectionType) {
+    case 'current':
+      return 'Current Employee';
+    case 'former':
+      return 'Former Employee';
+    case 'connected_insider':
+      return 'Connected Insider';
+    default:
+      return connectionType.charAt(0).toUpperCase() + connectionType.slice(1).replace('_', ' ');
+  }
 };
