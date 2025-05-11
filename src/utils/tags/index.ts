@@ -5,6 +5,7 @@ export * from './types';
 export { 
   fetchFilterTags,
   fetchSelectionTags,
+  fetchTags, // Add this line to re-export fetchTags
   createTag, 
   updateTag, 
   deleteTag

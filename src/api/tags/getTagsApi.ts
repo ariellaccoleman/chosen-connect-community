@@ -41,17 +41,17 @@ export const getFilterTags = async (options: {
     // Filter by entity type - only show tags that are actually assigned to this entity type
     if (options.targetType) {
       // Get tags that have been assigned to entities of this type
-      const { data: tagIds, error: tagIdsError } = await client
+      const { data: tagIdsData, error: tagIdsError } = await client
         .from('tag_assignments')
         .select('tag_id')
-        .eq('target_type', options.targetType)
-        .distinct();
+        .eq('target_type', options.targetType);
       
       if (tagIdsError) throw tagIdsError;
       
-      if (tagIds && tagIds.length > 0) {
-        const tagIdsArray = tagIds.map(item => item.tag_id);
-        query = query.in('id', tagIdsArray);
+      if (tagIdsData && tagIdsData.length > 0) {
+        // Extract unique tag IDs
+        const uniqueTagIds = [...new Set(tagIdsData.map(item => item.tag_id))];
+        query = query.in('id', uniqueTagIds);
       } else {
         // If no tags are assigned to this entity type, return empty result
         return createSuccessResponse([]);
@@ -120,10 +120,10 @@ export const getSelectionTags = async (options: {
       const allEntityTypeTagIds = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
       
       if (allEntityTypeTagIds.length > 0) {
-        // Get tags that either match our entity type or don't have any entity type
-        query = query.or(
-          `id.in.(${entityTypeTagIds.join(',')}),not.id.in.(${allEntityTypeTagIds.join(',')})`
-        );
+        // Create an OR filter to get:
+        // 1. Tags that match our entity type, OR
+        // 2. Tags that don't have any entity type at all
+        query = query.or(`id.in.(${entityTypeTagIds.join(',')}),not.id.in.(${allEntityTypeTagIds.join(',')})`);
       }
     }
     
