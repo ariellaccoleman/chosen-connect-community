@@ -38,17 +38,21 @@ const EntityTagManager = ({
     }
     
     try {
-      const result = await assignTag({
+      // Call assignTag and wait for the result
+      await assignTag({
         tagId: tag.id, 
         entityId, 
         entityType
+      }, {
+        onSuccess: () => {
+          toast.success(`Tag "${tag.name}" added successfully`);
+          setIsAdding(false);
+        },
+        onError: (error) => {
+          console.error("Error assigning tag:", error);
+          toast.error("Failed to add tag. Please try again.");
+        }
       });
-      
-      // Only show success message if the operation was successful
-      if (result) {
-        toast.success(`Tag "${tag.name}" added successfully`);
-        setIsAdding(false);
-      }
     } catch (error) {
       console.error("Error assigning tag:", error);
       toast.error("Failed to add tag. Please try again.");
@@ -58,12 +62,16 @@ const EntityTagManager = ({
   // Handle removing a tag
   const handleRemoveTag = async (assignmentId: string) => {
     try {
-      const result = await removeTagAssignment(assignmentId);
-      
-      // Only show success message if the operation was successful
-      if (result) {
-        toast.success("Tag removed successfully");
-      }
+      // Call removeTagAssignment and wait for the result
+      await removeTagAssignment(assignmentId, {
+        onSuccess: () => {
+          toast.success("Tag removed successfully");
+        },
+        onError: (error) => {
+          console.error("Error removing tag:", error);
+          toast.error("Failed to remove tag. Please try again.");
+        }
+      });
     } catch (error) {
       console.error("Error removing tag:", error);
       toast.error("Failed to remove tag. Please try again.");

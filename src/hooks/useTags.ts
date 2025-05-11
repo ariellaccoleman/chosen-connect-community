@@ -151,8 +151,8 @@ export const useTagAssignmentMutations = () => {
   });
 
   return {
-    assignTag: assignTagMutation.mutate,
-    removeTagAssignment: removeAssignmentMutation.mutate,
+    assignTag: assignTagMutation.mutateAsync,
+    removeTagAssignment: removeAssignmentMutation.mutateAsync,
     isAssigning: assignTagMutation.isPending,
     isRemoving: removeAssignmentMutation.isPending
   };
