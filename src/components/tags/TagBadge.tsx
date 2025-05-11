@@ -11,7 +11,7 @@ interface TagBadgeProps {
   className?: string;
   entityType?: string;
   isFromDifferentEntityType?: boolean;
-  hideEntityType?: boolean; // New prop to hide entity type display
+  hideEntityType?: boolean;
 }
 
 const TagBadge = ({
@@ -21,7 +21,7 @@ const TagBadge = ({
   className,
   entityType,
   isFromDifferentEntityType = false,
-  hideEntityType = false, // Default to showing entity type (for backward compatibility)
+  hideEntityType = false,
 }: TagBadgeProps) => {
   return (
     <Badge 

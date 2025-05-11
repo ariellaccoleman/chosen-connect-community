@@ -11,7 +11,9 @@ export type Tag = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
-  used_entity_types: string[] | null;
+  
+  /** @deprecated Use tag_entity_types table instead */
+  used_entity_types?: string[] | null;
 };
 
 export type TagAssignment = {
@@ -68,7 +70,7 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Use the new tag_entity_types table for entity type filtering
+    // Use the tag_entity_types table for entity type filtering
     if (options.targetType) {
       // First get all tag IDs that have this entity type
       const { data: tagIds, error: tagIdsError } = await supabase
@@ -163,8 +165,7 @@ export const createTag = async (tagData: {
     // Ensure created_by matches the current user's ID
     const safeTagData = {
       ...tagData,
-      created_by: authData.session.user.id,
-      used_entity_types: '[]' // Initialize with empty array
+      created_by: authData.session.user.id
     };
     
     const { data, error } = await supabase
@@ -191,7 +192,7 @@ export const createTag = async (tagData: {
  */
 export const updateTag = async (tagId: string, updates: Partial<Tag>) => {
   try {
-    // Remove created_by from updates to prevent unauthorized changes
+    // Remove created_by and used_entity_types from updates to prevent unauthorized changes
     const { created_by, used_entity_types, ...safeUpdates } = updates;
     
     const { data, error } = await supabase
@@ -261,32 +262,12 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
     const formattedAssignments = (data || []).map(assignment => {
       // Use type assertion to help TypeScript understand the structure
       const tagData = assignment.tag || {} as Partial<Tag>;
-      
-      // For backward compatibility, handle the used_entity_types conversion properly
-      let usedEntityTypes: string[] = [];
-      
-      if (Array.isArray(tagData.used_entity_types)) {
-        // Ensure all elements are strings
-        usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
-      } else if (tagData.used_entity_types) {
-        try {
-          const parsedValue = typeof tagData.used_entity_types === 'string' 
-            ? JSON.parse(tagData.used_entity_types)
-            : tagData.used_entity_types;
-            
-          usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
-        } catch (e) {
-          console.error("Error parsing used_entity_types:", e);
-          usedEntityTypes = [];
-        }
-      }
         
       return {
         ...assignment,
         updated_at: assignment.updated_at || assignment.created_at,
         tag: {
-          ...tagData,
-          used_entity_types: usedEntityTypes
+          ...tagData
         }
       } as TagAssignment;
     });
@@ -301,7 +282,7 @@ export const fetchEntityTags = async (entityId: string, entityType: "person" | "
 /**
  * Get entity types for a specific tag from the tag_entity_types table
  */
-const getTagEntityTypes = async (tagId: string): Promise<string[]> => {
+export const getTagEntityTypes = async (tagId: string): Promise<string[]> => {
   try {
     const { data, error } = await supabase
       .from('tag_entity_types')
@@ -358,69 +339,6 @@ const updateTagEntityType = async (tagId: string, entityType: string) => {
     return true;
   } catch (error) {
     handleError(error, "Error in updateTagEntityType");
-    return false;
-  }
-};
-
-/**
- * Update the used_entity_types array in the tags table for backward compatibility
- */
-const updateTagUsedEntityTypes = async (tagId: string, entityType: string) => {
-  try {
-    // Get current tag data
-    const { data: tagData, error: getError } = await supabase
-      .from('tags')
-      .select('used_entity_types')
-      .eq('id', tagId)
-      .single();
-      
-    if (getError) {
-      handleError(getError, "Error getting tag data");
-      return false;
-    }
-    
-    // Parse used_entity_types array with proper type handling
-    let usedEntityTypes: string[] = [];
-    
-    if (Array.isArray(tagData.used_entity_types)) {
-      // Ensure all elements are strings
-      usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
-    } else if (tagData.used_entity_types) {
-      // Handle case where it might be a JSON string or an object
-      try {
-        const parsedValue = typeof tagData.used_entity_types === 'string' 
-          ? JSON.parse(tagData.used_entity_types)
-          : tagData.used_entity_types;
-          
-        usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
-      } catch (e) {
-        console.error("Error parsing used_entity_types:", e);
-        usedEntityTypes = [];
-      }
-    }
-    
-    // Check if this entity type is already in the array
-    if (!usedEntityTypes.includes(entityType)) {
-      // Add the entity type to the array
-      const updatedEntityTypes = [...usedEntityTypes, entityType];
-      
-      // Update the tag
-      const { error: updateError } = await supabase
-        .from('tags')
-        .update({ used_entity_types: updatedEntityTypes })
-        .eq('id', tagId);
-        
-      if (updateError) {
-        handleError(updateError, "Error updating used_entity_types");
-        return false;
-      }
-      
-      logger.info(`Updated used_entity_types for tag ${tagId}`);
-    }
-    
-    return true;
-  } catch (error) {
-    handleError(error, "Error in updateTagUsedEntityTypes");
     return false;
   }
 };
@@ -526,9 +444,6 @@ export const assignTag = async (tagId: string, entityId: string, entityType: "pe
     // Update the tag_entity_types table
     await updateTagEntityType(tagId, entityType);
     
-    // For backward compatibility, also update the used_entity_types array
-    await updateTagUsedEntityTypes(tagId, entityType);
-    
     logger.info(`Tag assigned: ${tagId} to ${entityType} ${entityId}`);
     return data;
   } catch (error) {
@@ -583,35 +498,6 @@ export const removeTagAssignment = async (assignmentId: string) => {
     // Check if we should also remove this entity type from the tag
     if (assignment) {
       await removeTagEntityTypeIfUnused(assignment.tag_id, assignment.target_type);
-      
-      // For backward compatibility, also update the used_entity_types array
-      const { data: tagData } = await supabase
-        .from("tags")
-        .select("used_entity_types")
-        .eq("id", assignment.tag_id)
-        .single();
-        
-      if (tagData && tagData.used_entity_types) {
-        const usedEntityTypes = tagData.used_entity_types as string[];
-        
-        // Check if there are other assignments of this type for this tag
-        const { data: otherAssignments, error: checkError } = await supabase
-          .from("tag_assignments")
-          .select("id")
-          .eq("tag_id", assignment.tag_id)
-          .eq("target_type", assignment.target_type)
-          .neq("id", assignmentId)
-          .limit(1);
-          
-        if (!checkError && (!otherAssignments || otherAssignments.length === 0)) {
-          const updatedEntityTypes = usedEntityTypes.filter(t => t !== assignment.target_type);
-          
-          await supabase
-            .from("tags")
-            .update({ used_entity_types: updatedEntityTypes })
-            .eq("id", assignment.tag_id);
-        }
-      }
     }
     
     logger.info(`Tag assignment removed: ${assignmentId}`);
@@ -625,18 +511,21 @@ export const removeTagAssignment = async (assignmentId: string) => {
 /**
  * Get a formatted display name for a tag based on its entity usage
  */
-export const getTagDisplayName = (tag: Tag, currentEntityType: "person" | "organization"): string => {
-  if (!tag.used_entity_types || tag.used_entity_types.length === 0) {
+export const getTagDisplayName = async (tag: Tag, currentEntityType: "person" | "organization"): Promise<string> => {
+  // Get entity types for this tag from the tag_entity_types table
+  const entityTypes = await getTagEntityTypes(tag.id);
+  
+  if (!entityTypes || entityTypes.length === 0) {
     return tag.name;
   }
   
   // If the tag has been used with the current entity type, just show the name
-  if (tag.used_entity_types.includes(currentEntityType)) {
+  if (entityTypes.includes(currentEntityType)) {
     return tag.name;
   }
   
   // Otherwise, show the name with the entity types it has been used with
-  const otherTypes = tag.used_entity_types
+  const otherTypes = entityTypes
     .map(type => type === "person" ? "People" : "Organizations")
     .join(", ");
   

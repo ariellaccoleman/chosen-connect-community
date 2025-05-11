@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
@@ -11,6 +12,7 @@ import {
   deleteTag, 
   assignTag, 
   removeTagAssignment, 
+  getTagEntityTypes,
   TAG_TYPES 
 } from "@/utils/tagUtils";
 
@@ -142,7 +144,7 @@ export const useTagAssignmentMutations = () => {
       queryClient.invalidateQueries({ 
         queryKey: ["entity-tags", variables.entityId, variables.entityType] 
       });
-      // Also invalidate tags query as used_entity_types might have changed
+      // Also invalidate tags query as entity types might have changed
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
     onError: (error) => {

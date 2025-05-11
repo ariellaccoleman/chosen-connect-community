@@ -136,8 +136,7 @@ export const tagsApi = {
           description: tagData.description,
           type: tagData.type,
           is_public: tagData.is_public,
-          created_by: tagData.created_by,
-          used_entity_types: [] // Initialize with empty array
+          created_by: tagData.created_by
         })
         .select()
         .single();
@@ -233,44 +232,6 @@ export const tagsApi = {
         if (insertError) throw insertError;
       }
       
-      // For backward compatibility, also update the used_entity_types array
-      const { data: tagData } = await client
-        .from('tags')
-        .select('used_entity_types')
-        .eq('id', tagId)
-        .single();
-      
-      if (tagData) {
-        // Cast used_entity_types to string[] to work with it safely
-        let usedEntityTypes: string[] = [];
-        
-        if (Array.isArray(tagData.used_entity_types)) {
-          // Convert all elements to strings to ensure type safety
-          usedEntityTypes = (tagData.used_entity_types as any[]).map(item => String(item));
-        } else if (tagData.used_entity_types) {
-          try {
-            const parsedValue = typeof tagData.used_entity_types === 'string' 
-              ? JSON.parse(tagData.used_entity_types)
-              : tagData.used_entity_types;
-              
-            usedEntityTypes = Array.isArray(parsedValue) ? parsedValue.map(item => String(item)) : [];
-          } catch (e) {
-            console.error("Error parsing used_entity_types:", e);
-            usedEntityTypes = [];
-          }
-        }
-        
-        if (!usedEntityTypes.includes(entityType)) {
-          // Create a new array by copying the old one and adding the new entity type
-          const updatedEntityTypes = [...usedEntityTypes, entityType];
-          
-          await client
-            .from('tags')
-            .update({ used_entity_types: updatedEntityTypes })
-            .eq('id', tagId);
-        }
-      }
-      
       return createSuccessResponse(data);
     });
   },
@@ -322,23 +283,6 @@ export const tagsApi = {
             .eq('entity_type', entityType);
           
           if (removeError) throw removeError;
-          
-          // For backward compatibility, also update the used_entity_types array
-          const { data: tagData } = await client
-            .from('tags')
-            .select('used_entity_types')
-            .eq('id', tagId)
-            .single();
-          
-          if (tagData && tagData.used_entity_types) {
-            const usedEntityTypes = tagData.used_entity_types as string[];
-            const updatedEntityTypes = usedEntityTypes.filter(t => t !== entityType);
-            
-            await client
-              .from('tags')
-              .update({ used_entity_types: updatedEntityTypes })
-              .eq('id', tagId);
-          }
         }
       }
       
