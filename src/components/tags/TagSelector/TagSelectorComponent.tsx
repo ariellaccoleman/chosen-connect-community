@@ -1,0 +1,93 @@
+
+import React, { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Tag as TagIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Tag, fetchTags } from "@/utils/tags";
+import TagSearch from "./TagSearch";
+import CreateTagDialog from "./CreateTagDialog";
+
+interface TagSelectorComponentProps {
+  targetType: "person" | "organization";
+  onTagSelected: (tag: Tag) => void;
+  isAdmin?: boolean;
+}
+
+const TagSelectorComponent = ({ 
+  targetType, 
+  onTagSelected, 
+  isAdmin = false 
+}: TagSelectorComponentProps) => {
+  const [open, setOpen] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const { user } = useAuth();
+
+  // Load tags based on search criteria
+  useEffect(() => {
+    const loadTags = async () => {
+      const fetchedTags = await fetchTags({ 
+        searchQuery: searchValue,
+      });
+      setTags(fetchedTags);
+    };
+
+    const timeoutId = setTimeout(loadTags, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchValue, isAdmin, user?.id]);
+
+  const handleOpenCreateDialog = () => {
+    if (!user?.id) {
+      return;
+    }
+    
+    setIsCreateDialogOpen(true);
+    setOpen(false);
+  };
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            <TagIcon className="mr-2 h-4 w-4 shrink-0" />
+            <span className="truncate">Select or create a tag</span>
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[300px]">
+          <TagSearch 
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+            tags={tags}
+            targetType={targetType}
+            onTagSelected={(tag) => {
+              onTagSelected(tag);
+              setSearchValue("");
+              setOpen(false);
+            }}
+            handleOpenCreateDialog={handleOpenCreateDialog}
+            user={user}
+          />
+        </PopoverContent>
+      </Popover>
+
+      <CreateTagDialog
+        isOpen={isCreateDialogOpen}
+        onClose={() => setIsCreateDialogOpen(false)}
+        initialValue={searchValue}
+        targetType={targetType}
+        onTagCreated={onTagSelected}
+        isAdmin={isAdmin}
+      />
+    </>
+  );
+};
+
+export default TagSelectorComponent;
