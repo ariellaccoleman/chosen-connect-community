@@ -7,20 +7,24 @@ import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";
 import TagList from "./TagList";
 import TagSelector from "./TagSelector";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, X } from "lucide-react";
 
 interface EntityTagManagerProps {
   entityId: string;
   entityType: "person" | "organization";
   isAdmin?: boolean;
   className?: string;
+  isEditing?: boolean;
+  onFinishEditing?: () => void;
 }
 
 const EntityTagManager = ({ 
   entityId, 
   entityType, 
   isAdmin = false,
-  className
+  className,
+  isEditing = false,
+  onFinishEditing
 }: EntityTagManagerProps) => {
   const [isAdding, setIsAdding] = useState(false);
   const { user } = useAuth();
@@ -30,6 +34,13 @@ const EntityTagManager = ({
   // Check if user can manage tags
   const canManageTags = isAdmin || (entityType === "person" && user?.id === entityId);
   
+  // Reset adding state when editing mode changes
+  useEffect(() => {
+    if (!isEditing) {
+      setIsAdding(false);
+    }
+  }, [isEditing]);
+
   // Handle adding a new tag
   const handleTagSelected = async (tag: any) => {
     if (!user?.id || !entityId) {
@@ -86,10 +97,10 @@ const EntityTagManager = ({
     <div className={`space-y-4 ${className || ""}`}>
       <TagList 
         tagAssignments={tagAssignments} 
-        onRemove={canManageTags ? handleRemoveTag : undefined}
+        onRemove={(isEditing && canManageTags) ? handleRemoveTag : undefined}
       />
       
-      {canManageTags && (
+      {canManageTags && isEditing && (
         <>
           {isAdding ? (
             <div className="space-y-2">
@@ -107,16 +118,28 @@ const EntityTagManager = ({
               </Button>
             </div>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsAdding(true)}
-              className="mt-2"
-              disabled={isAssigning || isRemoving}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Add Tag
-            </Button>
+            <div className="flex flex-wrap gap-2 mt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAdding(true)}
+                disabled={isAssigning || isRemoving}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Tag
+              </Button>
+              
+              {onFinishEditing && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onFinishEditing}
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Done
+                </Button>
+              )}
+            </div>
           )}
         </>
       )}

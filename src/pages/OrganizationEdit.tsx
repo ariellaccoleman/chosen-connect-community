@@ -25,6 +25,8 @@ import { formatLocation } from "@/utils/formatters/locationFormatters";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useAuth } from "@/hooks/useAuth";
 import LogoUpload from "@/components/organizations/LogoUpload";
+import OrganizationTags from "@/components/organizations/OrganizationTags";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Define form schema
 const organizationSchema = z.object({
@@ -42,6 +44,7 @@ const OrganizationEdit = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
+  const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   
@@ -197,96 +200,114 @@ const OrganizationEdit = () => {
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <h1 className="text-2xl font-bold mb-6">Edit Organization</h1>
 
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="mb-6">
-                <FormLabel className="block mb-2">Organization Logo</FormLabel>
-                <LogoUpload
-                  logoUrl={form.watch("logo_url") || ""}
-                  organizationName={form.watch("name")}
-                  onLogoChange={handleLogoChange}
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="mb-6">
+              <TabsTrigger value="basic">Basic Information</TabsTrigger>
+              <TabsTrigger value="tags">Tags</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="basic">
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <div className="mb-6">
+                    <FormLabel className="block mb-2">Organization Logo</FormLabel>
+                    <LogoUpload
+                      logoUrl={form.watch("logo_url") || ""}
+                      organizationName={form.watch("name")}
+                      onLogoChange={handleLogoChange}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Organization Name</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description</FormLabel>
+                        <FormControl>
+                          <Textarea 
+                            {...field} 
+                            value={field.value || ""}
+                            rows={4} 
+                            placeholder="Describe the organization"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Provide details about what the organization does.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="website_url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Website URL</FormLabel>
+                        <FormControl>
+                          <Input 
+                            {...field} 
+                            value={field.value || ""} 
+                            type="url" 
+                            placeholder="https://example.org" 
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          The organization's website address.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Location is displayed but not editable in this version */}
+                  {organization.location && (
+                    <div className="mt-4">
+                      <p className="text-sm font-medium">Location</p>
+                      <p className="text-sm text-muted-foreground">
+                        {organization.location.formatted_location}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Location editing is not available in this version.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" className="ml-auto">
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
+                </form>
+              </Form>
+            </TabsContent>
+            
+            <TabsContent value="tags">
+              {id && (
+                <OrganizationTags
+                  organizationId={id}
+                  isAdmin={isOrgAdmin}
                 />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Organization Name</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Description</FormLabel>
-                    <FormControl>
-                      <Textarea 
-                        {...field} 
-                        value={field.value || ""}
-                        rows={4} 
-                        placeholder="Describe the organization"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      Provide details about what the organization does.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="website_url"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Website URL</FormLabel>
-                    <FormControl>
-                      <Input 
-                        {...field} 
-                        value={field.value || ""} 
-                        type="url" 
-                        placeholder="https://example.org" 
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      The organization's website address.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {/* Location is displayed but not editable in this version */}
-              {organization.location && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium">Location</p>
-                  <p className="text-sm text-muted-foreground">
-                    {organization.location.formatted_location}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Location editing is not available in this version.
-                  </p>
-                </div>
               )}
-
-              <div className="flex justify-end pt-4">
-                <Button type="submit" className="ml-auto">
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </Form>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </DashboardLayout>

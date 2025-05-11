@@ -13,12 +13,14 @@ import OrganizationAdminAlert from "@/components/organizations/OrganizationAdmin
 import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
 import OrganizationTags from "@/components/organizations/OrganizationTags";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { user, isAdmin } = useAuth();
   const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("details");
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   const { data: userRole } = useOrganizationRole(user?.id, id);
   
@@ -107,16 +109,30 @@ const OrganizationDetail = () => {
         {/* Admin alert below the header */}
         {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
 
-        <OrganizationInfo organization={organization} />
-        
-        {/* Show organization admins */}
-        {id && <OrganizationAdmins organizationId={id} />}
-        
-        {/* In the organization detail section, add the organization tags component */}
-        <OrganizationTags 
-          organizationId={id} 
-          isAdmin={isOrgAdmin || isAdmin}
-        />
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
+          <TabsList>
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="admins">Admins</TabsTrigger>
+            <TabsTrigger value="tags">Tags</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="details">
+            <OrganizationInfo organization={organization} />
+          </TabsContent>
+          
+          <TabsContent value="admins">
+            {id && <OrganizationAdmins organizationId={id} />}
+          </TabsContent>
+          
+          <TabsContent value="tags">
+            {id && (
+              <OrganizationTags 
+                organizationId={id} 
+                isAdmin={isOrgAdmin || isAdmin}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </DashboardLayout>
   );
