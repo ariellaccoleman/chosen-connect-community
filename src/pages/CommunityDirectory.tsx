@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfiles } from "@/hooks/useProfiles";
 import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
 import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
+import { toast } from "@/components/ui/sonner";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,9 +16,17 @@ const CommunityDirectory = () => {
   const { data: currentUserProfile } = useProfiles(user?.id || "");
 
   // Fetch all community profiles with proper filter object
-  const { data: profiles, isLoading } = useCommunityProfiles({ 
-    search: searchQuery 
+  const { data: profiles, isLoading, error } = useCommunityProfiles({ 
+    search: searchQuery,
+    isApproved: true // Explicitly request only approved profiles
   });
+
+  useEffect(() => {
+    if (error) {
+      console.error("Error loading community profiles:", error);
+      toast.error("Failed to load community members. Please try again.");
+    }
+  }, [error]);
 
   // Combine and deduplicate profiles
   const allProfiles = profiles || [];

@@ -26,7 +26,10 @@ const ProfileGrid = ({ profiles, isLoading, searchQuery }: ProfileGridProps) => 
         <p className="text-gray-500 text-lg">
           {searchQuery
             ? "No members found matching your search."
-            : "No community members found."}
+            : "No approved community members found. Members need to be approved to appear in the directory."}
+        </p>
+        <p className="text-gray-400 mt-2">
+          Make sure profiles are marked as approved in the database.
         </p>
       </div>
     );

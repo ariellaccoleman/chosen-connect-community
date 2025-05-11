@@ -8,6 +8,7 @@ export const useCommunityProfiles = (filters: {
   search?: string;
   limit?: number;
   excludeId?: string;
+  isApproved?: boolean;
 }) => {
   return useQuery({
     queryKey: ["community-profiles", filters],
@@ -17,8 +18,12 @@ export const useCommunityProfiles = (filters: {
         .select(
           `*,
           location:locations(*)`
-        )
-        .eq("is_approved", true);
+        );
+      
+      // Always filter by is_approved unless explicitly set to false
+      if (filters.isApproved !== false) {
+        query = query.eq("is_approved", true);
+      }
 
       if (filters.search) {
         query = query.or(
