@@ -14,8 +14,9 @@ export const useFormError = () => {
     
     let errorMessage = "An unexpected error occurred. Please try again.";
     
-    if (error instanceof ApiError) {
-      errorMessage = error.message;
+    if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
+      // This is likely our ApiError type
+      errorMessage = (error as { message: string }).message;
     } else if (error instanceof Error) {
       errorMessage = error.message;
     }

@@ -38,10 +38,10 @@ export function cleanFormData<T extends Record<string, any>>(data: T): T {
   const result = { ...data };
   
   Object.keys(result).forEach(key => {
-    const value = result[key];
+    const value = result[key as keyof T];
     // Convert empty strings to null
     if (typeof value === "string" && value.trim() === "") {
-      result[key] = null;
+      (result as Record<string, any>)[key] = null;
     }
   });
   
