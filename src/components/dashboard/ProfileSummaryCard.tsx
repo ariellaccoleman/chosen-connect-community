@@ -1,5 +1,5 @@
 
-import { Link } from "lucide-react";
+import { Link as LinkIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Edit } from "lucide-react";
 import { formatWebsiteUrl } from "@/utils/formatters";
 import { ProfileWithDetails } from "@/types";
+import TagList from "@/components/tags/TagList";
+import { useEntityTags } from "@/hooks/useTags";
 
 interface ProfileSummaryCardProps {
   profile: ProfileWithDetails;
@@ -14,6 +16,11 @@ interface ProfileSummaryCardProps {
 
 const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
   const navigate = useNavigate();
+  const { data: tagAssignments = [], isLoading: isLoadingTags } = useEntityTags(
+    profile.id,
+    "profile",
+    { enabled: !!profile.id }
+  );
   
   const getInitials = () => {
     return [profile.first_name?.[0], profile.last_name?.[0]]
@@ -52,6 +59,16 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
           )}
         </div>
         
+        {/* Tags Section */}
+        <div className="mb-4">
+          <p className="text-sm text-gray-500 mb-1">Skills & Tags</p>
+          {isLoadingTags ? (
+            <p className="text-sm italic">Loading tags...</p>
+          ) : (
+            <TagList tagAssignments={tagAssignments} className="mt-1" />
+          )}
+        </div>
+        
         {profile.location && (
           <div className="mb-4">
             <p className="text-sm text-gray-500">Location</p>
@@ -74,7 +91,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
               rel="noopener noreferrer"
               className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
             >
-              <Link className="h-4 w-4 mr-2 flex-shrink-0" />
+              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
               LinkedIn
             </a>
           )}
@@ -85,7 +102,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
               rel="noopener noreferrer"
               className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
             >
-              <Link className="h-4 w-4 mr-2 flex-shrink-0" />
+              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
               Twitter
             </a>
           )}
@@ -96,7 +113,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
               rel="noopener noreferrer"
               className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
             >
-              <Link className="h-4 w-4 mr-2 flex-shrink-0" />
+              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
               Website
             </a>
           )}
