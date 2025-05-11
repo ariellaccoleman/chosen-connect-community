@@ -5,13 +5,18 @@ import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { formatNames } from "@/utils/formatters";
 import { Link } from "react-router-dom";
 import { formatConnectionType } from "@/utils/formatters/organizationFormatters";
 
 interface OrganizationMembersProps {
   organizationId: string;
 }
+
+// Helper function to format names
+const formatNames = (firstName?: string, lastName?: string): string => {
+  if (!firstName && !lastName) return "Unknown";
+  return `${firstName || ''} ${lastName || ''}`.trim();
+};
 
 const OrganizationMembers = ({ organizationId }: OrganizationMembersProps) => {
   const [loading, setLoading] = useState(true);
@@ -34,7 +39,23 @@ const OrganizationMembers = ({ organizationId }: OrganizationMembersProps) => {
         // Filter out relationships without a profile
         const validMembers = data?.filter(rel => rel.profile) || [];
         
-        setMembers(validMembers as ProfileOrganizationRelationshipWithDetails[]);
+        // Transform the data to match ProfileOrganizationRelationshipWithDetails
+        const formattedMembers = validMembers.map(rel => ({
+          ...rel,
+          // Add organization property (required for the type)
+          organization: {
+            id: organizationId,
+            name: '',  // These fields are required but not used in the member display
+            description: null,
+            website_url: null,
+            logo_url: null,
+            logo_api_url: null,
+            created_at: '',
+            location_id: null
+          }
+        })) as ProfileOrganizationRelationshipWithDetails[];
+        
+        setMembers(formattedMembers);
       } catch (error) {
         console.error('Error fetching organization members:', error);
       } finally {
@@ -101,7 +122,8 @@ interface MemberRowProps {
 }
 
 const MemberRow = ({ relationship }: MemberRowProps) => {
-  const profile = relationship.profile;
+  // Access the profile from the relationship object (via supabase join)
+  const profile = (relationship as any).profile;  
   if (!profile) return null;
   
   const fullName = formatNames(profile.first_name, profile.last_name);

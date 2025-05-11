@@ -1,5 +1,5 @@
 
-import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { ProfileOrganizationRelationshipWithDetails, OrganizationAdminWithDetails } from "@/types";
 import { formatLocationWithDetails } from "./locationFormatters";
 
 /**
@@ -38,4 +38,22 @@ export const formatConnectionType = (connectionType: string | null | undefined):
     default:
       return connectionType.charAt(0).toUpperCase() + connectionType.slice(1).replace('_', ' ');
   }
+};
+
+/**
+ * Format admin details including profile data
+ */
+export const formatAdminWithDetails = (admin: any): OrganizationAdminWithDetails => {
+  // Process organization with location data if it exists
+  const organization = admin.organization ? {
+    ...admin.organization,
+    location: admin.organization.location ? 
+      formatLocationWithDetails(admin.organization.location) : 
+      undefined
+  } : undefined;
+  
+  return {
+    ...admin,
+    organization
+  } as OrganizationAdminWithDetails;
 };
