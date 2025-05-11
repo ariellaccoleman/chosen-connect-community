@@ -4,7 +4,8 @@ import { Tag } from "./types";
 import { logger } from "../logger";
 import { handleError } from "../errorUtils";
 import { 
-  getTags as getTagsApi,
+  getFilterTags,
+  getSelectionTags,
   getEntityTags as getEntityTagsApi,
   createTag as createTagApi,
   updateTag as updateTagApi,
@@ -14,9 +15,9 @@ import {
 } from "@/api/tags";
 
 /**
- * Fetch all tags with optional filtering
+ * Fetch tags for filtering purposes
  */
-export const fetchTags = async (options: {
+export const fetchFilterTags = async (options: {
   type?: string;
   isPublic?: boolean;
   createdBy?: string;
@@ -24,19 +25,50 @@ export const fetchTags = async (options: {
   targetType?: string;
 } = {}): Promise<Tag[]> => {
   try {
-    const { data, error } = await getTagsApi(options);
+    const { data, error } = await getFilterTags(options);
     
     if (error) {
-      handleError(error, "Error fetching tags");
+      handleError(error, "Error fetching filter tags");
       return [];
     }
     
     return data || [];
   } catch (error) {
-    handleError(error, "Error in fetchTags");
+    handleError(error, "Error in fetchFilterTags");
     return [];
   }
 };
+
+/**
+ * Fetch tags for selection purposes (typeahead, selector components)
+ */
+export const fetchSelectionTags = async (options: {
+  type?: string;
+  isPublic?: boolean;
+  createdBy?: string;
+  searchQuery?: string;
+  targetType?: string;
+} = {}): Promise<Tag[]> => {
+  try {
+    const { data, error } = await getSelectionTags(options);
+    
+    if (error) {
+      handleError(error, "Error fetching selection tags");
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    handleError(error, "Error in fetchSelectionTags");
+    return [];
+  }
+};
+
+/**
+ * Legacy function for backward compatibility
+ * @deprecated Use fetchFilterTags or fetchSelectionTags instead
+ */
+export const fetchTags = fetchSelectionTags;
 
 /**
  * Fetch tags assigned to a specific entity

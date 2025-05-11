@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tag, fetchTags } from "@/utils/tags";
+import { Tag, fetchSelectionTags } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
 
@@ -25,18 +25,19 @@ const TagSelectorComponent = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { user } = useAuth();
 
-  // Load tags based on search criteria
+  // Load tags based on search criteria - using fetchSelectionTags for typeahead behavior
   useEffect(() => {
     const loadTags = async () => {
-      const fetchedTags = await fetchTags({ 
+      const fetchedTags = await fetchSelectionTags({ 
         searchQuery: searchValue,
+        targetType  // Pass targetType to get both entity-specific and general tags
       });
       setTags(fetchedTags);
     };
 
     const timeoutId = setTimeout(loadTags, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchValue, isAdmin, user?.id]);
+  }, [searchValue, targetType, isAdmin, user?.id]);
 
   const handleOpenCreateDialog = () => {
     if (!user?.id) {

@@ -1,9 +1,10 @@
 
 // Re-export all tag-related functions and types from one central file
 export * from './types';
-// Export from tagOperations without the conflicting functions
+// Export from tagOperations with the new functions
 export { 
-  fetchTags,
+  fetchFilterTags,
+  fetchSelectionTags,
   createTag, 
   updateTag, 
   deleteTag

@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useTags } from "./useTags";
+import { useFilterTags } from "./useTags";
 import { Tag, TagAssignment } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
 
@@ -24,8 +24,8 @@ interface UseTagFilterResult {
 export const useTagFilter = (options: UseTagFilterOptions = {}): UseTagFilterResult => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
-  // Fetch tags for the entity type
-  const { data: tags = [], isLoading, error } = useTags({
+  // Fetch tags for the entity type - using filterTags which returns only tags actually used with this entity type
+  const { data: tags = [], isLoading, error } = useFilterTags({
     targetType: options.entityType,
     enabled: options.enabled !== false
   });
