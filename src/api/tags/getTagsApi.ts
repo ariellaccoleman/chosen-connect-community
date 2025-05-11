@@ -18,7 +18,29 @@ export const getFilterTags = async (options: {
   targetType?: string;
 } = {}): Promise<ApiResponse<Tag[]>> => {
   return apiClient.query(async (client) => {
-    // Start with the base query for tags
+    // If we're filtering by target type, use an optimized query
+    if (options.targetType) {
+      // Direct join query for better performance when filtering by target type
+      const joinQuery = `
+        SELECT DISTINCT t.*
+        FROM tags t
+        INNER JOIN tag_assignments ta ON t.id = ta.tag_id
+        WHERE ta.target_type = '${options.targetType}'
+        ${options.type ? `AND t.type = '${options.type}'` : ''}
+        ${options.isPublic !== undefined ? `AND t.is_public = ${options.isPublic}` : ''}
+        ${options.createdBy ? `AND t.created_by = '${options.createdBy}'` : ''}
+        ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
+        ORDER BY t.name
+      `;
+      
+      const { data, error } = await client.rpc('query_tags', { query_text: joinQuery });
+      
+      if (error) throw error;
+      
+      return createSuccessResponse(data || []);
+    }
+    
+    // For non-targetType queries, use the standard approach
     let query = client.from('tags').select('*');
     
     // Apply filters
@@ -36,26 +58,6 @@ export const getFilterTags = async (options: {
     
     if (options.searchQuery) {
       query = query.ilike('name', `%${options.searchQuery}%`);
-    }
-    
-    // Filter by entity type - only show tags that are actually assigned to this entity type
-    if (options.targetType) {
-      // Get tags that have been assigned to entities of this type
-      const { data: tagIdsData, error: tagIdsError } = await client
-        .from('tag_assignments')
-        .select('tag_id')
-        .eq('target_type', options.targetType);
-      
-      if (tagIdsError) throw tagIdsError;
-      
-      if (tagIdsData && tagIdsData.length > 0) {
-        // Extract unique tag IDs
-        const uniqueTagIds = [...new Set(tagIdsData.map(item => item.tag_id))];
-        query = query.in('id', uniqueTagIds);
-      } else {
-        // If no tags are assigned to this entity type, return empty result
-        return createSuccessResponse([]);
-      }
     }
     
     const { data, error } = await query.order('name');
@@ -78,7 +80,70 @@ export const getSelectionTags = async (options: {
   targetType?: string;
 } = {}): Promise<ApiResponse<Tag[]>> => {
   return apiClient.query(async (client) => {
-    // Start with the base query for tags
+    // First try to get from cache if we have a simple query
+    if (options.targetType && !options.searchQuery && !options.type && 
+        options.isPublic === undefined && !options.createdBy) {
+      const cacheKey = `selection_tags_${options.targetType}`;
+      const { data: cachedData } = await client
+        .from('cache')
+        .select('data, updated_at')
+        .eq('key', cacheKey)
+        .maybeSingle();
+      
+      // Use cache if it's less than 5 minutes old
+      if (cachedData && 
+          ((new Date().getTime() - new Date(cachedData.updated_at).getTime()) < 5 * 60 * 1000)) {
+        return createSuccessResponse(cachedData.data || []);
+      }
+    }
+    
+    // If we have a targetType, optimize the query
+    if (options.targetType) {
+      // Optimized query to get entity-specific tags and general tags
+      const query = `
+        WITH entity_type_tags AS (
+          SELECT tag_id 
+          FROM tag_entity_types 
+          WHERE entity_type = '${options.targetType}'
+        ),
+        all_entity_type_tags AS (
+          SELECT DISTINCT tag_id 
+          FROM tag_entity_types
+        )
+        SELECT t.* 
+        FROM tags t
+        WHERE 
+          ${options.type ? `t.type = '${options.type}' AND` : ''}
+          ${options.isPublic !== undefined ? `t.is_public = ${options.isPublic} AND` : ''}
+          ${options.createdBy ? `t.created_by = '${options.createdBy}' AND` : ''}
+          ${options.searchQuery ? `t.name ILIKE '%${options.searchQuery}%' AND` : ''}
+          (
+            t.id IN (SELECT tag_id FROM entity_type_tags) 
+            OR t.id NOT IN (SELECT tag_id FROM all_entity_type_tags)
+          )
+        ORDER BY t.name
+      `;
+
+      const { data, error } = await client.rpc('query_tags', { query_text: query });
+      
+      if (error) throw error;
+      
+      // Cache the result if it's a simple query
+      if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
+        const cacheKey = `selection_tags_${options.targetType}`;
+        await client
+          .from('cache')
+          .upsert({ 
+            key: cacheKey, 
+            data: data, 
+            updated_at: new Date().toISOString() 
+          }, { onConflict: 'key' });
+      }
+      
+      return createSuccessResponse(data || []);
+    }
+    
+    // For non-targetType queries, use the standard approach
     let query = client.from('tags').select('*');
     
     // Apply filters
@@ -96,35 +161,6 @@ export const getSelectionTags = async (options: {
     
     if (options.searchQuery) {
       query = query.ilike('name', `%${options.searchQuery}%`);
-    }
-    
-    // Filter by entity type - for selection, we want both entity-specific tags and general tags
-    if (options.targetType) {
-      // Get tags that are specifically for this entity type
-      const { data: entityTypeTags, error: entityTypeError } = await client
-        .from('tag_entity_types')
-        .select('tag_id')
-        .eq('entity_type', options.targetType);
-        
-      if (entityTypeError) throw entityTypeError;
-      
-      // Get all tags that have any entity type
-      const { data: allTagsWithEntityTypes, error: allTagsError } = await client
-        .from('tag_entity_types')
-        .select('tag_id');
-        
-      if (allTagsError) throw allTagsError;
-      
-      // Get unique tag IDs by converting to a Set and back to an array
-      const entityTypeTagIds = entityTypeTags?.map(item => item.tag_id) || [];
-      const allEntityTypeTagIds = Array.from(new Set(allTagsWithEntityTypes?.map(item => item.tag_id) || []));
-      
-      if (allEntityTypeTagIds.length > 0) {
-        // Create an OR filter to get:
-        // 1. Tags that match our entity type, OR
-        // 2. Tags that don't have any entity type at all
-        query = query.or(`id.in.(${entityTypeTagIds.join(',')}),not.id.in.(${allEntityTypeTagIds.join(',')})`);
-      }
     }
     
     const { data, error } = await query.order('name');
