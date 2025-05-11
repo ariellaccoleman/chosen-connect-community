@@ -136,7 +136,7 @@ const MemberRow = ({ relationship }: MemberRowProps) => {
     <div className="flex items-center gap-4">
       <Avatar>
         <AvatarImage src={profile.avatar_url || undefined} alt={fullName} />
-        <AvatarFallback>{initials}</AvatarFallback>
+        <AvatarFallback>{initials || "??"}</AvatarFallback> {/* Added fallback initials */}
       </Avatar>
       <div>
         <Link 

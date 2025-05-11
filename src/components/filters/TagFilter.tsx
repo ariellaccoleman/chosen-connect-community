@@ -44,8 +44,8 @@ const TagFilter = ({
     <div className={`flex items-center gap-2 ${className}`}>
       <div className="flex-1">
         <Select
-          value={selectedTagId || ""}
-          onValueChange={(value) => onSelectTag(value || null)}
+          value={selectedTagId || "all"} // Changed from empty string to "all"
+          onValueChange={(value) => onSelectTag(value === "all" ? null : value)}
         >
           <SelectTrigger className="w-full">
             <div className="flex items-center gap-2">
@@ -55,7 +55,7 @@ const TagFilter = ({
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              <SelectItem value="">All tags</SelectItem>
+              <SelectItem value="all">All tags</SelectItem> {/* Changed from "" to "all" */}
               {tags.length > 0 ? (
                 tags.map((tag) => (
                   <SelectItem key={tag.id} value={tag.id}>
@@ -63,7 +63,7 @@ const TagFilter = ({
                   </SelectItem>
                 ))
               ) : (
-                <SelectItem value="" disabled>
+                <SelectItem value="no-tags" disabled>
                   No tags available
                 </SelectItem>
               )}
