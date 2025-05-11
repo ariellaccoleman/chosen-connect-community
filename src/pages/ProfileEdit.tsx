@@ -1,3 +1,4 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,7 +7,7 @@ import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
-import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
+import { formatProfileUrls } from "@/utils/formatters/urlFormatters";
 
 const ProfileEdit = () => {
   const navigate = useNavigate();
@@ -31,11 +32,13 @@ const ProfileEdit = () => {
         last_name: data.last_name,
         headline: data.headline || null,
         bio: data.bio || null,
-        linkedin_url: data.linkedin_url ? formatWebsiteUrl(data.linkedin_url) : null,
-        twitter_url: data.twitter_url ? formatWebsiteUrl(data.twitter_url) : null,
-        website_url: data.website_url ? formatWebsiteUrl(data.website_url) : null,
-        avatar_url: data.avatar_url || null,
         location_id: data.location_id || null,
+        ...formatProfileUrls({
+          website_url: data.website_url,
+          linkedin_url: data.linkedin_url,
+          twitter_url: data.twitter_url
+        }),
+        avatar_url: data.avatar_url || null,
       };
       
       await updateProfile.mutateAsync({
