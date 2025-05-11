@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { logger } from "./logger";
 import { handleError } from "./errorUtils";
@@ -37,7 +38,7 @@ export const fetchTags = async (options: {
   isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
-  targetType?: "person" | "organization"; // New parameter for filtering by entity type
+  targetType?: "person" | "organization"; // Parameter for filtering by entity type
 } = {}) => {
   try {
     let query = supabase
@@ -61,11 +62,10 @@ export const fetchTags = async (options: {
       query = query.ilike("name", `%${options.searchQuery}%`);
     }
     
-    // Fix the entity type filtering by using contains operator correctly
+    // Fix the entity type filtering by using the correct JSON array syntax
     if (options.targetType) {
-      // Use the containment operator for jsonb array correctly
-      // This checks if the used_entity_types array contains the target type
-      query = query.or(`used_entity_types::jsonb @> '[\"${options.targetType}\"]',used_entity_types::jsonb @> '[]'`);
+      // Check if the array contains the target type or is empty
+      query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb @> '[]'`);
     }
     
     const { data, error } = await query.order("name");

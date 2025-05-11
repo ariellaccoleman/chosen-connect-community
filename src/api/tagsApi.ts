@@ -15,7 +15,7 @@ export const tagsApi = {
     isPublic?: boolean;
     createdBy?: string;
     searchQuery?: string;
-    targetType?: string; // New parameter for entity type filtering
+    targetType?: string; // Parameter for entity type filtering
   } = {}): Promise<ApiResponse<Tag[]>> {
     return apiClient.query(async (client) => {
       let query = client.from('tags').select('*');
@@ -37,10 +37,10 @@ export const tagsApi = {
         query = query.ilike('name', `%${options.searchQuery}%`);
       }
       
-      // Apply entity type filter using the jsonb contains operator correctly
+      // Fix entity type filtering with proper SQL syntax
       if (options.targetType) {
-        // Use the containment operator for jsonb array correctly
-        query = query.or(`used_entity_types::jsonb @> '[\"${options.targetType}\"]',used_entity_types::jsonb @> '[]'`);
+        // Check if the array contains the target type or is empty
+        query = query.or(`used_entity_types::jsonb @> '["${options.targetType}"]',used_entity_types::jsonb @> '[]'`);
       }
       
       const { data, error } = await query.order('name');

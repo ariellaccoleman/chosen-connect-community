@@ -12,7 +12,7 @@ export const useOrganizations = () => {
     queryKey: ['organizations'],
     queryFn: async (): Promise<OrganizationWithLocation[]> => {
       // First, fetch organizations with locations
-      const { data, error } = await supabase
+      const { data: orgsData, error: orgsError } = await supabase
         .from('organizations')
         .select(`
           *,
@@ -20,14 +20,13 @@ export const useOrganizations = () => {
         `)
         .order('name');
       
-      if (error) {
-        console.error('Error fetching organizations:', error);
+      if (orgsError) {
+        console.error('Error fetching organizations:', orgsError);
         return [];
       }
       
-      // Then, for each organization, fetch its tags separately
-      const orgsWithLocations = data.map(org => {
-        // Transform the organization to match the expected type
+      // Transform organizations to match the expected type
+      const orgsWithLocations = orgsData.map(org => {
         return {
           ...org,
           is_verified: org.is_verified || false,
@@ -38,26 +37,30 @@ export const useOrganizations = () => {
         } as OrganizationWithLocation;
       });
       
-      // Now fetch tag assignments for all organizations in a single query
-      const orgIds = orgsWithLocations.map(org => org.id);
-      
-      if (orgIds.length > 0) {
-        const { data: tagAssignments, error: tagError } = await supabase
-          .from('tag_assignments')
-          .select(`
-            *,
-            tags(*)
-          `)
-          .eq('target_type', 'organization')
-          .in('target_id', orgIds);
+      // Now fetch tag assignments for all organizations in a separate query
+      if (orgsWithLocations.length > 0) {
+        try {
+          const orgIds = orgsWithLocations.map(org => org.id);
           
-        if (tagError) {
-          console.error('Error fetching organization tags:', tagError);
-        } else if (tagAssignments) {
-          // Map tag assignments to their respective organizations
-          for (const org of orgsWithLocations) {
-            org.tags = tagAssignments.filter(ta => ta.target_id === org.id);
+          const { data: tagAssignments, error: tagError } = await supabase
+            .from('tag_assignments')
+            .select(`
+              *,
+              tag:tags(*)
+            `)
+            .eq('target_type', 'organization')
+            .in('target_id', orgIds);
+            
+          if (tagError) {
+            console.error('Error fetching organization tags:', tagError);
+          } else if (tagAssignments) {
+            // Map tag assignments to their respective organizations
+            orgsWithLocations.forEach(org => {
+              org.tags = tagAssignments.filter(ta => ta.target_id === org.id);
+            });
           }
+        } catch (error) {
+          console.error('Error in tag assignments fetch:', error);
         }
       }
       
@@ -75,7 +78,7 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
     queryFn: async () => {
       if (!profileId) return [];
       
-      const { data, error } = await supabase
+      const { data: relationshipsData, error: relationshipsError } = await supabase
         .from('org_relationships')
         .select(`
           *,
@@ -86,12 +89,12 @@ export const useUserOrganizationRelationships = (profileId: string | undefined) 
         `)
         .eq('profile_id', profileId);
       
-      if (error) {
-        console.error('Error fetching user organizations:', error);
+      if (relationshipsError) {
+        console.error('Error fetching user organizations:', relationshipsError);
         return [];
       }
       
-      return data.map(relationship => {
+      return relationshipsData.map(relationship => {
         // Create a properly typed organization relationship
         const typedRelationship: ProfileOrganizationRelationshipWithDetails = {
           ...relationship,
