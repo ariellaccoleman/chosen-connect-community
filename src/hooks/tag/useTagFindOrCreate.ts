@@ -58,14 +58,14 @@ export const useTagFindOrCreate = () => {
   });
 
   return {
-    findOrCreateTag: (params: Parameters<typeof findOrCreateTagMutation.mutate>[0], options?: {
-      onSuccess?: (data: Tag) => void;
-      onError?: (error: any) => void;
-    }) => {
-      return findOrCreateTagMutation.mutate(params, {
-        onSuccess: (data) => options?.onSuccess?.(data),
-        onError: (error) => options?.onError?.(error)
-      });
+    findOrCreateTag: async (params: Parameters<typeof findOrCreateTagMutation.mutateAsync>[0]): Promise<Tag | null> => {
+      try {
+        const result = await findOrCreateTagMutation.mutateAsync(params);
+        return result;
+      } catch (error) {
+        console.error("Error in findOrCreateTag:", error);
+        return null;
+      }
     },
     isCreating: findOrCreateTagMutation.isPending
   };

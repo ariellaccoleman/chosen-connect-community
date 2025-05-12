@@ -10,10 +10,10 @@ import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import { useIsOrganizationAdmin, useOrganizationRole } from "@/hooks/useOrganizationAdmins";
 import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
+import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
 import EntityTagManager from "@/components/tags/EntityTagManager";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import OrganizationMembers from "@/components/organizations/OrganizationMembers";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -99,7 +99,7 @@ const OrganizationDetail = () => {
       <OrganizationDetailHeader 
         userId={user?.id}
         organizationId={id}
-        organizationName={organization.name}
+        organizationName={organization?.name}
         relationships={relationships}
       />
 

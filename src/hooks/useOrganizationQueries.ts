@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
 import { useFilterTags } from "./useTags";
+import { formatOrganizationRelationships } from "@/utils/formatters/organizationFormatters";
 
 export const useOrganizations = () => {
   return useQuery({
@@ -50,7 +51,7 @@ export const useTagsForOrganizationFilter = () => {
   };
 };
 
-// Proper implementation for the missing function
+// Proper implementation for the useUserOrganizationRelationships function
 export const useUserOrganizationRelationships = (userId?: string) => {
   return useQuery({
     queryKey: ["user-organization-relationships", userId],
@@ -72,7 +73,8 @@ export const useUserOrganizationRelationships = (userId?: string) => {
         throw error;
       }
       
-      return data || [];
+      // Format the organization relationships to include formatted location
+      return formatOrganizationRelationships(data || []);
     },
     enabled: !!userId
   });

@@ -1,27 +1,28 @@
+
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useUser } from "@/hooks/useUser";
+import { useCurrentProfile } from "@/hooks/useProfileQueries";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import OrganizationSection from "@/components/dashboard/OrganizationSection";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizations";
+import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, isLoading: isLoadingAuth } = useAuth();
-  const { data: profile, isLoading: isLoadingProfile } = useUser(user?.id);
+  const { user } = useAuth();
+  const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
 
   useEffect(() => {
-    if (!isLoadingAuth && !user) {
+    if (!user) {
       navigate("/login");
     }
-  }, [user, isLoadingAuth, navigate]);
+  }, [user, navigate]);
 
-  if (isLoadingAuth || isLoadingProfile) {
+  if (isLoadingProfile) {
     return (
       <div className="container mx-auto py-6">
         <Card>
