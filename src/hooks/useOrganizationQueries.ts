@@ -50,14 +50,30 @@ export const useTagsForOrganizationFilter = () => {
   };
 };
 
-// Add back the missing export for backwards compatibility
-export const useUserOrganizationRelationships = () => {
+// Proper implementation for the missing function
+export const useUserOrganizationRelationships = (userId?: string) => {
   return useQuery({
-    queryKey: ["user-organization-relationships"],
+    queryKey: ["user-organization-relationships", userId],
     queryFn: async () => {
-      // This is a placeholder implementation to fix the build error
-      // The actual implementation should be properly defined based on the application's needs
-      return [];
-    }
+      if (!userId) return [];
+      
+      const { data, error } = await supabase
+        .from("org_relationships")
+        .select(`
+          *,
+          organization:organizations(
+            *,
+            location:locations(*)
+          )
+        `)
+        .eq("profile_id", userId);
+        
+      if (error) {
+        throw error;
+      }
+      
+      return data || [];
+    },
+    enabled: !!userId
   });
 };

@@ -21,7 +21,7 @@ export const useTagCreation = (options: UseTagCreationOptions = {}) => {
       description?: string | null;
     },
     entityType: "person" | "organization"
-  ) => {
+  ): Promise<Tag | null> => {
     try {
       // First create the tag
       const tagResult = await findOrCreateTag({

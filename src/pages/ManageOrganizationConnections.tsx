@@ -17,7 +17,7 @@ import OrganizationFormDialog from "@/components/profile/organization/Organizati
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
+  const { data: relationships = [], isLoading: relationshipsLoading } = useUserOrganizationRelationships(user?.id);
   const [activeTab, setActiveTab] = useState("all");
   const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
   const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
@@ -82,7 +82,7 @@ const ManageOrganizationConnections = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="overflow-x-auto">
-            {isLoadingRelationships ? (
+            {relationshipsLoading ? (
               <div className="text-center py-8">Loading your organizations...</div>
             ) : formattedRelationships.length > 0 ? (
               <OrganizationTabs

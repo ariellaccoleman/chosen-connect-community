@@ -37,7 +37,7 @@ const OrganizationsList = () => {
   }
 
   // First filter by search term
-  const searchFilteredOrgs = organizations.filter((org) => {
+  const searchFilteredOrgs = organizations.filter((org: OrganizationWithLocation) => {
     return org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
       (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));

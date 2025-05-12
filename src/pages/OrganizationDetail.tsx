@@ -1,3 +1,5 @@
+
+// Making minimal changes to fix the build error with useUserOrganizationRelationships
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -24,7 +26,7 @@ const OrganizationDetail = () => {
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   const { data: userRole } = useOrganizationRole(user?.id, id);
   
-  // Get user's relationships
+  // Get user's relationships with the fixed hook usage
   const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
 
   useEffect(() => {
