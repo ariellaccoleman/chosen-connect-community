@@ -1,7 +1,6 @@
 
 import React from "react";
 import { User } from "@supabase/supabase-js";
-import CreateTagButton from "./CreateTagButton";
 
 interface EmptySearchStateProps {
   searchValue: string;
@@ -9,21 +8,20 @@ interface EmptySearchStateProps {
   user: User | null;
 }
 
-const EmptySearchState = ({
-  searchValue,
-  handleOpenCreateDialog,
-  user
+const EmptySearchState = ({ 
+  searchValue
 }: EmptySearchStateProps) => {
   return (
-    <div className="py-6 text-center text-sm">
-      <p className="text-muted-foreground">No tags found</p>
-      <CreateTagButton 
-        searchValue={searchValue}
-        handleOpenCreateDialog={handleOpenCreateDialog}
-        user={user}
-      />
+    <div className="py-6 text-center">
+      <p className="text-sm">
+        No tags found for "<span className="font-medium">{searchValue}</span>"
+      </p>
+      <p className="text-xs text-muted-foreground mt-2">
+        Try a different search term or create a new tag using the button below.
+      </p>
     </div>
   );
 };
 
 export default EmptySearchState;
+
