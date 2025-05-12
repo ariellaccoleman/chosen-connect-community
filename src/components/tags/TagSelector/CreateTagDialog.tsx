@@ -33,6 +33,12 @@ const CreateTagDialog = ({
     }
   };
 
+  // Create a properly typed initialValues object that matches the TagFormValues type
+  const formInitialValues: TagFormValues = {
+    name: initialValue ?? "",
+    description: ""
+  };
+
   return (
     <FormDialog
       isOpen={isOpen}
@@ -41,7 +47,7 @@ const CreateTagDialog = ({
       description={`Add a new tag for ${targetType === "person" ? "people" : "organizations"}.`}
     >
       <TagForm
-        initialValues={{ name: (initialValue ?? "") as string, description: "" }}
+        initialValues={formInitialValues}
         onSubmit={handleCreateTag}
         isSubmitting={isCreating}
         onCancel={onClose}
