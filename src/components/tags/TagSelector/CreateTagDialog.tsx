@@ -33,11 +33,12 @@ const CreateTagDialog = ({
     }
   };
 
-  // Create the initialValues object with the correct type as Partial<TagFormValues>
-  const formInitialValues: Partial<TagFormValues> = {
-    name: initialValue,
+  // Create a strongly typed initialValues object
+  // By explicitly defining name as a non-optional string, we satisfy the type requirement
+  const formInitialValues = {
+    name: initialValue || "", // Ensure it's always a string, never undefined
     description: ""
-  };
+  } as const; // Use 'as const' to make TypeScript treat this as exact types
 
   return (
     <FormDialog
