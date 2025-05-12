@@ -33,13 +33,6 @@ const CreateTagDialog = ({
     }
   };
 
-  // Create a strongly typed initialValues object
-  // By explicitly defining name as a non-optional string, we satisfy the type requirement
-  const formInitialValues = {
-    name: initialValue || "", // Ensure it's always a string, never undefined
-    description: ""
-  } as const; // Use 'as const' to make TypeScript treat this as exact types
-
   return (
     <FormDialog
       isOpen={isOpen}
@@ -48,7 +41,7 @@ const CreateTagDialog = ({
       description={`Add a new tag for ${targetType === "person" ? "people" : "organizations"}.`}
     >
       <TagForm
-        initialValues={formInitialValues}
+        initialValues={{ name: initialValue || "", description: "" }}
         onSubmit={handleCreateTag}
         isSubmitting={isCreating}
         onCancel={onClose}
