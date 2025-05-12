@@ -1,9 +1,7 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";
-import { TagAssignment } from "@/utils/tagUtils";
 import TagList from "./TagList";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import TagSelector from "./TagSelector";
 
@@ -21,7 +19,6 @@ const EntityTagManager = ({
   entityType,
   isAdmin = false,
   isEditing = false,
-  onFinishEditing,
   showEntityType = false
 }: EntityTagManagerProps) => {
   const { data: tagAssignments, isLoading } = useEntityTags(entityId, entityType);
@@ -67,13 +64,8 @@ const EntityTagManager = ({
             tagAssignments={tagAssignments} 
             onRemove={isAdmin ? handleRemoveTag : undefined}
             currentEntityType={entityType}
-            className="mb-4"
             showEntityType={showEntityType}
           />
-          
-          <Button variant="secondary" onClick={onFinishEditing}>
-            Done Editing
-          </Button>
         </div>
       ) : (
         <TagList 
