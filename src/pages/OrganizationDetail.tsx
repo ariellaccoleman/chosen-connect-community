@@ -120,7 +120,7 @@ const OrganizationDetail = () => {
                     entityId={id} 
                     entityType="organization" 
                     isAdmin={isOrgAdmin || isAdmin}
-                    hideEntityType={true}
+                    showEntityType={false}
                   />
                 )}
               </div>

@@ -22,6 +22,7 @@ const ProfileTags = ({ profileId, isAdmin = false }: ProfileTagsProps) => {
           entityId={profileId}
           entityType="person"
           isAdmin={isAdmin}
+          showEntityType={false}
         />
       </CardContent>
     </Card>

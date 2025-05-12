@@ -22,7 +22,10 @@ const PublicProfileTags = ({ tagAssignments, isLoading }: PublicProfileTagsProps
             ))}
           </div>
         ) : (
-          <TagList tagAssignments={tagAssignments} />
+          <TagList 
+            tagAssignments={tagAssignments}
+            showEntityType={false}
+          />
         )}
       </CardContent>
     </Card>

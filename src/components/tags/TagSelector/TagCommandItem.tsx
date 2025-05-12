@@ -40,6 +40,7 @@ const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
       <div className="flex flex-col">
         <div className="flex items-center">
           <span>{tag.name}</span>
+          {/* Show entity type in typeaheads for tags from a different entity type */}
           {isDifferentType && entityTypeInfo && (
             <span className="ml-2 text-xs text-muted-foreground">
               ({entityTypeInfo})

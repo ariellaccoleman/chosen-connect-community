@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations, useTags } from "@/hooks/useTags";
 import { Tag, TagAssignment } from "@/utils/tagUtils";
@@ -25,7 +26,7 @@ interface EntityTagManagerProps {
   isAdmin?: boolean;
   isEditing?: boolean;
   onFinishEditing?: () => void;
-  hideEntityType?: boolean; // New prop
+  showEntityType?: boolean;
 }
 
 const EntityTagManager = ({
@@ -34,7 +35,7 @@ const EntityTagManager = ({
   isAdmin = false,
   isEditing = false,
   onFinishEditing,
-  hideEntityType = false // Default to showing entity type
+  showEntityType = false
 }: EntityTagManagerProps) => {
   const [availableTags, setAvailableTags] = useState<Tag[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -131,7 +132,7 @@ const EntityTagManager = ({
             onRemove={isAdmin ? handleRemoveTag : undefined}
             currentEntityType={entityType}
             className="mb-4"
-            hideEntityType={hideEntityType} // Pass the hideEntityType prop
+            showEntityType={showEntityType}
           />
           <Button variant="secondary" onClick={onFinishEditing}>
             Done Editing
@@ -142,7 +143,7 @@ const EntityTagManager = ({
           tagAssignments={tagAssignments} 
           onRemove={isAdmin ? handleRemoveTag : undefined}
           currentEntityType={entityType}
-          hideEntityType={hideEntityType} // Pass the hideEntityType prop
+          showEntityType={showEntityType}
         />
       )}
     </div>
