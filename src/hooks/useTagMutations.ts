@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
 import { 
@@ -56,7 +55,8 @@ export const useTagMutations = () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       
       // Also clear any cached tag data from the server
-      invalidateTagCache(variables.type === "person" ? "person" : "organization");
+      // Fix here: Use the correct type casting for entity type
+      invalidateTagCache(variables.type === "person" ? "person" : "organization" as "person" | "organization");
     },
     onError: (error) => {
       console.error("Error in findOrCreateTagMutation:", error);
@@ -88,7 +88,8 @@ export const useTagMutations = () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       
       // Clear cache for this entity type
-      invalidateTagCache(variables.entityType);
+      // Fix here: Use the correct type casting for entity type
+      invalidateTagCache(variables.entityType as "person" | "organization");
     },
     onError: (error) => {
       console.error("Error in updateTagEntityTypeMutation:", error);
@@ -133,7 +134,8 @@ export const useTagMutations = () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       
       // Also clear any cached tag data from the server
-      invalidateTagCache(variables.type === "person" ? "person" : "organization");
+      // Fix here: Use the correct type casting for entity type
+      invalidateTagCache(variables.type === "person" ? "person" : "organization" as "person" | "organization");
     },
     onError: (error) => {
       console.error("Error in createTagMutation:", error);
