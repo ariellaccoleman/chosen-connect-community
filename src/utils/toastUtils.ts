@@ -33,7 +33,8 @@ export const createMutationHandlers = (
       }
       
       // Show success toast after operation completes successfully
-      if (successMessage) {
+      // Only show if there's actual data (a change was made)
+      if (successMessage && data !== null) {
         toast.success(successMessage);
       }
       

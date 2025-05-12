@@ -1,5 +1,5 @@
-
 import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
+import { createTag as apiCreateTag } from "@/api/tags/tagCrudApi"; 
 import { Tag } from "./types";
 
 // Fetch tags for filtering (showing assigned tags only)
@@ -50,34 +50,18 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Create a new tag
+// Create a new tag - Use the API function instead of direct fetch
 export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
-    const { name, description, type, is_public, created_by } = tagData;
+    // Call the API function that properly uses the apiClient
+    const response = await apiCreateTag(tagData);
     
-    const response = await fetch('/api/tags', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name,
-        description,
-        type,
-        is_public,
-        created_by
-      })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Tag creation response error:", response.status, errorData);
-      throw new Error(`Failed to create tag: ${response.statusText}`);
+    if (response.status !== 'success' || !response.data) {
+      console.error("Error creating tag:", response.error);
+      return null;
     }
     
-    // Parse the response as JSON
-    const data = await response.json();
-    
-    // Return the tag data
-    return data;
+    return response.data;
   } catch (error) {
     console.error("Error creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it

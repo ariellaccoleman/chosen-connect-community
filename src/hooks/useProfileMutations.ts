@@ -33,6 +33,12 @@ export const useUpdateProfile = () => {
         }
       }
       
+      // Check if there are any actual changes to make
+      if (Object.keys(cleanedProfileData).length === 0) {
+        console.log('No profile data to update, skipping database operation');
+        return null;
+      }
+      
       // First check if the profile exists
       const { data: existingProfile, error: checkError } = await supabase
         .from('profiles')
@@ -87,13 +93,20 @@ export const useUpdateProfile = () => {
     ...createMutationHandlers({
       successMessage: 'Profile updated successfully',
       errorMessagePrefix: 'Error updating profile',
-      onSuccessCallback: (_, variables) => {
-        // Invalidate both profile queries to ensure they're refreshed
-        queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
-        queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
-        
-        // Also invalidate community profiles query
-        queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
+      onSuccessCallback: (data, variables) => {
+        // Only invalidate queries and show success message if we actually made changes
+        if (data) {
+          // Invalidate both profile queries to ensure they're refreshed
+          queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
+          queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
+          
+          // Also invalidate community profiles query
+          queryClient.invalidateQueries({ queryKey: ['community-profiles'] });
+        } else {
+          // No profile update was made, so remove the success toast notification
+          // This is handled internally in createMutationHandlers when data is null
+          console.log('No profile changes were made');
+        }
       }
     })
   });

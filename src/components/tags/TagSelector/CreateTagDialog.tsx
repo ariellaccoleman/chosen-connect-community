@@ -81,6 +81,7 @@ const CreateTagDialog = ({
       }, {
         onSuccess: (newTag) => {
           if (newTag) {
+            console.log("Tag created successfully:", newTag);
             toast.success(`Tag "${values.name}" created successfully`);
             form.reset();
             onClose();
@@ -91,12 +92,12 @@ const CreateTagDialog = ({
         },
         onError: (error) => {
           console.error("Error creating tag:", error);
-          toast.error("Failed to create tag. Please try again.");
+          toast.error(`Failed to create tag: ${error?.message || "Unknown error"}`);
         }
       });
     } catch (error) {
       console.error("Error creating tag:", error);
-      toast.error("Failed to create tag. Please try again.");
+      toast.error(`Failed to create tag: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   };
 

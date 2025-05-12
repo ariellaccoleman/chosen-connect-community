@@ -31,6 +31,7 @@ export const useTagMutations = () => {
     }) => {
       if (!user?.id) throw new Error("User must be authenticated");
       
+      // Call the createTag function with the correct parameters
       const tag = await createTag({
         name,
         description,
@@ -39,13 +40,23 @@ export const useTagMutations = () => {
         created_by: user.id
       });
       
+      if (!tag) {
+        throw new Error("Failed to create tag");
+      }
+      
       return tag;
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      console.log("Tag created successfully:", data);
+      
       // Invalidate all tag queries since new tag could affect any of them
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      
       // Also clear any cached tag data from the server
-      invalidateTagCache();
+      invalidateTagCache(variables.type === "person" ? "person" : "organization");
+    },
+    onError: (error) => {
+      console.error("Error in createTagMutation:", error);
     }
   });
 

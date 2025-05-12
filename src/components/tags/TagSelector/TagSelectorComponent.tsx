@@ -64,6 +64,13 @@ const TagSelectorComponent = ({
     setOpen(false);
   };
 
+  const handleTagCreated = (tag: Tag) => {
+    // Force cache invalidation when a new tag is created
+    invalidateTagCache(targetType);
+    // Call the parent's onTagSelected callback
+    onTagSelected(tag);
+  };
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -100,11 +107,7 @@ const TagSelectorComponent = ({
         onClose={() => setIsCreateDialogOpen(false)}
         initialValue={searchValue}
         targetType={targetType}
-        onTagCreated={(tag) => {
-          // Invalidate cache after creating a new tag
-          invalidateTagCache(targetType);
-          onTagSelected(tag);
-        }}
+        onTagCreated={handleTagCreated}
         isAdmin={isAdmin}
       />
     </>
