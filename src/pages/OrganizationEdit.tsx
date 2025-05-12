@@ -6,7 +6,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation } from "@/types";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import BaseLayout from "@/components/layout/BaseLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save } from "lucide-react";
@@ -167,30 +167,30 @@ const OrganizationEdit = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
+      <BaseLayout includeNavbar={true}>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Loading organization...</p>
           </div>
         </div>
-      </DashboardLayout>
+      </BaseLayout>
     );
   }
 
   if (!organization) {
     return (
-      <DashboardLayout>
+      <BaseLayout includeNavbar={true}>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Organization not found</p>
           </div>
         </div>
-      </DashboardLayout>
+      </BaseLayout>
     );
   }
 
   return (
-    <DashboardLayout>
+    <BaseLayout includeNavbar={true}>
       <div className="container mx-auto py-6 px-4 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate(`/organizations/${id}`)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -310,7 +310,7 @@ const OrganizationEdit = () => {
           </Tabs>
         </div>
       </div>
-    </DashboardLayout>
+    </BaseLayout>
   );
 };
 
