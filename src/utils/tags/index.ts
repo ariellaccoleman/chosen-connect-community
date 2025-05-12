@@ -19,3 +19,6 @@ export {
 export * from './tagEntityTypes';
 export * from './tagDisplay';
 export * from './cacheUtils';
+
+// Also export the invalidateTagCache function for use in hooks
+export { invalidateTagCache } from "@/hooks/useTagCache";
