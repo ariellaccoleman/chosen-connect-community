@@ -59,7 +59,7 @@ const TagSelectorComponent = ({
             className="w-full justify-between"
           >
             <TagIcon className="mr-2 h-4 w-4 shrink-0" />
-            <span className="truncate">Select or create a tag</span>
+            <span className="truncate">Add tag</span>
           </Button>
         </PopoverTrigger>
         <PopoverContent className="p-0 w-[300px]">

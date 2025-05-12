@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -6,7 +5,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation } from "@/types";
-import BaseLayout from "@/components/layout/BaseLayout";
+import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowLeft, Save } from "lucide-react";
@@ -167,30 +166,30 @@ const OrganizationEdit = () => {
 
   if (loading) {
     return (
-      <BaseLayout includeNavbar={true}>
+      <Layout includeNavbar={true}>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Loading organization...</p>
           </div>
         </div>
-      </BaseLayout>
+      </Layout>
     );
   }
 
   if (!organization) {
     return (
-      <BaseLayout includeNavbar={true}>
+      <Layout includeNavbar={true}>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Organization not found</p>
           </div>
         </div>
-      </BaseLayout>
+      </Layout>
     );
   }
 
   return (
-    <BaseLayout includeNavbar={true}>
+    <Layout includeNavbar={true}>
       <div className="container mx-auto py-6 px-4 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate(`/organizations/${id}`)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -310,7 +309,7 @@ const OrganizationEdit = () => {
           </Tabs>
         </div>
       </div>
-    </BaseLayout>
+    </Layout>
   );
 };
 
