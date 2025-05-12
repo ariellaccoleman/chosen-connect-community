@@ -36,31 +36,16 @@ const AppRoutes = () => {
     }
     
     // For all other routes, apply the appropriate authentication wrapper
-    // AND wrap with the proper layout component
-    const WrappedComponent = () => {
-      // Use DashboardLayout for protected and admin routes unless specified otherwise
-      if ((route.auth === 'protected' || route.auth === 'admin') && route.layout !== 'default') {
-        return (
-          <DashboardLayout>
-            <Component />
-          </DashboardLayout>
-        );
-      }
-      
-      // For other routes, use the standard Layout with navbar
-      return <Layout includeNavbar={true}><Component /></Layout>;
-    };
-    
-    // Apply the appropriate authentication wrapper
+    // without an additional layout wrapper since the components already include Layout
     switch (route.auth) {
       case "protected":
-        return <ProtectedRoute><WrappedComponent /></ProtectedRoute>;
+        return <ProtectedRoute><Component /></ProtectedRoute>;
       case "admin":
-        return <AdminRoute><WrappedComponent /></AdminRoute>;
+        return <AdminRoute><Component /></AdminRoute>;
       case "public":
-        return <PublicRoute><WrappedComponent /></PublicRoute>;
+        return <PublicRoute><Component /></PublicRoute>;
       default:
-        return <Layout includeNavbar={true}><Component /></Layout>;
+        return <Component />;
     }
   };
 
