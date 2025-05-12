@@ -1,5 +1,7 @@
+
 import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
-import { createTag as apiCreateTag } from "@/api/tags/tagCrudApi"; 
+import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
+import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 
 // Fetch tags for filtering (showing assigned tags only)
@@ -49,6 +51,41 @@ export const fetchSelectionTags = async (options: {
 
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
+
+// Find or create a tag
+export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
+  try {
+    // Call the API function that properly uses the apiClient
+    const response = await apiFindOrCreateTag(tagData);
+    
+    if (response.status !== 'success' || !response.data) {
+      console.error("Error finding or creating tag:", response.error);
+      return null;
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error finding or creating tag:", error);
+    throw error; // Re-throw to let the mutation handler deal with it
+  }
+};
+
+// Update tag entity type
+export const updateTagEntityType = async (tagId: string, entityType: string): Promise<boolean> => {
+  try {
+    const response = await apiUpdateTagEntityType(tagId, entityType);
+    
+    if (response.status !== 'success') {
+      console.error("Error updating tag entity type:", response.error);
+      return false;
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error("Error updating tag entity type:", error);
+    throw error; // Re-throw to let the mutation handler deal with it
+  }
+};
 
 // Create a new tag - Use the API function instead of direct fetch
 export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {

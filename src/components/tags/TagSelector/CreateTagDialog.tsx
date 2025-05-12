@@ -54,7 +54,7 @@ const CreateTagDialog = ({
   isAdmin = false
 }: CreateTagDialogProps) => {
   const { user } = useAuth();
-  const { createTag, isCreating } = useTagMutations();
+  const { findOrCreateTag, isCreating } = useTagMutations();
 
   const form = useForm<CreateTagFormValues>({
     resolver: zodResolver(createTagSchema),
@@ -65,7 +65,7 @@ const CreateTagDialog = ({
     },
   });
 
-  // Handle creating a new tag
+  // Handle creating a new tag using the two-step approach
   const handleCreateTag = async (values: CreateTagFormValues) => {
     if (!user?.id) {
       toast.error("You must be logged in to create tags");
@@ -73,7 +73,8 @@ const CreateTagDialog = ({
     }
     
     try {
-      createTag({
+      // Step 1: Find or create the tag
+      findOrCreateTag({
         name: values.name,
         description: values.description || null,
         type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
@@ -81,7 +82,7 @@ const CreateTagDialog = ({
       }, {
         onSuccess: (newTag) => {
           if (newTag) {
-            console.log("Tag created successfully:", newTag);
+            console.log("Tag created/found successfully:", newTag);
             toast.success(`Tag "${values.name}" created successfully`);
             form.reset();
             onClose();

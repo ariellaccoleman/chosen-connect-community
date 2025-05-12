@@ -6,9 +6,11 @@ export {
   fetchFilterTags,
   fetchSelectionTags,
   fetchTags,
-  createTag, 
+  createTag,
+  findOrCreateTag,
   updateTag, 
-  deleteTag
+  deleteTag,
+  updateTagEntityType
 } from './tagOperations';
 // Export from tagAssignments
 export {

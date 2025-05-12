@@ -1,7 +1,7 @@
-
 import { TagAssignment } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { updateTagEntityType } from "./tagEntityTypesApi";
 
 /**
  * Assign a tag to an entity
@@ -12,43 +12,33 @@ export const assignTag = async (
   entityType: "person" | "organization"
 ): Promise<ApiResponse<TagAssignment>> => {
   return apiClient.query(async (client) => {
-    // First, create the tag assignment
-    const { data, error } = await client
-      .from('tag_assignments')
-      .insert({
-        tag_id: tagId,
-        target_id: entityId,
-        target_type: entityType
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Then, update the tag_entity_types table if needed
-    // Check if this entity type is already registered for this tag
-    const { data: existingType, error: typeCheckError } = await client
-      .from('tag_entity_types')
-      .select('id')
-      .eq('tag_id', tagId)
-      .eq('entity_type', entityType)
-      .maybeSingle();
-    
-    if (typeCheckError) throw typeCheckError;
-    
-    // If this tag doesn't have this entity type yet, add it
-    if (!existingType) {
-      const { error: insertError } = await client
-        .from('tag_entity_types')
+    try {
+      // Step 1: Update tag_entity_types to ensure this tag is associated with this entity type
+      const entityTypeResponse = await updateTagEntityType(tagId, entityType);
+      
+      if (entityTypeResponse.status !== 'success') {
+        throw new Error(`Failed to update tag entity type: ${entityTypeResponse.error?.message}`);
+      }
+      
+      // Step 2: Create the tag assignment
+      const { data, error } = await client
+        .from('tag_assignments')
         .insert({
           tag_id: tagId,
-          entity_type: entityType
-        });
+          target_id: entityId,
+          target_type: entityType
+        })
+        .select()
+        .single();
       
-      if (insertError) throw insertError;
+      if (error) throw error;
+      
+      console.log(`Successfully assigned tag ${tagId} to ${entityType} ${entityId}`);
+      return createSuccessResponse(data);
+    } catch (error) {
+      console.error("Error in assignTag:", error);
+      throw error;
     }
-    
-    return createSuccessResponse(data);
   });
 };
 
