@@ -1,3 +1,4 @@
+
 import { Tag } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
@@ -84,10 +85,11 @@ export const getSelectionTags = async (options: {
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
+  skipCache?: boolean;
 } = {}): Promise<ApiResponse<Tag[]>> => {
   return apiClient.query(async (client) => {
-    // First try to get from cache if we have a simple query
-    if (options.targetType && !options.searchQuery && !options.type && 
+    // First try to get from cache if we have a simple query and skipCache is not true
+    if (options.targetType && !options.skipCache && !options.searchQuery && !options.type && 
         options.isPublic === undefined && !options.createdBy) {
       // Use more reliable function-based caching since the 'cache' table isn't in TypeScript types
       const cacheKey = `selection_tags_${options.targetType}`;
@@ -139,8 +141,9 @@ export const getSelectionTags = async (options: {
       
       if (error) throw error;
       
-      // Cache the result if it's a simple query
-      if (!options.searchQuery && !options.type && options.isPublic === undefined && !options.createdBy) {
+      // Cache the result if it's a simple query and we're not explicitly skipping cache
+      if (!options.skipCache && !options.searchQuery && !options.type && 
+          options.isPublic === undefined && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
         // Use a function to update the cache since we don't have the cache table in TypeScript types
         await typedRpc(

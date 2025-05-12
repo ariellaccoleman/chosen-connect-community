@@ -1,22 +1,8 @@
 
-import { supabase } from "@/integrations/supabase/client";
+import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
 import { Tag } from "./types";
-import { logger } from "../logger";
-import { handleError } from "../errorUtils";
-import { 
-  getFilterTags,
-  getSelectionTags,
-  getEntityTags as getEntityTagsApi,
-  createTag as createTagApi,
-  updateTag as updateTagApi,
-  deleteTag as deleteTagApi,
-  assignTag as assignTagApi,
-  removeTagAssignment as removeTagAssignmentApi
-} from "@/api/tags";
 
-/**
- * Fetch tags for filtering purposes
- */
+// Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
   type?: string;
   isPublic?: boolean;
@@ -25,161 +11,110 @@ export const fetchFilterTags = async (options: {
   targetType?: string;
 } = {}): Promise<Tag[]> => {
   try {
-    const { data, error } = await getFilterTags(options);
-    
-    if (error) {
-      handleError(error, "Error fetching filter tags");
+    const response = await getFilterTags(options);
+    if (!response.success) {
+      console.error("Error fetching filter tags:", response.error);
       return [];
     }
     
-    return data || [];
+    return response.data;
   } catch (error) {
-    handleError(error, "Error in fetchFilterTags");
+    console.error("Error in fetchFilterTags:", error);
     return [];
   }
 };
 
-/**
- * Fetch tags for selection purposes (typeahead, selector components)
- */
+// Fetch tags for selection (showing entity-specific and general tags)
 export const fetchSelectionTags = async (options: {
   type?: string;
   isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
+  skipCache?: boolean;
 } = {}): Promise<Tag[]> => {
   try {
-    const { data, error } = await getSelectionTags(options);
-    
-    if (error) {
-      handleError(error, "Error fetching selection tags");
+    const response = await getSelectionTags(options);
+    if (!response.success) {
+      console.error("Error fetching selection tags:", response.error);
       return [];
     }
     
-    return data || [];
+    return response.data;
   } catch (error) {
-    handleError(error, "Error in fetchSelectionTags");
+    console.error("Error in fetchSelectionTags:", error);
     return [];
   }
 };
 
-/**
- * Legacy function for backward compatibility
- * @deprecated Use fetchFilterTags or fetchSelectionTags instead
- */
+// Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-/**
- * Fetch tags assigned to a specific entity
- */
-export const fetchEntityTags = async (entityId: string, entityType: "person" | "organization") => {
+// Create a new tag
+export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
-    const { data, error } = await getEntityTagsApi(entityId, entityType);
+    const { name, description, type, is_public, created_by } = tagData;
     
-    if (error) {
-      handleError(error, "Error fetching entity tags");
-      return [];
+    const response = await fetch('/api/tags', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        description,
+        type,
+        is_public,
+        created_by
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to create tag: ${response.statusText}`);
     }
     
-    return data || [];
+    return await response.json();
   } catch (error) {
-    handleError(error, "Error in fetchEntityTags");
-    return [];
-  }
-};
-
-/**
- * Create a new tag
- */
-export const createTag = async (tagData: Partial<Tag>) => {
-  try {
-    const { data, error } = await createTagApi(tagData);
-    
-    if (error) {
-      handleError(error, "Error creating tag");
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    handleError(error, "Error in createTag");
+    console.error("Error creating tag:", error);
     return null;
   }
 };
 
-/**
- * Update an existing tag
- */
-export const updateTag = async (tagId: string, updates: Partial<Tag>) => {
+// Update an existing tag
+export const updateTag = async (
+  tagId: string,
+  updates: Partial<Tag>
+): Promise<Tag | null> => {
   try {
-    const { data, error } = await updateTagApi(tagId, updates);
+    const response = await fetch(`/api/tags/${tagId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
     
-    if (error) {
-      handleError(error, "Error updating tag");
-      return null;
+    if (!response.ok) {
+      throw new Error(`Failed to update tag: ${response.statusText}`);
     }
     
-    return data;
+    return await response.json();
   } catch (error) {
-    handleError(error, "Error in updateTag");
+    console.error("Error updating tag:", error);
     return null;
   }
 };
 
-/**
- * Delete a tag
- */
-export const deleteTag = async (tagId: string) => {
+// Delete a tag
+export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
-    const { data, error } = await deleteTagApi(tagId);
+    const response = await fetch(`/api/tags/${tagId}`, {
+      method: 'DELETE'
+    });
     
-    if (error) {
-      handleError(error, "Error deleting tag");
-      return false;
+    if (!response.ok) {
+      throw new Error(`Failed to delete tag: ${response.statusText}`);
     }
     
     return true;
   } catch (error) {
-    handleError(error, "Error in deleteTag");
-    return false;
-  }
-};
-
-/**
- * Assign a tag to an entity
- */
-export const assignTag = async (tagId: string, entityId: string, entityType: "person" | "organization") => {
-  try {
-    const { data, error } = await assignTagApi(tagId, entityId, entityType);
-    
-    if (error) {
-      handleError(error, "Error assigning tag");
-      return null;
-    }
-    
-    return data;
-  } catch (error) {
-    handleError(error, "Error in assignTag");
-    return null;
-  }
-};
-
-/**
- * Remove a tag assignment
- */
-export const removeTagAssignment = async (assignmentId: string) => {
-  try {
-    const { data, error } = await removeTagAssignmentApi(assignmentId);
-    
-    if (error) {
-      handleError(error, "Error removing tag assignment");
-      return false;
-    }
-    
-    return true;
-  } catch (error) {
-    handleError(error, "Error in removeTagAssignment");
+    console.error("Error deleting tag:", error);
     return false;
   }
 };

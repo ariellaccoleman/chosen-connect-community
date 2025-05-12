@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./useAuth";
@@ -25,6 +24,7 @@ interface TagQueryOptions {
   searchQuery?: string;
   targetType?: "person" | "organization";
   enabled?: boolean;
+  skipCache?: boolean; // New option to bypass cache
 }
 
 // Hook for fetching tags for filtering lists (e.g. directory pages)
@@ -49,6 +49,7 @@ export const useSelectionTags = (options: TagQueryOptions = {}) => {
     queryFn: () => fetchSelectionTags(options),
     enabled: options.enabled !== false,
     retry: 1,
+    staleTime: options.skipCache ? 0 : 5 * 60 * 1000, // 5 minutes cache unless skipCache is true
     meta: {
       onError: (error: any) => {
         console.error("Error in useSelectionTags query:", error);
@@ -108,6 +109,8 @@ export const useTagMutations = () => {
     onSuccess: () => {
       // Invalidate all tag queries since new tag could affect any of them
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      // Also clear any cached tag data from the server
+      invalidateTagCache();
     }
   });
 
@@ -125,6 +128,8 @@ export const useTagMutations = () => {
     onSuccess: () => {
       // Invalidate all tag queries
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      // Also clear any cached tag data from the server
+      invalidateTagCache();
     }
   });
 
@@ -138,6 +143,8 @@ export const useTagMutations = () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       // Also invalidate entity-tags queries as they might be affected
       queryClient.invalidateQueries({ queryKey: ["entity-tags"] });
+      // Also clear any cached tag data from the server
+      invalidateTagCache();
     }
   });
 
@@ -174,6 +181,8 @@ export const useTagAssignmentMutations = () => {
       });
       // Also invalidate tags query as entity types might have changed
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      // Clear the tag cache for this entity type
+      invalidateTagCache(variables.entityType);
     },
     onError: (error) => {
       console.error("Error in assignTagMutation:", error);
@@ -188,6 +197,11 @@ export const useTagAssignmentMutations = () => {
     onSuccess: () => {
       // Since we don't know which entity this was for, we invalidate all entity-tags queries
       queryClient.invalidateQueries({ queryKey: ["entity-tags"] });
+      // Also invalidate tags in case entity types changed
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      // Clear both person and organization tag caches to be safe
+      invalidateTagCache("person");
+      invalidateTagCache("organization");
     },
     onError: (error) => {
       console.error("Error in removeAssignmentMutation:", error);
@@ -200,4 +214,25 @@ export const useTagAssignmentMutations = () => {
     isAssigning: assignTagMutation.isPending,
     isRemoving: removeAssignmentMutation.isPending
   };
+};
+
+// Function to invalidate server-side tag cache
+export const invalidateTagCache = async (entityType?: "person" | "organization") => {
+  try {
+    // If an entity type is specified, only invalidate that cache
+    if (entityType) {
+      await fetch(`/api/tags/invalidate-cache?entityType=${entityType}`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } else {
+      // Otherwise invalidate all tag caches
+      await fetch('/api/tags/invalidate-cache', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+  } catch (error) {
+    console.error("Failed to invalidate tag cache:", error);
+  }
 };

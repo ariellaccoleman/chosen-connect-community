@@ -6,3 +6,4 @@ export * from './getTagsApi';
 export * from './entityTagsApi';
 export * from './tagCrudApi';
 export * from './assignmentApi';
+export * from './cacheApi';

@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tag, fetchSelectionTags } from "@/utils/tags";
+import { Tag, fetchSelectionTags, invalidateTagCache } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
 
@@ -28,16 +28,23 @@ const TagSelectorComponent = ({
   // Load tags based on search criteria - using fetchSelectionTags for typeahead behavior
   useEffect(() => {
     const loadTags = async () => {
+      // On first load or when opening popover, try to invalidate cache
+      if (searchValue === "" && open) {
+        // Try to refresh the cache
+        await invalidateTagCache(targetType);
+      }
+
       const fetchedTags = await fetchSelectionTags({ 
         searchQuery: searchValue,
-        targetType  // Pass targetType to get both entity-specific and general tags
+        targetType,  // Pass targetType to get both entity-specific and general tags
+        skipCache: searchValue === "" // Skip cache for initial load
       });
       setTags(fetchedTags);
     };
 
     const timeoutId = setTimeout(loadTags, 300);
     return () => clearTimeout(timeoutId);
-  }, [searchValue, targetType, isAdmin, user?.id]);
+  }, [searchValue, targetType, isAdmin, user?.id, open]);
 
   const handleOpenCreateDialog = () => {
     if (!user?.id) {
@@ -84,7 +91,11 @@ const TagSelectorComponent = ({
         onClose={() => setIsCreateDialogOpen(false)}
         initialValue={searchValue}
         targetType={targetType}
-        onTagCreated={onTagSelected}
+        onTagCreated={(tag) => {
+          // Invalidate cache after creating a new tag
+          invalidateTagCache(targetType);
+          onTagSelected(tag);
+        }}
         isAdmin={isAdmin}
       />
     </>

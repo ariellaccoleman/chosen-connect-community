@@ -5,7 +5,7 @@ export * from './types';
 export { 
   fetchFilterTags,
   fetchSelectionTags,
-  fetchTags, // Add this line to re-export fetchTags
+  fetchTags,
   createTag, 
   updateTag, 
   deleteTag
@@ -18,3 +18,4 @@ export {
 } from './tagAssignments';
 export * from './tagEntityTypes';
 export * from './tagDisplay';
+export * from './cacheUtils';
