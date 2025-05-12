@@ -19,6 +19,7 @@ const EntityTagManager = ({
   entityType,
   isAdmin = false,
   isEditing = false,
+  onFinishEditing,
   showEntityType = false
 }: EntityTagManagerProps) => {
   const { data: tagAssignments, isLoading } = useEntityTags(entityId, entityType);
