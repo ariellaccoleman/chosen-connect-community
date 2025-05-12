@@ -43,8 +43,9 @@ const OrganizationsList = () => {
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
-  // Then apply tag filtering
-  const filteredOrganizations = filterItemsByTag(searchFilteredOrgs);
+  // Then apply tag filtering - we need to cast the organizations to the expected type
+  const orgWithTags = searchFilteredOrgs as unknown as Array<{ tags?: any[] }>;
+  const filteredOrganizations = filterItemsByTag(orgWithTags) as unknown as OrganizationWithLocation[];
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
@@ -141,4 +142,3 @@ const OrganizationCard = ({
 };
 
 export default OrganizationsList;
-

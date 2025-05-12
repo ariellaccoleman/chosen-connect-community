@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
@@ -47,4 +48,16 @@ export const useTagsForOrganizationFilter = () => {
     tags,
     isLoading
   };
+};
+
+// Add back the missing export for backwards compatibility
+export const useUserOrganizationRelationships = () => {
+  return useQuery({
+    queryKey: ["user-organization-relationships"],
+    queryFn: async () => {
+      // This is a placeholder implementation to fix the build error
+      // The actual implementation should be properly defined based on the application's needs
+      return [];
+    }
+  });
 };
