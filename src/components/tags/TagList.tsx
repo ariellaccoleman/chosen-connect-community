@@ -8,15 +8,13 @@ interface TagListProps {
   onRemove?: (assignmentId: string) => void;
   className?: string;
   currentEntityType?: "person" | "organization";
-  showEntityType?: boolean;
 }
 
 const TagList = ({ 
   tagAssignments, 
   onRemove, 
   className, 
-  currentEntityType,
-  showEntityType = false 
+  currentEntityType 
 }: TagListProps) => {
   if (!tagAssignments || tagAssignments.length === 0) {
     return <div className="text-sm text-muted-foreground">No tags assigned</div>;
@@ -30,7 +28,6 @@ const TagList = ({
           assignment={assignment}
           onRemove={onRemove}
           currentEntityType={currentEntityType}
-          showEntityType={showEntityType}
         />
       ))}
     </div>
@@ -41,13 +38,11 @@ const TagList = ({
 const TagAssignmentItem = ({ 
   assignment, 
   onRemove,
-  currentEntityType,
-  showEntityType
+  currentEntityType
 }: { 
   assignment: TagAssignment;
   onRemove?: (assignmentId: string) => void;
   currentEntityType?: "person" | "organization";
-  showEntityType?: boolean;
 }) => {
   const [isFromDifferentEntityType, setIsFromDifferentEntityType] = useState(false);
   const tag = assignment.tag;
@@ -75,7 +70,6 @@ const TagAssignmentItem = ({
       onRemove={onRemove ? () => onRemove(assignment.id) : undefined}
       entityType={assignment.target_type}
       isFromDifferentEntityType={isFromDifferentEntityType}
-      showEntityType={showEntityType}
     />
   );
 };

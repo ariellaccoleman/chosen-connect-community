@@ -1,7 +1,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TagList from "@/components/tags/TagList";
-import { TagAssignment } from "@/utils/tagUtils";
+import { TagAssignment } from "@/utils/tags";
 
 interface PublicProfileTagsProps {
   tagAssignments: TagAssignment[];
@@ -24,7 +24,6 @@ const PublicProfileTags = ({ tagAssignments, isLoading }: PublicProfileTagsProps
         ) : (
           <TagList 
             tagAssignments={tagAssignments}
-            showEntityType={false}
           />
         )}
       </CardContent>

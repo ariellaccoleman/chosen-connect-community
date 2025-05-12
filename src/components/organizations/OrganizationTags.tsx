@@ -23,7 +23,6 @@ const OrganizationTags = ({ organizationId, isAdmin = false }: OrganizationTagsP
           entityType="organization"
           isAdmin={isAdmin}
           isEditing={isAdmin} // Always show in editing mode for admins
-          showEntityType={false} // Don't show entity type for organization tags
         />
       </CardContent>
     </Card>

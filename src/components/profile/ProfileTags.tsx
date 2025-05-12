@@ -23,7 +23,6 @@ const ProfileTags = ({ profileId, isAdmin = false }: ProfileTagsProps) => {
           entityType="person"
           isAdmin={isAdmin}
           isEditing={true} // Always show in editing mode since we're on the edit page
-          showEntityType={false}
         />
       </CardContent>
     </Card>

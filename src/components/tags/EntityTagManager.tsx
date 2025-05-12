@@ -11,7 +11,6 @@ interface EntityTagManagerProps {
   isAdmin?: boolean;
   isEditing?: boolean;
   onFinishEditing?: () => void;
-  showEntityType?: boolean;
 }
 
 const EntityTagManager = ({
@@ -19,8 +18,7 @@ const EntityTagManager = ({
   entityType,
   isAdmin = false,
   isEditing = false,
-  onFinishEditing,
-  showEntityType = false
+  onFinishEditing
 }: EntityTagManagerProps) => {
   const { data: tagAssignments, isLoading } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment } = useTagAssignmentMutations();
@@ -65,7 +63,6 @@ const EntityTagManager = ({
             tagAssignments={tagAssignments} 
             onRemove={isAdmin ? handleRemoveTag : undefined}
             currentEntityType={entityType}
-            showEntityType={showEntityType}
           />
         </div>
       ) : (
@@ -73,7 +70,6 @@ const EntityTagManager = ({
           tagAssignments={tagAssignments} 
           onRemove={isAdmin ? handleRemoveTag : undefined}
           currentEntityType={entityType}
-          showEntityType={showEntityType}
         />
       )}
     </div>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { CommandItem } from "@/components/ui/command";
 import { Tag, getTagEntityTypes } from "@/utils/tags";
@@ -10,6 +9,8 @@ interface TagCommandItemProps {
 }
 
 const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
+  // Still keep the entity type logic since it might be needed elsewhere,
+  // but we won't display the entity type information
   const [entityTypeInfo, setEntityTypeInfo] = useState<string | null>(null);
   const [isDifferentType, setIsDifferentType] = useState(false);
   
@@ -40,12 +41,7 @@ const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
       <div className="flex flex-col">
         <div className="flex items-center">
           <span>{tag.name}</span>
-          {/* Show entity type in typeaheads for tags from a different entity type */}
-          {isDifferentType && entityTypeInfo && (
-            <span className="ml-2 text-xs text-muted-foreground">
-              ({entityTypeInfo})
-            </span>
-          )}
+          {/* Entity type display removed */}
         </div>
         
         {tag.description && (

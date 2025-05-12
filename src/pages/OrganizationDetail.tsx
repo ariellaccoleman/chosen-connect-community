@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -120,7 +119,6 @@ const OrganizationDetail = () => {
                     entityId={id} 
                     entityType="organization" 
                     isAdmin={isOrgAdmin || isAdmin}
-                    showEntityType={false}
                   />
                 )}
               </div>
