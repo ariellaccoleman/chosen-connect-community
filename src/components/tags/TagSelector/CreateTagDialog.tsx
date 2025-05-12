@@ -33,9 +33,9 @@ const CreateTagDialog = ({
     }
   };
 
-  // Create a properly typed initialValues object that matches the TagFormValues type
-  const formInitialValues: TagFormValues = {
-    name: initialValue ?? "",
+  // Process the initialValue earlier and create a properly typed initialValues object
+  const formInitialValues: Partial<TagFormValues> = {
+    name: initialValue,
     description: ""
   };
 
