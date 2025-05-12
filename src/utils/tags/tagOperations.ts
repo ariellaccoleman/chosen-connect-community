@@ -12,7 +12,7 @@ export const fetchFilterTags = async (options: {
 } = {}): Promise<Tag[]> => {
   try {
     const response = await getFilterTags(options);
-    if (!response.success) {
+    if (response.status !== 'success' || !response.data) {
       console.error("Error fetching filter tags:", response.error);
       return [];
     }
@@ -35,7 +35,7 @@ export const fetchSelectionTags = async (options: {
 } = {}): Promise<Tag[]> => {
   try {
     const response = await getSelectionTags(options);
-    if (!response.success) {
+    if (response.status !== 'success' || !response.data) {
       console.error("Error fetching selection tags:", response.error);
       return [];
     }
