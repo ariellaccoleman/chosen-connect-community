@@ -24,31 +24,31 @@ export const useTagCreation = (options: UseTagCreationOptions = {}) => {
   ) => {
     try {
       // First create the tag
-      const tag = await findOrCreateTag({
+      const tagResult = await findOrCreateTag({
         name: formValues.name,
         description: formValues.description || null,
         type: entityType
       });
 
-      if (!tag) {
+      if (!tagResult) {
         toast.error("Failed to create tag");
         return null;
       }
 
       // Next, ensure the tag is associated with the correct entity type
       await updateTagEntityType({
-        tagId: tag.id,
+        tagId: tagResult.id,
         entityType
       });
 
-      toast.success(`Tag "${tag.name}" created successfully`);
+      toast.success(`Tag "${tagResult.name}" created successfully`);
 
       // Call the optional callback
       if (options.onTagCreated) {
-        options.onTagCreated(tag);
+        options.onTagCreated(tagResult);
       }
 
-      return tag;
+      return tagResult;
     } catch (error) {
       console.error("Error creating tag:", error);
       toast.error(`Failed to create tag: ${error instanceof Error ? error.message : "Unknown error"}`);

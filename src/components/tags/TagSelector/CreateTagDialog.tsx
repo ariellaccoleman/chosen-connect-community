@@ -41,7 +41,7 @@ const CreateTagDialog = ({
       description={`Add a new tag for ${targetType === "person" ? "people" : "organizations"}.`}
     >
       <TagForm
-        initialValues={{ name: initialValue }}
+        initialValues={{ name: initialValue || "", description: "" }}
         onSubmit={handleCreateTag}
         isSubmitting={isCreating}
         onCancel={onClose}
