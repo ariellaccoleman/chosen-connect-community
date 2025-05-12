@@ -2,6 +2,9 @@
 // Export all tag-related hooks from this central file
 export { useTagCrudMutations } from './useTagCrudMutations';
 export { useTagAssignmentMutations } from './useTagAssignmentMutations';
+export { useTagFindOrCreate } from './useTagFindOrCreate';
+export { useTagEntityType } from './useTagEntityType';
+export { useTagBasicCrud } from './useTagBasicCrud';
 
 // Re-export for backward compatibility
 import { useTagCrudMutations } from './useTagCrudMutations';
