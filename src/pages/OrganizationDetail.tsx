@@ -4,7 +4,6 @@ import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation, LocationWithDetails, Location } from "@/types";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { formatLocation } from "@/utils/formatters/locationFormatters";
 import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import { useIsOrganizationAdmin, useOrganizationRole } from "@/hooks/useOrganizationAdmins";
@@ -76,85 +75,80 @@ const OrganizationDetail = () => {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto py-6 max-w-3xl">
-          <div className="flex justify-center items-center h-64">
-            <p>Loading organization...</p>
-          </div>
+      <div className="container mx-auto py-6 max-w-3xl">
+        <div className="flex justify-center items-center h-64">
+          <p>Loading organization...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (!organization) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto py-6 max-w-3xl">
-          <div className="flex justify-center items-center h-64">
-            <p>Organization not found</p>
-          </div>
+      <div className="container mx-auto py-6 max-w-3xl">
+        <div className="flex justify-center items-center h-64">
+          <p>Organization not found</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 px-4 max-w-3xl">
-        <OrganizationDetailHeader 
-          userId={user?.id}
-          organizationId={id}
-          organizationName={organization.name}
-          relationships={relationships}
-        />
+    <div className="container mx-auto py-6 px-4 max-w-3xl">
+      <OrganizationDetailHeader 
+        userId={user?.id}
+        organizationId={id}
+        organizationName={organization.name}
+        relationships={relationships}
+      />
 
-        {/* Admin alert below the header */}
-        {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
+      {/* Admin alert below the header */}
+      {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
 
-        <div className="space-y-6">
-          {/* Organization Info Card with Tags */}
-          <Card>
-            <CardContent className="pt-6">
-              <OrganizationInfo organization={organization} />
-              
-              {/* Tags Section */}
-              <div className="mt-6 border-t pt-6">
-                <h3 className="text-lg font-medium mb-2">Tags</h3>
-                <div className="mt-2">
-                  {id && (
-                    <EntityTagManager 
-                      entityId={id} 
-                      entityType="organization" 
-                      isAdmin={isOrgAdmin || isAdmin}
-                    />
-                  )}
-                </div>
+      <div className="space-y-6">
+        {/* Organization Info Card with Tags */}
+        <Card>
+          <CardContent className="pt-6">
+            <OrganizationInfo organization={organization} />
+            
+            {/* Tags Section */}
+            <div className="mt-6 border-t pt-6">
+              <h3 className="text-lg font-medium mb-2">Tags</h3>
+              <div className="mt-2">
+                {id && (
+                  <EntityTagManager 
+                    entityId={id} 
+                    entityType="organization" 
+                    isAdmin={isOrgAdmin || isAdmin}
+                    hideEntityType={true}
+                  />
+                )}
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
 
-          {/* Tabs for Members and Admin (if admin) */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList>
-              <TabsTrigger value="members">Members</TabsTrigger>
-              {(isOrgAdmin || isAdmin) && (
-                <TabsTrigger value="admins">Admins</TabsTrigger>
-              )}
-            </TabsList>
-            
-            <TabsContent value="members">
-              {id && <OrganizationMembers organizationId={id} />}
-            </TabsContent>
-            
+        {/* Tabs for Members and Admin (if admin) */}
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="members">Members</TabsTrigger>
             {(isOrgAdmin || isAdmin) && (
-              <TabsContent value="admins">
-                {id && <OrganizationAdmins organizationId={id} />}
-              </TabsContent>
+              <TabsTrigger value="admins">Admins</TabsTrigger>
             )}
-          </Tabs>
-        </div>
+          </TabsList>
+          
+          <TabsContent value="members">
+            {id && <OrganizationMembers organizationId={id} />}
+          </TabsContent>
+          
+          {(isOrgAdmin || isAdmin) && (
+            <TabsContent value="admins">
+              {id && <OrganizationAdmins organizationId={id} />}
+            </TabsContent>
+          )}
+        </Tabs>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
