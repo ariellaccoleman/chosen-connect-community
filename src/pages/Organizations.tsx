@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTagFilter } from "@/hooks/useTagFilter";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -48,59 +47,57 @@ const OrganizationsList = () => {
   const filteredOrganizations = filterItemsByTag(searchFilteredOrgs);
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 px-4 max-w-7xl">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-          <h1 className="text-3xl font-bold font-heading">Organizations</h1>
-          <Button 
-            onClick={() => navigate("/organizations/manage")} 
-            className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
-          >
-            <Briefcase className="mr-2 h-4 w-4" />
-            Manage Your Organizations
-          </Button>
-        </div>
-        
-        <Card className="mb-6">
-          <CardContent className="pt-6 space-y-4">
-            <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search organizations by name, description, or location"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-            
-            <TagFilter 
-              selectedTagId={selectedTagId} 
-              onSelectTag={setSelectedTagId} 
-              tags={tags}
-              isLoading={isTagsLoading}
-            />
-          </CardContent>
-        </Card>
-        
-        {isLoading ? (
-          <div className="text-center py-12">Loading organizations...</div>
-        ) : filteredOrganizations.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredOrganizations.map((organization) => (
-              <OrganizationCard 
-                key={organization.id} 
-                organization={organization} 
-                onClick={() => navigate(`/organizations/${organization.id}`)} 
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500">No organizations found matching your criteria</p>
-          </div>
-        )}
+    <div className="container mx-auto py-6 px-4 max-w-7xl">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-3xl font-bold font-heading">Organizations</h1>
+        <Button 
+          onClick={() => navigate("/organizations/manage")} 
+          className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
+        >
+          <Briefcase className="mr-2 h-4 w-4" />
+          Manage Your Organizations
+        </Button>
       </div>
-    </DashboardLayout>
+      
+      <Card className="mb-6">
+        <CardContent className="pt-6 space-y-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Search organizations by name, description, or location"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          
+          <TagFilter 
+            selectedTagId={selectedTagId} 
+            onSelectTag={setSelectedTagId} 
+            tags={tags}
+            isLoading={isTagsLoading}
+          />
+        </CardContent>
+      </Card>
+      
+      {isLoading ? (
+        <div className="text-center py-12">Loading organizations...</div>
+      ) : filteredOrganizations.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredOrganizations.map((organization) => (
+            <OrganizationCard 
+              key={organization.id} 
+              organization={organization} 
+              onClick={() => navigate(`/organizations/${organization.id}`)} 
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-12">
+          <p className="text-gray-500">No organizations found matching your criteria</p>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -144,3 +141,4 @@ const OrganizationCard = ({
 };
 
 export default OrganizationsList;
+
