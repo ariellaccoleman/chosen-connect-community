@@ -10,6 +10,6 @@ export {
 export {
   useTagMutations,
   useTagAssignmentMutations
-} from './useTagMutations';
+} from './tag';
 
 export { invalidateTagCache } from './useTagCache';
