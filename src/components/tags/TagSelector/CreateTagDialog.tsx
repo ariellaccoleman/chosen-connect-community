@@ -33,8 +33,8 @@ const CreateTagDialog = ({
     }
   };
 
-  // Create the initialValues object with the correct type
-  const formInitialValues: TagFormValues = {
+  // Create the initialValues object with the correct type as Partial<TagFormValues>
+  const formInitialValues: Partial<TagFormValues> = {
     name: initialValue,
     description: ""
   };
