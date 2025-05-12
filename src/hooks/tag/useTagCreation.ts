@@ -1,71 +1,63 @@
 
-import { useState } from "react";
+import { useTagFindOrCreate } from "./useTagFindOrCreate";
+import { useTagEntityType } from "./useTagEntityType";
+import { Tag } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
-import { useAuth } from "@/hooks/useAuth";
-import { useTagMutations } from "@/hooks/useTags";
-import { Tag, TAG_TYPES } from "@/utils/tags";
-import { TagFormValues } from "@/components/tags/TagSelector/TagForm";
 
 interface UseTagCreationOptions {
   onTagCreated?: (tag: Tag) => void;
-  onError?: (error: Error) => void;
 }
 
-export const useTagCreation = (options?: UseTagCreationOptions) => {
-  const [isCreating, setIsCreating] = useState(false);
-  const { user } = useAuth();
-  const { findOrCreateTag } = useTagMutations();
+/**
+ * Hook for creating new tags with proper entity type assignment
+ */
+export const useTagCreation = (options: UseTagCreationOptions = {}) => {
+  const { findOrCreateTag, isCreating } = useTagFindOrCreate();
+  const { updateTagEntityType, isUpdatingEntityType } = useTagEntityType();
 
   const createTag = async (
-    values: TagFormValues, 
-    targetType: "person" | "organization"
+    formValues: {
+      name: string;
+      description?: string | null;
+    },
+    entityType: "person" | "organization"
   ) => {
-    if (!user?.id) {
-      toast.error("You must be logged in to create tags");
-      return null;
-    }
-
-    setIsCreating(true);
     try {
-      const newTag = await new Promise<Tag | null>((resolve, reject) => {
-        findOrCreateTag({
-          name: values.name,
-          description: values.description || null,
-          type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
-          isPublic: values.is_public,
-        }, {
-          onSuccess: (tag) => {
-            if (tag) {
-              resolve(tag);
-            } else {
-              reject(new Error("Failed to create tag"));
-            }
-          },
-          onError: (error) => {
-            reject(error instanceof Error ? error : new Error("Unknown error"));
-          }
-        });
+      // First create the tag
+      const tag = await findOrCreateTag({
+        name: formValues.name,
+        description: formValues.description || null,
+        type: entityType
       });
 
-      if (newTag) {
-        toast.success(`Tag "${values.name}" created successfully`);
-        options?.onTagCreated?.(newTag);
-        return newTag;
+      if (!tag) {
+        toast.error("Failed to create tag");
+        return null;
       }
-      return null;
+
+      // Next, ensure the tag is associated with the correct entity type
+      await updateTagEntityType({
+        tagId: tag.id,
+        entityType
+      });
+
+      toast.success(`Tag "${tag.name}" created successfully`);
+
+      // Call the optional callback
+      if (options.onTagCreated) {
+        options.onTagCreated(tag);
+      }
+
+      return tag;
     } catch (error) {
-      const err = error instanceof Error ? error : new Error("Unknown error");
-      console.error("Error creating tag:", err);
-      toast.error(`Failed to create tag: ${err.message}`);
-      options?.onError?.(err);
+      console.error("Error creating tag:", error);
+      toast.error(`Failed to create tag: ${error instanceof Error ? error.message : "Unknown error"}`);
       return null;
-    } finally {
-      setIsCreating(false);
     }
   };
 
   return {
     createTag,
-    isCreating
+    isCreating: isCreating || isUpdatingEntityType
   };
 };

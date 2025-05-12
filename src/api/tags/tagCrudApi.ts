@@ -31,7 +31,6 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<ApiRespons
         name: tagData.name,
         description: tagData.description,
         type: tagData.type,
-        is_public: tagData.is_public,
         created_by: tagData.created_by
       })
       .select()
@@ -55,7 +54,6 @@ export const createTag = async (tagData: Partial<Tag>): Promise<ApiResponse<Tag>
         name: tagData.name,
         description: tagData.description,
         type: tagData.type,
-        is_public: tagData.is_public,
         created_by: tagData.created_by
       })
       .select()

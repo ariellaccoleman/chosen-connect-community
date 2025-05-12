@@ -11,7 +11,6 @@ import {
 // Common options for tag queries
 interface TagQueryOptions {
   type?: string;
-  isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: "person" | "organization";

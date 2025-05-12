@@ -26,8 +26,7 @@ const AdminTags = () => {
       await createTagMutation({
         name: values.name,
         description: values.description,
-        type: values.type,
-        isPublic: values.is_public
+        type: values.type
       });
       
       toast.success("Tag created successfully!");

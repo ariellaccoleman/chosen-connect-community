@@ -50,11 +50,6 @@ const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
           </span>
         )}
       </div>
-      {tag.is_public && (
-        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-          Public
-        </span>
-      )}
     </CommandItem>
   );
 };

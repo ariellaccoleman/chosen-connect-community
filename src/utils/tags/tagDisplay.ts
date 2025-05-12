@@ -1,6 +1,5 @@
 
 import { Tag } from "./types";
-import { getTagEntityTypes } from "./tagEntityTypes";
 
 /**
  * Get a formatted display name for a tag based on its entity usage

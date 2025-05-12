@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -23,7 +22,6 @@ const tagSchema = z.object({
   }),
   description: z.string().optional(),
   type: z.enum([TAG_TYPES.PERSON, TAG_TYPES.ORGANIZATION]),
-  is_public: z.boolean().default(false),
 });
 
 export type TagFormValues = z.infer<typeof tagSchema>;
@@ -42,7 +40,6 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
       name: "",
       description: "",
       type: TAG_TYPES.PERSON,
-      is_public: false,
     },
   });
 
@@ -104,27 +101,6 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
                     </select>
                   </FormControl>
                   <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="is_public"
-              render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                  <div className="space-y-0.5">
-                    <FormLabel className="text-base">Public</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Public tags are visible to everyone.
-                    </p>
-                  </div>
-                  <FormControl>
-                    <Switch
-                      checked={field.value}
-                      onCheckedChange={field.onChange}
-                    />
-                  </FormControl>
                 </FormItem>
               )}
             />

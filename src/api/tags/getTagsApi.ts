@@ -1,4 +1,3 @@
-
 import { Tag } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
@@ -15,7 +14,6 @@ import { Database } from "@/integrations/supabase/types";
  */
 export const getFilterTags = async (options: {
   type?: string;
-  isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
@@ -30,7 +28,6 @@ export const getFilterTags = async (options: {
         INNER JOIN tag_assignments ta ON t.id = ta.tag_id
         WHERE ta.target_type = '${options.targetType}'
         ${options.type ? `AND t.type = '${options.type}'` : ''}
-        ${options.isPublic !== undefined ? `AND t.is_public = ${options.isPublic}` : ''}
         ${options.createdBy ? `AND t.created_by = '${options.createdBy}'` : ''}
         ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
         ORDER BY t.name
@@ -55,10 +52,6 @@ export const getFilterTags = async (options: {
       query = query.eq('type', options.type);
     }
     
-    if (options.isPublic !== undefined) {
-      query = query.eq('is_public', options.isPublic);
-    }
-    
     if (options.createdBy) {
       query = query.eq('created_by', options.createdBy);
     }
@@ -81,7 +74,6 @@ export const getFilterTags = async (options: {
  */
 export const getSelectionTags = async (options: {
   type?: string;
-  isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
@@ -90,7 +82,7 @@ export const getSelectionTags = async (options: {
   return apiClient.query(async (client) => {
     // First try to get from cache if we have a simple query and skipCache is not true
     if (options.targetType && !options.skipCache && !options.searchQuery && !options.type && 
-        options.isPublic === undefined && !options.createdBy) {
+        !options.createdBy) {
       // Use more reliable function-based caching since the 'cache' table isn't in TypeScript types
       const cacheKey = `selection_tags_${options.targetType}`;
       
@@ -123,7 +115,6 @@ export const getSelectionTags = async (options: {
         FROM tags t
         WHERE 
           ${options.type ? `t.type = '${options.type}' AND` : ''}
-          ${options.isPublic !== undefined ? `t.is_public = ${options.isPublic} AND` : ''}
           ${options.createdBy ? `t.created_by = '${options.createdBy}' AND` : ''}
           ${options.searchQuery ? `t.name ILIKE '%${options.searchQuery}%' AND` : ''}
           (
@@ -142,8 +133,7 @@ export const getSelectionTags = async (options: {
       if (error) throw error;
       
       // Cache the result if it's a simple query and we're not explicitly skipping cache
-      if (!options.skipCache && !options.searchQuery && !options.type && 
-          options.isPublic === undefined && !options.createdBy) {
+      if (!options.skipCache && !options.searchQuery && !options.type && !options.createdBy) {
         const cacheKey = `selection_tags_${options.targetType}`;
         // Use a function to update the cache since we don't have the cache table in TypeScript types
         await typedRpc(
@@ -165,10 +155,6 @@ export const getSelectionTags = async (options: {
     // Apply filters
     if (options.type) {
       query = query.eq('type', options.type);
-    }
-    
-    if (options.isPublic !== undefined) {
-      query = query.eq('is_public', options.isPublic);
     }
     
     if (options.createdBy) {

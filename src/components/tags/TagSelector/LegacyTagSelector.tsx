@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -12,7 +13,6 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { TAG_TYPES, fetchTags, createTag, getTagEntityTypes } from "@/utils/tags";
 import type { Tag } from "@/utils/tags";
@@ -26,7 +26,6 @@ interface TagSelectorProps {
 const createTagSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   description: z.string().max(500).nullable().optional(),
-  is_public: z.boolean().default(false),
 });
 
 type CreateTagFormValues = z.infer<typeof createTagSchema>;
@@ -43,7 +42,6 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
     defaultValues: {
       name: "",
       description: "",
-      is_public: false,
     },
   });
 
@@ -75,7 +73,6 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
         name: values.name,
         description: values.description || null,
         type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
-        is_public: values.is_public,
         created_by: user.id,
       });
 
@@ -220,11 +217,6 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
                           </span>
                         )}
                       </div>
-                      {tag.is_public && (
-                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
-                          Public
-                        </span>
-                      )}
                     </CommandItem>
                   );
                 })}
@@ -284,30 +276,6 @@ const TagSelector = ({ targetType, onTagSelected, isAdmin = false }: TagSelector
                   </FormItem>
                 )}
               />
-              
-              {isAdmin && (
-                <FormField
-                  control={form.control}
-                  name="is_public"
-                  render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between">
-                      <div className="space-y-0.5">
-                        <FormLabel>Make public</FormLabel>
-                        <p className="text-sm text-muted-foreground">
-                          Public tags are available for everyone to select
-                        </p>
-                      </div>
-                      <FormControl>
-                        <Switch 
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
               
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>

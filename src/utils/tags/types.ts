@@ -8,7 +8,6 @@ export type Tag = {
   name: string;
   description: string | null;
   type: string | null;
-  is_public: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;

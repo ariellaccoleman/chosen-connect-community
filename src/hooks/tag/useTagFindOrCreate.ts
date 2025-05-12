@@ -20,13 +20,11 @@ export const useTagFindOrCreate = () => {
     mutationFn: async ({ 
       name, 
       description = null, 
-      type, 
-      isPublic = false
+      type
     }: {
       name: string;
       description?: string | null;
       type: string;
-      isPublic?: boolean;
     }) => {
       if (!user?.id) throw new Error("User must be authenticated");
       
@@ -35,7 +33,6 @@ export const useTagFindOrCreate = () => {
         name,
         description,
         type,
-        is_public: isPublic,
         created_by: user.id
       });
       

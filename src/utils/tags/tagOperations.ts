@@ -7,7 +7,6 @@ import { Tag } from "./types";
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
   type?: string;
-  isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
@@ -29,7 +28,6 @@ export const fetchFilterTags = async (options: {
 // Fetch tags for selection (showing entity-specific and general tags)
 export const fetchSelectionTags = async (options: {
   type?: string;
-  isPublic?: boolean;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
