@@ -30,16 +30,25 @@ const TagSelectorComponent = ({
     const loadTags = async () => {
       // On first load or when opening popover, try to invalidate cache
       if (searchValue === "" && open) {
-        // Try to refresh the cache
-        await invalidateTagCache(targetType);
+        try {
+          // Try to refresh the cache
+          await invalidateTagCache(targetType);
+        } catch (err) {
+          console.error("Failed to invalidate tag cache:", err);
+        }
       }
 
-      const fetchedTags = await fetchSelectionTags({ 
-        searchQuery: searchValue,
-        targetType,  // Pass targetType to get both entity-specific and general tags
-        skipCache: searchValue === "" // Skip cache for initial load
-      });
-      setTags(fetchedTags);
+      try {
+        const fetchedTags = await fetchSelectionTags({ 
+          searchQuery: searchValue,
+          targetType,  // Pass targetType to get both entity-specific and general tags
+          skipCache: searchValue === "" // Skip cache for initial load
+        });
+        setTags(fetchedTags);
+      } catch (err) {
+        console.error("Error fetching tags:", err);
+        setTags([]);
+      }
     };
 
     const timeoutId = setTimeout(loadTags, 300);

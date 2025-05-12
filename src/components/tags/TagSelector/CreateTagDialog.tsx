@@ -25,7 +25,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useAuth } from "@/hooks/useAuth";
-import { Tag, TAG_TYPES, createTag } from "@/utils/tags";
+import { Tag, TAG_TYPES } from "@/utils/tags";
+import { useTagMutations } from "@/hooks/useTags";
 
 interface CreateTagDialogProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ const CreateTagDialog = ({
   isAdmin = false
 }: CreateTagDialogProps) => {
   const { user } = useAuth();
+  const { createTag, isCreating } = useTagMutations();
 
   const form = useForm<CreateTagFormValues>({
     resolver: zodResolver(createTagSchema),
@@ -71,22 +73,27 @@ const CreateTagDialog = ({
     }
     
     try {
-      const newTag = await createTag({
+      createTag({
         name: values.name,
         description: values.description || null,
         type: targetType === "person" ? TAG_TYPES.PERSON : TAG_TYPES.ORGANIZATION,
-        is_public: values.is_public,
-        created_by: user.id,
+        isPublic: values.is_public,
+      }, {
+        onSuccess: (newTag) => {
+          if (newTag) {
+            toast.success(`Tag "${values.name}" created successfully`);
+            form.reset();
+            onClose();
+            onTagCreated(newTag);
+          } else {
+            toast.error("Failed to create tag");
+          }
+        },
+        onError: (error) => {
+          console.error("Error creating tag:", error);
+          toast.error("Failed to create tag. Please try again.");
+        }
       });
-
-      if (newTag) {
-        toast.success(`Tag "${newTag.name}" created successfully`);
-        form.reset();
-        onClose();
-        onTagCreated(newTag);
-      } else {
-        toast.error("Failed to create tag");
-      }
     } catch (error) {
       console.error("Error creating tag:", error);
       toast.error("Failed to create tag. Please try again.");
@@ -167,7 +174,9 @@ const CreateTagDialog = ({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">Create Tag</Button>
+              <Button type="submit" disabled={isCreating}>
+                {isCreating ? "Creating..." : "Create Tag"}
+              </Button>
             </DialogFooter>
           </form>
         </Form>

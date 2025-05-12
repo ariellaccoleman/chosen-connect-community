@@ -31,13 +31,15 @@ export const useTagMutations = () => {
     }) => {
       if (!user?.id) throw new Error("User must be authenticated");
       
-      return createTag({
+      const tag = await createTag({
         name,
         description,
         type,
         is_public: isPublic,
         created_by: user.id
       });
+      
+      return tag;
     },
     onSuccess: () => {
       // Invalidate all tag queries since new tag could affect any of them
@@ -82,7 +84,15 @@ export const useTagMutations = () => {
   });
 
   return {
-    createTag: createTagMutation.mutate,
+    createTag: (params: Parameters<typeof createTagMutation.mutate>[0], options?: {
+      onSuccess?: (data: Tag | null) => void;
+      onError?: (error: any) => void;
+    }) => {
+      return createTagMutation.mutate(params, {
+        onSuccess: (data) => options?.onSuccess?.(data),
+        onError: (error) => options?.onError?.(error)
+      });
+    },
     updateTag: updateTagMutation.mutate,
     deleteTag: deleteTagMutation.mutate,
     isCreating: createTagMutation.isPending,

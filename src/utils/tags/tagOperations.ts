@@ -68,13 +68,19 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
     });
     
     if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Tag creation response error:", response.status, errorData);
       throw new Error(`Failed to create tag: ${response.statusText}`);
     }
     
-    return await response.json();
+    // Parse the response as JSON
+    const data = await response.json();
+    
+    // Return the tag data
+    return data;
   } catch (error) {
     console.error("Error creating tag:", error);
-    return null;
+    throw error; // Re-throw to let the mutation handler deal with it
   }
 };
 
