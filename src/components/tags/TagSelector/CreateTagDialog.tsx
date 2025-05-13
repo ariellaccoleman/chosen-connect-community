@@ -33,9 +33,9 @@ const CreateTagDialog = ({
     }
   };
 
-  // Process the initialValue earlier and create a properly typed initialValues object
-  const formInitialValues: Partial<TagFormValues> = {
-    name: initialValue,
+  // Fix: Ensure name is always a non-optional string to match TagFormValues
+  const formInitialValues: TagFormValues = {
+    name: initialValue || "", // Ensure name is never undefined
     description: ""
   };
 
