@@ -35,18 +35,53 @@ const AppRoutes = () => {
       return <Component />;
     }
     
-    // For all other routes, apply the appropriate authentication wrapper
-    // without an additional layout wrapper since the components already include Layout
-    switch (route.auth) {
-      case "protected":
-        return <ProtectedRoute><Component /></ProtectedRoute>;
-      case "admin":
-        return <AdminRoute><Component /></AdminRoute>;
-      case "public":
-        return <PublicRoute><Component /></PublicRoute>;
-      default:
-        return <Component />;
+    // For dashboard layout, use the DashboardLayout component
+    if (route.auth === "protected") {
+      return (
+        <ProtectedRoute>
+          {route.layout === 'default' ? (
+            <Layout includeNavbar={true}>
+              <Component />
+            </Layout>
+          ) : (
+            <Component />
+          )}
+        </ProtectedRoute>
+      );
+    } else if (route.auth === "admin") {
+      return (
+        <AdminRoute>
+          {route.layout === 'default' ? (
+            <Layout includeNavbar={true}>
+              <Component />
+            </Layout>
+          ) : (
+            <Component />
+          )}
+        </AdminRoute>
+      );
+    } else if (route.auth === "public") {
+      return (
+        <PublicRoute>
+          {route.layout === 'default' ? (
+            <Layout includeNavbar={true}>
+              <Component />
+            </Layout>
+          ) : (
+            <Component />
+          )}
+        </PublicRoute>
+      );
     }
+    
+    // For any other route type
+    return route.layout === 'default' ? (
+      <Layout includeNavbar={true}>
+        <Component />
+      </Layout>
+    ) : (
+      <Component />
+    );
   };
 
   return (
