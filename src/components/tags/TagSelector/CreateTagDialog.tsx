@@ -33,11 +33,13 @@ const CreateTagDialog = ({
     }
   };
 
-  // Using type assertion to ensure TypeScript knows name is a non-null string
-  const formInitialValues = {
+  // First create the object with default values
+  const values = {
     name: initialValue || "",
     description: ""
-  } as TagFormValues;
+  };
+  // Then assert that this object satisfies the TagFormValues type
+  const formInitialValues = values as TagFormValues;
 
   return (
     <FormDialog
