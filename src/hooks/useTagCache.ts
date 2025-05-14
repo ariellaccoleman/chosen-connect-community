@@ -1,6 +1,6 @@
 
 import { EntityType } from "@/types/entityTypes";
-import { invalidateCache } from "@/api/tags";
+import { invalidateTagCache as invalidateTagCacheApi } from "@/api/tags";
 
 /**
  * Clear tag cache for a specific entity type or all entity types
@@ -11,14 +11,14 @@ export const invalidateTagCache = async (
   try {
     if (entityType) {
       // Invalidate cache for specific entity type
-      await invalidateCache(`tags_${entityType}`);
+      await invalidateTagCacheApi(`tags_${entityType}`);
       console.log(`Invalidated tag cache for ${entityType}`);
     } else {
       // Invalidate all entity type caches
       await Promise.all([
-        invalidateCache(`tags_${EntityType.PERSON}`),
-        invalidateCache(`tags_${EntityType.ORGANIZATION}`),
-        invalidateCache(`tags_${EntityType.EVENT}`)
+        invalidateTagCacheApi(`tags_${EntityType.PERSON}`),
+        invalidateTagCacheApi(`tags_${EntityType.ORGANIZATION}`),
+        invalidateTagCacheApi(`tags_${EntityType.EVENT}`)
       ]);
       console.log("Invalidated all tag caches");
     }
