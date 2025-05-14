@@ -1,0 +1,196 @@
+### 🔐 **Authentication & Profile Control**
+
+1. As a new user, I want to sign up using LinkedIn so I can be verified easily.
+   
+2. As a user, I want to customize my imported profile and hide/show info to _members only_ or _private_.
+   
+3. As an admin, I want to verify users and approve access to protect the platform.
+   
+4. As a user, I want to manage my notification preferences, including email alerts for messages and tags.
+   
+
+---
+
+### 👥 **Directory, Networking & Search**
+
+5. As a user, I want to search for members by profession, location, hobbies, interests, etc.
+   
+6. As a user, I want to follow members (not "connect") to keep up with their updates.
+   
+7. As a user, I want to see which members are geographically close for local collaboration or events.
+   
+8. As a user, I want to earn and display badges such as “Connector,” “Hiring,” or custom admin badges.
+
+9. As a member, I want to indicate on my profile a connection to a company where I can make an introduction. I should be able to specify a connection type (e.g., used to work there, have contacts there) and a department or group.
+
+---
+
+### 💬 **Messaging & Communication**
+
+10. As a user, I want to DM any member or send group messages to collaborate.
+   
+11. As a user, I want Slack-like group chats with threads and hashtags for organized conversations.
+   
+12. As a member, I want to adjust notification preferences (email, in-app, etc.).
+
+13. As a member, I want to turn notifications on or off for DMs, tags, event reminders, etc.
+   
+
+---
+
+### 📅 **Events**
+
+13. As an organizer, I want to create events that are free or paid and apply discount codes.
+   
+14. As an organizer, I want to integrate Zoom, Google Meet, or other tools.
+   
+15. As an organizer, I want to send information and reminders about my events.
+   
+16. As a user, I want events to auto-adjust to my time zone and allow me to select a display time zone.
+   
+17. As a user, I want to register and receive confirmation emails, calendar invites, and reminders.
+   
+18. As a user, I want to find events tagged by topic, location, or audience relevance.
+   
+19. As a user, I want in-person events near me to be highlighted in my feed.
+   
+
+---
+
+### 🧠 **News Feed & Posts**
+
+19. As a user, I want a LinkedIn-style feed where I can see events, new content, and other people's posts.
+   
+20. As a user, I want a LinkedIn-style feed where I can share updates and articles.
+   
+21. As a user, I want to schedule posts and align them with time zones.
+   
+22. As a user, I want to tag people or resources in my posts to draw attention to them.
+
+---
+
+### 💼 **Jobs & Career Boosting**
+
+25. As a member, I want to browse the job board.
+   
+26. As a hiring manager or recruiter, I want to post opportunities and help open doors.
+   
+27. As a user, I want to post jobs, referrals, or opportunities where I can help someone get hired.
+   
+28. As a job poster, I want to indicate how I’m connected to the job. I must have a verified or declared relationship with a company in order to post a job for it.
+   
+29. As a job seeker, I want to find and message the person who posted the job.
+   
+30. As a job seeker, I want to find members working at companies of interest.
+   
+31. As a job seeker, I want to find members with “Hiring” or “Recruiter” badges easily.
+   
+32. As a user, I want to state what I need professionally (“Looking for cofounder,” “Seeking job in data science,” etc.)
+ 
+   
+
+---
+
+### 🛍️ **Business & E-commerce**
+
+27. As a business owner, I want to list my business and describe how it supports Israel.
+   
+28. As a user, I want to search for pro-Israel businesses I can support.
+   
+29. As a sponsor, I want to promote my product or brand through the platform.
+
+30.  As a user, I want to indicate my current employer, and whether I consider them pro-Israel and pro-Jewish
+   
+
+---
+
+### 🛡️ **Safety, Security & Moderation**
+
+30. As a user, I want all my profile data to be hidden from the public by default.
+   
+31. As a user, I want to choose what parts of my profile are members-only or private.
+   
+32. As a moderator, I want to review flagged content and remove harmful users.
+   
+33. As a user, I want to feel confident that the platform is free from antisemitism or trolling.
+   
+
+---
+
+
+### 🙌 **Community & Engagement**
+
+37. As a user, I want to earn badges for helping others, sharing resources, or hosting events.
+   
+38. As a user, I want to post testimonials about how CHOSEN helped me or others.
+   
+39. As a user, I want to feel like I'm part of building something meaningful, not just consuming it.
+
+### 📅 **Events**
+
+40. As an admin, I want to customize the automatic reminders (timing and content) for all events hosted on the platform.
+   
+
+---
+
+### 🛒 **Business/E-Commerce Split**
+
+41. As a small business owner, I want to showcase my store in the **e-commerce section** that supports pro-Israel brands.
+   
+42. As a service professional, I want to list my offering in the **services directory**, not the e-commerce arm.
+   
+43. As a user, I want to filter or browse separately between product sellers and service providers.
+   
+44. As an admin, I want to designate whether a business profile appears in e-commerce or services, and allow for hybrid cases.
+   
+
+### 💰 **Freemium Model & Monetization**
+
+45. As a visitor, I want to view a landing page that shows limited public info, and encourages me to sign up.
+   
+46. As a visitor, I want to explore membership tiers
+
+47. As a user, I want to use CHOSEN for free with access to core features.
+   
+48. As a paid member, I want access to premium features (e.g., advanced filters, premium badges, business promotion boosts).
+   
+49. As a user, I want to apply discount codes when upgrading my membership or attending paid events.
+
+50. As a user, I want to donate to CHOSEN to help the mission.
+   
+51. As an admin, I want to set different membership levels and control what each tier can access.
+ 
+
+
+### 🏷️ Tags, Hubs, and Guides
+
+52. As a user, I want to tag events, people, companies, and guides with topics.
+   
+53. As a user, I want to see popular or relevant tags in autocomplete when tagging content.
+   
+54. As a user, I want to view and follow Hubs (tag-based landing pages for topics showing all relevant information like people, organizations, events, Guides, Chats).
+   
+55. As an admin, I want to curate tag types (e.g., make people and organization tags universal by default).
+   
+56. As a user, I want to browse Guides (curated markdown-based articles with links to relevant orgs and content).
+   
+57. As a visitor, I want to view public Guides with limited organization info to motivate me to create an account.
+   
+
+### 💦 Splash Page / Public Access
+
+58. As a visitor, I want to see a public-facing landing page with sample Guides and minimal organization tiles so I can understand the value of joining.
+
+### 🛡️ Admin Controls & Company Verification
+
+59. As a member, I want to request ownership of a company profile so I can manage its information.
+   
+60. As an admin, I want to approve or deny company ownership requests.
+   
+61. As an admin, I want to verify company pages so members can trust them.
+   
+62. As an admin, I want to assign editing privileges to specific users for a company profile.
+   
+63. As an admin, I want to merge duplicate or conflicting company profiles.
+   
+64. As a member, I want to view verified company pages, including contributors and editors.
