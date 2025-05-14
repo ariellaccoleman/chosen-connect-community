@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { APP_ROUTES } from "@/config/routes";
 
 interface OrganizationHeaderProps {
   onAddOrgClick: () => void;
@@ -35,7 +36,7 @@ const OrganizationHeader = ({
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => navigate("/organizations/new")}
+          onClick={() => navigate(APP_ROUTES.CREATE_ORGANIZATION)}
           className="flex-1 sm:flex-none"
         >
           <Plus className="h-4 w-4 mr-1" />

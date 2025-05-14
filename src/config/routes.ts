@@ -1,3 +1,4 @@
+
 import { generatePath } from 'react-router-dom';
 
 export const APP_ROUTES = {
@@ -8,7 +9,7 @@ export const APP_ROUTES = {
   PROFILE_EDIT: '/profile/edit',
   PROFILE_VIEW: '/profile/:profileId',
   ORGANIZATIONS: '/organizations',
-  CREATE_ORGANIZATION: '/organizations/create',
+  CREATE_ORGANIZATION: '/organizations/new',  // Changed from '/organizations/create' to '/organizations/new'
   ORGANIZATION_DETAIL: '/organizations/:orgId',
   ORGANIZATION_EDIT: '/organizations/:orgId/edit',
   MANAGE_ORGANIZATIONS: '/organizations/manage-connections',

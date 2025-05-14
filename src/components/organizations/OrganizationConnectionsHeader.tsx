@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Plus, Link2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { APP_ROUTES } from "@/config/routes";
 
 interface OrganizationConnectionsHeaderProps {
   onConnectClick: () => void;
@@ -33,7 +34,7 @@ const OrganizationConnectionsHeader = ({
             Connect to Org
           </Button>
           <Button 
-            onClick={() => navigate("/organizations/new")} 
+            onClick={() => navigate(APP_ROUTES.CREATE_ORGANIZATION)} 
             className="bg-chosen-blue hover:bg-chosen-navy flex-1 sm:flex-none"
           >
             <Plus className="mr-2 h-4 w-4" />
