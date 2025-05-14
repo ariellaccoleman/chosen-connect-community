@@ -6,23 +6,33 @@ import { OrganizationBasicInfo } from "./OrganizationBasicInfo";
 import { UseFormReturn } from "react-hook-form";
 import { OrganizationFormValues } from "./organizationSchema";
 import { OrganizationWithLocation } from "@/types";
+import { logger } from "@/utils/logger";
 
 interface OrganizationEditTabsProps {
   form?: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   orgId: string;
-  isOrgAdmin: boolean;
-  organization: OrganizationWithLocation;
+  isOrgAdmin?: boolean;  // Make optional to prevent undefined errors
+  organization?: OrganizationWithLocation; // Make optional to prevent undefined errors
 }
 
 export function OrganizationEditTabs({ 
   form, 
   handleLogoChange, 
   orgId, 
-  isOrgAdmin,
+  isOrgAdmin = false,  // Default value for safety
   organization
 }: OrganizationEditTabsProps) {
   const [activeTab, setActiveTab] = useState("basic");
+  
+  // Add debug logging
+  logger.info("OrganizationEditTabs - Rendering with props:", { 
+    hasForm: !!form,
+    orgId, 
+    isOrgAdmin,
+    hasOrganization: !!organization,
+    organizationName: organization?.name || "undefined"
+  });
   
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -32,7 +42,7 @@ export function OrganizationEditTabs({
       </TabsList>
       
       <TabsContent value="basic">
-        {form && (
+        {form && organization && (
           <OrganizationBasicInfo 
             form={form} 
             handleLogoChange={handleLogoChange}
@@ -45,7 +55,7 @@ export function OrganizationEditTabs({
         {orgId && (
           <OrganizationTags
             organizationId={orgId}
-            isAdmin={isOrgAdmin}
+            isAdmin={!!isOrgAdmin}
           />
         )}
       </TabsContent>

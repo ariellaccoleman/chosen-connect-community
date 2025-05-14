@@ -30,6 +30,16 @@ const OrganizationEdit = () => {
   const { data: organizationResponse, isLoading, error } = useOrganization(orgId);
   const organization = organizationResponse?.data;
   
+  // Add more detailed logging about the organization response
+  useEffect(() => {
+    logger.info("Organization response:", { 
+      hasData: !!organizationResponse, 
+      hasOrganizationData: !!organization,
+      orgName: organization?.name,
+      error: error?.message
+    });
+  }, [organizationResponse, organization, error]);
+  
   // Check if user is admin
   const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
   

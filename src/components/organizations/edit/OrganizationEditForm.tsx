@@ -19,13 +19,19 @@ export function OrganizationEditForm({ organization, orgId, children }: Organiza
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Log debugging information
+  logger.info("OrganizationEditForm - Rendering with props:", { 
+    orgId, 
+    organizationName: organization?.name || "undefined"
+  });
+
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
     defaultValues: {
-      name: organization.name,
-      description: organization.description || "",
-      website_url: organization.website_url || "",
-      logo_url: organization.logo_url || "",
+      name: organization?.name || "",
+      description: organization?.description || "",
+      website_url: organization?.website_url || "",
+      logo_url: organization?.logo_url || "",
     },
   });
 
@@ -75,7 +81,7 @@ export function OrganizationEditForm({ organization, orgId, children }: Organiza
     }
   };
 
-  // Clone children and pass form and handleLogoChange props
+  // Safely clone children to prevent undefined property access errors
   const childrenWithProps = React.Children.map(children, child => {
     if (React.isValidElement(child)) {
       return React.cloneElement(child as React.ReactElement, { 

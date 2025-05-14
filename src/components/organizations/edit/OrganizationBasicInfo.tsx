@@ -10,9 +10,10 @@ import FormActions from "@/components/common/form/FormActions";
 import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrganizationWithLocation } from "@/types";
+import { logger } from "@/utils/logger";
 
 interface OrganizationBasicInfoProps {
-  form?: UseFormReturn<OrganizationFormValues>;
+  form: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   organization: OrganizationWithLocation;
 }
@@ -22,7 +23,10 @@ export function OrganizationBasicInfo({
   handleLogoChange,
   organization 
 }: OrganizationBasicInfoProps) {
-  if (!form) return null;
+  // Log for debugging
+  logger.info("OrganizationBasicInfo - Rendering with organization:", {
+    name: organization?.name || "undefined"
+  });
 
   return (
     <div className="space-y-6">
@@ -31,7 +35,7 @@ export function OrganizationBasicInfo({
         <LogoUpload
           logoUrl={form.watch("logo_url") || ""}
           organizationName={form.watch("name")}
-          onLogoChange={handleLogoChange!}
+          onLogoChange={handleLogoChange || (() => {})} // Provide fallback empty function
         />
       </div>
 
@@ -61,7 +65,7 @@ export function OrganizationBasicInfo({
       />
 
       {/* Location is displayed but not editable in this version */}
-      {organization.location && (
+      {organization?.location && (
         <div className="mt-4">
           <p className="text-sm font-medium">Location</p>
           <p className="text-sm text-muted-foreground">
