@@ -28,12 +28,12 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
   const { createEventMutation } = useEventMutations();
   const [locationFieldVisible, setLocationFieldVisible] = useState(false);
   
-  // Get today's date and current time for default values
+  // Get today's date for default date
   const today = new Date();
   const defaultDate = today.toISOString().split('T')[0];
-  const hours = String(today.getHours()).padStart(2, '0');
-  const minutes = String(today.getMinutes()).padStart(2, '0');
-  const defaultTime = `${hours}:${minutes}`;
+  
+  // Default time is now 1:00 PM
+  const defaultTime = "13:00";
 
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
