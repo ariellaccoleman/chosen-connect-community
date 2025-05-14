@@ -45,20 +45,14 @@ const OrganizationEdit = () => {
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   
-  // Redirect to organizations page if id is undefined or invalid
-  useEffect(() => {
-    if (!id || id === "undefined") {
-      toast({
-        title: "Invalid Organization",
-        description: "Please select a valid organization to edit",
-        variant: "destructive",
-      });
-      navigate("/organizations");
-    }
-  }, [id, navigate, toast]);
+  // Add console logs to debug the route parameter
+  console.log("Organization Edit - Route param id:", id);
   
-  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
-  const { data: organization, isLoading: loading, error } = useOrganization(id);
+  // The organization query
+  const { data: organization, isLoading, error } = useOrganization(id);
+  
+  // Check if user is admin
+  const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, id);
   
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
@@ -73,6 +67,7 @@ const OrganizationEdit = () => {
   // Set form values when organization data is loaded
   useEffect(() => {
     if (organization) {
+      console.log("Organization data loaded:", organization);
       form.reset({
         name: organization.name,
         description: organization.description || "",
@@ -84,8 +79,8 @@ const OrganizationEdit = () => {
 
   // Check if user is admin and redirect if not
   useEffect(() => {
-    // Only check admin status if we have a valid organization ID and loading is complete
-    if (!loading && !isOrgAdmin && id && id !== "undefined") {
+    // Only check admin status if loading is complete
+    if (!adminCheckLoading && !isOrgAdmin && user && id) {
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit this organization",
@@ -93,14 +88,14 @@ const OrganizationEdit = () => {
       });
       navigate(`/organizations/${id}`);
     }
-  }, [isOrgAdmin, loading, navigate, id, toast]);
+  }, [isOrgAdmin, adminCheckLoading, navigate, id, toast, user]);
 
   const handleLogoChange = (url: string) => {
     form.setValue("logo_url", url, { shouldValidate: true });
   };
 
   const onSubmit = async (data: OrganizationFormValues) => {
-    if (!id || id === "undefined") {
+    if (!id) {
       toast({
         title: "Error",
         description: "Invalid organization ID",
@@ -139,20 +134,8 @@ const OrganizationEdit = () => {
     }
   };
 
-  // Skip rendering the form if ID is invalid - early return
-  if (!id || id === "undefined") {
-    return (
-      <Layout>
-        <div className="container mx-auto py-6 max-w-3xl">
-          <div className="flex justify-center items-center h-64">
-            <p>Redirecting to organizations page...</p>
-          </div>
-        </div>
-      </Layout>
-    );
-  }
-
-  if (loading) {
+  // Show a loading state while we're fetching data
+  if (isLoading) {
     return (
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
@@ -164,6 +147,7 @@ const OrganizationEdit = () => {
     );
   }
 
+  // Show an error state if there was a problem loading the data
   if (error) {
     return (
       <Layout>
@@ -176,6 +160,7 @@ const OrganizationEdit = () => {
     );
   }
 
+  // Show a not found state if we couldn't find the organization
   if (!organization) {
     return (
       <Layout>

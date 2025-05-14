@@ -1,13 +1,11 @@
 
 /**
- * Tag API module
- * This provides all tag-related functionality
+ * Export all tag-related API functionality
  */
-
-export * from './assignmentApi';
-export * from './cacheApi';
-export * from './entityTagsApi';
-export * from './getTagsApi';
-export * from './invalidateCache';
 export * from './tagCrudApi';
+export * from './entityTagsApi';
 export * from './tagEntityTypesApi';
+export * from './assignmentApi';
+export * from './getTagsApi';
+export * from './cacheApi';
+export * from './invalidateCache';

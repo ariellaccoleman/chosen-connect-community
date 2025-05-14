@@ -46,6 +46,13 @@ export const organizationsApi = {
    * Get organization by ID
    */
   async getOrganizationById(id: string): Promise<ApiResponse<OrganizationWithLocation | null>> {
+    console.log(`Fetching organization with ID: ${id}`);
+    
+    if (!id) {
+      console.error("getOrganizationById was called with a falsy ID value");
+      return createSuccessResponse(null);
+    }
+    
     return apiClient.query(async (client) => {
       const { data, error } = await client
         .from('organizations')
@@ -56,15 +63,21 @@ export const organizationsApi = {
         .eq('id', id)
         .maybeSingle();
       
-      if (error) throw error;
+      if (error) {
+        console.error(`Error fetching organization with ID ${id}:`, error);
+        throw error;
+      }
       
       let formattedOrg = null;
       
       if (data) {
+        console.log(`Found organization data for ID ${id}:`, data);
         formattedOrg = {
           ...data,
           location: data.location ? formatLocationWithDetails(data.location) : undefined
         } as OrganizationWithLocation;
+      } else {
+        console.log(`No organization found with ID ${id}`);
       }
       
       return createSuccessResponse(formattedOrg);
