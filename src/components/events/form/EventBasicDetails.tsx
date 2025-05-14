@@ -4,6 +4,14 @@ import { Control } from "react-hook-form";
 import FormInput from "@/components/common/form/FormInput";
 import FormTextarea from "@/components/common/form/FormTextarea";
 import { CreateEventFormValues } from "./EventFormSchema";
+import { 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormControl,
+  FormMessage 
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 
 interface EventBasicDetailsProps {
   control: Control<CreateEventFormValues>;
@@ -30,20 +38,72 @@ const EventBasicDetails: React.FC<EventBasicDetailsProps> = ({ control }) => {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <FormInput
-          name="start_time"
+          name="start_date"
           control={control}
-          label="Start Time"
-          type="datetime-local"
+          label="Start Date"
+          type="date"
           required
         />
         
         <FormInput
-          name="end_time"
+          name="start_time"
           control={control}
-          label="End Time"
-          type="datetime-local"
+          label="Start Time"
+          type="time"
           required
         />
+      </div>
+      
+      <div className="space-y-2">
+        <FormLabel>Duration</FormLabel>
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={control}
+            name="duration_hours"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center">
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      min={0}
+                      placeholder="Hours"
+                      value={field.value || 0}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <span className="ml-2 text-sm">hours</span>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={control}
+            name="duration_minutes"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-center">
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      min={0}
+                      max={59}
+                      placeholder="Minutes"
+                      value={field.value || 0}
+                      onChange={(e) => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <span className="ml-2 text-sm">minutes</span>
+                </div>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
       </div>
     </>
   );

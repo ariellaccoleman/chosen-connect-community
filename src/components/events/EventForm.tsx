@@ -14,6 +14,7 @@ import EventBasicDetails from "./form/EventBasicDetails";
 import EventTypeSelector from "./form/EventTypeSelector";
 import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
+import { formatDateForDb } from "@/utils/formatters";
 
 interface EventFormProps {
   onCancel?: () => void;
@@ -31,8 +32,10 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
     defaultValues: {
       title: "",
       description: "",
+      start_date: "",
       start_time: "",
-      end_time: "",
+      duration_hours: 1,
+      duration_minutes: 0,
       is_virtual: true,
       location_id: null,
       tag_id: null,
@@ -49,9 +52,21 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
     if (!user?.id) return;
 
     // Ensure required fields are provided
-    if (!values.title || !values.start_time || !values.end_time) {
+    if (!values.title || !values.start_date || !values.start_time) {
       return;
     }
+
+    // Calculate start and end timestamps
+    const startDateTime = `${values.start_date}T${values.start_time}`;
+    
+    // Calculate end time by adding duration to start time
+    const startDate = new Date(startDateTime);
+    const endDate = new Date(startDate.getTime());
+    endDate.setHours(endDate.getHours() + values.duration_hours);
+    endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
+    
+    const start_time = formatDateForDb(startDate.toISOString());
+    const end_time = formatDateForDb(endDate.toISOString());
 
     // If event is not paid, ensure price is null
     if (!values.is_paid) {
@@ -67,13 +82,13 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
     const eventInput: CreateEventInput = {
       title: values.title,
       description: values.description || "",
-      start_time: values.start_time,
-      end_time: values.end_time,
+      start_time,
+      end_time,
       is_virtual: values.is_virtual,
-      location_id: values.location_id,
-      tag_id: values.tag_id,
+      location_id: values.is_virtual ? null : values.location_id,
+      tag_id: values.tag_id || null,
       is_paid: values.is_paid,
-      price: values.price,
+      price: values.is_paid ? values.price : null,
     };
 
     await createEventMutation.mutateAsync({
