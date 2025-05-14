@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { organizationCrudApi } from "@/api/organizations/organizationsApi";
+import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi";
 import { useFilterTags } from "./useTagQueries";
 import { logger } from "@/utils/logger";
 
@@ -52,6 +53,3 @@ export const useOrganization = (id?: string) => {
     enabled: !!id
   });
 };
-
-// Add the missing import that was likely causing the destructuring error
-import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi";

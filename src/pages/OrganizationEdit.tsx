@@ -27,18 +27,19 @@ const OrganizationEdit = () => {
   logger.info("OrganizationEdit - Current user:", { userId: user?.id });
   
   // The organization query
-  const { data: organizationResponse, isLoading, error } = useOrganization(orgId);
-  const organization = organizationResponse?.data;
+  const { data: organizationData, isLoading, error } = useOrganization(orgId);
+  // Safely access organization data
+  const organization = organizationData?.data || null;
   
   // Add more detailed logging about the organization response
   useEffect(() => {
     logger.info("Organization response:", { 
-      hasData: !!organizationResponse, 
+      hasData: !!organizationData, 
       hasOrganizationData: !!organization,
       orgName: organization?.name,
       error: error?.message
     });
-  }, [organizationResponse, organization, error]);
+  }, [organizationData, organization, error]);
   
   // Check if user is admin
   const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
