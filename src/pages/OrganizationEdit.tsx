@@ -45,16 +45,15 @@ const OrganizationEdit = () => {
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   
-  // Check if id is undefined or invalid
+  // Redirect to organizations page if id is undefined or invalid
   useEffect(() => {
     if (!id || id === "undefined") {
       toast({
         title: "Invalid Organization",
-        description: "No organization selected for editing",
+        description: "Please select a valid organization to edit",
         variant: "destructive",
       });
       navigate("/organizations");
-      return;
     }
   }, [id, navigate, toast]);
   
@@ -146,7 +145,7 @@ const OrganizationEdit = () => {
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
-            <p>Invalid organization ID - redirecting...</p>
+            <p>Redirecting to organizations page...</p>
           </div>
         </div>
       </Layout>
