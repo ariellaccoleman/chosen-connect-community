@@ -16,13 +16,10 @@ const Dashboard: React.FC = () => {
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="flex flex-col space-y-6">
         {profile && <ProfileSummaryCard profile={profile} />}
-        
-        <div className="space-y-6">
-          <OrganizationSection relationships={relationships} isLoading={isLoadingOrgs} />
-          <EventSection />
-        </div>
+        <OrganizationSection relationships={relationships} isLoading={isLoadingOrgs} />
+        <EventSection />
       </div>
     </div>
   );
