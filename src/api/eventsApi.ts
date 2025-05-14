@@ -2,7 +2,7 @@
 import { CreateEventInput, EventWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
 import { createErrorResponse, createSuccessResponse } from "./core/errorHandler";
-import { formatDateForDb } from "@/utils/formatters";
+import { formatDateForDb } from "@/utils/formatters/index";
 import { ApiResponse } from "./core/errorHandler";
 
 /**

@@ -14,9 +14,8 @@ export const formatDateForDb = (dateStr: string): string => {
   return new Date(dateStr).toISOString();
 };
 
-export {
-  locationFormatters,
-  profileFormatters,
-  organizationFormatters,
-  urlFormatters
-};
+// Re-export all formatter modules correctly
+export * from './locationFormatters';
+export * from './profileFormatters';
+export * from './organizationFormatters';
+export * from './urlFormatters';

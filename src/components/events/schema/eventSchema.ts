@@ -7,8 +7,8 @@ export const createEventSchema = z.object({
   start_time: z.string().min(1, { message: "Start time is required" }),
   end_time: z.string().min(1, { message: "End time is required" }),
   is_virtual: z.boolean().default(false),
-  location_id: z.string().optional().nullable(),
-  tag_id: z.string().optional().nullable(),
+  location_id: z.string().nullable().optional(),
+  tag_id: z.string().nullable().optional(),
   is_paid: z.boolean().default(false),
   price: z.number().nullable().optional()
     .refine(val => {

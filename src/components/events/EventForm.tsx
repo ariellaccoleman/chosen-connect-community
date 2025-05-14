@@ -36,6 +36,7 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       end_time: "",
       is_virtual: true,
       location_id: null,
+      tag_id: null,
       is_paid: false,
       price: null,
     },
@@ -143,10 +144,10 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       
       {!isVirtual && (
         <LocationSelector
-          name="location_id"
           control={form.control}
           label="Event Location"
           required={!isVirtual}
+          fieldName="location_id"
         />
       )}
       
