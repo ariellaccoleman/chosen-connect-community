@@ -1,5 +1,5 @@
 
-import { ReactNode } from 'react';
+import { ReactNode, useCallback } from 'react';
 import { User } from '@supabase/supabase-js';
 import { AuthContext } from '@/contexts/AuthContext';
 import { useAuthState } from '@/hooks/useAuthState';
@@ -34,6 +34,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setError,
     setUser,
     setIsAdmin,
+  });
+
+  // Adding debug console log to track auth state
+  console.log("AuthProvider state:", { 
+    isAuthenticated: !!user, 
+    isAdmin, 
+    loading, 
+    email: user?.email 
   });
 
   const value = {

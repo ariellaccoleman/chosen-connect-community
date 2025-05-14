@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 
@@ -15,6 +15,7 @@ type AuthMode = "login" | "signup" | "forgotPassword" | "resetPassword";
 const Auth = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   
   // Check for password reset, email confirmation, or signup tab parameters
@@ -28,9 +29,15 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  // Redirect if already logged in
-  if (user && !loading) {
-    return <Navigate to="/dashboard" />;
+  // Add debug logs
+  console.log("Auth page - Auth state:", { user, loading, authMode });
+
+  // Redirect if already logged in, but don't redirect if we're on the reset password page
+  if (user && !loading && authMode !== "resetPassword") {
+    console.log("Auth page - User is logged in, redirecting to dashboard");
+    // Get the intended destination if available, otherwise go to dashboard
+    const from = location.state?.from || "/dashboard";
+    return <Navigate to={from} replace />;
   }
 
   const handleTabChange = (value: string) => {
@@ -81,7 +88,11 @@ const Auth = () => {
     }
   };
   
-  return loading ? null : renderAuthContent();
+  return loading ? (
+    <div className="flex items-center justify-center h-screen">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
+    </div>
+  ) : renderAuthContent();
 };
 
 export default Auth;

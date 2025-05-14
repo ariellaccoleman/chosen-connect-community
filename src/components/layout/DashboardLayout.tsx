@@ -16,9 +16,13 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   useEffect(() => {
     // Only redirect when the auth state is fully loaded and no user exists
     if (!loading && !user) {
-      navigate("/auth");
+      console.log("DashboardLayout: User not authenticated, redirecting to auth");
+      navigate("/auth", { replace: true });
     }
   }, [user, loading, navigate]);
+
+  // Add debug log
+  console.log("DashboardLayout - Auth state:", { user: !!user, loading });
 
   // Show loading skeleton when auth state is loading
   if (loading) {
