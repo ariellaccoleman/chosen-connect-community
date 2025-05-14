@@ -30,9 +30,11 @@ export const useTagAssignmentMutations = () => {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
+      console.log("Executing assignTag mutation:", { tagId, entityId, entityType });
       return assignTag(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
+      console.log("Tag assignment successful, invalidating queries");
       queryClient.invalidateQueries({ 
         queryKey: ["entity-tags", variables.entityId, variables.entityType] 
       });

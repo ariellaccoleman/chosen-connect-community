@@ -134,6 +134,7 @@ const TagSelectorComponent = ({
    */
   const handleTagSelection = (tag: Tag) => {
     setSelectedTag(tag);
+    // Important: Call the parent's onTagSelected callback to assign the tag
     onTagSelected(tag);
     setSearchValue("");
     setOpen(false);

@@ -28,6 +28,7 @@ const EntityTagManager = ({
   const tagAssignments = tagAssignmentsResponse?.data || [];
   
   const handleAddTag = async (tag) => {
+    console.log("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
     try {
       await assignTag({ 
         tagId: tag.id, 

@@ -49,6 +49,8 @@ export const assignTag = async (
       return null;
     }
     
+    console.log("tagAssignments.ts: Calling assignTag API function with:", { tagId, entityId, entityType });
+    
     // Call the API function for tag assignment
     const { assignTag: assignTagApi } = await import("@/api/tags/assignmentApi");
     const response = await assignTagApi(tagId, entityId, entityType);
