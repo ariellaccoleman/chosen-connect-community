@@ -39,7 +39,9 @@ const AppRoutes = () => {
     if (route.auth === "protected") {
       return (
         <ProtectedRoute>
-          {route.layout === 'default' ? (
+          {route.component === Layout ? (
+            <Component />
+          ) : route.layout === 'default' ? (
             <Layout includeNavbar={true}>
               <Component />
             </Layout>
@@ -51,7 +53,9 @@ const AppRoutes = () => {
     } else if (route.auth === "admin") {
       return (
         <AdminRoute>
-          {route.layout === 'default' ? (
+          {route.component === Layout ? (
+            <Component />
+          ) : route.layout === 'default' ? (
             <Layout includeNavbar={true}>
               <Component />
             </Layout>
@@ -63,7 +67,9 @@ const AppRoutes = () => {
     } else if (route.auth === "public") {
       return (
         <PublicRoute>
-          {route.layout === 'default' ? (
+          {route.component === Layout ? (
+            <Component />
+          ) : route.layout === 'default' ? (
             <Layout includeNavbar={true}>
               <Component />
             </Layout>
@@ -75,7 +81,9 @@ const AppRoutes = () => {
     }
     
     // For any other route type
-    return route.layout === 'default' ? (
+    return route.component === Layout ? (
+      <Component />
+    ) : route.layout === 'default' ? (
       <Layout includeNavbar={true}>
         <Component />
       </Layout>
