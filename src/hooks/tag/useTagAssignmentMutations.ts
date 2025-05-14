@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   assignTag, 
@@ -8,6 +7,7 @@ import {
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
+import { User } from "@supabase/supabase-js";
 
 /**
  * Hook for tag assignment mutations
@@ -32,11 +32,15 @@ export const useTagAssignmentMutations = () => {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
+      // Get current user data with proper typing
+      const userData = queryClient.getQueryData<{ user: User | null }>(["auth", "user"]);
+      const currentUserId = userData?.user?.id || "not logged in";
+      
       logger.info("Executing assignTag mutation with details:", { 
         tagId, 
         entityId, 
         entityType,
-        currentUserId: queryClient.getQueryData(["auth", "user"])?.id || "not logged in"
+        currentUserId
       });
       console.log("Executing assignTag mutation:", { tagId, entityId, entityType });
       
