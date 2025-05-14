@@ -1,4 +1,6 @@
 
+import { ApiError } from "./errorHandler";
+
 /**
  * Common parameters for list queries
  */
@@ -32,6 +34,15 @@ export interface PaginatedResponse<T> {
   page: number;
   hasMore: boolean;
 }
+
+/**
+ * Standardized API response type
+ */
+export type ApiResponse<T> = {
+  data: T | null;
+  error: ApiError | null;
+  status: 'success' | 'error';
+};
 
 /**
  * Standard CRUD operations interface for API factories

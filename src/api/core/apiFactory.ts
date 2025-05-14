@@ -1,9 +1,10 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ApiOperations, ListParams, QueryOptions } from "./types";
+import { ListParams, QueryOptions, ApiOperations } from "./types";
 import { ApiResponse, createErrorResponse, createSuccessResponse } from "./errorHandler";
 import { apiClient } from "./apiClient";
 import { logger } from "@/utils/logger";
+import { PostgrestFilterBuilder } from "@supabase/supabase-js";
 
 /**
  * Creates standardized CRUD API operations for a specific entity type
@@ -15,7 +16,7 @@ import { logger } from "@/utils/logger";
  */
 export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>>(
   entityName: string,
-  tableName: string,
+  tableName: keyof typeof supabase.from extends string ? keyof typeof supabase.from : string,
   options: {
     idField?: string;
     defaultSelect?: string;
@@ -42,49 +43,51 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     try {
       logger.debug(`Fetching all ${entityName}`, params);
       
-      let query = supabase
-        .from(tableName)
-        .select(defaultSelect);
-      
-      // Apply filters if provided
-      if (params?.filters) {
-        Object.entries(params.filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            if (Array.isArray(value)) {
-              query = query.in(key, value);
-            } else {
-              query = query.eq(key, value);
+      return await apiClient.query(async (client) => {
+        let query = client
+          .from(tableName)
+          .select(defaultSelect);
+        
+        // Apply filters if provided
+        if (params?.filters) {
+          Object.entries(params.filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value);
+              } else {
+                query = query.eq(key, value);
+              }
             }
-          }
-        });
-      }
-      
-      // Apply search if provided
-      if (params?.search) {
-        // This is a simplified approach - in real implementation,
-        // you would define which fields to search
-        query = query.ilike('name', `%${params.search}%`);
-      }
-      
-      // Apply pagination
-      if (params?.page !== undefined && params?.limit !== undefined) {
-        const start = (params.page - 1) * params.limit;
-        query = query.range(start, start + params.limit - 1);
-      }
-      
-      // Apply sorting
-      const sortField = params?.sortBy || defaultOrderBy;
-      const sortOrder = params?.sortDirection || 'desc';
-      query = query.order(sortField, { ascending: sortOrder === 'asc' });
-      
-      const { data, error } = await query;
-      
-      if (error) throw error;
-      
-      // Transform response data
-      const transformedData = data.map(transformResponse);
-      
-      return createSuccessResponse(transformedData);
+          });
+        }
+        
+        // Apply search if provided
+        if (params?.search) {
+          // This is a simplified approach - in real implementation,
+          // you would define which fields to search
+          query = query.ilike('name', `%${params.search}%`);
+        }
+        
+        // Apply pagination
+        if (params?.page !== undefined && params?.limit !== undefined) {
+          const start = (params.page - 1) * params.limit;
+          query = query.range(start, start + params.limit - 1);
+        }
+        
+        // Apply sorting
+        const sortField = params?.sortBy || defaultOrderBy;
+        const sortOrder = params?.sortDirection || 'desc';
+        query = query.order(sortField, { ascending: sortOrder === 'asc' });
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        
+        // Transform response data
+        const transformedData = data.map(transformResponse);
+        
+        return createSuccessResponse(transformedData);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
@@ -98,15 +101,17 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     try {
       logger.debug(`Fetching ${entityName} with ID: ${String(id)}`);
       
-      const { data, error } = await supabase
-        .from(tableName)
-        .select(defaultSelect)
-        .eq(idField, id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(data ? transformResponse(data) : null);
+      return await apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from(tableName)
+          .select(defaultSelect)
+          .eq(idField, id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        
+        return createSuccessResponse(data ? transformResponse(data) : null);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName} by ID:`, error);
       return createErrorResponse(error);
@@ -122,16 +127,18 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       logger.debug(`Fetching ${entityName} with IDs:`, ids);
       
-      const { data, error } = await supabase
-        .from(tableName)
-        .select(defaultSelect)
-        .in(idField, ids);
-      
-      if (error) throw error;
-      
-      const transformedData = data.map(transformResponse);
-      
-      return createSuccessResponse(transformedData);
+      return await apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from(tableName)
+          .select(defaultSelect)
+          .in(idField, ids);
+        
+        if (error) throw error;
+        
+        const transformedData = data.map(transformResponse);
+        
+        return createSuccessResponse(transformedData);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName} by IDs:`, error);
       return createErrorResponse(error);
@@ -147,15 +154,17 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedData = transformRequest(data);
       
-      const { data: createdData, error } = await supabase
-        .from(tableName)
-        .insert(transformedData)
-        .select(defaultSelect)
-        .single();
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(transformResponse(createdData));
+      return await apiClient.query(async (client) => {
+        const { data: createdData, error } = await client
+          .from(tableName)
+          .insert(transformedData)
+          .select(defaultSelect)
+          .single();
+        
+        if (error) throw error;
+        
+        return createSuccessResponse(transformResponse(createdData));
+      });
     } catch (error) {
       logger.error(`Error creating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -171,16 +180,18 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedData = transformRequest(data);
       
-      const { data: updatedData, error } = await supabase
-        .from(tableName)
-        .update(transformedData)
-        .eq(idField, id)
-        .select(defaultSelect)
-        .single();
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(transformResponse(updatedData));
+      return await apiClient.query(async (client) => {
+        const { data: updatedData, error } = await client
+          .from(tableName)
+          .update(transformedData)
+          .eq(idField, id)
+          .select(defaultSelect)
+          .single();
+        
+        if (error) throw error;
+        
+        return createSuccessResponse(transformResponse(updatedData));
+      });
     } catch (error) {
       logger.error(`Error updating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -194,29 +205,34 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     try {
       logger.debug(`Deleting ${entityName} with ID: ${String(id)}`);
       
-      let error;
-      
-      if (softDelete) {
-        // Soft delete - update deleted_at field
-        const { error: updateError } = await supabase
-          .from(tableName)
-          .update({ deleted_at: new Date().toISOString() })
-          .eq(idField, id);
+      return await apiClient.query(async (client) => {
+        let error;
         
-        error = updateError;
-      } else {
-        // Hard delete
-        const { error: deleteError } = await supabase
-          .from(tableName)
-          .delete()
-          .eq(idField, id);
+        if (softDelete) {
+          // Soft delete - check if the table has deleted_at column first
+          const updateData = { updated_at: new Date().toISOString() } as any;
+          updateData.deleted_at = new Date().toISOString();
+          
+          const { error: updateError } = await client
+            .from(tableName)
+            .update(updateData)
+            .eq(idField, id);
+          
+          error = updateError;
+        } else {
+          // Hard delete
+          const { error: deleteError } = await client
+            .from(tableName)
+            .delete()
+            .eq(idField, id);
+          
+          error = deleteError;
+        }
         
-        error = deleteError;
-      }
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(true);
+        if (error) throw error;
+        
+        return createSuccessResponse(true);
+      });
     } catch (error) {
       logger.error(`Error deleting ${entityName}:`, error);
       return createErrorResponse(error);
@@ -234,16 +250,18 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedItems = items.map(transformRequest);
       
-      const { data, error } = await supabase
-        .from(tableName)
-        .insert(transformedItems)
-        .select(defaultSelect);
-      
-      if (error) throw error;
-      
-      const transformedData = data.map(transformResponse);
-      
-      return createSuccessResponse(transformedData);
+      return await apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from(tableName)
+          .insert(transformedItems)
+          .select(defaultSelect);
+        
+        if (error) throw error;
+        
+        const transformedData = data.map(transformResponse);
+        
+        return createSuccessResponse(transformedData);
+      });
     } catch (error) {
       logger.error(`Error batch creating ${entityName}s:`, error);
       return createErrorResponse(error);
@@ -261,22 +279,24 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       // For batch updates, we need to run separate updates for each item
       // This is not efficient but Supabase doesn't support bulk updates
-      const updates = await Promise.all(
-        items.map(async (item) => {
-          const { data, error } = await supabase
-            .from(tableName)
-            .update(transformRequest(item.data))
-            .eq(idField, item.id)
-            .select(defaultSelect)
-            .single();
-          
-          if (error) throw error;
-          
-          return transformResponse(data);
-        })
-      );
-      
-      return createSuccessResponse(updates);
+      return await apiClient.query(async (client) => {
+        const updates = await Promise.all(
+          items.map(async (item) => {
+            const { data, error } = await client
+              .from(tableName)
+              .update(transformRequest(item.data))
+              .eq(idField, item.id)
+              .select(defaultSelect)
+              .single();
+            
+            if (error) throw error;
+            
+            return transformResponse(data);
+          })
+        );
+        
+        return createSuccessResponse(updates);
+      });
     } catch (error) {
       logger.error(`Error batch updating ${entityName}s:`, error);
       return createErrorResponse(error);
@@ -292,29 +312,34 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       logger.debug(`Batch deleting ${entityName}s, count:`, ids.length);
       
-      let error;
-      
-      if (softDelete) {
-        // Soft delete - update deleted_at field
-        const { error: updateError } = await supabase
-          .from(tableName)
-          .update({ deleted_at: new Date().toISOString() })
-          .in(idField, ids);
+      return await apiClient.query(async (client) => {
+        let error;
         
-        error = updateError;
-      } else {
-        // Hard delete
-        const { error: deleteError } = await supabase
-          .from(tableName)
-          .delete()
-          .in(idField, ids);
+        if (softDelete) {
+          // Soft delete - update deleted_at field
+          const updateData = { updated_at: new Date().toISOString() } as any;
+          updateData.deleted_at = new Date().toISOString();
+          
+          const { error: updateError } = await client
+            .from(tableName)
+            .update(updateData)
+            .in(idField, ids);
+          
+          error = updateError;
+        } else {
+          // Hard delete
+          const { error: deleteError } = await client
+            .from(tableName)
+            .delete()
+            .in(idField, ids);
+          
+          error = deleteError;
+        }
         
-        error = deleteError;
-      }
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(true);
+        if (error) throw error;
+        
+        return createSuccessResponse(true);
+      });
     } catch (error) {
       logger.error(`Error batch deleting ${entityName}s:`, error);
       return createErrorResponse(error);
