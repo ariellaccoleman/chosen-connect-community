@@ -16,15 +16,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import OrganizationMembers from "@/components/organizations/OrganizationMembers";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 
 const OrganizationDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  // Changed from 'id' to 'orgId' to match the route parameter name
+  const { id: orgId } = useParams<{ id: string }>();
   const { user, isAdmin } = useAuth();
   const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("details");
-  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
-  const { data: userRole } = useOrganizationRole(user?.id, id);
+  
+  // Update all useIsOrganizationAdmin calls with the correct ID
+  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, orgId);
+  const { data: userRole } = useOrganizationRole(user?.id, orgId);
   
   // Get user's relationships with the fixed hook usage
   const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
@@ -32,9 +36,14 @@ const OrganizationDetail = () => {
 
   useEffect(() => {
     const fetchOrganization = async () => {
-      if (!id) return;
+      if (!orgId) {
+        logger.error("OrganizationDetail - No organization ID in URL params");
+        setLoading(false);
+        return;
+      }
 
       try {
+        logger.info(`OrganizationDetail - Fetching organization with ID: ${orgId}`);
         setLoading(true);
         const { data, error } = await supabase
           .from("organizations")
@@ -42,10 +51,11 @@ const OrganizationDetail = () => {
             *,
             location:locations(*)
           `)
-          .eq("id", id)
+          .eq("id", orgId)
           .single();
 
         if (error) {
+          logger.error(`OrganizationDetail - Error fetching organization: ${error.message}`);
           throw error;
         }
 
@@ -64,16 +74,17 @@ const OrganizationDetail = () => {
           organizationWithLocation.location = locationWithDetails;
         }
 
+        logger.info(`OrganizationDetail - Successfully fetched organization: ${data.name}`);
         setOrganization(organizationWithLocation);
       } catch (error) {
-        console.error("Error fetching organization:", error);
+        logger.error("Error fetching organization:", error);
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrganization();
-  }, [id]);
+  }, [orgId]);
 
   if (loading) {
     return (
@@ -99,13 +110,13 @@ const OrganizationDetail = () => {
     <div className="container mx-auto py-6 px-4 max-w-3xl">
       <OrganizationDetailHeader 
         userId={user?.id}
-        organizationId={id}
+        organizationId={orgId}
         organizationName={organization?.name}
         relationships={relationships}
       />
 
       {/* Admin alert below the header */}
-      {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
+      {user && orgId && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={orgId} />}
 
       <div className="space-y-6">
         {/* Organization Info Card with Tags */}
@@ -117,9 +128,9 @@ const OrganizationDetail = () => {
             <div className="mt-6 border-t pt-6">
               <h3 className="text-lg font-medium mb-2">Tags</h3>
               <div className="mt-2">
-                {id && (
+                {orgId && (
                   <EntityTagManager 
-                    entityId={id} 
+                    entityId={orgId} 
                     entityType={EntityType.ORGANIZATION} 
                     isAdmin={isOrgAdmin || isAdmin}
                   />
@@ -139,12 +150,12 @@ const OrganizationDetail = () => {
           </TabsList>
           
           <TabsContent value="members">
-            {id && <OrganizationMembers organizationId={id} />}
+            {orgId && <OrganizationMembers organizationId={orgId} />}
           </TabsContent>
           
           {(isOrgAdmin || isAdmin) && (
             <TabsContent value="admins">
-              {id && <OrganizationAdmins organizationId={id} />}
+              {orgId && <OrganizationAdmins organizationId={orgId} />}
             </TabsContent>
           )}
         </Tabs>

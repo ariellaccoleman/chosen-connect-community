@@ -1,3 +1,4 @@
+
 import { 
   OrganizationWithLocation, 
   ProfileOrganizationRelationship, 
@@ -51,7 +52,7 @@ export const organizationsApi = {
   /**
    * Get organization by ID
    */
-  async getOrganizationById(id: string): Promise<ApiResponse<OrganizationWithLocation | null>> {
+  async getOrganizationById(id?: string): Promise<ApiResponse<OrganizationWithLocation | null>> {
     logger.info(`API call: getOrganizationById with ID: "${id}"`);
     
     if (!id) {

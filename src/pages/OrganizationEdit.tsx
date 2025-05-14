@@ -7,7 +7,6 @@ import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useOrganization } from "@/hooks/useOrganizationQueries";
 import { logger } from "@/utils/logger";
 import Layout from "@/components/layout/Layout";
-import { Form } from "@/components/ui/form";
 import {
   OrganizationEditForm,
   OrganizationEditTabs,
@@ -17,6 +16,7 @@ import {
 } from "@/components/organizations/edit";
 
 const OrganizationEdit = () => {
+  // Ensure we're using the correct param name that matches the route definition
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
