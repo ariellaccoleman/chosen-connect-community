@@ -1,33 +1,29 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React from "react";
+import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
 import TagList from "@/components/tags/TagList";
-import { TagAssignment } from "@/utils/tags";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EntityType } from "@/types/entityTypes";
 
 interface PublicProfileTagsProps {
-  tagAssignments: TagAssignment[];
-  isLoading: boolean;
+  profileId: string;
 }
 
-const PublicProfileTags = ({ tagAssignments, isLoading }: PublicProfileTagsProps) => {
+const PublicProfileTags = ({ profileId }: PublicProfileTagsProps) => {
+  const { data: tagAssignments, isLoading } = usePublicProfileTags(profileId);
+  
+  if (isLoading) {
+    return <Skeleton className="h-24 w-full" />;
+  }
+  
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-medium">Skills & Tags</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading ? (
-          <div className="animate-pulse flex space-x-2">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-6 w-20 bg-gray-200 rounded"></div>
-            ))}
-          </div>
-        ) : (
-          <TagList 
-            tagAssignments={tagAssignments}
-          />
-        )}
-      </CardContent>
-    </Card>
+    <div className="mt-4">
+      <h3 className="text-lg font-semibold mb-2">Tags</h3>
+      <TagList 
+        tagAssignments={tagAssignments || []} 
+        currentEntityType={EntityType.PERSON}
+      />
+    </div>
   );
 };
 

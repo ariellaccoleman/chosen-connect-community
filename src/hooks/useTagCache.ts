@@ -1,28 +1,30 @@
 
-import { useState } from "react";
 import { EntityType } from "@/types/entityTypes";
+import { invalidateCache } from "@/api/tags/invalidateCache";
 
 /**
- * Function to invalidate server-side tag cache
- * Exported here for better organization
+ * Clear tag cache for a specific entity type or all entity types
  */
-export const invalidateTagCache = async (entityType?: EntityType) => {
+export const invalidateTagCache = async (
+  entityType?: EntityType
+): Promise<boolean> => {
   try {
-    // If an entity type is specified, only invalidate that cache
     if (entityType) {
-      const entityTypeParam = entityType.toString();
-      await fetch(`/api/tags/invalidate-cache?entityType=${entityTypeParam}`, { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      // Invalidate cache for specific entity type
+      await invalidateCache(`tags_${entityType}`);
+      console.log(`Invalidated tag cache for ${entityType}`);
     } else {
-      // Otherwise invalidate all tag caches
-      await fetch('/api/tags/invalidate-cache', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
+      // Invalidate all entity type caches
+      await Promise.all([
+        invalidateCache(`tags_${EntityType.PERSON}`),
+        invalidateCache(`tags_${EntityType.ORGANIZATION}`),
+        invalidateCache(`tags_${EntityType.EVENT}`)
+      ]);
+      console.log("Invalidated all tag caches");
     }
+    return true;
   } catch (error) {
-    console.error("Failed to invalidate tag cache:", error);
+    console.error("Error invalidating tag cache:", error);
+    return false;
   }
 };
