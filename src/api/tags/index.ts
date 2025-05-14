@@ -5,7 +5,7 @@ import { Tag } from '@/types';
 /**
  * Create API operations for tags
  */
-export const tagsApi = createApiOperations<Tag>(
+export const tagsApi = createApiOperations<Tag, string, Partial<Tag>, Partial<Tag>, 'tags'>(
   'tag',
   'tags',
   {

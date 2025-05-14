@@ -1,4 +1,3 @@
-
 import { createApiOperations } from '@/api/core/apiFactory';
 import { mockSupabase, resetSupabaseMocks } from '../../__mocks__/supabase';
 import { ApiResponse } from '@/api/core/errorHandler';
@@ -19,7 +18,10 @@ describe('API Factory', () => {
   
   test('creates operations with correct table name', () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     mockSupabase.from.mockImplementation((tableName) => {
       mockSupabase.currentTable = tableName;
       return mockSupabase;
@@ -29,12 +31,15 @@ describe('API Factory', () => {
     testOps.getAll();
     
     // Verify
-    expect(mockSupabase.from).toHaveBeenCalledWith('test_table');
+    expect(mockSupabase.from).toHaveBeenCalledWith('tags');
   });
   
   test('getAll applies filters correctly', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     mockSupabase.select.mockReturnThis();
     mockSupabase.eq.mockReturnThis();
     mockSupabase.order.mockResolvedValue({ data: [{ id: '1', name: 'Test' }], error: null });
@@ -48,7 +53,10 @@ describe('API Factory', () => {
   
   test('getById fetches a single entity with the correct ID', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     mockSupabase.select.mockReturnThis();
     mockSupabase.eq.mockReturnThis();
     mockSupabase.maybeSingle.mockResolvedValue({ 
@@ -66,7 +74,10 @@ describe('API Factory', () => {
   
   test('create inserts data and returns the created entity', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     const newEntity = { name: 'New Entity', description: 'Description' };
     
     mockSupabase.from.mockReturnThis();
@@ -88,7 +99,10 @@ describe('API Factory', () => {
   
   test('update modifies an entity and returns the updated entity', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     const updateData = { description: 'Updated description' };
     
     mockSupabase.from.mockReturnThis();
@@ -116,7 +130,10 @@ describe('API Factory', () => {
   
   test('delete removes an entity and returns success', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     
     mockSupabase.from.mockReturnThis();
     mockSupabase.delete.mockReturnThis();
@@ -133,7 +150,10 @@ describe('API Factory', () => {
 
   test('handles errors and returns standardized error response', async () => {
     // Setup
-    const testOps = createApiOperations<TestEntity>('testEntity', 'test_table');
+    const testOps = createApiOperations<TestEntity, string, Partial<TestEntity>, Partial<TestEntity>, 'tags'>(
+      'testEntity', 
+      'tags'
+    );
     const testError = { message: 'Database error', code: 'DB_ERROR' };
     
     mockSupabase.from.mockReturnThis();

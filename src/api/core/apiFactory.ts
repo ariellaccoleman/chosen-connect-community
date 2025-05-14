@@ -4,6 +4,10 @@ import { ListParams, QueryOptions, ApiOperations } from "./types";
 import { ApiResponse, createErrorResponse, createSuccessResponse } from "./errorHandler";
 import { apiClient } from "./apiClient";
 import { logger } from "@/utils/logger";
+import { Database } from "@/integrations/supabase/types";
+
+// Define a type for valid table names from the Database type
+type TableNames = keyof Database['public']['Tables'];
 
 /**
  * Creates standardized CRUD API operations for a specific entity type
@@ -13,9 +17,15 @@ import { logger } from "@/utils/logger";
  * @param options - Additional options for customizing behavior
  * @returns Object with standardized CRUD operations
  */
-export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>>(
+export function createApiOperations<
+  T, 
+  TId = string, 
+  TCreate = Partial<T>, 
+  TUpdate = Partial<T>,
+  Table extends TableNames = TableNames
+>(
   entityName: string,
-  tableName: string,
+  tableName: Table,
   options: {
     idField?: string;
     defaultSelect?: string;
@@ -43,9 +53,8 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       logger.debug(`Fetching all ${entityName}`, params);
       
       return await apiClient.query(async (client) => {
-        // We need to use the callback pattern instead of directly chaining methods
-        // to avoid TypeScript errors related to table names
-        let query = client.from(tableName);
+        // Type-safe table access
+        const query = client.from(tableName);
         let selectQuery = query.select(defaultSelect);
         
         // Apply filters if provided
