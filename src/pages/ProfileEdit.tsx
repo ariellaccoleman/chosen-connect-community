@@ -77,7 +77,7 @@ const ProfileEdit = () => {
   };
   
   const handleNavigateToManageOrgs = () => {
-    navigate("/organizations/manage");
+    navigate("/organizations/manage-connections");
   };
 
   if (loading || isLoadingProfile) {

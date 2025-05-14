@@ -1,15 +1,12 @@
 
-import { Link as LinkIcon } from "lucide-react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit, ShieldCheck } from "lucide-react";
-import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Edit, MapPin } from "lucide-react";
 import { ProfileWithDetails } from "@/types";
-import TagList from "@/components/tags/TagList";
-import { useEntityTags } from "@/hooks/useTags";
-import { Badge } from "@/components/ui/badge";
+import TagList from "../tags/TagList";
 
 interface ProfileSummaryCardProps {
   profile: ProfileWithDetails;
@@ -17,134 +14,64 @@ interface ProfileSummaryCardProps {
 
 const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
   const navigate = useNavigate();
-  const { data: tagAssignments = [], isLoading: isLoadingTags } = useEntityTags(
-    profile.id,
-    "person",
-    { enabled: !!profile.id }
-  );
   
-  const getInitials = () => {
-    return [profile.first_name?.[0], profile.last_name?.[0]]
-      .filter(Boolean)
-      .join('')
-      .toUpperCase();
-  };
-
-  const isAdmin = profile.role === "admin";
-  
-  // Debug for ProfileSummaryCard
-  console.log("ProfileSummaryCard:", { 
-    name: profile.full_name, 
-    role: profile.role, 
-    isAdmin 
-  });
-
+  const fullName = `${profile.first_name || ""} ${profile.last_name || ""}`.trim();
+  const initials = fullName
+    ? fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2)
+    : "U";
+    
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <div className="flex justify-between items-center">
-          <CardTitle>Profile</CardTitle>
-          <Button 
-            size="sm" 
-            variant="ghost" 
-            onClick={() => navigate("/profile")}
-            className="text-chosen-blue hover:text-chosen-navy"
-          >
-            <Edit className="h-4 w-4 mr-1" />
-            Edit
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <div className="flex flex-col items-center mb-4">
-          <div className="relative">
-            <Avatar className="h-24 w-24 mb-4">
-              <AvatarImage src={profile.avatar_url || ""} />
-              <AvatarFallback className="bg-chosen-gold text-chosen-navy text-lg">
-                {getInitials() || "?"}
+      <CardContent className="p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <Avatar className="w-16 h-16">
+              <AvatarImage src={profile.avatar_url || ""} alt={fullName} />
+              <AvatarFallback className="text-lg bg-chosen-blue text-white">
+                {initials}
               </AvatarFallback>
             </Avatar>
-            {isAdmin && (
-              <div className="absolute -bottom-1 -right-1">
-                <Badge variant="success" className="h-7 w-7 p-0 flex items-center justify-center rounded-full">
-                  <ShieldCheck className="h-4 w-4" />
-                </Badge>
-              </div>
-            )}
+            
+            <div>
+              <h2 className="text-xl font-bold">{fullName}</h2>
+              {profile.headline && (
+                <p className="text-gray-600">{profile.headline}</p>
+              )}
+              {profile.location?.formatted_location && (
+                <div className="flex items-center mt-1 text-sm text-gray-500">
+                  <MapPin className="h-3.5 w-3.5 mr-1" />
+                  <span>{profile.location.formatted_location}</span>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold">{profile.full_name}</h2>
-            {isAdmin && (
-              <Badge variant="success" className="flex items-center gap-1">
-                <ShieldCheck className="h-3 w-3" />
-                <span>Admin</span>
-              </Badge>
-            )}
-          </div>
-          {profile.headline && (
-            <p className="text-gray-600 text-center mt-1">{profile.headline}</p>
-          )}
+          
+          <Button 
+            variant="outline" 
+            className="flex items-center" 
+            onClick={() => navigate("/profile/edit")}
+          >
+            <Edit className="h-4 w-4 mr-2" />
+            Edit Profile
+          </Button>
         </div>
-        
-        {/* Tags Section */}
-        <div className="mb-4">
-          <p className="text-sm text-gray-500 mb-1">Skills & Tags</p>
-          {isLoadingTags ? (
-            <p className="text-sm italic">Loading tags...</p>
-          ) : (
-            <TagList tagAssignments={tagAssignments} className="mt-1" />
-          )}
-        </div>
-        
-        {profile.location && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-500">Location</p>
-            <p>{profile.location.formatted_location}</p>
-          </div>
-        )}
         
         {profile.bio && (
-          <div className="mb-4">
-            <p className="text-sm text-gray-500">Bio</p>
-            <p className="text-sm">{profile.bio}</p>
+          <div className="mt-4">
+            <p className="text-gray-700">{profile.bio}</p>
           </div>
         )}
         
-        <div className="flex flex-col space-y-2 mt-4">
-          {profile.linkedin_url && (
-            <a 
-              href={formatWebsiteUrl(profile.linkedin_url)}
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
-            >
-              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-              LinkedIn
-            </a>
-          )}
-          {profile.twitter_url && (
-            <a 
-              href={formatWebsiteUrl(profile.twitter_url)}
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
-            >
-              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-              Twitter
-            </a>
-          )}
-          {profile.website_url && (
-            <a 
-              href={formatWebsiteUrl(profile.website_url)}
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center text-sm text-chosen-blue hover:text-chosen-navy break-all"
-            >
-              <LinkIcon className="h-4 w-4 mr-2 flex-shrink-0" />
-              Website
-            </a>
-          )}
-        </div>
+        {profile.tags && profile.tags.length > 0 && (
+          <div className="mt-4">
+            <TagList tagAssignments={profile.tags} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );
