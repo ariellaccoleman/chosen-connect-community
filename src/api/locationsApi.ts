@@ -21,12 +21,31 @@ export const locationsApi = {
         // If a specific ID is provided, fetch just that location
         query = query.eq('id', specificId);
       } else if (searchTerm) {
-        // Clean the search term to avoid SQL injection and escape special characters
-        const cleanedSearchTerm = searchTerm.replace(/[%,_]/g, '');
-        
-        if (cleanedSearchTerm) {
-          // Use the cleaned search term in the query
-          query = query.or(`city.ilike.%${cleanedSearchTerm}%,region.ilike.%${cleanedSearchTerm}%,country.ilike.%${cleanedSearchTerm}%,full_name.ilike.%${cleanedSearchTerm}%`);
+        // For search functionality, handle terms with or without commas
+        if (searchTerm.includes(',')) {
+          // For comma-separated searches, split and search the parts individually
+          const parts = searchTerm.split(',').map(part => part.trim()).filter(Boolean);
+          
+          if (parts.length >= 1) {
+            // Search for the first part in city, and full_name
+            const firstPart = parts[0].replace(/[%,_]/g, '');
+            query = query.ilike('full_name', `%${firstPart}%`);
+            
+            // If there are additional parts, narrow search based on those parts as well
+            if (parts.length >= 2) {
+              // For the second part, typically a state/region, match it in the full_name
+              const combinedSearch = parts.join(', ').replace(/[%,_]/g, '');
+              query = query.ilike('full_name', `%${combinedSearch}%`);
+            }
+          }
+        } else {
+          // Clean the search term to avoid SQL injection and escape special characters
+          const cleanedSearchTerm = searchTerm.replace(/[%,_]/g, '');
+          
+          if (cleanedSearchTerm) {
+            // Use the cleaned search term in the query
+            query = query.or(`city.ilike.%${cleanedSearchTerm}%,region.ilike.%${cleanedSearchTerm}%,country.ilike.%${cleanedSearchTerm}%,full_name.ilike.%${cleanedSearchTerm}%`);
+          }
         }
       }
       

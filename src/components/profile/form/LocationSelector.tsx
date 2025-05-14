@@ -33,11 +33,9 @@ const LocationSelector = ({ control, label, required = false, fieldName = "locat
   // Get the current value from the form if available
   const currentLocationId = form?.getValues(fieldName) || control._getWatch?.(fieldName);
   
-  // Only pass the search term after basic cleaning
-  const cleanedSearch = locationSearch.trim();
-  
-  // Get locations for dropdown
-  const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(cleanedSearch);
+  // Get locations for dropdown - pass the search term directly
+  // This is now safe since we're handling commas specially in the API
+  const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
   
   // Get specific location by ID if we have an ID but not the location object
   const { data: locationById } = useLocationById(
