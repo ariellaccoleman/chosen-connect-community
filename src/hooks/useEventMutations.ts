@@ -31,20 +31,12 @@ export function useEventMutations() {
       console.log("Mutation succeeded with data:", data);
       logger.info("Event creation successful:", data);
       queryClient.invalidateQueries({ queryKey: ["events"] });
-      toast({
-        title: "Success",
-        description: "Event created successfully",
-        variant: "default"
-      });
+      toast.success("Event created successfully");
     },
     onError: (error) => {
       console.error("Mutation error:", error);
       logger.error("Event mutation error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create event. Please try again.",
-        variant: "destructive"
-      });
+      toast.error("Failed to create event. Please try again.");
     }
   });
 

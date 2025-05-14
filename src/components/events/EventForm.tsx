@@ -17,6 +17,7 @@ import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/use-toast";
+import { useFormError } from "@/hooks/useFormError";
 
 interface EventFormProps {
   onSuccess?: () => void;
@@ -27,7 +28,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
   const [locationFieldVisible, setLocationFieldVisible] = useState(false);
-  const formId = "event-form";
+  const { handleError } = useFormError();
   
   // Get today's date for default date
   const today = new Date();
@@ -58,6 +59,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const isSubmitting = createEventMutation.isPending;
 
   console.log("Rendering EventForm component", { isSubmitting, isPaid, isVirtual });
+  logger.info("Rendering EventForm component", { isSubmitting, isPaid, isVirtual });
 
   const handleSubmit = async (values: CreateEventFormValues) => {
     console.log("EventForm handleSubmit called with values:", values);
@@ -153,57 +155,58 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
     } catch (error) {
       console.error("Error creating event:", error);
       logger.error("Error creating event:", error);
-      toast({
-        title: "Error",
-        description: "There was a problem creating your event.",
-        variant: "destructive",
-      });
+      handleError(error);
     }
   };
 
   return (
-    <FormWrapper 
-      form={form} 
-      onSubmit={handleSubmit} 
+    <form 
+      onSubmit={form.handleSubmit(handleSubmit)}
       className="space-y-6"
-      id={formId}
+      id="event-form"
     >
       <h2 className="text-2xl font-bold">Create New Event</h2>
       
-      <EventBasicDetails control={form.control} />
-      <EventTypeSelector 
-        control={form.control} 
-        onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)} 
-      />
-      
-      {!isVirtual && (
-        <LocationSelector
-          control={form.control}
-          label="Event Location"
-          required={!isVirtual}
-          fieldName="location_id"
+      <div className="space-y-6">
+        <EventBasicDetails control={form.control} />
+        <EventTypeSelector 
+          control={form.control} 
+          onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)} 
         />
-      )}
+        
+        {!isVirtual && (
+          <LocationSelector
+            control={form.control}
+            label="Event Location"
+            required={!isVirtual}
+            fieldName="location_id"
+          />
+        )}
+        
+        <EventPriceToggle control={form.control} />
+        
+        {isPaid && (
+          <FormInput
+            name="price"
+            control={form.control}
+            label="Price"
+            type="number"
+            placeholder="0.00"
+            required={isPaid}
+          />
+        )}
+      </div>
       
-      <EventPriceToggle control={form.control} />
-      
-      {isPaid && (
-        <FormInput
-          name="price"
-          control={form.control}
-          label="Price"
-          type="number"
-          placeholder="0.00"
-          required={isPaid}
-        />
-      )}
-      
-      <FormActions
-        isSubmitting={isSubmitting}
-        submitLabel="Create Event"
-        formId={formId}
-      />
-    </FormWrapper>
+      <div className="flex justify-end space-x-4 mt-6">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="bg-chosen-blue hover:bg-chosen-navy text-white px-4 py-2 rounded"
+        >
+          {isSubmitting ? "Creating..." : "Create Event"}
+        </button>
+      </div>
+    </form>
   );
 };
 
