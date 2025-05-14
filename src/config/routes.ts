@@ -1,4 +1,3 @@
-
 import { generatePath } from 'react-router-dom';
 
 export const APP_ROUTES = {
@@ -14,6 +13,7 @@ export const APP_ROUTES = {
   ORGANIZATION_EDIT: '/organizations/:orgId/edit',
   MANAGE_ORGANIZATIONS: '/organizations/manage-connections',
   COMMUNITY: '/directory',
+  COMMUNITY_GUIDE: '/community-guide',
   ADMIN_DASHBOARD: '/admin',
   ADMIN_TAGS: '/admin/tags',
   TEST_DATA_GENERATOR: '/admin/test-data-generator',
@@ -37,6 +37,7 @@ export const ROUTE_ACCESS = {
   [APP_ROUTES.ORGANIZATION_EDIT]: { requiresAuth: true },
   [APP_ROUTES.MANAGE_ORGANIZATIONS]: { requiresAuth: true },
   [APP_ROUTES.COMMUNITY]: { requiresAuth: false },
+  [APP_ROUTES.COMMUNITY_GUIDE]: { requiresAuth: false },
   [APP_ROUTES.ADMIN_DASHBOARD]: { requiresAuth: true, requiresAdmin: true },
   [APP_ROUTES.ADMIN_TAGS]: { requiresAuth: true, requiresAdmin: true },
   [APP_ROUTES.TEST_DATA_GENERATOR]: { requiresAuth: true, requiresAdmin: true },
@@ -65,6 +66,12 @@ export const getRoutesConfig = () => {
       path: APP_ROUTES.COMMUNITY,
       id: 'community',
       label: 'Community',
+      showInNav: true,
+    },
+    {
+      path: APP_ROUTES.COMMUNITY_GUIDE,
+      id: 'community-guide',
+      label: 'Community Guide',
       showInNav: true,
     },
     {

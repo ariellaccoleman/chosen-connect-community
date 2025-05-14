@@ -7,6 +7,7 @@ import Index from '@/pages/Index';
 import About from '@/pages/About';
 import Auth from '@/pages/Auth';
 import NotFound from '@/pages/NotFound';
+import CommunityGuide from '@/pages/CommunityGuide';
 
 // Protected Routes
 import Dashboard from '@/pages/Dashboard';
@@ -41,6 +42,7 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.HOME} element={<Index />} />
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
