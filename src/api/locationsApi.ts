@@ -1,3 +1,4 @@
+
 import { LocationWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -42,7 +43,8 @@ export const locationsApi = {
         }
       }
       
-      const { data, error } = await query.order('full_name');
+      // Order by population (stored in geoname_id field) by default for more relevant results
+      const { data, error } = await query.order('geoname_id', { ascending: false });
       
       if (error) throw error;
       

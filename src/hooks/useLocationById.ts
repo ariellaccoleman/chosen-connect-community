@@ -15,7 +15,6 @@ export const useLocationById = (locationId: string | undefined) => {
       // Don't fetch if no ID is provided
       if (!locationId) return null;
       
-      console.log('Fetching location by ID:', locationId);
       const response = await locationsApi.getLocations('', locationId);
       
       if (response.error) {
