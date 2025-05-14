@@ -41,6 +41,16 @@ export const useUserOrganizationRelationships = (profileId?: string) => {
 };
 
 export const useOrganization = (id?: string) => {
+  // Log details about the id that's being passed to this hook
+  logger.info("useOrganization hook called with id:", { 
+    id,
+    idType: typeof id,
+    idIsEmpty: id === '',
+    idIsUndefined: id === undefined,
+    idIsNull: id === null,
+    idLength: id?.length
+  });
+  
   return useQuery({
     queryKey: ["organization", id],
     queryFn: () => {
@@ -48,7 +58,24 @@ export const useOrganization = (id?: string) => {
         logger.warn("useOrganization called without id");
         return Promise.resolve({ data: null });
       }
-      return organizationCrudApi.getOrganizationById(id);
+      
+      // Log before the API call
+      logger.info(`Making API call to get organization with ID: "${id}"`);
+      
+      return organizationCrudApi.getOrganizationById(id)
+        .then(response => {
+          // Log after the API call
+          logger.info(`API response for organization "${id}":`, {
+            success: !!response,
+            hasData: !!response?.data,
+            organizationName: response?.data?.name || "N/A"
+          });
+          return response;
+        })
+        .catch(error => {
+          logger.error(`API error for organization "${id}":`, error);
+          throw error;
+        });
     },
     enabled: !!id
   });

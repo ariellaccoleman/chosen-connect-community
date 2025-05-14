@@ -17,29 +17,45 @@ import {
 
 const OrganizationEdit = () => {
   // Ensure we're using the correct param name that matches the route definition
-  const { orgId } = useParams<{ orgId: string }>();
+  const params = useParams();
+  const { orgId } = params;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Enhanced logging for debugging
+  // Enhanced logging for debugging URL parameters
+  logger.info("OrganizationEdit - URL Parameters:", { 
+    allParams: params,
+    extractedOrgId: orgId,
+    pathname: window.location.pathname
+  });
+  
   logger.info("OrganizationEdit - Component mounted with params:", { orgId });
   logger.info("OrganizationEdit - Current user:", { userId: user?.id });
   
-  // The organization query
+  // The organization query - added explicit type check
   const { data: organizationData, isLoading, error } = useOrganization(orgId);
+  
   // Safely access organization data
   const organization = organizationData?.data || null;
   
-  // Add more detailed logging about the organization response
+  // Add more detailed logging about the organization API call
   useEffect(() => {
+    logger.info("Organization API call details:", {
+      calledWithId: orgId,
+      idType: typeof orgId,
+      idLength: orgId?.length,
+      apiCallMade: !!orgId,
+      responseReceived: !!organizationData
+    });
+    
     logger.info("Organization response:", { 
       hasData: !!organizationData, 
       hasOrganizationData: !!organization,
       orgName: organization?.name,
       error: error?.message
     });
-  }, [organizationData, organization, error]);
+  }, [organizationData, organization, error, orgId]);
   
   // Check if user is admin
   const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
