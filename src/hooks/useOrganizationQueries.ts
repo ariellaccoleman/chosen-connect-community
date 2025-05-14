@@ -7,20 +7,20 @@ export function useOrganizationQueries() {
   const useOrganizations = () => {
     return useQuery({
       queryKey: ["organizations"],
-      queryFn: organizationsApi.getAllOrganizations,
+      queryFn: organizationsApi.getAllOrganizations || organizationsApi.getOrganizations,
     });
   };
 
   return {
     useOrganizations,
-    useFilterTags
+    useFilterTags,
   };
 }
 
 export const useOrganizations = () => {
   return useQuery({
     queryKey: ["organizations"],
-    queryFn: organizationsApi.getAllOrganizations,
+    queryFn: organizationsApi.getAllOrganizations || organizationsApi.getOrganizations,
   });
 };
 

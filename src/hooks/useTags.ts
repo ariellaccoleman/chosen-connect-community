@@ -9,7 +9,7 @@ import { useFilterTags, useSelectionTags, useEntityTags } from "./useTagQueries"
 /**
  * Re-export query hooks from useTagQueries
  */
-export { useFilterTags, useSelectionTags };
+export { useFilterTags, useSelectionTags, useEntityTags };
 
 /**
  * Main tag query hook for backward compatibility
