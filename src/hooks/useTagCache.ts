@@ -1,6 +1,6 @@
 
 import { EntityType } from "@/types/entityTypes";
-import { invalidateCache } from "@/api/tags/invalidateCache";
+import { invalidateCache } from "@/api/tags";
 
 /**
  * Clear tag cache for a specific entity type or all entity types

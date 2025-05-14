@@ -3,6 +3,7 @@ import { useTagFindOrCreate } from "./useTagFindOrCreate";
 import { useTagEntityType } from "./useTagEntityType";
 import { Tag } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
+import { EntityType } from "@/types/entityTypes";
 
 interface UseTagCreationOptions {
   onTagCreated?: (tag: Tag) => void;
@@ -20,7 +21,7 @@ export const useTagCreation = (options: UseTagCreationOptions = {}) => {
       name: string;
       description?: string | null;
     },
-    entityType: "person" | "organization"
+    entityType: EntityType
   ): Promise<Tag | null> => {
     try {
       // First create the tag

@@ -98,8 +98,7 @@ const ProfileView = () => {
             isLoading={isLoadingOrgs}
           />
           <PublicProfileTags
-            tagAssignments={tagAssignments}
-            isLoading={isLoadingTags}
+            profileId={profile.id}
           />
         </div>
       </div>

@@ -1,11 +1,13 @@
+
 import React, { useState, useEffect } from "react";
 import { CommandItem } from "@/components/ui/command";
 import { Tag, getTagEntityTypes } from "@/utils/tags";
+import { EntityType } from "@/types/entityTypes";
 
 interface TagCommandItemProps {
   tag: Tag;
   onSelect: () => void;
-  targetType: "person" | "organization";
+  targetType: EntityType;
 }
 
 const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
@@ -23,7 +25,7 @@ const TagCommandItem = ({ tag, onSelect, targetType }: TagCommandItemProps) => {
       
       if (isDifferent) {
         const typeInfo = entityTypes
-          .map(type => type === "person" ? "People" : "Organizations")
+          .map(type => type === EntityType.PERSON ? "People" : "Organizations")
           .join(", ");
         setEntityTypeInfo(typeInfo);
       }

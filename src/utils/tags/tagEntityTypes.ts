@@ -35,7 +35,7 @@ export const isTagAssociatedWithEntityType = async (
 ): Promise<boolean> => {
   const entityTypes = await getTagEntityTypes(tagId);
   // Convert EntityType enum to string if needed
-  const entityTypeStr = typeof entityType === 'string' ? entityType : entityType.toString();
+  const entityTypeStr = typeof entityType === 'string' ? entityType : entityType;
   return entityTypes.includes(entityTypeStr);
 };
 
