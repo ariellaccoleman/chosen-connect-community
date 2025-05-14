@@ -6,16 +6,19 @@ import OrganizationSection from "@/components/dashboard/OrganizationSection";
 import EventSection from "@/components/dashboard/EventSection";
 import { useCurrentProfile } from "@/hooks/useProfileQueries";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
+import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
 
 const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingOrgs } = usePublicProfileOrganizations(user?.id);
+  const { data: tagAssignments = [], isLoading: isLoadingTags } = usePublicProfileTags(user?.id);
   
-  // If the profile is loaded, add the isAdmin flag to it
+  // If the profile is loaded, add the isAdmin flag and tags to it
   const profileWithAdminStatus = profile ? {
     ...profile,
-    role: isAdmin ? "admin" : profile.role || "member"
+    role: isAdmin ? "admin" : profile.role || "member",
+    tags: tagAssignments // Add tags to the profile data
   } : null;
   
   // Debug admin status
