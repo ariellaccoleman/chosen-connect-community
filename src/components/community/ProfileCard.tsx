@@ -26,7 +26,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
           <div className="md:w-1/2 mt-4 md:mt-0">
             {profile.tags && profile.tags.length > 0 && (
               <div className="mb-2">
-                <TagList tags={profile.tags} className="flex flex-wrap gap-2" />
+                <TagList tagAssignments={profile.tags} className="flex flex-wrap gap-2" />
               </div>
             )}
           </div>

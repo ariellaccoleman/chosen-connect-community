@@ -1,3 +1,4 @@
+
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TagAssignment } from '@/utils/tags';
@@ -23,7 +24,7 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
         throw error;
       }
       
-      // Ensure the response matches the TagAssignment type from tagUtils
+      // Ensure the response matches the TagAssignment type
       return (data as TagAssignment[]).map(assignment => ({
         ...assignment,
         // Make sure updated_at is present (required by TagAssignment type)

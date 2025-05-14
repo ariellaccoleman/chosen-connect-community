@@ -1,5 +1,6 @@
 
 import { LocationWithDetails } from "./location";
+import { TagAssignment } from "@/utils/tags/types";
 
 export type MembershipTier = "free" | "community" | "pro" | "partner";
 
@@ -26,4 +27,5 @@ export interface ProfileWithDetails extends Profile {
   full_name: string;
   role?: "admin" | "member"; // Keep for compatibility with user.user_metadata.role
   location?: LocationWithDetails;
+  tags?: TagAssignment[]; // Add tags property
 }
