@@ -1,9 +1,9 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
 import { useFilterTags } from "./useTags";
 import { formatOrganizationRelationships } from "@/utils/formatters/organizationFormatters";
+import { EntityType } from "@/types/entityTypes";
 
 export const useOrganizations = () => {
   return useQuery({

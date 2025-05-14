@@ -7,6 +7,7 @@ import {
   invalidateTagCache
 } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
+import { EntityType } from "@/types/entityTypes";
 
 /**
  * Hook for finding or creating tags
@@ -48,8 +49,18 @@ export const useTagFindOrCreate = () => {
       // Invalidate all tag queries since new tag could affect any of them
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       
+      // Determine EntityType from the type string
+      const entityType = 
+        variables.type === "person" ? EntityType.PERSON : 
+        variables.type === "organization" ? EntityType.ORGANIZATION :
+        variables.type === "event" ? EntityType.EVENT : undefined;
+      
       // Also clear any cached tag data from the server
-      invalidateTagCache(variables.type === "person" ? "person" : "organization" as "person" | "organization");
+      if (entityType) {
+        invalidateTagCache(entityType);
+      } else {
+        invalidateTagCache();
+      }
     },
     onError: (error) => {
       console.error("Error in findOrCreateTagMutation:", error);

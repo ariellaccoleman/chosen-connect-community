@@ -11,12 +11,13 @@ import { User } from "@supabase/supabase-js";
 import TagList from "./TagList";
 import EmptySearchState from "./EmptySearchState";
 import TagCreateFooter from "./TagCreateFooter";
+import { EntityType } from "@/types/entityTypes";
 
 interface TagSearchProps {
   searchValue: string;
   setSearchValue: (value: string) => void;
   tags: Tag[];
-  targetType: "person" | "organization";
+  targetType: EntityType;
   onTagSelected: (tag: Tag) => void;
   handleOpenCreateDialog: () => void;
   user: User | null;

@@ -5,6 +5,7 @@ import {
   invalidateTagCache
 } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
+import { EntityType } from "@/types/entityTypes";
 
 /**
  * Hook for tag entity type operations
@@ -19,7 +20,7 @@ export const useTagEntityType = () => {
       entityType
     }: {
       tagId: string;
-      entityType: string;
+      entityType: string | EntityType;
     }) => {
       const success = await updateTagEntityTypeUtil(tagId, entityType);
       
@@ -35,8 +36,21 @@ export const useTagEntityType = () => {
       // Invalidate tag queries that might be affected
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       
+      // Convert string to EntityType if needed
+      let entityTypeEnum: EntityType | undefined;
+      if (typeof variables.entityType === 'string') {
+        entityTypeEnum = 
+          variables.entityType === "person" ? EntityType.PERSON : 
+          variables.entityType === "organization" ? EntityType.ORGANIZATION :
+          variables.entityType === "event" ? EntityType.EVENT : undefined;
+      } else {
+        entityTypeEnum = variables.entityType;
+      }
+      
       // Clear cache for this entity type
-      invalidateTagCache(variables.entityType as "person" | "organization");
+      if (entityTypeEnum) {
+        invalidateTagCache(entityTypeEnum);
+      }
     },
     onError: (error) => {
       console.error("Error in updateTagEntityTypeMutation:", error);

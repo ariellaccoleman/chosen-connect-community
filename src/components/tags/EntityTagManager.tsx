@@ -8,7 +8,7 @@ import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 interface EntityTagManagerProps {
   entityId: string;
-  entityType: EntityType | string;
+  entityType: EntityType;
   isAdmin?: boolean;
   isEditing?: boolean;
   onFinishEditing?: () => void;
@@ -21,14 +21,7 @@ const EntityTagManager = ({
   isEditing = false,
   onFinishEditing
 }: EntityTagManagerProps) => {
-  // Convert string entityType to EntityType enum if needed
-  const validatedEntityType = isValidEntityType(entityType) 
-    ? entityType 
-    : (entityType === "person" ? EntityType.PERSON : 
-       entityType === "organization" ? EntityType.ORGANIZATION : 
-       entityType === "event" ? EntityType.EVENT : EntityType.PERSON);
-  
-  const { data: tagAssignments, isLoading } = useEntityTags(entityId, validatedEntityType);
+  const { data: tagAssignments, isLoading } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment } = useTagAssignmentMutations();
   
   const handleAddTag = async (tag) => {
@@ -36,7 +29,7 @@ const EntityTagManager = ({
       await assignTag({ 
         tagId: tag.id, 
         entityId, 
-        entityType: validatedEntityType 
+        entityType 
       });
     } catch (error) {
       console.error("Error assigning tag:", error);
@@ -61,7 +54,7 @@ const EntityTagManager = ({
         <div>
           <div className="mb-4">
             <TagSelector
-              targetType={validatedEntityType}
+              targetType={entityType}
               onTagSelected={handleAddTag}
               isAdmin={isAdmin}
             />
@@ -70,14 +63,14 @@ const EntityTagManager = ({
           <TagList 
             tagAssignments={tagAssignments} 
             onRemove={isAdmin ? handleRemoveTag : undefined}
-            currentEntityType={validatedEntityType}
+            currentEntityType={entityType}
           />
         </div>
       ) : (
         <TagList 
           tagAssignments={tagAssignments} 
           onRemove={isAdmin ? handleRemoveTag : undefined}
-          currentEntityType={validatedEntityType}
+          currentEntityType={entityType}
         />
       )}
     </div>

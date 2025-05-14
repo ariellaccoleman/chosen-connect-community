@@ -10,7 +10,8 @@ export const invalidateTagCache = async (entityType?: EntityType) => {
   try {
     // If an entity type is specified, only invalidate that cache
     if (entityType) {
-      await fetch(`/api/tags/invalidate-cache?entityType=${entityType}`, { 
+      const entityTypeParam = entityType.toString();
+      await fetch(`/api/tags/invalidate-cache?entityType=${entityTypeParam}`, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

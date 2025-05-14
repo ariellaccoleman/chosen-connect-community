@@ -1,15 +1,24 @@
 
-import React from "react";
-import { Tag } from "@/utils/tags";
-import { useTagCreation } from "@/hooks/tag/useTagCreation";
-import FormDialog from "@/components/common/form/FormDialog";
-import TagForm, { TagFormValues } from "./TagForm";
+import React, { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Tag, findOrCreateTag } from "@/utils/tags";
+import { EntityType } from "@/types/entityTypes";
 
 interface CreateTagDialogProps {
   isOpen: boolean;
   onClose: () => void;
   initialValue?: string;
-  targetType: "person" | "organization";
+  targetType: EntityType;
   onTagCreated: (tag: Tag) => void;
   isAdmin?: boolean;
 }
@@ -22,45 +31,84 @@ const CreateTagDialog = ({
   onTagCreated,
   isAdmin = false
 }: CreateTagDialogProps) => {
-  const { createTag, isCreating } = useTagCreation({
-    onTagCreated
-  });
+  const [name, setName] = useState(initialValue);
+  const [description, setDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
+  const { user } = useAuth();
 
-  const handleCreateTag = async (values: TagFormValues) => {
-    // Ensure we pass the name property explicitly, making it non-optional for TypeScript
-    const tag = await createTag({
-      name: values.name, // This ensures name is passed as a required property
-      description: values.description
-    }, targetType);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    if (tag) {
-      onClose();
+    if (!user || !name.trim()) {
+      return;
+    }
+    
+    setIsCreating(true);
+    
+    try {
+      const createdTag = await findOrCreateTag({
+        name: name.trim(),
+        description: description.trim() || null,
+        type: targetType.toString(),
+        created_by: user.id
+      });
+      
+      if (createdTag) {
+        onTagCreated(createdTag);
+        onClose();
+      }
+    } catch (error) {
+      console.error("Error creating tag:", error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
-  // First create the object with default values
-  const values = {
-    name: initialValue || "",
-    description: ""
+  const resetAndClose = () => {
+    setName(initialValue);
+    setDescription("");
+    onClose();
   };
-  // Then assert that this object satisfies the TagFormValues type
-  const formInitialValues = values as TagFormValues;
 
   return (
-    <FormDialog
-      isOpen={isOpen}
-      onClose={onClose}
-      title="Create new tag"
-      description={`Add a new tag for ${targetType === "person" ? "people" : "organizations"}.`}
-    >
-      <TagForm
-        initialValues={formInitialValues}
-        onSubmit={handleCreateTag}
-        isSubmitting={isCreating}
-        onCancel={onClose}
-        isAdmin={isAdmin}
-      />
-    </FormDialog>
+    <Dialog open={isOpen} onOpenChange={resetAndClose}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Tag</DialogTitle>
+        </DialogHeader>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Tag name"
+              className="w-full"
+              autoFocus
+              required
+            />
+          </div>
+          
+          <div>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Description (optional)"
+              className="resize-none h-24"
+            />
+          </div>
+          
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={resetAndClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isCreating || !name.trim()}>
+              {isCreating ? "Creating..." : "Create Tag"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 

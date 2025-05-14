@@ -1,5 +1,6 @@
 
 import { invalidateTagCache } from "@/utils/tags";
+import { EntityType } from "@/types/entityTypes";
 
 /**
  * API endpoint to invalidate the tag cache
@@ -7,7 +8,14 @@ import { invalidateTagCache } from "@/utils/tags";
  */
 export const handleInvalidateCache = async (req: Request) => {
   const url = new URL(req.url);
-  const entityType = url.searchParams.get('entityType') as "person" | "organization" | undefined;
+  const entityTypeParam = url.searchParams.get('entityType');
+  
+  // Convert string to EntityType if provided
+  const entityType = entityTypeParam ? (
+    entityTypeParam === "person" ? EntityType.PERSON :
+    entityTypeParam === "organization" ? EntityType.ORGANIZATION :
+    entityTypeParam === "event" ? EntityType.EVENT : undefined
+  ) : undefined;
   
   if (req.method === 'POST') {
     try {

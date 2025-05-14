@@ -2,9 +2,10 @@
 import React from "react";
 import { Tag } from "@/utils/tags";
 import TagSelectorComponent from "./TagSelectorComponent";
+import { EntityType } from "@/types/entityTypes";
 
 interface TagSelectorProps {
-  targetType: "person" | "organization";
+  targetType: EntityType;
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;
 }
