@@ -14,7 +14,7 @@ import EventBasicDetails from "./form/EventBasicDetails";
 import EventTypeSelector from "./form/EventTypeSelector";
 import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
-import { formatters } from "@/utils/formatters";
+import { formatDateForDb } from "@/utils/formatters";
 import { toast } from "@/components/ui/use-toast";
 
 interface EventFormProps {
@@ -76,8 +76,8 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       endDate.setHours(endDate.getHours() + values.duration_hours);
       endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
       
-      const start_time = formatters.formatDateForDb(startDate.toISOString());
-      const end_time = formatters.formatDateForDb(endDate.toISOString());
+      const start_time = formatDateForDb(startDate.toISOString());
+      const end_time = formatDateForDb(endDate.toISOString());
 
       // If event is not paid, ensure price is null
       if (!values.is_paid) {

@@ -5,5 +5,5 @@ export * from './formatters/profileFormatters';
 export * from './formatters/organizationFormatters';
 export * from './formatters/urlFormatters';
 
-// Re-export formatDateForDb from formatters/index.ts
-export { formatDateForDb } from './formatters/index';
+// Re-export formatDateForDb and formatters from formatters/index.ts
+export { formatDateForDb, formatters } from './formatters/index';

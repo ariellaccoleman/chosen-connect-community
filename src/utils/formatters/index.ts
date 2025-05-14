@@ -25,4 +25,4 @@ export * from './locationFormatters';
 export * from './organizationFormatters';
 export * from './profileFormatters';
 export * from './urlFormatters';
-export { formatDateForDb };
+// Don't re-export formatDateForDb as it's already exported above
