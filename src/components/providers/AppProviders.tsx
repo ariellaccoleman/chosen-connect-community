@@ -18,13 +18,17 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      onError: (error: Error) => {
-        console.error('Query error:', error);
+      meta: {
+        onError: (error: Error) => {
+          console.error('Query error:', error);
+        }
       }
     },
     mutations: {
-      onError: (error: Error) => {
-        console.error('Mutation error:', error);
+      meta: {
+        onError: (error: Error) => {
+          console.error('Mutation error:', error);
+        }
       }
     },
   },
