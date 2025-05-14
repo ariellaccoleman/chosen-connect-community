@@ -3,6 +3,7 @@ import { apiClient } from "@/api/core/apiClient";
 import { ApiResponse, createSuccessResponse } from "@/api/core/errorHandler";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { Tag, TagAssignment } from "./types";
+import { logger } from "@/utils/logger";
 
 /**
  * Fetch tags assigned to a specific entity
@@ -14,7 +15,7 @@ export const fetchEntityTags = async (
   try {
     // Validate entity type
     if (!isValidEntityType(entityType)) {
-      console.error(`Invalid entity type: ${entityType}`);
+      logger.error(`Invalid entity type: ${entityType}`);
       return [];
     }
     
@@ -23,13 +24,13 @@ export const fetchEntityTags = async (
     const response = await getEntityTags(entityId, entityType);
     
     if (response.status !== 'success' || !response.data) {
-      console.error("Error fetching entity tags:", response.error);
+      logger.error("Error fetching entity tags:", response.error);
       return [];
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error in fetchEntityTags:", error);
+    logger.error("Error in fetchEntityTags:", error);
     return [];
   }
 };
@@ -41,49 +42,56 @@ export const assignTag = async (
   tagId: string,
   entityId: string,
   entityType: EntityType | string
-): Promise<TagAssignment | null> => {
+): Promise<ApiResponse<TagAssignment>> => {
   try {
     // Validate entity type
     if (!isValidEntityType(entityType)) {
-      console.error(`Invalid entity type: ${entityType}`);
-      return null;
+      logger.error(`Invalid entity type: ${entityType}`);
+      return {
+        status: 'error',
+        error: { message: `Invalid entity type: ${entityType}`, code: 'invalid_entity_type' }
+      };
     }
     
-    console.log("tagAssignments.ts: Calling assignTag API function with:", { tagId, entityId, entityType });
+    logger.info("tagAssignments.ts: Calling assignTag API function with:", { tagId, entityId, entityType });
     
     // Call the API function for tag assignment
     const { assignTag: assignTagApi } = await import("@/api/tags/assignmentApi");
     const response = await assignTagApi(tagId, entityId, entityType);
     
-    if (response.status !== 'success' || !response.data) {
-      console.error("Error assigning tag:", response.error);
-      return null;
-    }
-    
-    return response.data;
+    // Pass through the entire response including any errors
+    return response;
   } catch (error) {
-    console.error("Error in assignTag:", error);
-    throw error;
+    logger.error("Error in assignTag:", error);
+    return {
+      status: 'error',
+      error: { 
+        message: error instanceof Error ? error.message : "Unknown error assigning tag",
+        code: 'exception'
+      }
+    };
   }
 };
 
 /**
  * Remove a tag assignment
  */
-export const removeTagAssignment = async (assignmentId: string): Promise<boolean> => {
+export const removeTagAssignment = async (assignmentId: string): Promise<ApiResponse<boolean>> => {
   try {
     // Call the API function for removing tag assignment
     const { removeTagAssignment: removeTagAssignmentApi } = await import("@/api/tags/assignmentApi");
     const response = await removeTagAssignmentApi(assignmentId);
     
-    if (response.status !== 'success') {
-      console.error("Error removing tag assignment:", response.error);
-      return false;
-    }
-    
-    return response.data;
+    // Pass through the entire response including any errors
+    return response;
   } catch (error) {
-    console.error("Error in removeTagAssignment:", error);
-    throw error;
+    logger.error("Error in removeTagAssignment:", error);
+    return {
+      status: 'error',
+      error: { 
+        message: error instanceof Error ? error.message : "Unknown error removing tag assignment",
+        code: 'exception'
+      }
+    };
   }
 };

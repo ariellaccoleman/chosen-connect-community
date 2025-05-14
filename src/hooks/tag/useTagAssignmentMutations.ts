@@ -7,6 +7,7 @@ import {
 } from "@/utils/tags";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
+import { toast } from "sonner";
 
 /**
  * Hook for tag assignment mutations
@@ -33,11 +34,19 @@ export const useTagAssignmentMutations = () => {
       
       logger.info("Executing assignTag mutation:", { tagId, entityId, entityType });
       console.log("Executing assignTag mutation:", { tagId, entityId, entityType });
-      return assignTag(tagId, entityId, entityType);
+      
+      const response = await assignTag(tagId, entityId, entityType);
+      
+      if (response.error || !response.data) {
+        logger.error("Error in assignTag response:", response.error);
+        throw new Error(response.error?.message || "Failed to assign tag");
+      }
+      
+      return response.data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (data, variables) => {
       logger.info("Tag assignment successful, invalidating queries", variables);
-      console.log("Tag assignment successful, invalidating queries");
+      toast.success(`Added tag successfully`);
       
       // Invalidate entity-tags queries
       queryClient.invalidateQueries({ 
@@ -61,19 +70,27 @@ export const useTagAssignmentMutations = () => {
       // Clear the tag cache for this entity type
       invalidateTagCache(variables.entityType);
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       logger.error("Error in assignTagMutation:", error);
       console.error("Error in assignTagMutation:", error);
+      toast.error(error.message || "Failed to add tag");
     }
   });
 
   // Remove tag assignment mutation
   const removeAssignmentMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      return removeTagAssignment(assignmentId);
+      const response = await removeTagAssignment(assignmentId);
+      
+      if (response.error || !response.data) {
+        throw new Error(response.error?.message || "Failed to remove tag");
+      }
+      
+      return response.data;
     },
     onSuccess: () => {
       logger.info("Tag assignment removed successfully");
+      toast.success("Tag removed successfully");
       
       // Since we don't know which entity this was for, we invalidate all entity-tags queries
       queryClient.invalidateQueries({ queryKey: ["entity-tags"] });
@@ -91,9 +108,10 @@ export const useTagAssignmentMutations = () => {
         invalidateTagCache(type);
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       logger.error("Error in removeAssignmentMutation:", error);
       console.error("Error in removeAssignmentMutation:", error);
+      toast.error(error.message || "Failed to remove tag");
     }
   });
 

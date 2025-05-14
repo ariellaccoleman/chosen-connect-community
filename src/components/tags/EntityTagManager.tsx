@@ -23,7 +23,7 @@ const EntityTagManager = ({
   isEditing = false,
   onFinishEditing
 }: EntityTagManagerProps) => {
-  const { data: tagAssignmentsResponse, isLoading } = useEntityTags(entityId, entityType);
+  const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
   // Extract the actual assignments from the API response
@@ -39,8 +39,28 @@ const EntityTagManager = ({
       assignmentsCount: tagAssignments.length
     });
   }, [entityId, entityType, isAdmin, isEditing, tagAssignments.length]);
+
+  // If there was an error loading the tags, show an error message with retry option
+  if (isError) {
+    return (
+      <div className="p-4 border border-red-200 rounded-md bg-red-50">
+        <p className="text-red-700 mb-2">Failed to load tags: {error instanceof Error ? error.message : 'Unknown error'}</p>
+        <button 
+          className="text-red-700 underline" 
+          onClick={() => refetch()}
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
   
   const handleAddTag = async (tag) => {
+    if (!tag || !tag.id) {
+      toast.error("Invalid tag selected");
+      return;
+    }
+
     logger.info("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
     console.log("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
     
@@ -50,22 +70,22 @@ const EntityTagManager = ({
         entityId, 
         entityType 
       });
-      toast.success(`Added tag: ${tag.name}`);
+      // Success toast is handled in the mutation
     } catch (error) {
       logger.error("Error assigning tag:", error);
       console.error("Error assigning tag:", error);
-      toast.error("Failed to add tag. Please try again.");
+      // Error toast is handled in the mutation
     }
   };
   
   const handleRemoveTag = async (assignmentId: string) => {
     try {
       await removeTagAssignment(assignmentId);
-      toast.success("Tag removed successfully");
+      // Success toast is handled in the mutation
     } catch (error) {
       logger.error("Error removing tag:", error);
       console.error("Error removing tag:", error);
-      toast.error("Failed to remove tag. Please try again.");
+      // Error toast is handled in the mutation
     }
   };
   

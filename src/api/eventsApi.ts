@@ -4,6 +4,7 @@ import { apiClient } from "./core/apiClient";
 import { createErrorResponse, createSuccessResponse } from "./core/errorHandler";
 import { formatDateForDb } from "@/utils/formatters/index";
 import { ApiResponse } from "./core/errorHandler";
+import { logger } from "@/utils/logger";
 
 /**
  * API methods for events
@@ -31,7 +32,7 @@ export const eventsApi = {
       });
 
       if (error) {
-        console.error("Supabase error creating event:", error);
+        logger.error("Supabase error creating event:", error);
         return createErrorResponse({
           code: error.code || "unknown_error",
           message: error.message || "Failed to create event: " + (error.details || "unknown error"),
@@ -44,7 +45,7 @@ export const eventsApi = {
 
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
-      console.error("Exception creating event:", error);
+      logger.error("Exception creating event:", error);
       const message = error instanceof Error ? error.message : "Unknown error creating event";
       return createErrorResponse({
         code: "exception",
@@ -59,7 +60,7 @@ export const eventsApi = {
    */
   async updateEvent(eventId: string, event: CreateEventInput): Promise<ApiResponse<EventWithDetails>> {
     try {
-      console.log("Updating event with data:", { id: eventId, ...event });
+      logger.info("Updating event with data:", { id: eventId, ...event });
       
       const { data, error } = await apiClient.query(async (client) => {
         return client.from("events").update({
@@ -78,7 +79,7 @@ export const eventsApi = {
       });
 
       if (error) {
-        console.error("Supabase error updating event:", error);
+        logger.error("Supabase error updating event:", error);
         return createErrorResponse({
           code: error.code || "unknown_error",
           message: error.message || "Failed to update event: " + (error.details || "unknown error"),
@@ -88,7 +89,7 @@ export const eventsApi = {
 
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
-      console.error("Exception updating event:", error);
+      logger.error("Exception updating event:", error);
       const message = error instanceof Error ? error.message : "Unknown error updating event";
       return createErrorResponse({
         code: "exception",
@@ -103,11 +104,9 @@ export const eventsApi = {
    */
   async getEvents(): Promise<ApiResponse<EventWithDetails[]>> {
     try {
-      console.log("Fetching events from API...");
+      logger.info("Fetching events from API...");
       
       const { data, error } = await apiClient.query(async (client) => {
-        console.log("Inside apiClient.query for getEvents");
-        
         // First, fetch all events with their locations and hosts
         const { data: events, error: eventsError } = await client
           .from("events")
@@ -119,17 +118,15 @@ export const eventsApi = {
           .order("start_time", { ascending: true });
           
         if (eventsError) {
-          console.error("Error fetching events:", eventsError);
+          logger.error("Error fetching events:", eventsError);
           return { data: null, error: eventsError };
         }
         
-        console.log(`Found ${events?.length || 0} events:`, events);
+        logger.info(`Found ${events?.length || 0} events`);
         
         // For each event, fetch its tags
         if (events && events.length > 0) {
           const eventsWithTags = await Promise.all(events.map(async (event) => {
-            console.log(`Fetching tags for event ${event.id}`);
-            
             const { data: tagAssignments, error: tagError } = await client
               .from('tag_assignments')
               .select(`
@@ -140,11 +137,11 @@ export const eventsApi = {
               .eq('target_type', 'event');
               
             if (tagError) {
-              console.error(`Error fetching tags for event ${event.id}:`, tagError);
+              logger.error(`Error fetching tags for event ${event.id}:`, tagError);
               return { ...event, tags: [] };
             }
             
-            console.log(`Tags for event ${event.id}:`, tagAssignments);
+            logger.info(`Found ${tagAssignments?.length || 0} tags for event ${event.id}`);
             return { ...event, tags: tagAssignments || [] };
           }));
           
@@ -155,14 +152,13 @@ export const eventsApi = {
       });
 
       if (error) {
-        console.error("Error in getEvents:", error);
+        logger.error("Error in getEvents:", error);
         return createErrorResponse(error);
       }
 
-      console.log("Returning events data:", data);
       return createSuccessResponse(data as EventWithDetails[]);
     } catch (error) {
-      console.error("Exception in getEvents:", error);
+      logger.error("Exception in getEvents:", error);
       return createErrorResponse(error);
     }
   },
@@ -172,7 +168,7 @@ export const eventsApi = {
    */
   async getEventById(eventId: string): Promise<ApiResponse<EventWithDetails>> {
     try {
-      console.log(`Fetching event with ID: ${eventId}`);
+      logger.info(`Fetching event with ID: ${eventId}`);
       
       const { data, error } = await apiClient.query(async (client) => {
         // Fetch the event with its location and host
@@ -187,7 +183,7 @@ export const eventsApi = {
           .single();
           
         if (eventError) {
-          console.error(`Error fetching event ${eventId}:`, eventError);
+          logger.error(`Error fetching event ${eventId}:`, eventError);
           return { data: null, error: eventError };
         }
         
@@ -198,7 +194,7 @@ export const eventsApi = {
           };
         }
         
-        console.log(`Found event:`, event);
+        logger.info(`Found event:`, event);
         
         // Fetch the event's tags
         const { data: tagAssignments, error: tagError } = await client
@@ -211,9 +207,12 @@ export const eventsApi = {
           .eq('target_type', 'event');
           
         if (tagError) {
-          console.error(`Error fetching tags for event ${eventId}:`, tagError);
-          // Continue even if tag fetch fails
+          logger.error(`Error fetching tags for event ${eventId}:`, tagError);
+          // Return event without tags if there's an error fetching tags
+          return { data: { ...event, tags: [] }, error: null };
         }
+        
+        logger.info(`Found ${tagAssignments?.length || 0} tags for event ${eventId}`);
         
         // Combine the event with its tags
         const eventWithTags = {
@@ -225,14 +224,13 @@ export const eventsApi = {
       });
 
       if (error) {
-        console.error(`Error in getEventById:`, error);
+        logger.error(`Error in getEventById:`, error);
         return createErrorResponse(error);
       }
 
-      console.log("Returning event data:", data);
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
-      console.error(`Exception in getEventById:`, error);
+      logger.error(`Exception in getEventById:`, error);
       return createErrorResponse(error);
     }
   }

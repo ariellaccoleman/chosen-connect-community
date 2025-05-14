@@ -1,9 +1,10 @@
 
 import { TagAssignment } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
-import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { ApiResponse, createSuccessResponse, createErrorResponse } from "../core/errorHandler";
 import { updateTagEntityType } from "./tagEntityTypesApi";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 
 /**
  * Assign a tag to an entity
@@ -24,7 +25,11 @@ export const assignTag = async (
       const entityTypeResponse = await updateTagEntityType(tagId, entityType);
       
       if (entityTypeResponse.status !== 'success') {
-        throw new Error(`Failed to update tag entity type: ${entityTypeResponse.error?.message}`);
+        logger.error(`Failed to update tag entity type: ${entityTypeResponse.error?.message}`);
+        return createErrorResponse(entityTypeResponse.error || {
+          message: "Failed to update tag entity type",
+          code: "update_tag_entity_type_failed"
+        });
       }
       
       // Step 2: Create the tag assignment
@@ -35,16 +40,19 @@ export const assignTag = async (
           target_id: entityId,
           target_type: entityType
         })
-        .select('*')
+        .select('*, tag:tags(*)')
         .single();
       
-      if (error) throw error;
+      if (error) {
+        logger.error("Error in assignTag:", error);
+        return createErrorResponse(error);
+      }
       
-      console.log(`Successfully assigned tag ${tagId} to ${entityType} ${entityId}`);
+      logger.info(`Successfully assigned tag ${tagId} to ${entityType} ${entityId}`);
       return createSuccessResponse(data);
     } catch (error) {
-      console.error("Error in assignTag:", error);
-      throw error;
+      logger.error("Exception in assignTag:", error);
+      return createErrorResponse(error);
     }
   });
 };
@@ -54,51 +62,68 @@ export const assignTag = async (
  */
 export const removeTagAssignment = async (assignmentId: string): Promise<ApiResponse<boolean>> => {
   return apiClient.query(async (client) => {
-    // First get the assignment details to identify tag_id and entity_type
-    const { data: assignment, error: getError } = await client
-      .from('tag_assignments')
-      .select('tag_id, target_type')
-      .eq('id', assignmentId)
-      .maybeSingle();
-    
-    if (getError) throw getError;
-    
-    // Delete the assignment
-    const { error: deleteError } = await client
-      .from('tag_assignments')
-      .delete()
-      .eq('id', assignmentId);
-    
-    if (deleteError) throw deleteError;
-    
-    // If we found the assignment details, check if we need to update tag_entity_types
-    if (assignment) {
-      const tagId = assignment.tag_id;
-      const entityType = assignment.target_type;
-      
-      // Check if this tag has any other assignments with this entity type
-      const { data: otherAssignments, error: checkError } = await client
+    try {
+      // First get the assignment details to identify tag_id and entity_type
+      const { data: assignment, error: getError } = await client
         .from('tag_assignments')
-        .select('id')
-        .eq('tag_id', tagId)
-        .eq('target_type', entityType)
-        .neq('id', assignmentId)
-        .limit(1);
+        .select('tag_id, target_type')
+        .eq('id', assignmentId)
+        .maybeSingle();
       
-      if (checkError) throw checkError;
-      
-      // If no other assignments with this type, remove from tag_entity_types
-      if (!otherAssignments || otherAssignments.length === 0) {
-        const { error: removeError } = await client
-          .from('tag_entity_types')
-          .delete()
-          .eq('tag_id', tagId)
-          .eq('entity_type', entityType);
-        
-        if (removeError) throw removeError;
+      if (getError) {
+        logger.error("Error fetching tag assignment:", getError);
+        return createErrorResponse(getError);
       }
+      
+      // Delete the assignment
+      const { error: deleteError } = await client
+        .from('tag_assignments')
+        .delete()
+        .eq('id', assignmentId);
+      
+      if (deleteError) {
+        logger.error("Error deleting tag assignment:", deleteError);
+        return createErrorResponse(deleteError);
+      }
+      
+      // If we found the assignment details, check if we need to update tag_entity_types
+      if (assignment) {
+        const tagId = assignment.tag_id;
+        const entityType = assignment.target_type;
+        
+        // Check if this tag has any other assignments with this entity type
+        const { data: otherAssignments, error: checkError } = await client
+          .from('tag_assignments')
+          .select('id')
+          .eq('tag_id', tagId)
+          .eq('target_type', entityType)
+          .neq('id', assignmentId)
+          .limit(1);
+        
+        if (checkError) {
+          logger.error("Error checking other tag assignments:", checkError);
+          // Continue despite this error, just log it
+        }
+        
+        // If no other assignments with this type, remove from tag_entity_types
+        if (!otherAssignments || otherAssignments.length === 0) {
+          const { error: removeError } = await client
+            .from('tag_entity_types')
+            .delete()
+            .eq('tag_id', tagId)
+            .eq('entity_type', entityType);
+          
+          if (removeError) {
+            logger.error("Error removing tag entity type:", removeError);
+            // Continue despite this error, just log it
+          }
+        }
+      }
+      
+      return createSuccessResponse(true);
+    } catch (error) {
+      logger.error("Exception in removeTagAssignment:", error);
+      return createErrorResponse(error);
     }
-    
-    return createSuccessResponse(true);
   });
 };
