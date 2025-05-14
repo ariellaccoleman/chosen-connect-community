@@ -1,7 +1,9 @@
 
 /**
- * Re-export all tag API functionality
+ * Tag API module
+ * This provides all tag-related functionality
  */
+
 export * from './assignmentApi';
 export * from './cacheApi';
 export * from './entityTagsApi';

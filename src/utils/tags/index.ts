@@ -1,26 +1,12 @@
 
-// Re-export all tag-related functions and types from one central file
-export * from './types';
-// Export from tagOperations with the new functions
-export { 
-  fetchFilterTags,
-  fetchSelectionTags,
-  fetchTags,
-  createTag,
-  findOrCreateTag,
-  updateTag, 
-  deleteTag,
-  updateTagEntityType
-} from './tagOperations';
-// Export from tagAssignments
-export {
-  fetchEntityTags,
-  assignTag,
-  removeTagAssignment
-} from './tagAssignments';
-export * from './tagEntityTypes';
-export * from './tagDisplay';
-export * from './cacheUtils';
+/**
+ * Tag utility functions
+ * Central export point for tag utilities
+ */
 
-// Also export the invalidateTagCache function for use in hooks
-export { invalidateTagCache } from "@/hooks/useTagCache";
+export * from './cacheUtils';
+export * from './tagAssignments';
+export * from './tagDisplay';
+export * from './tagEntityTypes';
+export * from './tagOperations';
+export * from './types';

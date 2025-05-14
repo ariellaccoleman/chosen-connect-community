@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
@@ -51,7 +52,7 @@ const OrganizationsList = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold font-heading">Organizations</h1>
         <Button 
-          onClick={() => navigate("/organizations/manage")} 
+          onClick={() => navigate("/organizations/manage-connections")} 
           className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
         >
           <Briefcase className="mr-2 h-4 w-4" />
