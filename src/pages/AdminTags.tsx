@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
-import { useTags, useTagMutations } from "@/hooks/useTags";
+import { useSelectionTags as useTags, useTagMutations } from "@/hooks/useTags";
 
 // Import the new components
 import AdminTagsHeader from "@/components/admin/tags/AdminTagsHeader";

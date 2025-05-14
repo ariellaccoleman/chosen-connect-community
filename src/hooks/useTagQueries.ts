@@ -83,3 +83,11 @@ export const useEntityTags = (
     enabled: !!entityId && !!validEntityType && options.enabled !== false
   });
 };
+
+// Export as a collective object for easier imports
+export const useTagQueries = {
+  useFilterTags,
+  useSelectionTags,
+  useTags,
+  useEntityTags
+};

@@ -1,10 +1,13 @@
 
 // This file re-exports hooks from the new modular files
 // for backwards compatibility
-export { 
-  useOrganizations,
-  useUserOrganizationRelationships
-} from './useOrganizationQueries';
+import { 
+  useOrganizations as useOrgsQuery,
+  useUserOrganizationRelationships as useRelationships 
+} from "./useOrganizationQueries";
+
+export const useOrganizations = useOrgsQuery;
+export const useUserOrganizationRelationships = useRelationships;
 
 export {
   useAddOrganizationRelationship,
