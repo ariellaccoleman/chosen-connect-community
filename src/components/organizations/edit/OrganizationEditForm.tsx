@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { organizationSchema } from "./organizationSchema";
+import { FormWrapper } from "@/components/common/form/FormWrapper";
 
 // Define the props that can be passed to children
 interface OrganizationFormChildProps {
@@ -139,7 +140,11 @@ export function OrganizationEditForm({
   }
 
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
+    <FormWrapper 
+      form={form} 
+      onSubmit={onSubmit} 
+      id={`org-edit-${orgId}`}
+    >
       {children && Array.isArray(children) ? (
         // Handle array of children
         children.map((child, index) => enhanceChild(child, index))
@@ -147,6 +152,6 @@ export function OrganizationEditForm({
         // Handle single child
         enhanceChild(children)
       )}
-    </form>
+    </FormWrapper>
   );
 }
