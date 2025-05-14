@@ -120,5 +120,75 @@ export const eventsApi = {
       console.error("Exception in getEvents:", error);
       return createErrorResponse(error);
     }
+  },
+
+  /**
+   * Get event by ID
+   */
+  async getEventById(eventId: string): Promise<ApiResponse<EventWithDetails>> {
+    try {
+      console.log(`Fetching event with ID: ${eventId}`);
+      
+      const { data, error } = await apiClient.query(async (client) => {
+        // Fetch the event with its location and host
+        const { data: event, error: eventError } = await client
+          .from("events")
+          .select(`
+            *,
+            location:locations(*),
+            host:profiles(*)
+          `)
+          .eq("id", eventId)
+          .single();
+          
+        if (eventError) {
+          console.error(`Error fetching event ${eventId}:`, eventError);
+          return { data: null, error: eventError };
+        }
+        
+        if (!event) {
+          return { 
+            data: null, 
+            error: { message: `Event with ID ${eventId} not found` } 
+          };
+        }
+        
+        console.log(`Found event:`, event);
+        
+        // Fetch the event's tags
+        const { data: tagAssignments, error: tagError } = await client
+          .from('tag_assignments')
+          .select(`
+            *,
+            tag:tags(*)
+          `)
+          .eq('target_id', eventId)
+          .eq('target_type', 'event');
+          
+        if (tagError) {
+          console.error(`Error fetching tags for event ${eventId}:`, tagError);
+          // Continue even if tag fetch fails
+        }
+        
+        // Combine the event with its tags
+        const eventWithTags = {
+          ...event,
+          tags: tagAssignments || []
+        };
+        
+        return { data: eventWithTags, error: null };
+      });
+
+      if (error) {
+        console.error(`Error in getEventById:`, error);
+        return createErrorResponse(error);
+      }
+
+      console.log("Returning event data:", data);
+      return createSuccessResponse(data as EventWithDetails);
+    } catch (error) {
+      console.error(`Exception in getEventById:`, error);
+      return createErrorResponse(error);
+    }
   }
 };

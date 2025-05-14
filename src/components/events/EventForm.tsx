@@ -7,7 +7,7 @@ import { CreateEventInput } from "@/types";
 import { logger } from "@/utils/logger";
 import { useFormError } from "@/hooks/useFormError";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
-import { CreateEventForm, EventTagsManager } from "./form";
+import { CreateEventForm } from "./form";
 import { toast } from "sonner";
 
 interface EventFormProps {
@@ -20,14 +20,12 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
   const [locationFieldVisible, setLocationFieldVisible] = useState(false);
-  const [createdEventId, setCreatedEventId] = useState<string | null>(null);
   const { handleError } = useFormError();
   
   const isSubmitting = createEventMutation.isPending;
 
   logger.info("EventForm component state", { 
     isSubmitting, 
-    createdEventId,
     locationFieldVisible
   });
 
@@ -51,10 +49,13 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
 
       logger.info("Event created successfully:", result);
       
-      // Store the created event ID so we can show the tag manager
+      // Show a success toast
+      toast.success("Event created successfully!");
+      
+      // Navigate to the event detail page
       if (result?.id) {
-        setCreatedEventId(result.id);
-        toast.success("Event created! You can now add tags to your event.");
+        logger.info(`Navigating to event detail page: ${result.id}`);
+        navigate(`/events/${result.id}`);
       } else {
         if (onSuccess) {
           logger.info("Calling onSuccess callback");
@@ -75,18 +76,12 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
   return (
     <ErrorBoundary name="EventFormComponent">
       <div className="space-y-6">
-        {!createdEventId ? (
-          <>
-            <h2 className="text-2xl font-bold">Create New Event</h2>
-            <CreateEventForm 
-              onSubmit={handleFormSubmit}
-              isSubmitting={isSubmitting}
-              onLocationTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)}
-            />
-          </>
-        ) : (
-          <EventTagsManager eventId={createdEventId} />
-        )}
+        <h2 className="text-2xl font-bold">Create New Event</h2>
+        <CreateEventForm 
+          onSubmit={handleFormSubmit}
+          isSubmitting={isSubmitting}
+          onLocationTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)}
+        />
       </div>
     </ErrorBoundary>
   );

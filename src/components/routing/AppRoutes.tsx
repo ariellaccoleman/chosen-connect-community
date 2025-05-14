@@ -32,6 +32,7 @@ import AdminRoute from './AdminRoute';
 // Events Routes
 import CreateEvent from '@/pages/CreateEvent';
 import Events from '@/pages/Events';
+import EventDetail from '@/pages/EventDetail';
 
 const AppRoutes = () => {
   return (
@@ -55,6 +56,7 @@ const AppRoutes = () => {
       {/* Event Routes - Make sure they are protected */}
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
       <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.EVENT_DETAIL} element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />

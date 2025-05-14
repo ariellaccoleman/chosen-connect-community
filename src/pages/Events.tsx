@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video, AlertCircle, RefreshCw } from "lucide-react";
+import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -48,6 +48,10 @@ const Events: React.FC = () => {
     }
     
     return null;
+  };
+
+  const handleViewEvent = (eventId: string) => {
+    navigate(`/events/${eventId}`);
   };
 
   return (
@@ -110,7 +114,8 @@ const Events: React.FC = () => {
               {events.map((event) => (
                 <div 
                   key={event.id} 
-                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleViewEvent(event.id)}
                 >
                   <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
                   <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
@@ -128,11 +133,19 @@ const Events: React.FC = () => {
                     </div>
                   )}
                   
-                  {event.host && (
-                    <div className="mt-3 pt-3 border-t text-sm text-gray-500">
-                      Hosted by: {event.host.first_name} {event.host.last_name}
+                  <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                    <div className="text-sm text-gray-500">
+                      {event.host && `Hosted by: ${event.host.first_name} ${event.host.last_name}`}
                     </div>
-                  )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>
