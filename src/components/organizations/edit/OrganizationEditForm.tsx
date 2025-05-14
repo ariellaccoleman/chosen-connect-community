@@ -11,11 +11,11 @@ interface OrganizationEditFormProps {
   children?: React.ReactNode;
 }
 
-const OrganizationEditForm = ({
+export function OrganizationEditForm({
   organization,
   orgId,
   children
-}: OrganizationEditFormProps) => {
+}: OrganizationEditFormProps) {
   const { toast } = useToast();
   const updateOrganization = useUpdateOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +75,4 @@ const OrganizationEditForm = ({
       {children}
     </form>
   );
-};
-
-export default OrganizationEditForm;
+}
