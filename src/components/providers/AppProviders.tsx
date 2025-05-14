@@ -7,29 +7,46 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { LayoutProvider } from "@/contexts/LayoutContext";
+import { DebugProvider } from "@/contexts/DebugContext";
 
 interface AppProvidersProps {
   children: ReactNode;
 }
 
-// Create a client
-const queryClient = new QueryClient();
+// Create a client with custom error handling
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      onError: (error) => {
+        console.error('Query error:', error);
+      },
+    },
+    mutations: {
+      onError: (error) => {
+        console.error('Mutation error:', error);
+      },
+    },
+  },
+});
 
 const AppProviders = ({ children }: AppProvidersProps) => {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AuthProvider>
-          <LayoutProvider>
-            <TooltipProvider>
-              {children}
-              <Toaster />
-              <Sonner />
-            </TooltipProvider>
-          </LayoutProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <DebugProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AuthProvider>
+            <LayoutProvider>
+              <TooltipProvider>
+                {children}
+                <Toaster />
+                <Sonner />
+              </TooltipProvider>
+            </LayoutProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </DebugProvider>
   );
 };
 

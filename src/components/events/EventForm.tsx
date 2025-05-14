@@ -15,12 +15,15 @@ import { formatDateForDb } from "@/utils/formatters";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { useFormError } from "@/hooks/useFormError";
+import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { FormWrapper } from "@/components/common/form";
 
 interface EventFormProps {
   onSuccess?: () => void;
+  onError?: (error: Error) => void;
 }
 
-const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
+const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
@@ -33,6 +36,8 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   
   // Default time is 1:00 PM
   const defaultTime = "13:00";
+
+  logger.info("EventForm initial render with defaults", { defaultDate, defaultTime });
 
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
@@ -55,14 +60,16 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const isPaid = form.watch("is_paid");
   const isSubmitting = createEventMutation.isPending;
 
-  logger.info("Rendering EventForm component", { isSubmitting, isPaid, isVirtual });
+  logger.info("EventForm component state", { isSubmitting, isPaid, isVirtual });
 
-  const handleSubmit = async (values: CreateEventFormValues) => {
-    logger.info("EventForm handleSubmit called with values:", values);
+  const handleFormSubmit = async (values: CreateEventFormValues) => {
+    logger.info("EventForm handleFormSubmit called with values:", values);
     
     if (!user?.id) {
-      logger.error("Authentication error: No user ID found");
+      const error = new Error("Authentication error: No user ID found");
+      logger.error(error.message);
       toast.error("You must be logged in to create an event");
+      if (onError) onError(error);
       return;
     }
 
@@ -75,8 +82,8 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       // Calculate end time by adding duration to start time
       const startDate = new Date(startDateTime);
       const endDate = new Date(startDate.getTime());
-      endDate.setHours(endDate.getHours() + values.duration_hours);
-      endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
+      endDate.setHours(endDate.getHours() + (values.duration_hours || 0));
+      endDate.setMinutes(endDate.getMinutes() + (values.duration_minutes || 0));
       
       logger.info("Calculated dates:", { 
         startDate: startDate.toISOString(),
@@ -126,55 +133,61 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
         navigate("/events");
       }
     } catch (error) {
-      logger.error("Error creating event:", error);
-      handleError(error);
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error("Error creating event:", errorObj);
+      handleError(errorObj);
+      if (onError) onError(errorObj);
     }
   };
 
   return (
-    <form 
-      onSubmit={form.handleSubmit(handleSubmit)}
-      className="space-y-6"
-      id="event-form"
-    >
-      <h2 className="text-2xl font-bold">Create New Event</h2>
-      
+    <ErrorBoundary name="EventFormComponent">
       <div className="space-y-6">
-        <EventBasicDetails control={form.control} />
+        <h2 className="text-2xl font-bold">Create New Event</h2>
         
-        <EventTypeSelector 
-          control={form.control} 
-          onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)} 
-        />
-        
-        {!isVirtual && (
-          <LocationSelector
-            control={form.control}
-            label="Event Location"
-            required={!isVirtual}
-            fieldName="location_id"
+        <FormWrapper
+          form={form}
+          onSubmit={handleFormSubmit}
+          className="space-y-6"
+          id="event-form"
+        >
+          <EventBasicDetails control={form.control} />
+          
+          <EventTypeSelector 
+            control={form.control} 
+            onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)} 
           />
-        )}
-        
-        <EventPriceToggle control={form.control} />
-        
-        {isPaid && (
-          <FormInput
-            name="price"
-            control={form.control}
-            label="Price"
-            type="number"
-            placeholder="0.00"
-            required={isPaid}
+          
+          {!isVirtual && (
+            <LocationSelector
+              control={form.control}
+              label="Event Location"
+              required={!isVirtual}
+              fieldName="location_id"
+            />
+          )}
+          
+          <EventPriceToggle control={form.control} />
+          
+          {isPaid && (
+            <FormInput
+              name="price"
+              control={form.control}
+              label="Price"
+              type="number"
+              placeholder="0.00"
+              required={isPaid}
+            />
+          )}
+          
+          <FormActions
+            isSubmitting={isSubmitting}
+            submitLabel="Create Event"
+            formId="event-form"
           />
-        )}
+        </FormWrapper>
       </div>
-      
-      <FormActions
-        isSubmitting={isSubmitting}
-        submitLabel="Create Event"
-      />
-    </form>
+    </ErrorBoundary>
   );
 };
 
