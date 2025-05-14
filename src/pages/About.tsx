@@ -1,5 +1,4 @@
 import React from 'react';
-import Layout from '@/components/layout/Layout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
@@ -212,33 +211,31 @@ const TeamTab = () => {
 
 const About = () => {
   return (
-    <Layout>
-      <div className="container py-8">
-        <div className="max-w-4xl mx-auto">
-          <AboutHeader />
+    <div className="container py-8">
+      <div className="max-w-4xl mx-auto">
+        <AboutHeader />
 
-          <Tabs defaultValue="mission" className="space-y-8">
-            <TabsList className="grid grid-cols-3 gap-2">
-              <TabsTrigger value="mission">Our Mission</TabsTrigger>
-              <TabsTrigger value="values">Our Values</TabsTrigger>
-              <TabsTrigger value="team">Our Team</TabsTrigger>
-            </TabsList>
+        <Tabs defaultValue="mission" className="space-y-8">
+          <TabsList className="grid grid-cols-3 gap-2">
+            <TabsTrigger value="mission">Our Mission</TabsTrigger>
+            <TabsTrigger value="values">Our Values</TabsTrigger>
+            <TabsTrigger value="team">Our Team</TabsTrigger>
+          </TabsList>
 
-            <TabsContent value="mission" className="space-y-6">
-              <MissionTab />
-            </TabsContent>
+          <TabsContent value="mission" className="space-y-6">
+            <MissionTab />
+          </TabsContent>
 
-            <TabsContent value="values" className="space-y-6">
-              <ValuesTab />
-            </TabsContent>
+          <TabsContent value="values" className="space-y-6">
+            <ValuesTab />
+          </TabsContent>
 
-            <TabsContent value="team" className="space-y-6">
-              <TeamTab />
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="team" className="space-y-6">
+            <TeamTab />
+          </TabsContent>
+        </Tabs>
       </div>
-    </Layout>
+    </div>
   );
 };
 

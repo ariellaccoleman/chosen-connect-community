@@ -1,5 +1,4 @@
 
-import Layout from "@/components/layout/Layout";
 import HeroSection from "@/components/HeroSection";
 import BenefitsSection from "@/components/BenefitsSection";
 import FeaturesSection from "@/components/FeaturesSection";
@@ -9,14 +8,14 @@ import CallToAction from "@/components/CallToAction";
 
 const Index = () => {
   return (
-    <Layout>
+    <>
       <HeroSection />
       <BenefitsSection />
       <FeaturesSection />
       <StatsSection />
       <MissionSection />
       <CallToAction />
-    </Layout>
+    </>
   );
 };
 
