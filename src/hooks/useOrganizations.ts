@@ -4,12 +4,12 @@
 import { 
   useOrganizations as useOrgsQuery,
   useUserOrganizationRelationships as useRelationships,
-  useOrganization
+  useOrganization as useOrganizationQuery
 } from "./useOrganizationQueries";
 
 export const useOrganizations = useOrgsQuery;
 export const useUserOrganizationRelationships = useRelationships;
-export const useOrganization = useOrganization;
+export const useOrganization = useOrganizationQuery;
 
 export {
   useAddOrganizationRelationship,
