@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from "react";
 import { TagAssignment, getTagEntityTypes } from "@/utils/tags";
 import TagBadge from "./TagBadge";
+import { EntityType } from "@/types/entityTypes";
 
 interface TagListProps {
   tagAssignments: TagAssignment[];
   onRemove?: (assignmentId: string) => void;
   className?: string;
-  currentEntityType?: "person" | "organization";
+  currentEntityType?: EntityType;
 }
 
 const TagList = ({ 
@@ -42,7 +43,7 @@ const TagAssignmentItem = ({
 }: { 
   assignment: TagAssignment;
   onRemove?: (assignmentId: string) => void;
-  currentEntityType?: "person" | "organization";
+  currentEntityType?: EntityType;
 }) => {
   const [isFromDifferentEntityType, setIsFromDifferentEntityType] = useState(false);
   const tag = assignment.tag;
@@ -53,7 +54,7 @@ const TagAssignmentItem = ({
       if (tag && currentEntityType) {
         const entityTypes = await getTagEntityTypes(tag.id);
         setIsFromDifferentEntityType(
-          entityTypes.length > 0 && !entityTypes.includes(currentEntityType)
+          entityTypes.length > 0 && !entityTypes.includes(currentEntityType.toString())
         );
       }
     };

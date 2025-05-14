@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EntityTagManager from "@/components/tags/EntityTagManager";
+import { EntityType } from "@/types/entityTypes";
 
 interface ProfileTagsProps {
   profileId: string;
@@ -20,7 +21,7 @@ const ProfileTags = ({ profileId, isAdmin = false }: ProfileTagsProps) => {
       <CardContent>
         <EntityTagManager 
           entityId={profileId}
-          entityType="person"
+          entityType={EntityType.PERSON}
           isAdmin={isAdmin}
           isEditing={true} // Always show in editing mode since we're on the edit page
         />

@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization } from "@/types";
@@ -42,7 +43,7 @@ export const useOrganization = (id: string | undefined) => {
 // New hook to fetch tags specifically for organization filtering
 export const useTagsForOrganizationFilter = () => {
   const { data: tags = [], isLoading } = useFilterTags({
-    targetType: "organization"
+    targetType: EntityType.ORGANIZATION
   });
   
   return {

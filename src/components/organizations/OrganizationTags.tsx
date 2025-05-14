@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EntityTagManager from "@/components/tags/EntityTagManager";
+import { EntityType } from "@/types/entityTypes";
 
 interface OrganizationTagsProps {
   organizationId: string;
@@ -20,7 +21,7 @@ const OrganizationTags = ({ organizationId, isAdmin = false }: OrganizationTagsP
       <CardContent>
         <EntityTagManager
           entityId={organizationId}
-          entityType="organization"
+          entityType={EntityType.ORGANIZATION}
           isAdmin={isAdmin}
           isEditing={isAdmin} // Always show in editing mode for admins
         />

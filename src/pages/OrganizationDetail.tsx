@@ -1,5 +1,5 @@
 
-// Making minimal changes to fix the build error with useUserOrganizationRelationships
+// Making minimal changes to fix the build error with useUserOrganizationRelationships and EntityType
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,6 +16,7 @@ import EntityTagManager from "@/components/tags/EntityTagManager";
 import { Card, CardContent } from "@/components/ui/card";
 import OrganizationMembers from "@/components/organizations/OrganizationMembers";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EntityType } from "@/types/entityTypes";
 
 const OrganizationDetail = () => {
   const { id } = useParams<{ id: string }>();
@@ -119,7 +120,7 @@ const OrganizationDetail = () => {
                 {id && (
                   <EntityTagManager 
                     entityId={id} 
-                    entityType="organization" 
+                    entityType={EntityType.ORGANIZATION} 
                     isAdmin={isOrgAdmin || isAdmin}
                   />
                 )}
