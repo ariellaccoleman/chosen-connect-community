@@ -2,7 +2,7 @@
 import { createApiOperations } from '../core/apiFactory';
 import { Tag, TagInsert, TagUpdate } from '@/types/tag';
 import { apiClient } from '../core/apiClient';
-import { createSuccessResponse } from '../core/errorHandler';
+import { createSuccessResponse, ApiResponse } from '../core/errorHandler';
 
 /**
  * Create API operations for the Tags entity
@@ -20,37 +20,47 @@ export const tagCrudApi = createApiOperations<Tag, string, TagInsert, TagUpdate>
  * Find an existing tag or create a new one if it doesn't exist
  * This operation is commonly needed for tags
  */
-export const findOrCreateTag = async (tagData: Partial<TagInsert>): Promise<Tag | null> => {
+export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> => {
   if (!tagData.name) {
     throw new Error("Tag name is required");
   }
 
-  return apiClient.query(async (client) => {
-    // First check if the tag exists
-    const { data: existingTags, error: findError } = await client
-      .from('tags')
-      .select('*')
-      .eq('name', tagData.name)
-      .maybeSingle();
+  try {
+    return await apiClient.query(async (client) => {
+      // First check if the tag exists
+      const { data: existingTags, error: findError } = await client
+        .from('tags')
+        .select('*')
+        .eq('name', tagData.name)
+        .maybeSingle();
 
-    if (findError) throw findError;
+      if (findError) throw findError;
 
-    // If tag exists, return it
-    if (existingTags) {
-      return createSuccessResponse(existingTags as Tag);
-    }
+      // If tag exists, return it
+      if (existingTags) {
+        return existingTags as Tag;
+      }
 
-    // If not, create a new tag
-    const { data: newTag, error: createError } = await client
-      .from('tags')
-      .insert(tagData)
-      .select()
-      .single();
+      // Ensure name is provided for insert
+      if (!tagData.name) {
+        throw new Error("Tag name is required");
+      }
 
-    if (createError) throw createError;
+      // If not, create a new tag
+      const { data: newTag, error: createError } = await client
+        .from('tags')
+        .insert(tagData)
+        .select()
+        .single();
 
-    return createSuccessResponse(newTag as Tag);
-  });
+      if (createError) throw createError;
+
+      return newTag as Tag;
+    });
+  } catch (error) {
+    console.error("Error in findOrCreateTag:", error);
+    return null;
+  }
 };
 
 /**

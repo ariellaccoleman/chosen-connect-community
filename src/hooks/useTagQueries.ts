@@ -10,7 +10,10 @@ import { EntityType } from "@/types/entityTypes";
 export const useEntityTags = (entityId: string, entityType: string) => {
   return useQuery({
     queryKey: ["entity-tags", entityId, entityType],
-    queryFn: () => getEntityTags(entityId, entityType),
+    queryFn: async () => {
+      const response = await getEntityTags(entityId, entityType);
+      return response.data || [];
+    },
     enabled: !!entityId && !!entityType,
   });
 };
@@ -21,7 +24,10 @@ export const useEntityTags = (entityId: string, entityType: string) => {
 export const useFilterTags = (tagId: string | null, entityType?: string) => {
   return useQuery<TagAssignment[]>({
     queryKey: ["filter-tags", tagId, entityType],
-    queryFn: () => getEntitiesWithTag(tagId as string, entityType),
+    queryFn: async () => {
+      const response = await getEntitiesWithTag(tagId as string, entityType);
+      return response.data || [];
+    },
     enabled: !!tagId,
     initialData: [],
   });
@@ -33,9 +39,10 @@ export const useFilterTags = (tagId: string | null, entityType?: string) => {
 export const useSelectionTags = (entityType?: string) => {
   return useQuery({
     queryKey: ["selection-tags", entityType],
-    queryFn: () => {
+    queryFn: async () => {
       // Convert the string parameter to an object with targetType property
-      return getSelectionTags(entityType ? { targetType: entityType } : undefined);
+      const response = await getSelectionTags(entityType ? { targetType: entityType } : undefined);
+      return response;
     },
   });
 };

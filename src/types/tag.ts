@@ -24,4 +24,5 @@ export type TagAssignment = {
   target_type: string;
   created_at: string | null;
   updated_at: string | null;
+  tag?: Tag;
 };

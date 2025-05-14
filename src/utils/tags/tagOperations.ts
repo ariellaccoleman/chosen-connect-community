@@ -69,9 +69,6 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// No longer defining fetchEntityTags here - it's defined in tagAssignments.ts
-// We'll import it from there when needed
-
 // Find or create a tag
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
@@ -87,14 +84,14 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
     }
     
     // Call the API function that properly uses the apiClient
-    const response = await apiFindOrCreateTag(tagData);
+    const tag = await apiFindOrCreateTag(tagData as TagInsert);
     
-    if (response.status !== 'success' || !response.data) {
-      console.error("Error finding or creating tag:", response.error);
+    if (!tag) {
+      console.error("Error finding or creating tag");
       return null;
     }
     
-    return response.data;
+    return tag;
   } catch (error) {
     console.error("Error finding or creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
@@ -142,7 +139,12 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
     }
     
     // Call the API function that properly uses the apiClient
-    const response = await apiCreateTag(tagData);
+    const response = await apiCreateTag({
+      name: tagData.name,
+      description: tagData.description || null,
+      type: tagData.type || null,
+      created_by: tagData.created_by || null
+    });
     
     if (response.status !== 'success' || !response.data) {
       console.error("Error creating tag:", response.error);

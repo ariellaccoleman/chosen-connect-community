@@ -25,7 +25,7 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
       if (!selectedTagId) return items;
       
       // If we have tag assignments, filter items by matching IDs
-      if (tagAssignments.length > 0) {
+      if (tagAssignments && tagAssignments.length > 0) {
         const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
         return items.filter(item => taggedIds.has(item.id));
       }
@@ -38,7 +38,7 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
     selectedTagId,
     setSelectedTagId,
     filterItemsByTag,
-    tags: tags.map(ta => ta.tag).filter(Boolean) as Tag[],
+    tags: tags && tags.length > 0 ? tags.map(ta => ta.tag).filter(Boolean) as Tag[] : [],
     isLoading: isLoadingTagAssignments || isLoadingSelectionTags
   };
 };
