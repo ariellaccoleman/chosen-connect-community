@@ -19,9 +19,17 @@ export function isValidEntityType(type: string): type is EntityType {
 }
 
 /**
+ * @deprecated Use entityRegistry.getEntityTypeDefinition(type).behavior.getTypeLabel() instead
  * Get a display name for an entity type
  */
 export function getEntityTypeDisplay(type: EntityType): string {
+  // Import dynamically to prevent circular dependency
+  const { getEntityTypeDefinition } = require("@/registry");
+  const definition = getEntityTypeDefinition(type);
+  if (definition) {
+    return definition.behavior.getTypeLabel();
+  }
+
   switch (type) {
     case EntityType.PERSON:
       return "Person";
@@ -35,9 +43,17 @@ export function getEntityTypeDisplay(type: EntityType): string {
 }
 
 /**
+ * @deprecated Use entityRegistry.getEntityTypeDefinition(type).behavior.getSingularName() instead
  * Get the singular form of an entity type name
  */
 export function getEntityTypeSingular(type: EntityType): string {
+  // Import dynamically to prevent circular dependency
+  const { getEntityTypeDefinition } = require("@/registry");
+  const definition = getEntityTypeDefinition(type);
+  if (definition) {
+    return definition.behavior.getSingularName();
+  }
+
   switch (type) {
     case EntityType.PERSON:
       return "person";
@@ -51,9 +67,17 @@ export function getEntityTypeSingular(type: EntityType): string {
 }
 
 /**
+ * @deprecated Use entityRegistry.getEntityTypeDefinition(type).behavior.getPluralName() instead
  * Get the plural form of an entity type name
  */
 export function getEntityTypePlural(type: EntityType): string {
+  // Import dynamically to prevent circular dependency
+  const { getEntityTypeDefinition } = require("@/registry");
+  const definition = getEntityTypeDefinition(type);
+  if (definition) {
+    return definition.behavior.getPluralName();
+  }
+
   switch (type) {
     case EntityType.PERSON:
       return "people";

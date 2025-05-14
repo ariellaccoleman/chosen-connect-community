@@ -5,9 +5,10 @@ import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MapPin, Building, User } from "lucide-react";
+import { MapPin, Calendar } from "lucide-react";
 import TagList from "../tags/TagList";
 import { format } from "date-fns";
+import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 
 interface EntityCardProps {
   entity: Entity;
@@ -20,55 +21,12 @@ interface EntityCardProps {
  * Uses entity.entityType to determine how to render the entity
  */
 const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps) => {
-  const getEntityUrl = (entity: Entity) => {
-    switch (entity.entityType) {
-      case EntityType.PERSON:
-        return `/directory/${entity.id}`;
-      case EntityType.ORGANIZATION:
-        return `/organizations/${entity.id}`;
-      case EntityType.EVENT:
-        return `/events/${entity.id}`;
-      default:
-        return "#";
-    }
-  };
-
-  const getEntityIcon = (entityType: EntityType) => {
-    switch (entityType) {
-      case EntityType.PERSON:
-        return <User className="h-4 w-4" />;
-      case EntityType.ORGANIZATION:
-        return <Building className="h-4 w-4" />;
-      case EntityType.EVENT:
-        return <Calendar className="h-4 w-4" />;
-      default:
-        return null;
-    }
-  };
-
-  const getEntityTypeLabel = (entityType: EntityType) => {
-    switch (entityType) {
-      case EntityType.PERSON:
-        return "Person";
-      case EntityType.ORGANIZATION:
-        return "Organization";
-      case EntityType.EVENT:
-        return "Event";
-      default:
-        return entityType;
-    }
-  };
-
-  const getAvatarFallback = (entity: Entity) => {
-    if (!entity.name) return "?";
-    
-    return entity.name
-      .split(" ")
-      .map(part => part[0])
-      .join("")
-      .toUpperCase()
-      .substring(0, 2);
-  };
+  const { 
+    getEntityUrl, 
+    getEntityIcon, 
+    getEntityTypeLabel, 
+    getEntityAvatarFallback 
+  } = useEntityRegistry();
 
   // Format date if it's an event
   const formattedDate = entity.entityType === EntityType.EVENT && entity.created_at
@@ -83,7 +41,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           <Avatar className="h-12 w-12">
             <AvatarImage src={entity.imageUrl || ""} alt={entity.name} />
             <AvatarFallback className="bg-chosen-blue text-white">
-              {getAvatarFallback(entity)}
+              {getEntityAvatarFallback(entity)}
             </AvatarFallback>
           </Avatar>
           

@@ -1,11 +1,13 @@
+
 import { useState, useEffect } from "react";
-import { Entity, toEntity } from "@/types/entity";
+import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags } from "./useTagQueries";
 import { useTagFilter } from "./useTagFilter";
 import { useEvents } from "./useEvents";
 import { useCommunityProfiles } from "./useCommunityProfiles";
 import { useOrganizations } from "./useOrganizationQueries";
+import { useEntityRegistry } from "./useEntityRegistry";
 
 interface UseEntityFeedOptions {
   entityTypes?: EntityType[];
@@ -21,6 +23,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { toEntity } = useEntityRegistry();
   
   const entityTypes = options.entityTypes || Object.values(EntityType);
   const includeEvents = entityTypes.includes(EntityType.EVENT);
@@ -117,7 +120,8 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
     includeProfiles,
     includeOrgs,
     options.limit,
-    filterItemsByTag
+    filterItemsByTag,
+    toEntity
   ]);
   
   return {

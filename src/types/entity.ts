@@ -81,18 +81,12 @@ export function eventToEntity(event: EventWithDetails): Entity {
 }
 
 /**
+ * @deprecated Use the entity registry's toEntity method instead
  * Convert an entity of any type to the generic Entity interface
  */
 export function toEntity(entity: any, entityType: EntityType): Entity | null {
-  switch (entityType) {
-    case EntityType.PERSON:
-      return profileToEntity(entity);
-    case EntityType.ORGANIZATION:
-      return organizationToEntity(entity);
-    case EntityType.EVENT:
-      return eventToEntity(entity);
-    default:
-      console.error(`Unsupported entity type: ${entityType}`);
-      return null;
-  }
+  // Import dynamically to prevent circular dependency
+  const { useEntityRegistry } = require("@/hooks/useEntityRegistry");
+  const { toEntity } = useEntityRegistry();
+  return toEntity(entity, entityType);
 }

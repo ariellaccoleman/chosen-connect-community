@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
 import { useFilterTags } from "@/hooks/useTagQueries";
+import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 
 interface EntityFeedProps {
   title?: string;
@@ -31,6 +32,10 @@ const EntityFeed = ({
   emptyMessage = "No items found"
 }: EntityFeedProps) => {
   const [activeTab, setActiveTab] = useState<"all" | EntityType>("all");
+  const { 
+    getEntityTypeLabel,
+    getEntityTypePlural 
+  } = useEntityRegistry();
   
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
@@ -66,9 +71,11 @@ const EntityFeed = ({
           <Tabs defaultValue="all" onValueChange={handleTabChange} className="mb-6">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value={EntityType.PERSON}>People</TabsTrigger>
-              <TabsTrigger value={EntityType.ORGANIZATION}>Organizations</TabsTrigger>
-              <TabsTrigger value={EntityType.EVENT}>Events</TabsTrigger>
+              {defaultEntityTypes.map(type => (
+                <TabsTrigger key={type} value={type}>
+                  {getEntityTypePlural(type)}
+                </TabsTrigger>
+              ))}
             </TabsList>
           </Tabs>
         )}
