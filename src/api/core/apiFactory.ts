@@ -9,6 +9,15 @@ import { Database } from "@/integrations/supabase/types";
 // Define a type for valid table names from the Database type
 type TableNames = keyof Database['public']['Tables'];
 
+// Get the Row type for a specific table
+type TableRow<T extends TableNames> = Database['public']['Tables'][T]['Row'];
+
+// Get the Insert type for a specific table
+type TableInsert<T extends TableNames> = Database['public']['Tables'][T]['Insert'];
+
+// Get the Update type for a specific table
+type TableUpdate<T extends TableNames> = Database['public']['Tables'][T]['Update'];
+
 /**
  * Creates standardized CRUD API operations for a specific entity type
  * 
@@ -42,7 +51,7 @@ export function createApiOperations<
     defaultOrderBy = 'created_at',
     softDelete = false,
     transformResponse = (item) => item as T,
-    transformRequest = (item) => item as Record<string, any>
+    transformRequest = (item) => item as unknown as Record<string, any>
   } = options;
 
   /**
@@ -114,7 +123,7 @@ export function createApiOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .eq(idField, id)
+          .eq(idField, id as any)
           .maybeSingle();
         
         if (error) throw error;
@@ -140,7 +149,7 @@ export function createApiOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .in(idField, ids);
+          .in(idField, ids as any[]);
         
         if (error) throw error;
         
@@ -166,7 +175,7 @@ export function createApiOperations<
       return await apiClient.query(async (client) => {
         const { data: createdData, error } = await client
           .from(tableName)
-          .insert(transformedData)
+          .insert(transformedData as any)
           .select(defaultSelect)
           .single();
         
@@ -192,8 +201,8 @@ export function createApiOperations<
       return await apiClient.query(async (client) => {
         const { data: updatedData, error } = await client
           .from(tableName)
-          .update(transformedData)
-          .eq(idField, id)
+          .update(transformedData as any)
+          .eq(idField, id as any)
           .select(defaultSelect)
           .single();
         
@@ -224,8 +233,8 @@ export function createApiOperations<
           
           const result = await client
             .from(tableName)
-            .update(updateData)
-            .eq(idField, id);
+            .update(updateData as any)
+            .eq(idField, id as any);
           
           error = result.error;
         } else {
@@ -233,7 +242,7 @@ export function createApiOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .eq(idField, id);
+            .eq(idField, id as any);
           
           error = result.error;
         }
@@ -262,7 +271,7 @@ export function createApiOperations<
       return await apiClient.query(async (client) => {
         const { data, error } = await client
           .from(tableName)
-          .insert(transformedItems)
+          .insert(transformedItems as any[])
           .select(defaultSelect);
         
         if (error) throw error;
@@ -294,8 +303,8 @@ export function createApiOperations<
             const transformedData = transformRequest(item.data);
             const { data, error } = await client
               .from(tableName)
-              .update(transformedData)
-              .eq(idField, item.id)
+              .update(transformedData as any)
+              .eq(idField, item.id as any)
               .select(defaultSelect)
               .single();
             
@@ -332,8 +341,8 @@ export function createApiOperations<
           
           const result = await client
             .from(tableName)
-            .update(updateData)
-            .in(idField, ids);
+            .update(updateData as any)
+            .in(idField, ids as any[]);
           
           error = result.error;
         } else {
@@ -341,7 +350,7 @@ export function createApiOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .in(idField, ids);
+            .in(idField, ids as any[]);
           
           error = result.error;
         }
