@@ -22,7 +22,8 @@ export interface CreateEventInput {
   end_time: string;
   is_virtual: boolean;
   location_id: string | null;
-  tag_id: string | null;
   is_paid: boolean;
   price: number | null;
+  // Remove tag_id as we'll use tag assignments directly
 }
+

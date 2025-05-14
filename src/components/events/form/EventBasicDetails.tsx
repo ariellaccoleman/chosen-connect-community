@@ -4,16 +4,17 @@ import { Control } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import TagSelector from "@/components/tags/TagSelector";
+import EntityTagManager from "@/components/tags/EntityTagManager";
 import { EntityType } from "@/types/entityTypes";
-import { Tag } from "@/utils/tags";
 
 interface EventBasicDetailsProps {
   control: Control<any>;
   onTypeChange?: (isVirtual: boolean) => void;
+  eventId?: string; // Add eventId prop for existing events
+  isEditing?: boolean;
 }
 
-const EventBasicDetails = ({ control, onTypeChange }: EventBasicDetailsProps) => {
+const EventBasicDetails = ({ control, onTypeChange, eventId, isEditing = true }: EventBasicDetailsProps) => {
   return (
     <div className="space-y-6">
       <FormField
@@ -48,29 +49,23 @@ const EventBasicDetails = ({ control, onTypeChange }: EventBasicDetailsProps) =>
         )}
       />
 
-      <FormField
-        control={control}
-        name="tag_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Tag</FormLabel>
-            <FormControl>
-              <div className="mb-2">
-                <TagSelector
-                  targetType={EntityType.EVENT}
-                  onTagSelected={(tag: Tag) => {
-                    console.log("Tag selected:", tag);
-                    field.onChange(tag.id);
-                  }}
-                  isAdmin={true}
-                  currentSelectedTagId={field.value}
-                />
-              </div>
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
+      <div>
+        <FormLabel className="mb-2 block">Tags</FormLabel>
+        <div className="mt-1">
+          {eventId ? (
+            <EntityTagManager
+              entityId={eventId}
+              entityType={EntityType.EVENT}
+              isAdmin={true}
+              isEditing={isEditing}
+            />
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              You can add tags after creating the event.
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -11,9 +11,9 @@ export const createEventSchema = z.object({
   duration_minutes: z.number().min(0).max(59).default(0),
   is_virtual: z.boolean().default(true),
   location_id: z.string().nullable().optional(),
-  tag_id: z.string().nullable().optional(),
   is_paid: z.boolean().default(false),
   price: z.number().nullable().optional(),
+  // Remove tag_id field as we'll use EntityTagManager for tag management
 });
 
 export type CreateEventFormValues = z.infer<typeof createEventSchema>;

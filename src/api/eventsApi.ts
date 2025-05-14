@@ -1,4 +1,3 @@
-
 import { CreateEventInput, EventWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
 import { createErrorResponse, createSuccessResponse } from "./core/errorHandler";
@@ -27,7 +26,6 @@ export const eventsApi = {
           host_id: hostId,
           is_paid: event.is_paid,
           price: event.is_paid ? event.price : null,
-          tag_id: event.tag_id || null,
         }).select().single();
       });
 
@@ -39,26 +37,9 @@ export const eventsApi = {
           details: error
         });
       }
-      
-      // If a tag was selected, create a tag assignment
-      if (event.tag_id && data) {
-        try {
-          await apiClient.query(async (client) => {
-            const { error: tagError } = await client.from('tag_assignments').insert({
-              tag_id: event.tag_id,
-              target_id: data.id,
-              target_type: 'event'
-            });
-            
-            if (tagError) {
-              console.error("Error creating tag assignment for event:", tagError);
-            }
-          });
-        } catch (tagErr) {
-          console.error("Exception creating tag assignment:", tagErr);
-          // Don't fail the event creation if tag assignment fails
-        }
-      }
+
+      // Tag assignments will be handled by EntityTagManager component
+      // using the useTagAssignmentMutations hook directly
 
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
