@@ -38,7 +38,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Dashboard
           </Link>
           <Link 
-            to="/profile" 
+            to="/profile/edit" 
             className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >

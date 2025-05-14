@@ -46,7 +46,7 @@ const DesktopNav = () => {
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => navigate("/dashboard")}>Dashboard</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/profile")}>
+              <DropdownMenuItem onClick={() => navigate("/profile/edit")}>
                 <User className="mr-2 h-4 w-4" />
                 <span>Edit Profile</span>
               </DropdownMenuItem>
