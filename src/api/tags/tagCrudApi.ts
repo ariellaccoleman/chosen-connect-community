@@ -26,7 +26,7 @@ export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> =
   }
 
   try {
-    return await apiClient.query(async (client) => {
+    const tag = await apiClient.query<Tag | null>(async (client) => {
       // First check if the tag exists
       const { data: existingTags, error: findError } = await client
         .from('tags')
@@ -57,6 +57,8 @@ export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> =
 
       return newTag as Tag;
     });
+    
+    return tag;
   } catch (error) {
     console.error("Error in findOrCreateTag:", error);
     return null;

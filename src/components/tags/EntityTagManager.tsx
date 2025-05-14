@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";
 import TagList from "./TagList";
@@ -29,8 +30,8 @@ const EntityTagManager = ({
   const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
-  // Extract the actual assignments from the API response
-  const tagAssignments = tagAssignmentsResponse?.data || [];
+  // Extract the actual assignments from the API response - ensure it's an array even if data is null
+  const tagAssignments = tagAssignmentsResponse || [];
   
   // Log component mounting and props for debugging
   useEffect(() => {
