@@ -21,8 +21,11 @@ const EntityTagManager = ({
   isEditing = false,
   onFinishEditing
 }: EntityTagManagerProps) => {
-  const { data: tagAssignments, isLoading } = useEntityTags(entityId, entityType);
+  const { data: tagAssignmentsResponse, isLoading } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment } = useTagAssignmentMutations();
+  
+  // Extract the actual assignments from the API response
+  const tagAssignments = tagAssignmentsResponse?.data || [];
   
   const handleAddTag = async (tag) => {
     try {

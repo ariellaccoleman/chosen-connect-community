@@ -33,6 +33,9 @@ export const useFilterTags = (tagId: string | null, entityType?: string) => {
 export const useSelectionTags = (entityType?: string) => {
   return useQuery({
     queryKey: ["selection-tags", entityType],
-    queryFn: () => getSelectionTags(entityType),
+    queryFn: () => {
+      // Convert the string parameter to an object with targetType property
+      return getSelectionTags(entityType ? { targetType: entityType } : undefined);
+    },
   });
 };

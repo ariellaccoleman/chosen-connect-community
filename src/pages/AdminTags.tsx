@@ -13,10 +13,13 @@ import TagsTable from "@/components/admin/tags/TagsTable";
 
 const AdminTags = () => {
   const queryClient = useQueryClient();
-  const { data: tags, isLoading } = useTags();
+  const { data: tagsResponse, isLoading } = useTags();
   const { createTag: createTagMutation, isCreating } = useTagMutations();
   const { isAdmin } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+
+  // Extract the actual tags array from the API response
+  const tags = tagsResponse?.data || [];
 
   const handleOpenCreateForm = () => setIsCreateFormOpen(true);
   const handleCloseCreateForm = () => setIsCreateFormOpen(false);
@@ -52,7 +55,7 @@ const AdminTags = () => {
         isSubmitting={isCreating}
       />
 
-      <TagsTable tags={tags || []} isLoading={isLoading} />
+      <TagsTable tags={tags} isLoading={isLoading} />
     </div>
   );
 };
