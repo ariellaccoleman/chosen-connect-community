@@ -49,7 +49,10 @@ const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
         )}
       />
 
-      <EventTypeSelector control={control} />
+      <EventTypeSelector 
+        control={control} 
+        onTypeChange={() => {}} // Empty function as it's now optional
+      />
 
       <FormField
         control={control}
@@ -59,9 +62,9 @@ const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
             <FormLabel>Location</FormLabel>
             <FormControl>
               <LocationSelector
-                value={field.value}
-                onChange={field.onChange}
-                disabled={false}
+                control={control}
+                label="Location"
+                fieldName="location_id"
               />
             </FormControl>
             <FormMessage />

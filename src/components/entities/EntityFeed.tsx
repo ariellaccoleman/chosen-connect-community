@@ -6,6 +6,7 @@ import { EntityType } from "@/types/entityTypes";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
+import { useFilterTags } from "@/hooks/useTagQueries";
 
 interface EntityFeedProps {
   title?: string;
@@ -45,6 +46,11 @@ const EntityFeed = ({
     entityTypes,
     limit
   });
+
+  // Fetch tags for filtering
+  const { data: tags = [], isLoading: tagsLoading } = useFilterTags({
+    targetType: activeTab !== "all" ? activeTab : undefined
+  });
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
@@ -70,6 +76,8 @@ const EntityFeed = ({
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={setSelectedTagId}
+            tags={tags}
+            isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />
         )}

@@ -6,13 +6,13 @@ import { Control } from "react-hook-form";
 import { CreateEventFormValues } from "./EventFormSchema";
 
 interface EventTypeSelectorProps {
-  control: Control<CreateEventFormValues>;
-  onTypeChange: (isVirtual: boolean) => void;
+  control: Control<any>;
+  onTypeChange?: (isVirtual: boolean) => void;
 }
 
 const EventTypeSelector: React.FC<EventTypeSelectorProps> = ({
   control,
-  onTypeChange
+  onTypeChange = () => {}  // Default empty function if not provided
 }) => {
   return (
     <FormField

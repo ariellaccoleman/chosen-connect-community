@@ -32,25 +32,18 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
   
   // Fetch data for each entity type
-  const { data: events = [], isLoading: eventsLoading } = useEvents({ 
-    enabled: includeEvents 
-  });
+  const { data: events = [], isLoading: eventsLoading } = useEvents(); 
   
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
     search: options.searchQuery,
     limit: options.limit,
-    tagId: options.tagId,
-    enabled: includeProfiles
+    tagId: options.tagId
   });
   
-  const { data: organizations = [], isLoading: orgsLoading } = useOrganizations({
-    enabled: includeOrgs
-  });
+  const { data: organizations = [], isLoading: orgsLoading } = useOrganizations();
   
   // Set up tag filtering if needed
-  const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter({
-    enabled: !options.tagId
-  });
+  const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter();
   
   // If tagId is provided in options, set it as the selected tag
   useEffect(() => {

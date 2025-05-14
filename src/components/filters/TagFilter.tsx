@@ -15,18 +15,20 @@ import { X } from "lucide-react";
 
 interface TagFilterProps {
   selectedTagId: string | null;
-  onSelectTag: (tagId: string | null) => void;
+  onTagSelect: (tagId: string | null) => void;
   tags: any[];
   isLoading?: boolean;
   className?: string;
+  targetType?: string;
 }
 
 const TagFilter = ({ 
   selectedTagId, 
-  onSelectTag, 
+  onTagSelect, 
   tags = [],
   isLoading = false,
-  className 
+  className,
+  targetType
 }: TagFilterProps) => {
   if (isLoading) {
     return (
@@ -41,7 +43,7 @@ const TagFilter = ({
       <div className="flex-1">
         <Select
           value={selectedTagId || "all"} 
-          onValueChange={(value) => onSelectTag(value === "all" ? null : value)}
+          onValueChange={(value) => onTagSelect(value === "all" ? null : value)}
         >
           <SelectTrigger className="w-full">
             <div className="flex items-center gap-2">
@@ -72,7 +74,7 @@ const TagFilter = ({
         <ActiveTagFilter 
           tags={tags} 
           selectedTagId={selectedTagId} 
-          onClear={() => onSelectTag(null)} 
+          onClear={() => onTagSelect(null)} 
         />
       )}
     </div>

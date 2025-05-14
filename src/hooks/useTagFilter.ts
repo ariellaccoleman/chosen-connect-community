@@ -3,9 +3,10 @@ import { useState } from "react";
 import { useFilterTags } from "./useTags";
 import { Tag, TagAssignment } from "@/utils/tags";
 import { toast } from "@/components/ui/sonner";
+import { EntityType } from "@/types/entityTypes";
 
 interface UseTagFilterOptions {
-  entityType?: "person" | "organization";
+  entityType?: EntityType | string;
   enabled?: boolean;
 }
 

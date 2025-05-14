@@ -81,8 +81,8 @@ export const fetchEntityTags = async (
       return [];
     }
     
-    // Use the API method to fetch entity tags
-    const { data: entityTagsApi } = await import("@/api/tags/entityTagsApi");
+    // Import the API function dynamically
+    const entityTagsApi = await import("@/api/tags/entityTagsApi");
     const response = await entityTagsApi.getEntityTags(entityId, entityType);
     
     if (response.status !== 'success' || !response.data) {

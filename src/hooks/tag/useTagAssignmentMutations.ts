@@ -39,7 +39,12 @@ export const useTagAssignmentMutations = () => {
       // Also invalidate tags query as entity types might have changed
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       // Clear the tag cache for this entity type
-      invalidateTagCache(variables.entityType);
+      if (typeof variables.entityType === 'string') {
+        invalidateTagCache(variables.entityType as any);
+      } else {
+        // Handle EntityType enum
+        invalidateTagCache(variables.entityType.toString() as any);
+      }
     },
     onError: (error) => {
       console.error("Error in assignTagMutation:", error);
@@ -58,7 +63,7 @@ export const useTagAssignmentMutations = () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       // Clear both person and organization tag caches to be safe
       Object.values(EntityType).forEach(type => {
-        invalidateTagCache(type);
+        invalidateTagCache(type.toString() as any);
       });
     },
     onError: (error) => {
