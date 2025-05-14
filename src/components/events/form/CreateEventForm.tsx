@@ -10,21 +10,21 @@ import { EventBasicDetails } from "./index";
 import EventDateTimeSection from "./EventDateTimeSection";
 import EventLocationSection from "./EventLocationSection";
 import EventPriceSection from "./EventPriceSection";
-import { CreateEventInput } from "@/types";
-import { formatDateForDb } from "@/utils/formatters";
+import { CreateEventInput, EventWithDetails } from "@/types";
+import { format } from "date-fns";
 
 interface CreateEventFormProps {
   onSubmit: (eventInput: CreateEventInput) => Promise<void>;
   isSubmitting: boolean;
   onLocationTypeChange: (isVirtual: boolean) => void;
-  eventId?: string;
+  eventData?: EventWithDetails;
 }
 
 const CreateEventForm = ({
   onSubmit,
   isSubmitting,
   onLocationTypeChange,
-  eventId
+  eventData
 }: CreateEventFormProps) => {
   // Get today's date for default date
   const today = new Date();
@@ -33,22 +33,55 @@ const CreateEventForm = ({
   // Default time is 1:00 PM
   const defaultTime = "13:00";
 
-  logger.info("CreateEventForm render with defaults", { defaultDate, defaultTime });
+  // Initialize form with event data if available
+  const initFormData = () => {
+    if (!eventData) {
+      return {
+        title: "",
+        description: "",
+        start_date: defaultDate,
+        start_time: defaultTime,
+        duration_hours: 1,
+        duration_minutes: 0,
+        is_virtual: true,
+        location_id: null,
+        is_paid: false,
+        price: null,
+      };
+    }
+
+    // Parse existing event data for edit mode
+    const startDate = new Date(eventData.start_time);
+    const endDate = new Date(eventData.end_time);
+    
+    // Calculate duration
+    const durationMs = endDate.getTime() - startDate.getTime();
+    const durationHours = Math.floor(durationMs / (1000 * 60 * 60));
+    const durationMinutes = Math.floor((durationMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return {
+      title: eventData.title || "",
+      description: eventData.description || "",
+      start_date: format(startDate, 'yyyy-MM-dd'),
+      start_time: format(startDate, 'HH:mm'),
+      duration_hours: durationHours,
+      duration_minutes: durationMinutes,
+      is_virtual: eventData.is_virtual,
+      location_id: eventData.location_id,
+      is_paid: eventData.is_paid,
+      price: eventData.price ? Number(eventData.price) : null,
+    };
+  };
+
+  logger.info("CreateEventForm render with data", { 
+    isEditing: !!eventData, 
+    eventId: eventData?.id,
+    defaultValues: initFormData()
+  });
 
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      start_date: defaultDate,
-      start_time: defaultTime,
-      duration_hours: 1,
-      duration_minutes: 0,
-      is_virtual: true,
-      location_id: null,
-      is_paid: false,
-      price: null,
-    },
+    defaultValues: initFormData()
   });
 
   const isVirtual = form.watch("is_virtual");
@@ -71,11 +104,6 @@ const CreateEventForm = ({
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString() 
     });
-    
-    const start_time = formatDateForDb(startDate.toISOString());
-    const end_time = formatDateForDb(endDate.toISOString());
-
-    logger.info("Formatted dates for DB:", { start_time, end_time });
 
     // If event is not paid, ensure price is null
     const finalPrice = values.is_paid ? values.price : null;
@@ -87,8 +115,8 @@ const CreateEventForm = ({
     const eventInput: CreateEventInput = {
       title: values.title,
       description: values.description || "",
-      start_time,
-      end_time,
+      start_time: startDate.toISOString(),
+      end_time: endDate.toISOString(),
       is_virtual: values.is_virtual,
       location_id: finalLocationId,
       is_paid: values.is_paid,
@@ -113,8 +141,8 @@ const CreateEventForm = ({
         <EventBasicDetails 
           control={form.control} 
           onTypeChange={onLocationTypeChange} 
-          eventId={eventId}
-          isEditing={!!eventId}
+          eventId={eventData?.id}
+          isEditing={!!eventData?.id}
         />
       </div>
       
@@ -136,7 +164,7 @@ const CreateEventForm = ({
       
       <FormActions
         isSubmitting={isSubmitting}
-        submitLabel="Create Event"
+        submitLabel={eventData ? "Update Event" : "Create Event"}
         formId="event-form"
       />
     </FormWrapper>

@@ -8,6 +8,7 @@ import EventDetails from "@/components/events/EventDetails";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import EventForm from "@/components/events/EventForm";
 
 const EventDetailContent = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -63,6 +64,31 @@ const EventDetailContent = () => {
     );
   }
 
+  if (isEditing && isOwner) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <Button
+            onClick={() => setIsEditing(false)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Event Details
+          </Button>
+        </div>
+        
+        {/* Show EventForm in edit mode */}
+        <EventForm 
+          eventData={event}
+          onSuccess={() => {
+            setIsEditing(false);
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -77,17 +103,17 @@ const EventDetailContent = () => {
         {isOwner && (
           <div className="flex gap-2">
             <Button 
-              onClick={() => setIsEditing(!isEditing)} 
+              onClick={() => setIsEditing(true)} 
               className="flex items-center gap-2 bg-chosen-blue hover:bg-chosen-navy"
             >
               <Edit className="h-4 w-4" />
-              {isEditing ? "Stop Editing Tags" : "Edit Tags"}
+              Edit Event
             </Button>
           </div>
         )}
       </div>
 
-      <EventDetails event={event} isAdmin={isOwner && isEditing} />
+      <EventDetails event={event} isAdmin={isOwner} />
     </div>
   );
 };

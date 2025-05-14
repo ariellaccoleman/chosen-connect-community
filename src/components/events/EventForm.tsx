@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useEventMutations } from "@/hooks/useEventMutations";
 import { useNavigate } from "react-router-dom";
-import { CreateEventInput } from "@/types";
+import { CreateEventInput, EventWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
 import { useFormError } from "@/hooks/useFormError";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
@@ -13,24 +13,30 @@ import { toast } from "sonner";
 interface EventFormProps {
   onSuccess?: () => void;
   onError?: (error: Error) => void;
+  eventData?: EventWithDetails; // Add prop for edit mode
 }
 
-const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
+const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError, eventData }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { createEventMutation } = useEventMutations();
-  const [locationFieldVisible, setLocationFieldVisible] = useState(false);
+  const { createEventMutation, updateEventMutation } = useEventMutations();
+  const [locationFieldVisible, setLocationFieldVisible] = useState(
+    eventData ? !eventData.is_virtual : false
+  );
   const { handleError } = useFormError();
   
-  const isSubmitting = createEventMutation.isPending;
+  const isSubmitting = createEventMutation.isPending || updateEventMutation.isPending;
+  const isEditMode = !!eventData;
 
   logger.info("EventForm component state", { 
     isSubmitting, 
-    locationFieldVisible
+    locationFieldVisible,
+    isEditMode,
+    eventId: eventData?.id
   });
 
   const handleFormSubmit = async (eventInput: CreateEventInput) => {
-    logger.info("EventForm handleFormSubmit called");
+    logger.info("EventForm handleFormSubmit called", { isEditMode });
     
     if (!user?.id) {
       const error = new Error("Authentication error: No user ID found");
@@ -40,34 +46,48 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
     }
 
     try {
-      logger.info("Processing form submission with user:", user.id);
-      
-      const result = await createEventMutation.mutateAsync({
-        event: eventInput,
-        hostId: user.id,
-      });
+      if (isEditMode && eventData) {
+        logger.info("Updating event", { eventId: eventData.id });
+        
+        const result = await updateEventMutation.mutateAsync({
+          eventId: eventData.id,
+          eventData: eventInput,
+        });
 
-      logger.info("Event created successfully:", result);
-      
-      // Show a success toast
-      toast.success("Event created successfully!");
-      
-      // Navigate to the event detail page
-      if (result?.id) {
-        logger.info(`Navigating to event detail page: ${result.id}`);
-        navigate(`/events/${result.id}`);
-      } else {
+        logger.info("Event updated successfully:", result);
+        toast.success("Event updated successfully!");
+        
         if (onSuccess) {
-          logger.info("Calling onSuccess callback");
           onSuccess();
+        }
+      } else {
+        logger.info("Creating new event with user:", user.id);
+        
+        const result = await createEventMutation.mutateAsync({
+          event: eventInput,
+          hostId: user.id,
+        });
+
+        logger.info("Event created successfully:", result);
+        toast.success("Event created successfully!");
+        
+        // Navigate to the event detail page
+        if (result?.id) {
+          logger.info(`Navigating to event detail page: ${result.id}`);
+          navigate(`/events/${result.id}`);
         } else {
-          logger.info("No onSuccess callback, navigating to /events");
-          navigate("/events");
+          if (onSuccess) {
+            logger.info("Calling onSuccess callback");
+            onSuccess();
+          } else {
+            logger.info("No onSuccess callback, navigating to /events");
+            navigate("/events");
+          }
         }
       }
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error("Error creating event:", errorObj);
+      logger.error("Error saving event:", errorObj);
       handleError(errorObj);
       if (onError) onError(errorObj);
     }
@@ -76,11 +96,14 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
   return (
     <ErrorBoundary name="EventFormComponent">
       <div className="space-y-6">
-        <h2 className="text-2xl font-bold">Create New Event</h2>
+        <h2 className="text-2xl font-bold">
+          {isEditMode ? "Edit Event" : "Create New Event"}
+        </h2>
         <CreateEventForm 
           onSubmit={handleFormSubmit}
           isSubmitting={isSubmitting}
           onLocationTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)}
+          eventData={eventData}
         />
       </div>
     </ErrorBoundary>

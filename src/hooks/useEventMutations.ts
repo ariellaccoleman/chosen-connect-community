@@ -41,7 +41,42 @@ export function useEventMutations() {
     }
   });
 
+  const updateEventMutation = useMutation({
+    mutationFn: async ({ eventId, eventData }: { eventId: string, eventData: CreateEventInput }) => {
+      console.log("In updateEventMutation mutationFn with:", { eventId, eventData });
+      logger.info("Starting event update mutation", { eventId, eventData });
+      
+      const response = await eventsApi.updateEvent(eventId, eventData);
+      console.log("API update response received:", response);
+      logger.info("Event update API response:", response);
+
+      if (response.error) {
+        const errorMessage = response.error.message || "Failed to update event";
+        console.error("API returned error:", errorMessage, response.error);
+        logger.error("Event update error:", errorMessage);
+        throw new Error(errorMessage);
+      }
+
+      return response.data;
+    },
+    onSuccess: (data) => {
+      console.log("Update mutation succeeded with data:", data);
+      logger.info("Event update successful:", data);
+      // Invalidate both the events list and the specific event query
+      queryClient.invalidateQueries({ queryKey: ["events"] });
+      queryClient.invalidateQueries({ queryKey: ["event", data.id] });
+      toast.success("Event updated successfully");
+    },
+    onError: (error: Error) => {
+      const errorMessage = error?.message || "Failed to update event";
+      console.error("Update mutation error:", errorMessage);
+      logger.error("Event update mutation error:", errorMessage);
+      toast.error(errorMessage || "Failed to update event. Please try again.");
+    }
+  });
+
   return {
-    createEventMutation
+    createEventMutation,
+    updateEventMutation
   };
 }
