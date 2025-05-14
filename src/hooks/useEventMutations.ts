@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { eventsApi } from "@/api";
 import { CreateEventInput } from "@/types";
 import { showErrorToast } from "@/api/core/errorHandler";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 
 export function useEventMutations() {

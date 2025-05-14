@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from "react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { ApiError } from "@/api/core/errorHandler";
 
 /**

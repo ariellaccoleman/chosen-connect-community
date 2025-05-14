@@ -16,7 +16,7 @@ import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
 import { logger } from "@/utils/logger";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { useFormError } from "@/hooks/useFormError";
 
 interface EventFormProps {
@@ -68,10 +68,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
     if (!user?.id) {
       console.error("No user ID found, cannot submit form");
       logger.error("Authentication error: No user ID found");
-      toast({
-        description: "You must be logged in to create an event",
-        variant: "destructive"
-      });
+      toast("You must be logged in to create an event");
       return;
     }
 
@@ -144,9 +141,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       console.log("Event creation successful with result:", result);
       logger.info("Event creation result:", result);
 
-      toast({
-        description: "Event created successfully",
-      });
+      toast("Event created successfully");
 
       if (onSuccess) {
         console.log("Calling onSuccess callback");
