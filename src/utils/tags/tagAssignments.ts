@@ -49,7 +49,8 @@ export const assignTag = async (
       logger.error(`Invalid entity type: ${entityType}`);
       return {
         status: 'error',
-        error: { message: `Invalid entity type: ${entityType}`, code: 'invalid_entity_type' }
+        error: { message: `Invalid entity type: ${entityType}`, code: 'invalid_entity_type' },
+        data: null // Add the missing data property
       };
     }
     
@@ -68,7 +69,8 @@ export const assignTag = async (
       error: { 
         message: error instanceof Error ? error.message : "Unknown error assigning tag",
         code: 'exception'
-      }
+      },
+      data: null // Add the missing data property
     };
   }
 };
@@ -91,7 +93,8 @@ export const removeTagAssignment = async (assignmentId: string): Promise<ApiResp
       error: { 
         message: error instanceof Error ? error.message : "Unknown error removing tag assignment",
         code: 'exception'
-      }
+      },
+      data: null // Add the missing data property
     };
   }
 };
