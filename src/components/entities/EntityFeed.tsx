@@ -62,11 +62,6 @@ const EntityFeed = ({
     setActiveTab(value as "all" | EntityType);
   };
   
-  // Extract tags from tag assignments, handling potential undefined values
-  const tags = tagAssignments && Array.isArray(tagAssignments) 
-    ? tagAssignments.map(ta => ta.tag).filter(Boolean)
-    : [];
-  
   return (
     <div className={className}>
       {title && <h2 className="text-2xl font-bold mb-6">{title}</h2>}
@@ -89,7 +84,7 @@ const EntityFeed = ({
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={setSelectedTagId}
-            tags={tags}
+            tags={(tagAssignments.map(ta => ta.tag).filter(Boolean)) || []}
             isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />

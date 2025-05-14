@@ -1,9 +1,9 @@
+
 import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
 import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
 import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
-import { TagInsert } from "@/types/tag";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
@@ -69,6 +69,9 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
+// No longer defining fetchEntityTags here - it's defined in tagAssignments.ts
+// We'll import it from there when needed
+
 // Find or create a tag
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
@@ -77,22 +80,15 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
       tagData = { ...tagData, type: tagData.type.toString() };
     }
     
-    // Ensure name is provided
-    if (!tagData.name) {
-      console.error("Tag name is required");
+    // Call the API function that properly uses the apiClient
+    const response = await apiFindOrCreateTag(tagData);
+    
+    if (response.status !== 'success' || !response.data) {
+      console.error("Error finding or creating tag:", response.error);
       return null;
     }
     
-    // Create a valid TagInsert object from the partial Tag
-    const tagInsert: TagInsert = {
-      name: tagData.name,
-      description: tagData.description || null,
-      type: tagData.type || null,
-      created_by: tagData.created_by || null
-    };
-    
-    // Call the API function that properly uses the apiClient
-    return await apiFindOrCreateTag(tagInsert);
+    return response.data;
   } catch (error) {
     console.error("Error finding or creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
@@ -133,22 +129,8 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
       tagData = { ...tagData, type: tagData.type.toString() };
     }
     
-    // Ensure name is provided
-    if (!tagData.name) {
-      console.error("Tag name is required");
-      return null;
-    }
-    
-    // Create a valid TagInsert object
-    const tagInsert: TagInsert = {
-      name: tagData.name,
-      description: tagData.description || null,
-      type: tagData.type || null,
-      created_by: tagData.created_by || null
-    };
-    
     // Call the API function that properly uses the apiClient
-    const response = await apiCreateTag(tagInsert);
+    const response = await apiCreateTag(tagData);
     
     if (response.status !== 'success' || !response.data) {
       console.error("Error creating tag:", response.error);

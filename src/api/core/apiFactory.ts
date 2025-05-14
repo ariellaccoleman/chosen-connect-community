@@ -1,6 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { ApiOperations, ListParams } from "./types";
+import { ApiOperations, ListParams, QueryOptions } from "./types";
 import { ApiResponse, createErrorResponse, createSuccessResponse } from "./errorHandler";
 import { apiClient } from "./apiClient";
 import { logger } from "@/utils/logger";
@@ -42,8 +42,9 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     try {
       logger.debug(`Fetching all ${entityName}`, params);
       
-      // Use the apiClient table method to handle dynamic table names
-      let query = apiClient.table(tableName).select(defaultSelect);
+      let query = supabase
+        .from(tableName)
+        .select(defaultSelect);
       
       // Apply filters if provided
       if (params?.filters) {
@@ -81,7 +82,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       if (error) throw error;
       
       // Transform response data
-      const transformedData = data ? data.map(transformResponse) : [];
+      const transformedData = data.map(transformResponse);
       
       return createSuccessResponse(transformedData);
     } catch (error) {
@@ -97,7 +98,8 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     try {
       logger.debug(`Fetching ${entityName} with ID: ${String(id)}`);
       
-      const { data, error } = await apiClient.table(tableName)
+      const { data, error } = await supabase
+        .from(tableName)
         .select(defaultSelect)
         .eq(idField, id)
         .maybeSingle();
@@ -120,13 +122,14 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       logger.debug(`Fetching ${entityName} with IDs:`, ids);
       
-      const { data, error } = await apiClient.table(tableName)
+      const { data, error } = await supabase
+        .from(tableName)
         .select(defaultSelect)
         .in(idField, ids);
       
       if (error) throw error;
       
-      const transformedData = data ? data.map(transformResponse) : [];
+      const transformedData = data.map(transformResponse);
       
       return createSuccessResponse(transformedData);
     } catch (error) {
@@ -144,7 +147,8 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedData = transformRequest(data);
       
-      const { data: createdData, error } = await apiClient.table(tableName)
+      const { data: createdData, error } = await supabase
+        .from(tableName)
         .insert(transformedData)
         .select(defaultSelect)
         .single();
@@ -167,7 +171,8 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedData = transformRequest(data);
       
-      const { data: updatedData, error } = await apiClient.table(tableName)
+      const { data: updatedData, error } = await supabase
+        .from(tableName)
         .update(transformedData)
         .eq(idField, id)
         .select(defaultSelect)
@@ -193,23 +198,20 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       if (softDelete) {
         // Soft delete - update deleted_at field
-        const updateData: any = { 
-          updated_at: new Date().toISOString(),
-          deleted_at: new Date().toISOString()
-        };
-        
-        const result = await apiClient.table(tableName)
-          .update(updateData)
+        const { error: updateError } = await supabase
+          .from(tableName)
+          .update({ deleted_at: new Date().toISOString() })
           .eq(idField, id);
         
-        error = result.error;
+        error = updateError;
       } else {
         // Hard delete
-        const result = await apiClient.table(tableName)
+        const { error: deleteError } = await supabase
+          .from(tableName)
           .delete()
           .eq(idField, id);
         
-        error = result.error;
+        error = deleteError;
       }
       
       if (error) throw error;
@@ -232,13 +234,14 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       const transformedItems = items.map(transformRequest);
       
-      const { data, error } = await apiClient.table(tableName)
+      const { data, error } = await supabase
+        .from(tableName)
         .insert(transformedItems)
         .select(defaultSelect);
       
       if (error) throw error;
       
-      const transformedData = data ? data.map(transformResponse) : [];
+      const transformedData = data.map(transformResponse);
       
       return createSuccessResponse(transformedData);
     } catch (error) {
@@ -260,7 +263,8 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       // This is not efficient but Supabase doesn't support bulk updates
       const updates = await Promise.all(
         items.map(async (item) => {
-          const { data, error } = await apiClient.table(tableName)
+          const { data, error } = await supabase
+            .from(tableName)
             .update(transformRequest(item.data))
             .eq(idField, item.id)
             .select(defaultSelect)
@@ -292,23 +296,20 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       
       if (softDelete) {
         // Soft delete - update deleted_at field
-        const updateData: any = { 
-          updated_at: new Date().toISOString(),
-          deleted_at: new Date().toISOString()
-        };
-        
-        const result = await apiClient.table(tableName)
-          .update(updateData)
+        const { error: updateError } = await supabase
+          .from(tableName)
+          .update({ deleted_at: new Date().toISOString() })
           .in(idField, ids);
         
-        error = result.error;
+        error = updateError;
       } else {
         // Hard delete
-        const result = await apiClient.table(tableName)
+        const { error: deleteError } = await supabase
+          .from(tableName)
           .delete()
           .in(idField, ids);
         
-        error = result.error;
+        error = deleteError;
       }
       
       if (error) throw error;

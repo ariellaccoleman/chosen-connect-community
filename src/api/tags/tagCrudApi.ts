@@ -1,77 +1,106 @@
 
-import { createApiOperations } from '../core/apiFactory';
-import { Tag, TagInsert, TagUpdate } from '@/types/tag';
-import { apiClient } from '../core/apiClient';
-import { createSuccessResponse, ApiResponse } from '../core/errorHandler';
+import { Tag } from "@/utils/tags";
+import { apiClient } from "../core/apiClient";
+import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 
 /**
- * Create API operations for the Tags entity
+ * Find or create a tag with the given name
+ * This follows a two-step approach:
+ * 1. First try to find a tag with the given name
+ * 2. If not found, create a new tag
  */
-export const tagCrudApi = createApiOperations<Tag, string, TagInsert, TagUpdate>(
-  'tag',
-  'tags',
-  {
-    defaultOrderBy: 'name',
-    transformResponse: (item) => item as Tag
-  }
-);
-
-/**
- * Find an existing tag or create a new one if it doesn't exist
- * This operation is commonly needed for tags
- */
-export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> => {
-  if (!tagData.name) {
-    throw new Error("Tag name is required");
-  }
-
-  try {
-    // Use a simpler approach that returns Tag directly, not ApiResponse<Tag>
-    const tag = await apiClient.query<Tag | null>(async (client) => {
-      // First check if the tag exists
-      const { data: existingTags, error: findError } = await client
-        .from('tags')
-        .select('*')
-        .eq('name', tagData.name)
-        .maybeSingle();
-
-      if (findError) throw findError;
-
-      // If tag exists, return it
-      if (existingTags) {
-        return existingTags as Tag;
-      }
-
-      // If not, create a new tag
-      const { data: newTag, error: createError } = await client
-        .from('tags')
-        .insert(tagData)
-        .select()
-        .single();
-
-      if (createError) throw createError;
-
-      return newTag as Tag;
-    });
+export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<ApiResponse<Tag>> => {
+  return apiClient.query(async (client) => {
+    // First attempt to find an existing tag by name
+    const { data: existingTag, error: findError } = await client
+      .from('tags')
+      .select()
+      .eq('name', tagData.name)
+      .maybeSingle();
     
-    return tag;
-  } catch (error) {
-    console.error("Error in findOrCreateTag:", error);
-    return null;
-  }
+    // If we found a tag with this name, return it
+    if (existingTag && !findError) {
+      console.log("Found existing tag:", existingTag);
+      return createSuccessResponse(existingTag);
+    }
+    
+    // If no existing tag found, create a new one
+    const { data: newTag, error: createError } = await client
+      .from('tags')
+      .insert({
+        name: tagData.name,
+        description: tagData.description,
+        type: tagData.type,
+        created_by: tagData.created_by
+      })
+      .select()
+      .single();
+    
+    if (createError) throw createError;
+    
+    console.log("Created new tag:", newTag);
+    return createSuccessResponse(newTag);
+  });
 };
 
 /**
- * Re-export individual operations for convenient usage
+ * Create a new tag
  */
-export const {
-  getAll: getAllTags,
-  getById: getTagById,
-  getByIds: getTagsByIds,
-  create: createTag,
-  update: updateTag,
-  delete: deleteTag,
-  batchCreate: batchCreateTags,
-  batchUpdate: batchUpdateTags,
-  batchDelete: batchDeleteTags
-} = tagCrudApi;
+export const createTag = async (tagData: Partial<Tag>): Promise<ApiResponse<Tag>> => {
+  return apiClient.query(async (client) => {
+    const { data, error } = await client
+      .from('tags')
+      .insert({
+        name: tagData.name,
+        description: tagData.description,
+        type: tagData.type,
+        created_by: tagData.created_by
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return createSuccessResponse(data);
+  });
+};
+
+/**
+ * Update an existing tag
+ */
+export const updateTag = async (
+  tagId: string,
+  updates: Partial<Tag>
+): Promise<ApiResponse<Tag>> => {
+  return apiClient.query(async (client) => {
+    // Only allow safe properties to be updated
+    const { created_by, ...safeUpdates } = updates;
+    
+    const { data, error } = await client
+      .from('tags')
+      .update(safeUpdates)
+      .eq('id', tagId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    return createSuccessResponse(data);
+  });
+};
+
+/**
+ * Delete a tag
+ */
+export const deleteTag = async (tagId: string): Promise<ApiResponse<boolean>> => {
+  return apiClient.query(async (client) => {
+    const { error } = await client
+      .from('tags')
+      .delete()
+      .eq('id', tagId);
+    
+    if (error) throw error;
+    
+    return createSuccessResponse(true);
+  });
+};

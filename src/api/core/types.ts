@@ -33,9 +33,6 @@ export interface PaginatedResponse<T> {
   hasMore: boolean;
 }
 
-// Import ApiResponse type from errorHandler
-import { ApiResponse } from './errorHandler';
-
 /**
  * Standard CRUD operations interface for API factories
  */

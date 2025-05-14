@@ -8,7 +8,7 @@ import { handleApiError } from "./errorHandler";
  */
 export const apiClient = {
   // Database operations with error handling
-  async query<T>(callback: (client: typeof supabase) => Promise<T>) {
+  async query(callback: (client: typeof supabase) => any) {
     try {
       return await callback(supabase);
     } catch (error) {
@@ -41,11 +41,5 @@ export const apiClient = {
     } catch (error) {
       return handleApiError(error);
     }
-  },
-  
-  // Helper to safely execute dynamic table queries
-  // This is a workaround for TypeScript's limitation with dynamic table names
-  table<T = any>(tableName: string) {
-    return supabase.from(tableName as any);
   }
 };
