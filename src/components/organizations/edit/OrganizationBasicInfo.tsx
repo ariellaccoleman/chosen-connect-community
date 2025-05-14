@@ -1,18 +1,16 @@
 
 import React from "react";
 import { UseFormReturn } from "react-hook-form";
-import { OrganizationFormValues } from "./organizationSchema";
-import { FormWrapper } from "@/components/common/form/FormWrapper";
+import { OrganizationFormValues } from "@/types";
 import FormInput from "@/components/common/form/FormInput";
 import FormTextarea from "@/components/common/form/FormTextarea";
 import LogoUpload from "@/components/organizations/LogoUpload";
-import FormActions from "@/components/common/form/FormActions";
-import { Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { OrganizationWithLocation } from "@/types";
 import { logger } from "@/utils/logger";
+import { Save } from "lucide-react";
 
-interface OrganizationBasicInfoProps {
+export interface OrganizationBasicInfoProps {
   form: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   organization: OrganizationWithLocation;

@@ -4,11 +4,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrganizationTags from "@/components/organizations/OrganizationTags";
 import { OrganizationBasicInfo } from "./OrganizationBasicInfo";
 import { UseFormReturn } from "react-hook-form";
-import { OrganizationFormValues } from "./organizationSchema";
+import { OrganizationFormValues } from "@/types";
 import { OrganizationWithLocation } from "@/types";
 import { logger } from "@/utils/logger";
 
-interface OrganizationEditTabsProps {
+export interface OrganizationEditTabsProps {
   form?: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   orgId: string;

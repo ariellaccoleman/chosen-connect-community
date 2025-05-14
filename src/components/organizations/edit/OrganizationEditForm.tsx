@@ -1,10 +1,18 @@
 
-import React, { useState } from "react";
+import React, { useState, ReactElement } from "react";
 import { useForm } from "react-hook-form";
 import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";
 import { OrganizationWithLocation, OrganizationFormValues } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
+
+// Define the props that can be passed to children
+interface OrganizationFormChildProps {
+  form: ReturnType<typeof useForm<OrganizationFormValues>>;
+  handleLogoChange: (url: string) => void;
+  organization: OrganizationWithLocation;
+  isSubmitting: boolean;
+}
 
 interface OrganizationEditFormProps {
   organization: OrganizationWithLocation;
@@ -67,28 +75,32 @@ export function OrganizationEditForm({
     }
   };
 
+  // Helper function to properly type-check when cloning elements
+  const enhanceChild = (child: React.ReactNode, index?: number): React.ReactNode => {
+    // Skip non-element nodes
+    if (!React.isValidElement(child)) return child;
+
+    // Clone with proper typing
+    return React.cloneElement(
+      child as ReactElement<Partial<OrganizationFormChildProps>>, 
+      { 
+        key: index, 
+        form,
+        handleLogoChange,
+        organization,
+        isSubmitting
+      }
+    );
+  };
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
-      {/* Clone children and pass form props */}
+      {/* Clone children and pass form props with proper typing */}
       {children && Array.isArray(children) ? (
-        children.map((child, index) => {
-          if (!React.isValidElement(child)) return child;
-          return React.cloneElement(child, { 
-            key: index,
-            form,
-            handleLogoChange,
-            organization,
-            isSubmitting
-          });
-        })
-      ) : children && React.isValidElement(children) ? (
-        React.cloneElement(children, { 
-          form,
-          handleLogoChange,
-          organization,
-          isSubmitting
-        })
-      ) : null}
+        children.map((child, index) => enhanceChild(child, index))
+      ) : (
+        enhanceChild(children)
+      )}
     </form>
   );
 }
