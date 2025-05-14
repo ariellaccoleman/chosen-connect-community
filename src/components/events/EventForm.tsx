@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +14,7 @@ import FormActions from "@/components/common/form/FormActions";
 import LocationSelector from "@/components/profile/form/LocationSelector";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { CreateEventInput } from "@/types";
 
 interface EventFormProps {
   onCancel?: () => void;
@@ -64,8 +64,21 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       values.location_id = null;
     }
 
+    // Convert form values to CreateEventInput
+    const eventInput: CreateEventInput = {
+      title: values.title,
+      description: values.description || "",
+      start_time: values.start_time,
+      end_time: values.end_time,
+      is_virtual: values.is_virtual,
+      location_id: values.location_id,
+      tag_id: values.tag_id,
+      is_paid: values.is_paid,
+      price: values.price,
+    };
+
     await createEventMutation.mutateAsync({
-      event: values,
+      event: eventInput,
       hostId: user.id,
     });
 

@@ -18,9 +18,11 @@ const formatProfileData = (data: any, authUser?: User | null): ProfileWithDetail
   // Format location if available
   if (profile.location) {
     const location = profile.location as Location;
-    profile.formatted_location = [location.city, location.region, location.country]
-      .filter(Boolean)
-      .join(', ');
+    if (!profile.location.formatted_location) {
+      profile.location.formatted_location = [location.city, location.region, location.country]
+        .filter(Boolean)
+        .join(', ');
+    }
   }
   
   // Add role from auth user metadata if available
