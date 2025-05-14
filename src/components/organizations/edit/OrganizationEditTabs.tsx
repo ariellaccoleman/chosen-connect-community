@@ -12,16 +12,18 @@ interface OrganizationEditTabsProps {
   form?: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   orgId: string;
-  isOrgAdmin?: boolean;  // Make optional to prevent undefined errors
-  organization?: OrganizationWithLocation; // Make optional to prevent undefined errors
+  isOrgAdmin?: boolean;
+  organization?: OrganizationWithLocation;
+  isSubmitting?: boolean;
 }
 
 export function OrganizationEditTabs({ 
   form, 
   handleLogoChange, 
   orgId, 
-  isOrgAdmin = false,  // Default value for safety
-  organization
+  isOrgAdmin = false,
+  organization,
+  isSubmitting = false
 }: OrganizationEditTabsProps) {
   const [activeTab, setActiveTab] = useState("basic");
   
@@ -47,6 +49,7 @@ export function OrganizationEditTabs({
             form={form} 
             handleLogoChange={handleLogoChange}
             organization={organization}
+            isSubmitting={isSubmitting}
           />
         )}
       </TabsContent>

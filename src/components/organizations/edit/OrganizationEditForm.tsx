@@ -1,5 +1,6 @@
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";
 import { OrganizationWithLocation, OrganizationFormValues } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,37 +20,34 @@ export function OrganizationEditForm({
   const { toast } = useToast();
   const updateOrganization = useUpdateOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formValues, setFormValues] = useState<OrganizationFormValues>({
-    name: organization.name,
-    description: organization.description,
-    website_url: organization.website_url,
-    logo_url: organization.logo_url
+  
+  // Initialize react-hook-form with the organization data
+  const form = useForm<OrganizationFormValues>({
+    defaultValues: {
+      name: organization.name,
+      description: organization.description || "",
+      website_url: organization.website_url || "",
+      logo_url: organization.logo_url || ""
+    }
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormValues(prev => ({ ...prev, [name]: value }));
+  const handleLogoChange = (url: string) => {
+    form.setValue("logo_url", url);
   };
 
-  const handleLogoChange = (url: string | null) => {
-    setFormValues(prev => ({ ...prev, logo_url: url || undefined }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const onSubmit = async (values: OrganizationFormValues) => {
     try {
       setIsSubmitting(true);
       
-      logger.info("Submitting organization edit form:", formValues);
+      logger.info("Submitting organization edit form:", values);
       
       await updateOrganization.mutateAsync({
         orgId,
         data: {
-          name: formValues.name, // Ensure name is always provided
-          description: formValues.description,
-          website_url: formValues.website_url,
-          logo_url: formValues.logo_url
+          name: values.name, 
+          description: values.description,
+          website_url: values.website_url,
+          logo_url: values.logo_url
         }
       });
       
@@ -70,9 +68,19 @@ export function OrganizationEditForm({
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      {/* Render form children (typically tabs) */}
-      {children}
+    <form onSubmit={form.handleSubmit(onSubmit)}>
+      {/* Clone children and pass form props */}
+      {React.Children.map(children, (child) => {
+        if (React.isValidElement(child)) {
+          return React.cloneElement(child, { 
+            form,
+            handleLogoChange,
+            organization,
+            isSubmitting
+          });
+        }
+        return child;
+      })}
     </form>
   );
 }

@@ -16,26 +16,33 @@ interface OrganizationBasicInfoProps {
   form: UseFormReturn<OrganizationFormValues>;
   handleLogoChange?: (url: string) => void;
   organization: OrganizationWithLocation;
+  isSubmitting?: boolean;
 }
 
 export function OrganizationBasicInfo({ 
   form, 
   handleLogoChange,
-  organization 
+  organization,
+  isSubmitting = false
 }: OrganizationBasicInfoProps) {
   // Log for debugging
   logger.info("OrganizationBasicInfo - Rendering with organization:", {
-    name: organization?.name || "undefined"
+    name: organization?.name || "undefined",
+    hasForm: !!form
   });
+
+  // Check if we have form values
+  const logoUrl = form.watch("logo_url") || "";
+  const orgName = form.watch("name") || "";
 
   return (
     <div className="space-y-6">
       <div className="mb-6">
         <label className="block mb-2 text-sm font-medium">Organization Logo</label>
         <LogoUpload
-          logoUrl={form.watch("logo_url") || ""}
-          organizationName={form.watch("name")}
-          onLogoChange={handleLogoChange || (() => {})} // Provide fallback empty function
+          logoUrl={logoUrl}
+          organizationName={orgName}
+          onLogoChange={(url) => handleLogoChange && handleLogoChange(url)}
         />
       </div>
 
@@ -78,9 +85,9 @@ export function OrganizationBasicInfo({
       )}
 
       <div className="flex justify-end pt-4">
-        <Button type="submit" className="ml-auto">
+        <Button type="submit" className="ml-auto" disabled={isSubmitting}>
           <Save className="mr-2 h-4 w-4" />
-          Save Changes
+          {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>
