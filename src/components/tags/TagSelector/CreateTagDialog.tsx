@@ -33,11 +33,11 @@ const CreateTagDialog = ({
     }
   };
 
-  // Let TypeScript infer the type instead of explicitly annotating it
+  // Using type assertion to ensure TypeScript knows name is a non-null string
   const formInitialValues = {
-    name: initialValue || "", // Ensure name is never undefined
+    name: initialValue || "",
     description: ""
-  };
+  } as TagFormValues;
 
   return (
     <FormDialog
