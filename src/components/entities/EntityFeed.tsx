@@ -47,10 +47,11 @@ const EntityFeed = ({
     limit
   });
 
-  // Fetch tags for filtering
-  const { data: tags = [], isLoading: tagsLoading } = useFilterTags({
-    targetType: activeTab !== "all" ? activeTab : undefined
-  });
+  // Fetch tags for filtering - specify the entity type string for the parameter
+  const { data: tagAssignments = [], isLoading: tagsLoading } = useFilterTags(
+    selectedTagId, 
+    activeTab !== "all" ? activeTab : undefined
+  );
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
@@ -76,7 +77,7 @@ const EntityFeed = ({
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={setSelectedTagId}
-            tags={tags}
+            tags={(tagAssignments.map(ta => ta.tag).filter(Boolean)) || []}
             isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />

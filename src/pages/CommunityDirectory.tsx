@@ -15,11 +15,12 @@ const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { user } = useAuth();
   
-  // Use tag filtering
+  // Use tag filtering with explicit typing
   const { 
     selectedTagId, 
     setSelectedTagId, 
-    tags, 
+    filterItemsByTag,
+    tags: filterTags,
     isLoading: isTagsLoading 
   } = useTagFilter({ entityType: EntityType.PERSON });
   
@@ -58,7 +59,7 @@ const CommunityDirectory = () => {
               <TagFilter
                 selectedTagId={selectedTagId}
                 onTagSelect={setSelectedTagId}
-                tags={tags}
+                tags={filterTags}
                 isLoading={isTagsLoading}
               />
             </div>

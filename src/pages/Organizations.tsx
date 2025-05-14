@@ -13,19 +13,25 @@ import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
+import { Entity } from "@/types/entity";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
-  const { data: organizations = [], isLoading, error } = useOrganizations();
+  const { data: organizationsResponse = [], isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
   
-  // Use our new custom hook for tag filtering
+  // Extract organizations from the response
+  const organizations = Array.isArray(organizationsResponse) 
+    ? organizationsResponse 
+    : organizationsResponse.data || [];
+  
+  // Use our tag filter hook
   const { 
     selectedTagId, 
     setSelectedTagId, 
-    tags, 
-    isLoading: isTagsLoading, 
-    filterItemsByTag 
+    filterItemsByTag,
+    tags: filterTags,
+    isLoading: isTagsLoading
   } = useTagFilter({ 
     entityType: EntityType.ORGANIZATION 
   });
@@ -43,9 +49,22 @@ const OrganizationsList = () => {
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
-  // Then apply tag filtering - we need to cast the organizations to the expected type
-  const orgWithTags = searchFilteredOrgs as unknown as Array<{ tags?: any[] }>;
-  const filteredOrganizations = filterItemsByTag(orgWithTags) as unknown as OrganizationWithLocation[];
+  // Convert organizations to Entity type for filtering
+  const orgsAsEntities: Entity[] = searchFilteredOrgs.map(org => ({
+    id: org.id,
+    entityType: EntityType.ORGANIZATION,
+    name: org.name,
+    description: org.description,
+    tags: org.tags,
+    created_at: org.created_at,
+    updated_at: org.updated_at
+  }));
+  
+  // Apply tag filtering and convert back
+  const filteredEntityIds = filterItemsByTag(orgsAsEntities).map(entity => entity.id);
+  const filteredOrganizations = searchFilteredOrgs.filter(org => 
+    filteredEntityIds.includes(org.id) || !selectedTagId
+  );
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
@@ -75,7 +94,7 @@ const OrganizationsList = () => {
           <TagFilter 
             selectedTagId={selectedTagId} 
             onTagSelect={setSelectedTagId} 
-            tags={tags}
+            tags={filterTags}
             isLoading={isTagsLoading}
           />
         </CardContent>

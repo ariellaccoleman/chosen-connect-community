@@ -38,3 +38,39 @@ export const getEntityTags = async (
     return createSuccessResponse(formattedAssignments);
   });
 };
+
+/**
+ * Get entities that have a specific tag assigned
+ */
+export const getEntitiesWithTag = async (
+  tagId: string,
+  entityType?: EntityType | string
+): Promise<TagAssignment[]> => {
+  try {
+    if (!tagId) return [];
+    
+    return apiClient.query(async (client) => {
+      let query = client
+        .from('tag_assignments')
+        .select(`
+          *,
+          tag:tags(*)
+        `)
+        .eq('tag_id', tagId);
+        
+      // Add entity type filter if provided
+      if (entityType && isValidEntityType(entityType)) {
+        query = query.eq('target_type', entityType);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) throw error;
+      
+      return createSuccessResponse(data || []);
+    });
+  } catch (error) {
+    console.error("Error fetching entities with tag:", error);
+    return [];
+  }
+};

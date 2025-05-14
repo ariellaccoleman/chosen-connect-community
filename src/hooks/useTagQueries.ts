@@ -1,7 +1,8 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { tagApi } from "@/api/tags";
+import { getEntityTags, getEntitiesWithTag, getSelectionTags } from "@/api/tags";
 import { TagAssignment } from "@/utils/tags/types";
+import { EntityType } from "@/types/entityTypes";
 
 /**
  * Hook for querying entity tags
@@ -9,7 +10,7 @@ import { TagAssignment } from "@/utils/tags/types";
 export const useEntityTags = (entityId: string, entityType: string) => {
   return useQuery({
     queryKey: ["entity-tags", entityId, entityType],
-    queryFn: () => tagApi.getTagsForEntity(entityId, entityType),
+    queryFn: () => getEntityTags(entityId, entityType),
     enabled: !!entityId && !!entityType,
   });
 };
@@ -20,7 +21,7 @@ export const useEntityTags = (entityId: string, entityType: string) => {
 export const useFilterTags = (tagId: string | null, entityType?: string) => {
   return useQuery<TagAssignment[]>({
     queryKey: ["filter-tags", tagId, entityType],
-    queryFn: () => tagApi.getEntitiesWithTag(tagId as string, entityType),
+    queryFn: () => getEntitiesWithTag(tagId as string, entityType),
     enabled: !!tagId,
     initialData: [],
   });
@@ -32,6 +33,6 @@ export const useFilterTags = (tagId: string | null, entityType?: string) => {
 export const useSelectionTags = (entityType?: string) => {
   return useQuery({
     queryKey: ["selection-tags", entityType],
-    queryFn: () => tagApi.getSelectionTags(entityType),
+    queryFn: () => getSelectionTags(entityType),
   });
 };

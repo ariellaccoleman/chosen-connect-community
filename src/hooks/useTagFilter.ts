@@ -3,6 +3,7 @@ import { useState, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags } from "./useTagQueries";
+import { Tag } from "@/utils/tags/types";
 
 interface UseTagFilterOptions {
   entityType?: EntityType;
@@ -13,7 +14,8 @@ interface UseTagFilterOptions {
  */
 export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, options.entityType);
+  const { data: tagAssignments = [], isLoading: isLoadingTagAssignments } = useFilterTags(selectedTagId, options.entityType);
+  const { data: tags = [], isLoading: isLoadingSelectionTags } = useFilterTags(null, options.entityType);
 
   /**
    * Filter items by tag assignment
@@ -35,6 +37,8 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   return {
     selectedTagId,
     setSelectedTagId,
-    filterItemsByTag
+    filterItemsByTag,
+    tags: tags.map(ta => ta.tag).filter(Boolean) as Tag[],
+    isLoading: isLoadingTagAssignments || isLoadingSelectionTags
   };
 };
