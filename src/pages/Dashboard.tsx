@@ -8,16 +8,22 @@ import { useCurrentProfile } from "@/hooks/useProfileQueries";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingOrgs } = usePublicProfileOrganizations(user?.id);
+  
+  // If the profile is loaded, add the isAdmin flag to it
+  const profileWithAdminStatus = profile ? {
+    ...profile,
+    role: isAdmin ? "admin" : profile.role
+  } : null;
   
   return (
     <div className="container py-8">
       <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       
       <div className="flex flex-col space-y-6">
-        {profile && <ProfileSummaryCard profile={profile} />}
+        {profileWithAdminStatus && <ProfileSummaryCard profile={profileWithAdminStatus} />}
         <OrganizationSection relationships={relationships} isLoading={isLoadingOrgs} />
         <EventSection />
       </div>

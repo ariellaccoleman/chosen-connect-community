@@ -2,8 +2,9 @@
 import { ProfileWithDetails } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
-import { Link, Twitter, Globe, Linkedin } from "lucide-react";
+import { Link, Twitter, Globe, Linkedin, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface PublicProfileHeaderProps {
   profile: ProfileWithDetails;
@@ -17,11 +18,13 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
       .toUpperCase();
   };
 
+  const isAdmin = profile.role === "admin";
+
   return (
     <div className="bg-white shadow-sm rounded-lg p-6">
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Avatar */}
-        <div className="flex-shrink-0">
+        {/* Avatar with admin badge */}
+        <div className="flex-shrink-0 relative">
           <Avatar className="h-24 w-24">
             {profile.avatar_url ? (
               <AvatarImage 
@@ -35,11 +38,26 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
               </AvatarFallback>
             )}
           </Avatar>
+          {isAdmin && (
+            <div className="absolute -bottom-1 -right-1">
+              <Badge variant="success" className="h-7 w-7 p-0 flex items-center justify-center rounded-full">
+                <ShieldCheck className="h-5 w-5" />
+              </Badge>
+            </div>
+          )}
         </div>
         
         {/* Profile details */}
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900">{profile.full_name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-gray-900">{profile.full_name}</h1>
+            {isAdmin && (
+              <Badge variant="success" className="flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                <span>Admin</span>
+              </Badge>
+            )}
+          </div>
           
           {profile.headline && (
             <p className="text-gray-600 mt-1">{profile.headline}</p>

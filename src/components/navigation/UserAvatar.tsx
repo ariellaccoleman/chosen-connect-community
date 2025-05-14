@@ -1,14 +1,17 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Profile } from "@/types";
+import { ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface UserAvatarProps {
   profile?: Profile | null;
   size?: "sm" | "md" | "lg";
   className?: string;
+  isAdmin?: boolean;
 }
 
-const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) => {
+const UserAvatar = ({ profile, size = "md", className = "", isAdmin = false }: UserAvatarProps) => {
   const getInitials = () => {
     if (!profile || !profile.first_name) return "U";
     
@@ -25,7 +28,7 @@ const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) =
   };
 
   return (
-    <div className={`${sizeClasses[size]} ${className}`}>
+    <div className={`${sizeClasses[size]} ${className} relative`}>
       {profile?.avatar_url ? (
         <img 
           src={profile.avatar_url} 
@@ -38,6 +41,14 @@ const UserAvatar = ({ profile, size = "md", className = "" }: UserAvatarProps) =
             {getInitials()}
           </AvatarFallback>
         </Avatar>
+      )}
+
+      {isAdmin && (
+        <div className="absolute -bottom-1 -right-1">
+          <Badge variant="success" className="h-5 w-5 p-0 flex items-center justify-center rounded-full">
+            <ShieldCheck className="h-3 w-3" />
+          </Badge>
+        </div>
       )}
     </div>
   );

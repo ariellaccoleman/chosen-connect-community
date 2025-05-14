@@ -1,12 +1,15 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ProfileWithDetails } from "@/types";
+import { ShieldCheck } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface ProfileAvatarProps {
   profile: ProfileWithDetails;
+  showAdminBadge?: boolean;
 }
 
-export const ProfileAvatar = ({ profile }: ProfileAvatarProps) => {
+export const ProfileAvatar = ({ profile, showAdminBadge = false }: ProfileAvatarProps) => {
   const getInitials = () => {
     if (!profile || !profile.first_name) return "U";
 
@@ -15,6 +18,8 @@ export const ProfileAvatar = ({ profile }: ProfileAvatarProps) => {
       .join("")
       .toUpperCase();
   };
+
+  const isAdmin = profile.role === "admin" || showAdminBadge;
 
   return (
     <div className="flex-shrink-0 w-16 h-16 relative rounded-full overflow-hidden">
@@ -32,6 +37,14 @@ export const ProfileAvatar = ({ profile }: ProfileAvatarProps) => {
             {getInitials()}
           </AvatarFallback>
         </Avatar>
+      )}
+      
+      {isAdmin && (
+        <div className="absolute -bottom-1 -right-1">
+          <Badge variant="success" className="h-6 w-6 p-0 flex items-center justify-center rounded-full">
+            <ShieldCheck className="h-4 w-4" />
+          </Badge>
+        </div>
       )}
     </div>
   );
