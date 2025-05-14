@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createEventSchema, CreateEventFormValues } from "./form/EventFormSchema";
-import { FormWrapper } from "@/components/common/form/FormWrapper";
 import { useAuth } from "@/hooks/useAuth";
 import { useEventMutations } from "@/hooks/useEventMutations";
 import FormActions from "@/components/common/form/FormActions";

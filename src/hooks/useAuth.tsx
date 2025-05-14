@@ -1,6 +1,7 @@
 
 import { AuthProvider } from '@/providers/AuthProvider';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth as useOriginalAuth } from '@/contexts/AuthContext';
 
 // Re-export everything for backward compatibility
-export { AuthProvider, useAuth };
+export { AuthProvider };
+export const useAuth = useOriginalAuth;
