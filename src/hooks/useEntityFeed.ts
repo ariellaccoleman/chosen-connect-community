@@ -6,7 +6,7 @@ import { useFilterTags } from "./useTagQueries";
 import { useTagFilter } from "./useTagFilter";
 import { useEvents } from "./useEvents";
 import { useCommunityProfiles } from "./useCommunityProfiles";
-import { useOrganizations } from "./useOrganizations";
+import { useOrganizations } from "./useOrganizationQueries";
 
 interface UseEntityFeedOptions {
   entityTypes?: EntityType[];
@@ -29,7 +29,8 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
   
   // Fetch data for each entity type
-  const { data: events = [], isLoading: eventsLoading } = useEvents(); 
+  const { data: eventsData = [], isLoading: eventsLoading } = useEvents(); 
+  const events = Array.isArray(eventsData) ? eventsData : [];
   
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
     search: options.searchQuery,
@@ -37,7 +38,8 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
     tagId: options.tagId
   });
   
-  const { data: organizations = [], isLoading: orgsLoading } = useOrganizations();
+  const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
+  const organizations = organizationsResponse?.data || [];
   
   // Set up tag filtering
   const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter({

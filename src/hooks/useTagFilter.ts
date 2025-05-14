@@ -1,60 +1,40 @@
 
-import { useState } from "react";
-import { Tag, TagAssignment } from "@/utils/tags";
-import { toast } from "@/components/ui/sonner";
+import { useState, useMemo } from "react";
+import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags } from "./useTagQueries";
 
 interface UseTagFilterOptions {
   entityType?: EntityType;
-  enabled?: boolean;
-}
-
-interface UseTagFilterResult {
-  selectedTagId: string | null;
-  setSelectedTagId: (tagId: string | null) => void;
-  tags: Tag[];
-  isLoading: boolean;
-  filterItemsByTag: <T extends { tags?: TagAssignment[] }>(items: T[]) => T[];
 }
 
 /**
- * Custom hook for tag filtering functionality
- * Can be used across different components that need tag filtering
+ * Hook for filtering entities by tag
  */
-export const useTagFilter = (options: UseTagFilterOptions = {}): UseTagFilterResult => {
+export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  
-  // Fetch tags for the entity type - using filterTags which returns only tags actually used with this entity type
-  const { data: tags = [], isLoading, error } = useFilterTags({
-    targetType: options.entityType,
-    enabled: options.enabled !== false
-  });
-  
-  // Show error toast only once if tag loading fails
-  if (error) {
-    console.error("Error loading tags:", error);
-    toast.error("Failed to load tags. Please try again.");
-  }
-  
+  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, options.entityType);
+
   /**
-   * Filter an array of items by the selected tag
-   * @param items Array of items that might have tags property
-   * @returns Filtered array based on selected tag
+   * Filter items by tag assignment
    */
-  const filterItemsByTag = <T extends { tags?: TagAssignment[] }>(items: T[]): T[] => {
-    if (!selectedTagId) return items;
-    
-    return items.filter(item => 
-      item.tags && item.tags.some(tagAssignment => tagAssignment.tag_id === selectedTagId)
-    );
-  };
-  
+  const filterItemsByTag = useMemo(() => {
+    return (items: Entity[]): Entity[] => {
+      if (!selectedTagId) return items;
+      
+      // If we have tag assignments, filter items by matching IDs
+      if (tagAssignments.length > 0) {
+        const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
+        return items.filter(item => taggedIds.has(item.id));
+      }
+      
+      return [];
+    };
+  }, [selectedTagId, tagAssignments]);
+
   return {
     selectedTagId,
     setSelectedTagId,
-    tags,
-    isLoading,
     filterItemsByTag
   };
 };

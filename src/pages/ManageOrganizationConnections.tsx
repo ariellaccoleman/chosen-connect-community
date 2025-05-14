@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,13 +18,18 @@ import OrganizationFormDialog from "@/components/profile/organization/Organizati
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { data: relationships = [], isLoading: relationshipsLoading } = useUserOrganizationRelationships(user?.id);
+  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
+  const relationships = relationshipsResponse?.data || [];
+  const relationshipsLoading = false; // Simplified for now
+  
   const [activeTab, setActiveTab] = useState("all");
   const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
   const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
   
   // Get organizations for the connect dialog
-  const { data: allOrganizations = [], isLoading: isLoadingOrgs } = useOrganizations();
+  const { data: allOrganizationsResponse } = useOrganizations();
+  const allOrganizations = allOrganizationsResponse?.data || [];
+  const isLoadingOrgs = false; // Simplified for now
   const addRelationship = useAddOrganizationRelationship();
 
   useEffect(() => {

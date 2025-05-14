@@ -1,5 +1,4 @@
 
-// Making minimal changes to fix the build error with useUserOrganizationRelationships and EntityType
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -28,7 +27,8 @@ const OrganizationDetail = () => {
   const { data: userRole } = useOrganizationRole(user?.id, id);
   
   // Get user's relationships with the fixed hook usage
-  const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
+  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
+  const relationships = relationshipsResponse?.data || [];
 
   useEffect(() => {
     const fetchOrganization = async () => {

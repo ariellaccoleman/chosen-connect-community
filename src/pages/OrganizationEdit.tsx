@@ -51,7 +51,8 @@ const OrganizationEdit = () => {
   logger.info("OrganizationEdit - Current user:", { userId: user?.id });
   
   // The organization query
-  const { data: organization, isLoading, error } = useOrganization(orgId);
+  const { data: organizationResponse, isLoading, error } = useOrganization(orgId);
+  const organization = organizationResponse?.data;
   
   // Check if user is admin
   const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
