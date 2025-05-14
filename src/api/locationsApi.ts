@@ -1,3 +1,4 @@
+
 import { LocationWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -20,8 +21,13 @@ export const locationsApi = {
         // If a specific ID is provided, fetch just that location
         query = query.eq('id', specificId);
       } else if (searchTerm) {
-        // Otherwise use search term if provided
-        query = query.or(`city.ilike.%${searchTerm}%,region.ilike.%${searchTerm}%,country.ilike.%${searchTerm}%,full_name.ilike.%${searchTerm}%`);
+        // Clean the search term to avoid SQL injection and escape special characters
+        const cleanedSearchTerm = searchTerm.replace(/[%,_]/g, '');
+        
+        if (cleanedSearchTerm) {
+          // Use the cleaned search term in the query
+          query = query.or(`city.ilike.%${cleanedSearchTerm}%,region.ilike.%${cleanedSearchTerm}%,country.ilike.%${cleanedSearchTerm}%,full_name.ilike.%${cleanedSearchTerm}%`);
+        }
       }
       
       const { data, error } = await query.order('full_name');

@@ -29,10 +29,26 @@ const LocationSelector = ({ control, label, required = false, fieldName = "locat
   const [open, setOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationWithDetails | null>(null);
   
-  const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+  // Only pass the search term after basic cleaning
+  const cleanedSearch = locationSearch.trim();
+  
+  const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(cleanedSearch);
   
   // Ensure locations is always a valid array
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
+  
+  useEffect(() => {
+    // If we have a selected location ID but not the full object, try to load it
+    const currentValue = form?.getValues(fieldName) || control._getWatch?.(fieldName);
+    if (currentValue && !selectedLocation) {
+      // Load the specific location by ID
+      useLocations('', currentValue).data?.then(locationData => {
+        if (locationData && locationData.length > 0) {
+          setSelectedLocation(locationData[0]);
+        }
+      });
+    }
+  }, [fieldName, form, control, selectedLocation]);
   
   return (
     <FormField
