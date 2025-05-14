@@ -39,7 +39,7 @@ const CommunityDirectory = () => {
     toast.error("Failed to load community members. Please try again.");
   }
 
-  // Combine and deduplicate profiles
+  // No need to combine and deduplicate profiles anymore, just use what's returned
   const allProfiles = profiles || [];
 
   return (

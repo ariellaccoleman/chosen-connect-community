@@ -25,17 +25,23 @@ const TagFilter = ({
     return <Skeleton className="h-10 w-full" />;
   }
 
+  // Use "all" as a non-empty string value for the "All Tags" option
+  const allTagsValue = "all";
+  
+  // Convert null to "all" for the Select value and handle conversion back in onValueChange
+  const selectValue = selectedTagId || allTagsValue;
+
   return (
     <div>
       <Select
-        value={selectedTagId || ""}
-        onValueChange={(value) => onTagSelect(value === "" ? null : value)}
+        value={selectValue}
+        onValueChange={(value) => onTagSelect(value === allTagsValue ? null : value)}
       >
         <SelectTrigger>
           <SelectValue placeholder={label} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">All Tags</SelectItem>
+          <SelectItem value={allTagsValue}>All Tags</SelectItem>
           {tags.map((tag) => (
             <SelectItem key={tag.id} value={tag.id}>
               {tag.name}
