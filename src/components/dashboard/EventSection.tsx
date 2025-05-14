@@ -3,19 +3,20 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { APP_ROUTES } from "@/config/routes";
-import { PlusCircle, Calendar, AlertCircle } from "lucide-react";
+import { PlusCircle, Calendar, AlertCircle, RefreshCw } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/utils/logger";
 
 const EventSection: React.FC = () => {
-  const { data: events = [], isLoading, error } = useEvents();
+  const { data: events = [], isLoading, error, refetch } = useEvents();
   
   logger.info("EventSection rendering", { 
     eventCount: events.length, 
     isLoading, 
-    hasError: !!error 
+    hasError: !!error,
+    events: events
   });
   
   // Get the 3 most recent upcoming events
@@ -37,16 +38,28 @@ const EventSection: React.FC = () => {
     <div className="rounded-lg border bg-card p-6 shadow">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-xl font-semibold">Events</h2>
-        <Button
-          asChild
-          size="sm"
-          className="bg-chosen-blue hover:bg-chosen-navy"
-        >
-          <Link to={APP_ROUTES.CREATE_EVENT} className="flex items-center gap-1">
-            <PlusCircle size={16} />
-            <span>Create Event</span>
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {isLoading ? null : (
+            <Button 
+              size="sm" 
+              variant="outline"
+              onClick={() => refetch()}
+              title="Refresh events"
+            >
+              <RefreshCw size={16} />
+            </Button>
+          )}
+          <Button
+            asChild
+            size="sm"
+            className="bg-chosen-blue hover:bg-chosen-navy"
+          >
+            <Link to={APP_ROUTES.CREATE_EVENT} className="flex items-center gap-1">
+              <PlusCircle size={16} />
+              <span>Create Event</span>
+            </Link>
+          </Button>
+        </div>
       </div>
       <p className="text-muted-foreground mb-4">
         Host a virtual or in-person event for the community.
@@ -64,10 +77,18 @@ const EventSection: React.FC = () => {
             <span className="font-medium">Error loading events</span>
           </div>
           <p className="text-sm text-red-500">{error instanceof Error ? error.message : "Unknown error"}</p>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={() => refetch()}
+            className="mt-2 text-red-600 border-red-300 hover:bg-red-50"
+          >
+            Try Again
+          </Button>
         </div>
       ) : upcomingEvents.length > 0 ? (
         <div className="mt-4 space-y-3">
-          <h3 className="text-sm font-medium text-gray-500">Upcoming Events</h3>
+          <h3 className="text-sm font-medium text-gray-500">Upcoming Events ({upcomingEvents.length})</h3>
           <div className="space-y-2">
             {upcomingEvents.map((event) => (
               <div 

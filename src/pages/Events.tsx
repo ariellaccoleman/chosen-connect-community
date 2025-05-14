@@ -2,7 +2,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video, AlertCircle } from "lucide-react";
+import { Calendar, MapPin, Video, AlertCircle, RefreshCw } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ import { logger } from "@/utils/logger";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
-  const { data: events = [], isLoading, error } = useEvents();
+  const { data: events = [], isLoading, error, refetch } = useEvents();
   
   useEffect(() => {
     logger.info("Events page mounted");
@@ -53,13 +53,23 @@ const Events: React.FC = () => {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Events</h1>
-        <Button 
-          onClick={() => navigate("/events/create")}
-          className="bg-chosen-blue hover:bg-chosen-navy flex items-center gap-2"
-        >
-          <Calendar className="h-4 w-4" />
-          Create Event
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => refetch()}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </Button>
+          <Button 
+            onClick={() => navigate("/events/create")}
+            className="bg-chosen-blue hover:bg-chosen-navy flex items-center gap-2"
+          >
+            <Calendar className="h-4 w-4" />
+            Create Event
+          </Button>
+        </div>
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
@@ -77,7 +87,7 @@ const Events: React.FC = () => {
             <p className="text-red-500 mb-4">{error instanceof Error ? error.message : "Failed to load events. Please try again later."}</p>
             <Button 
               variant="outline" 
-              onClick={() => window.location.reload()}
+              onClick={() => refetch()}
               className="text-red-600 border-red-300 hover:bg-red-50"
             >
               Try Again
@@ -85,38 +95,41 @@ const Events: React.FC = () => {
           </div>
         ) : events.length === 0 ? (
           <div>
-            <p className="text-gray-500 mb-6">Your events will appear here.</p>
+            <p className="text-gray-500 mb-6">Your events will appear here. Refresh to check for new events.</p>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-48 flex items-center justify-center">
-                <p className="text-gray-400 text-center">No events yet</p>
+                <p className="text-gray-400 text-center">No events found.</p>
               </div>
             </div>
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {events.map((event) => (
-              <div 
-                key={event.id} 
-                className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
-              >
-                <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
-                <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
-                
-                <div className="text-sm text-gray-600 mb-2 flex items-center">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {event.start_time && formatEventDate(event.start_time)}
-                </div>
-                
-                {renderLocationInfo(event)}
-                
-                {event.host && (
-                  <div className="mt-3 pt-3 border-t text-sm text-gray-500">
-                    Hosted by: {event.host.first_name} {event.host.last_name}
+          <>
+            <p className="text-sm text-gray-500 mb-4">Found {events.length} event(s)</p>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {events.map((event) => (
+                <div 
+                  key={event.id} 
+                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
+                  <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
+                  <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
+                  
+                  <div className="text-sm text-gray-600 mb-2 flex items-center">
+                    <Calendar className="h-3 w-3 mr-1" />
+                    {event.start_time && formatEventDate(event.start_time)}
                   </div>
-                )}
-              </div>
-            ))}
-          </div>
+                  
+                  {renderLocationInfo(event)}
+                  
+                  {event.host && (
+                    <div className="mt-3 pt-3 border-t text-sm text-gray-500">
+                      Hosted by: {event.host.first_name} {event.host.last_name}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </div>

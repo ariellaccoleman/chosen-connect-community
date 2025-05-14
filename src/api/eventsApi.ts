@@ -77,7 +77,11 @@ export const eventsApi = {
    */
   async getEvents(): Promise<ApiResponse<EventWithDetails[]>> {
     try {
+      console.log("Fetching events from API...");
+      
       const { data, error } = await apiClient.query(async (client) => {
+        console.log("Inside apiClient.query for getEvents");
+        
         // First, fetch all events with their locations and hosts
         const { data: events, error: eventsError } = await client
           .from("events")
@@ -90,29 +94,38 @@ export const eventsApi = {
           
         if (eventsError) {
           console.error("Error fetching events:", eventsError);
-          throw eventsError;
+          return { data: null, error: eventsError };
         }
         
-        // For each event, fetch its tags
-        const eventsWithTags = await Promise.all((events || []).map(async (event) => {
-          const { data: tagAssignments, error: tagError } = await client
-            .from('tag_assignments')
-            .select(`
-              *,
-              tag:tags(*)
-            `)
-            .eq('target_id', event.id)
-            .eq('target_type', 'event');
-            
-          if (tagError) {
-            console.error(`Error fetching tags for event ${event.id}:`, tagError);
-            return { ...event, tags: [] };
-          }
-          
-          return { ...event, tags: tagAssignments || [] };
-        }));
+        console.log(`Found ${events?.length || 0} events:`, events);
         
-        return eventsWithTags;
+        // For each event, fetch its tags
+        if (events && events.length > 0) {
+          const eventsWithTags = await Promise.all(events.map(async (event) => {
+            console.log(`Fetching tags for event ${event.id}`);
+            
+            const { data: tagAssignments, error: tagError } = await client
+              .from('tag_assignments')
+              .select(`
+                *,
+                tag:tags(*)
+              `)
+              .eq('target_id', event.id)
+              .eq('target_type', 'event');
+              
+            if (tagError) {
+              console.error(`Error fetching tags for event ${event.id}:`, tagError);
+              return { ...event, tags: [] };
+            }
+            
+            console.log(`Tags for event ${event.id}:`, tagAssignments);
+            return { ...event, tags: tagAssignments || [] };
+          }));
+          
+          return { data: eventsWithTags, error: null };
+        }
+        
+        return { data: events || [], error: null };
       });
 
       if (error) {
@@ -120,6 +133,7 @@ export const eventsApi = {
         return createErrorResponse(error);
       }
 
+      console.log("Returning events data:", data);
       return createSuccessResponse(data as EventWithDetails[]);
     } catch (error) {
       console.error("Exception in getEvents:", error);

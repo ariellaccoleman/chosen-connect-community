@@ -1,5 +1,7 @@
 
-// Re-export tag-related API endpoints and utilities
+/**
+ * Re-export all tag API functionality
+ */
 export * from './assignmentApi';
 export * from './cacheApi';
 export * from './entityTagsApi';
