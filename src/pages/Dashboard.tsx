@@ -12,7 +12,7 @@ import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
+  const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id, user);
   
   const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
 
@@ -72,6 +72,9 @@ const Dashboard = () => {
     );
   }
 
+  // Get user role from app_metadata
+  const userRole = user?.app_metadata?.role || "Not specified";
+
   return (
     <div className="container mx-auto py-6 space-y-4">
       <Card>
@@ -102,7 +105,7 @@ const Dashboard = () => {
           <p className="text-sm">
             You are currently connected as a{" "}
             <span className="font-semibold">
-              {profile.role || "Not specified"}
+              {userRole}
             </span>
             .
           </p>

@@ -2,9 +2,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileWithDetails, Location } from '@/types';
+import { User } from '@supabase/supabase-js';
 
 // Helper function to format profile data
-const formatProfileData = (data: any): ProfileWithDetails | null => {
+const formatProfileData = (data: any, authUser?: User | null): ProfileWithDetails | null => {
   if (!data) return null;
   
   const profile = data as ProfileWithDetails;
@@ -22,10 +23,15 @@ const formatProfileData = (data: any): ProfileWithDetails | null => {
       .join(', ');
   }
   
+  // Add role from auth user metadata if available
+  if (authUser && authUser.app_metadata?.role) {
+    profile.role = authUser.app_metadata.role;
+  }
+  
   return profile;
 };
 
-export const useCurrentProfile = (userId: string | undefined) => {
+export const useCurrentProfile = (userId: string | undefined, authUser?: User | null) => {
   return useQuery({
     queryKey: ['profile', userId],
     queryFn: async (): Promise<ProfileWithDetails | null> => {
@@ -45,7 +51,7 @@ export const useCurrentProfile = (userId: string | undefined) => {
         return null;
       }
       
-      return formatProfileData(data);
+      return formatProfileData(data, authUser);
     },
     enabled: !!userId,
   });
