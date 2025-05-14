@@ -69,7 +69,6 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       console.error("No user ID found, cannot submit form");
       logger.error("Authentication error: No user ID found");
       toast({
-        title: "Authentication Error",
         description: "You must be logged in to create an event",
         variant: "destructive"
       });
@@ -144,6 +143,10 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
 
       console.log("Event creation successful with result:", result);
       logger.info("Event creation result:", result);
+
+      toast({
+        description: "Event created successfully",
+      });
 
       if (onSuccess) {
         console.log("Calling onSuccess callback");
