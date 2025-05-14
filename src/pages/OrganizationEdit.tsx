@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -39,21 +40,21 @@ const organizationSchema = z.object({
 type OrganizationFormValues = z.infer<typeof organizationSchema>;
 
 const OrganizationEdit = () => {
-  const { id } = useParams<{ id: string }>();
+  const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   
   // Enhanced logging for debugging
-  logger.info("OrganizationEdit - Component mounted with params:", { id });
+  logger.info("OrganizationEdit - Component mounted with params:", { orgId });
   logger.info("OrganizationEdit - Current user:", { userId: user?.id });
   
   // The organization query
-  const { data: organization, isLoading, error } = useOrganization(id);
+  const { data: organization, isLoading, error } = useOrganization(orgId);
   
   // Check if user is admin
-  const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, id);
+  const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
   
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
@@ -94,23 +95,23 @@ const OrganizationEdit = () => {
   // Check if user is admin and redirect if not
   useEffect(() => {
     // Only check admin status if loading is complete
-    if (!adminCheckLoading && !isOrgAdmin && user && id) {
+    if (!adminCheckLoading && !isOrgAdmin && user && orgId) {
       logger.info("Admin check failed - redirecting", { isOrgAdmin, adminCheckLoading, userId: user.id });
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit this organization",
         variant: "destructive",
       });
-      navigate(`/organizations/${id}`);
+      navigate(`/organizations/${orgId}`);
     }
-  }, [isOrgAdmin, adminCheckLoading, navigate, id, toast, user]);
+  }, [isOrgAdmin, adminCheckLoading, navigate, orgId, toast, user]);
 
   const handleLogoChange = (url: string) => {
     form.setValue("logo_url", url, { shouldValidate: true });
   };
 
   const onSubmit = async (data: OrganizationFormValues) => {
-    if (!id) {
+    if (!orgId) {
       toast({
         title: "Error",
         description: "Invalid organization ID",
@@ -120,7 +121,7 @@ const OrganizationEdit = () => {
     }
     
     try {
-      logger.info("Submitting organization update:", { id, data });
+      logger.info("Submitting organization update:", { id: orgId, data });
       
       const { error } = await supabase
         .from("organizations")
@@ -131,7 +132,7 @@ const OrganizationEdit = () => {
           logo_url: data.logo_url,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", id);
+        .eq("id", orgId);
 
       if (error) throw error;
       
@@ -140,7 +141,7 @@ const OrganizationEdit = () => {
         description: "Organization updated successfully",
       });
       
-      navigate(`/organizations/${id}`);
+      navigate(`/organizations/${orgId}`);
     } catch (error) {
       logger.error("Error updating organization:", error);
       toast({
@@ -183,14 +184,14 @@ const OrganizationEdit = () => {
 
   // Show a not found state if we couldn't find the organization
   if (!organization) {
-    logger.error("Organization not found for ID:", id);
+    logger.error("Organization not found for ID:", orgId);
     return (
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex flex-col justify-center items-center h-64">
             <p className="text-xl mb-4">Organization not found</p>
             <p className="text-sm text-muted-foreground mb-4">
-              The organization with ID {id} could not be found.
+              The organization with ID {orgId} could not be found.
             </p>
             <Button onClick={() => navigate('/organizations')}>
               Return to Organizations
@@ -204,7 +205,7 @@ const OrganizationEdit = () => {
   return (
     <Layout>
       <div className="container mx-auto py-6 px-4 max-w-3xl">
-        <Button variant="ghost" onClick={() => navigate(`/organizations/${id}`)} className="mb-6">
+        <Button variant="ghost" onClick={() => navigate(`/organizations/${orgId}`)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Back to Organization
         </Button>
@@ -312,9 +313,9 @@ const OrganizationEdit = () => {
             </TabsContent>
             
             <TabsContent value="tags">
-              {id && (
+              {orgId && (
                 <OrganizationTags
-                  organizationId={id}
+                  organizationId={orgId}
                   isAdmin={isOrgAdmin}
                 />
               )}
