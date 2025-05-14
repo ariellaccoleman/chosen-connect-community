@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { organizationsApi } from "@/api";
 import { useFilterTags } from "./useTagQueries";

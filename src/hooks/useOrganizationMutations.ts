@@ -1,8 +1,9 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { ProfileOrganizationRelationship } from '@/types';
-import { createMutationHandlers } from '@/utils/toastUtils';
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { organizationsApi } from "@/api";
+import { ProfileOrganizationRelationship } from "@/types";
+import { toast } from "@/components/ui/sonner";
+import { logger } from "@/utils/logger";
 
 /**
  * Hook to add an organization relationship
@@ -11,67 +12,17 @@ export const useAddOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (relationship: Partial<ProfileOrganizationRelationship>) => {
-      console.log('Adding organization relationship:', relationship);
-      
-      if (!relationship.profile_id) {
-        throw new Error('Profile ID is required');
-      }
-      
-      // First check if the profile exists
-      const { data: existingProfile, error: profileCheckError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', relationship.profile_id)
-        .maybeSingle();
-      
-      if (profileCheckError) {
-        console.error('Error checking profile existence:', profileCheckError);
-        throw profileCheckError;
-      }
-      
-      // If profile doesn't exist, create a minimal one
-      if (!existingProfile) {
-        console.log('Profile does not exist, creating a minimal profile first');
-        const { error: profileCreateError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: relationship.profile_id 
-          });
-        
-        if (profileCreateError) {
-          console.error('Error creating profile:', profileCreateError);
-          throw profileCreateError;
-        }
-        console.log('Successfully created minimal profile');
-      }
-      
-      // Now create the organization relationship
-      const { error } = await supabase
-        .from('org_relationships')
-        .insert({
-          profile_id: relationship.profile_id,
-          organization_id: relationship.organization_id,
-          connection_type: relationship.connection_type,
-          department: relationship.department,
-          notes: relationship.notes
-        });
-      
-      if (error) {
-        console.error('Error adding organization relationship:', error);
-        throw error;
-      }
-      
-      console.log('Successfully added organization relationship');
-      return true;
+    mutationFn: (relationship: Partial<ProfileOrganizationRelationship>) => 
+      organizationsApi.addOrganizationRelationship(relationship),
+    onSuccess: (_, variables) => {
+      logger.info("Successfully added organization relationship", variables);
+      queryClient.invalidateQueries({ queryKey: ["organization-relationships", variables.profile_id] });
+      toast.success("Successfully added organization connection");
     },
-    ...createMutationHandlers({
-      successMessage: 'Organization relationship added successfully',
-      errorMessagePrefix: 'Error adding organization relationship',
-      onSuccessCallback: (_, variables) => {
-        queryClient.invalidateQueries({ queryKey: ['organizationRelationships', variables.profile_id] });
-      }
-    })
+    onError: (error) => {
+      logger.error("Failed to add organization relationship:", error);
+      toast.error("Failed to add organization connection");
+    }
   });
 };
 
@@ -82,34 +33,18 @@ export const useUpdateOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ 
-      relationshipId, 
-      relationshipData 
-    }: { 
-      relationshipId: string, 
-      relationshipData: Partial<ProfileOrganizationRelationship> 
-    }) => {
-      const { error } = await supabase
-        .from('org_relationships')
-        .update({
-          connection_type: relationshipData.connection_type,
-          department: relationshipData.department,
-          notes: relationshipData.notes
-        })
-        .eq('id', relationshipId);
-      
-      if (error) throw error;
-      
-      return true;
+    mutationFn: ({ id, data }: { id: string; data: Partial<ProfileOrganizationRelationship> }) => 
+      organizationsApi.updateOrganizationRelationship(id, data),
+    onSuccess: (_, variables) => {
+      logger.info("Successfully updated organization relationship", variables);
+      // Since we don't know the profile_id here, invalidate all relationship queries
+      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
+      toast.success("Successfully updated organization connection");
     },
-    ...createMutationHandlers({
-      successMessage: 'Organization relationship updated successfully',
-      errorMessagePrefix: 'Error updating organization relationship',
-      onSuccessCallback: () => {
-        // We need to refetch the profile's relationships
-        queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
-      }
-    })
+    onError: (error) => {
+      logger.error("Failed to update organization relationship:", error);
+      toast.error("Failed to update organization connection");
+    }
   });
 };
 
@@ -120,22 +55,16 @@ export const useDeleteOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (relationshipId: string) => {
-      const { error } = await supabase
-        .from('org_relationships')
-        .delete()
-        .eq('id', relationshipId);
-      
-      if (error) throw error;
-      
-      return true;
+    mutationFn: (id: string) => organizationsApi.deleteOrganizationRelationship(id),
+    onSuccess: () => {
+      logger.info("Successfully deleted organization relationship");
+      // Since we don't know the profile_id here, invalidate all relationship queries
+      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
+      toast.success("Organization connection removed successfully");
     },
-    ...createMutationHandlers({
-      successMessage: 'Organization relationship removed successfully',
-      errorMessagePrefix: 'Error removing organization relationship',
-      onSuccessCallback: () => {
-        queryClient.invalidateQueries({ queryKey: ['organizationRelationships'] });
-      }
-    })
+    onError: (error) => {
+      logger.error("Failed to delete organization relationship:", error);
+      toast.error("Failed to remove organization connection");
+    }
   });
 };
