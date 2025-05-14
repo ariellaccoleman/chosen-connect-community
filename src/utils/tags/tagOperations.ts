@@ -1,9 +1,9 @@
-
 import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
 import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
 import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
+import { TagInsert } from "@/types/tag";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
@@ -83,8 +83,16 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
       return null;
     }
     
+    // Create a valid TagInsert object from the partial Tag
+    const tagInsert: TagInsert = {
+      name: tagData.name,
+      description: tagData.description || null,
+      type: tagData.type || null,
+      created_by: tagData.created_by || null
+    };
+    
     // Call the API function that properly uses the apiClient
-    const tag = await apiFindOrCreateTag(tagData as TagInsert);
+    const tag = await apiFindOrCreateTag(tagInsert);
     
     if (!tag) {
       console.error("Error finding or creating tag");
@@ -138,13 +146,16 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
       return null;
     }
     
-    // Call the API function that properly uses the apiClient
-    const response = await apiCreateTag({
+    // Create a valid TagInsert object
+    const tagInsert: TagInsert = {
       name: tagData.name,
       description: tagData.description || null,
       type: tagData.type || null,
       created_by: tagData.created_by || null
-    });
+    };
+    
+    // Call the API function that properly uses the apiClient
+    const response = await apiCreateTag(tagInsert);
     
     if (response.status !== 'success' || !response.data) {
       console.error("Error creating tag:", response.error);
