@@ -13,24 +13,24 @@ import { ArrowLeft } from "lucide-react";
 import { toast } from "@/components/ui/sonner";
 
 const ProfileView = () => {
-  const { id } = useParams<{ id: string }>();
+  const { profileId } = useParams<{ profileId: string }>();
   const navigate = useNavigate();
   
   const { 
     data: profile, 
     isLoading: isLoadingProfile, 
     error: profileError 
-  } = usePublicProfile(id);
+  } = usePublicProfile(profileId);
   
   const { 
     data: organizations = [], 
     isLoading: isLoadingOrgs 
-  } = usePublicProfileOrganizations(id);
+  } = usePublicProfileOrganizations(profileId);
   
   const { 
     data: tagAssignments = [], 
     isLoading: isLoadingTags 
-  } = usePublicProfileTags(id);
+  } = usePublicProfileTags(profileId);
 
   useEffect(() => {
     if (profileError) {

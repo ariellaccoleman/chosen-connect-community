@@ -1,14 +1,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { OrganizationRelationshipWithDetails } from '@/types';
-import { formatOrganizationRelationships } from '@/utils/organizationFormatters';
+import { ProfileOrganizationRelationshipWithDetails } from '@/types';
 
 // Hook to fetch organization relationships for a public profile
 export const usePublicProfileOrganizations = (profileId: string | undefined) => {
   return useQuery({
-    queryKey: ['public-profile-organizations', profileId],
-    queryFn: async (): Promise<OrganizationRelationshipWithDetails[]> => {
+    queryKey: ['profile-organizations', profileId],
+    queryFn: async (): Promise<ProfileOrganizationRelationshipWithDetails[]> => {
       if (!profileId) return [];
       
       const { data, error } = await supabase
@@ -20,16 +19,14 @@ export const usePublicProfileOrganizations = (profileId: string | undefined) => 
             location:locations(*)
           )
         `)
-        .eq('profile_id', profileId)
-        .order('created_at', { ascending: false });
+        .eq('profile_id', profileId);
       
       if (error) {
-        console.error('Error fetching organization relationships:', error);
-        throw error;
+        console.error('Error fetching profile organizations:', error);
+        return [];
       }
       
-      // Format the data to ensure it has the correct structure with formatted_location
-      return formatOrganizationRelationships(data);
+      return data || [];
     },
     enabled: !!profileId,
   });
