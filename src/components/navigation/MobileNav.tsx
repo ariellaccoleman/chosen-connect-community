@@ -61,6 +61,13 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Organizations
           </Link>
           <Link 
+            to="/events" 
+            className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+            onClick={onClose}
+          >
+            Events
+          </Link>
+          <Link 
             to="/directory" 
             className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
@@ -104,6 +111,13 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           onClick={onClose}
         >
           About
+        </Link>
+        <Link 
+          to="/events" 
+          className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+          onClick={onClose}
+        >
+          Events
         </Link>
         <Link 
           to="/community-guide" 
