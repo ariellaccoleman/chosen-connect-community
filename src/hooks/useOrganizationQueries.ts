@@ -1,10 +1,12 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Organization } from "@/types";
+import { Organization, OrganizationWithLocation } from "@/types";
 import { useFilterTags } from "./useTags";
 import { formatOrganizationRelationships } from "@/utils/formatters/organizationFormatters";
+import { formatLocationWithDetails } from "@/utils/formatters/locationFormatters";
 import { EntityType } from "@/types/entityTypes";
+import { organizationsApi } from "@/api";
 
 export const useOrganizations = () => {
   return useQuery({
@@ -26,15 +28,12 @@ export const useOrganization = (id: string | undefined) => {
     queryKey: ["organization", id],
     queryFn: async () => {
       if (!id) return null;
-      const { data, error } = await supabase
-        .from("organizations")
-        .select("*")
-        .eq("id", id)
-        .single();
-      if (error) {
-        throw error;
+      
+      const response = await organizationsApi.getOrganizationById(id);
+      if (response.error) {
+        throw response.error;
       }
-      return data as Organization;
+      return response.data;
     },
     enabled: !!id,
   });

@@ -4,7 +4,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { supabase } from "@/integrations/supabase/client";
 import { OrganizationWithLocation } from "@/types";
 import Layout from "@/components/layout/Layout";
 import { Button } from "@/components/ui/button";
@@ -21,12 +20,13 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { formatLocation } from "@/utils/formatters/locationFormatters";
 import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useAuth } from "@/hooks/useAuth";
 import LogoUpload from "@/components/organizations/LogoUpload";
 import OrganizationTags from "@/components/organizations/OrganizationTags";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { useOrganization } from "@/hooks/useOrganizationQueries";
 
 // Define form schema
 const organizationSchema = z.object({
@@ -42,11 +42,11 @@ const OrganizationEdit = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
+  
+  const { data: organization, isLoading: loading, error } = useOrganization(id);
   
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
@@ -58,63 +58,17 @@ const OrganizationEdit = () => {
     },
   });
 
-  // Fetch organization data
+  // Set form values when organization data is loaded
   useEffect(() => {
-    const fetchOrganization = async () => {
-      if (!id) return;
-
-      try {
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("organizations")
-          .select(`
-            *,
-            location:locations(*)
-          `)
-          .eq("id", id)
-          .single();
-
-        if (error) {
-          throw error;
-        }
-
-        // Format the location and set organization data
-        const organizationWithLocation: OrganizationWithLocation = {
-          ...data,
-          location: undefined
-        };
-
-        if (data && data.location) {
-          organizationWithLocation.location = {
-            ...data.location,
-            formatted_location: formatLocation(data.location)
-          };
-        }
-
-        setOrganization(organizationWithLocation);
-        
-        // Set form values
-        form.reset({
-          name: data.name,
-          description: data.description || "",
-          website_url: data.website_url || "",
-          logo_url: data.logo_url || "",
-        });
-        
-      } catch (error) {
-        console.error("Error fetching organization:", error);
-        toast({
-          title: "Error",
-          description: "Could not load organization details",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrganization();
-  }, [id, form, toast]);
+    if (organization) {
+      form.reset({
+        name: organization.name,
+        description: organization.description || "",
+        website_url: organization.website_url || "",
+        logo_url: organization.logo_url || "",
+      });
+    }
+  }, [organization, form]);
 
   // Check if user is admin and redirect if not
   useEffect(() => {
@@ -171,6 +125,18 @@ const OrganizationEdit = () => {
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Loading organization...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  if (error) {
+    return (
+      <Layout>
+        <div className="container mx-auto py-6 max-w-3xl">
+          <div className="flex justify-center items-center h-64">
+            <p>Error loading organization: {error.message}</p>
           </div>
         </div>
       </Layout>
