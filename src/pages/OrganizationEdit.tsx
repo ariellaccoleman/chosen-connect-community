@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -166,7 +167,7 @@ const OrganizationEdit = () => {
 
   if (loading) {
     return (
-      <Layout includeNavbar={true}>
+      <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Loading organization...</p>
@@ -178,7 +179,7 @@ const OrganizationEdit = () => {
 
   if (!organization) {
     return (
-      <Layout includeNavbar={true}>
+      <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Organization not found</p>
@@ -189,7 +190,7 @@ const OrganizationEdit = () => {
   }
 
   return (
-    <Layout includeNavbar={true}>
+    <Layout>
       <div className="container mx-auto py-6 px-4 max-w-3xl">
         <Button variant="ghost" onClick={() => navigate(`/organizations/${id}`)} className="mb-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
