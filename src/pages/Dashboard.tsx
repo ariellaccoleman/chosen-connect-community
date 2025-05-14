@@ -15,8 +15,17 @@ const Dashboard: React.FC = () => {
   // If the profile is loaded, add the isAdmin flag to it
   const profileWithAdminStatus = profile ? {
     ...profile,
-    role: isAdmin ? "admin" : profile.role
+    role: isAdmin ? "admin" : profile.role || "member"
   } : null;
+  
+  // Debug admin status
+  console.log("Dashboard - User admin status:", { 
+    email: user?.email,
+    isAdmin, 
+    userMetadata: user?.user_metadata,
+    profileRole: profile?.role,
+    mergedRole: profileWithAdminStatus?.role
+  });
   
   return (
     <div className="container py-8">

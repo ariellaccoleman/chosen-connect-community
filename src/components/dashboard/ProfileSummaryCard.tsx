@@ -4,11 +4,12 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Edit } from "lucide-react";
+import { Edit, ShieldCheck } from "lucide-react";
 import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import { ProfileWithDetails } from "@/types";
 import TagList from "@/components/tags/TagList";
 import { useEntityTags } from "@/hooks/useTags";
+import { Badge } from "@/components/ui/badge";
 
 interface ProfileSummaryCardProps {
   profile: ProfileWithDetails;
@@ -18,7 +19,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
   const navigate = useNavigate();
   const { data: tagAssignments = [], isLoading: isLoadingTags } = useEntityTags(
     profile.id,
-    "person", // Changed from "profile" to "person" to match EntityTagManager
+    "person",
     { enabled: !!profile.id }
   );
   
@@ -28,6 +29,15 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
       .join('')
       .toUpperCase();
   };
+
+  const isAdmin = profile.role === "admin";
+  
+  // Debug for ProfileSummaryCard
+  console.log("ProfileSummaryCard:", { 
+    name: profile.full_name, 
+    role: profile.role, 
+    isAdmin 
+  });
 
   return (
     <Card>
@@ -47,13 +57,30 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
       </CardHeader>
       <CardContent>
         <div className="flex flex-col items-center mb-4">
-          <Avatar className="h-24 w-24 mb-4">
-            <AvatarImage src={profile.avatar_url || ""} />
-            <AvatarFallback className="bg-chosen-gold text-chosen-navy text-lg">
-              {getInitials() || "?"}
-            </AvatarFallback>
-          </Avatar>
-          <h2 className="text-xl font-bold">{profile.full_name}</h2>
+          <div className="relative">
+            <Avatar className="h-24 w-24 mb-4">
+              <AvatarImage src={profile.avatar_url || ""} />
+              <AvatarFallback className="bg-chosen-gold text-chosen-navy text-lg">
+                {getInitials() || "?"}
+              </AvatarFallback>
+            </Avatar>
+            {isAdmin && (
+              <div className="absolute -bottom-1 -right-1">
+                <Badge variant="success" className="h-7 w-7 p-0 flex items-center justify-center rounded-full">
+                  <ShieldCheck className="h-4 w-4" />
+                </Badge>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-bold">{profile.full_name}</h2>
+            {isAdmin && (
+              <Badge variant="success" className="flex items-center gap-1">
+                <ShieldCheck className="h-3 w-3" />
+                <span>Admin</span>
+              </Badge>
+            )}
+          </div>
           {profile.headline && (
             <p className="text-gray-600 text-center mt-1">{profile.headline}</p>
           )}

@@ -21,6 +21,14 @@ const UserAvatar = ({ profile, size = "md", className = "", isAdmin = false }: U
       .toUpperCase();
   };
 
+  // Debug for UserAvatar
+  console.log("UserAvatar rendering:", { 
+    profile: profile?.full_name || "No profile", 
+    hasAvatar: !!profile?.avatar_url, 
+    isAdmin, 
+    initials: getInitials() 
+  });
+
   const sizeClasses = {
     sm: "h-8 w-8",
     md: "h-10 w-10",
