@@ -22,64 +22,72 @@ const OrganizationEdit = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Enhanced logging for debugging URL parameters
-  logger.info("OrganizationEdit - URL Parameters:", { 
-    orgId,
-    idType: typeof orgId,
-    pathname: window.location.pathname
-  });
-  
-  // The organization query - pass orgId directly
-  const { data: organizationData, isLoading, error } = useOrganization(orgId);
-  
-  // Safely access organization data
-  const organization = organizationData?.data || null;
-  
-  // Add more detailed logging about the organization API call
+  // Add more comprehensive logging for debugging
   useEffect(() => {
-    logger.info("Organization API call details:", {
-      calledWithId: orgId,
+    logger.info("OrganizationEdit - Component mounted with URL parameters:", { 
+      orgId,
       idType: typeof orgId,
-      idLength: orgId?.length,
-      apiCallMade: !!orgId,
-      responseReceived: !!organizationData
+      idValue: orgId || "undefined",
+      pathname: window.location.pathname
     });
     
-    logger.info("Organization response:", { 
-      hasData: !!organizationData, 
-      hasOrganizationData: !!organization,
-      orgName: organization?.name,
-      error: error?.message
-    });
-  }, [organizationData, organization, error, orgId]);
+    return () => {
+      logger.info("OrganizationEdit - Component unmounting");
+    };
+  }, [orgId]);
+  
+  // The organization query - pass orgId directly and add error boundary
+  const { 
+    data: organizationData, 
+    isLoading, 
+    error, 
+    isError 
+  } = useOrganization(orgId);
+  
+  // Safely access organization data with extra logging
+  const organization = organizationData?.data || null;
+  
+  useEffect(() => {
+    if (organization) {
+      logger.info("Organization data retrieved successfully:", {
+        name: organization.name,
+        id: organization.id,
+        hasLocation: !!organization.location
+      });
+    } else if (!isLoading) {
+      logger.warn("No organization data retrieved after loading completed", {
+        error: error?.message || "No specific error message",
+        hasErrorObj: !!error,
+        hasOrgData: !!organizationData
+      });
+    }
+  }, [organization, isLoading, error, organizationData]);
   
   // Check if user is admin
-  const { data: isOrgAdmin = false, isLoading: adminCheckLoading } = useIsOrganizationAdmin(user?.id, orgId);
+  const { 
+    data: isOrgAdmin = false, 
+    isLoading: adminCheckLoading 
+  } = useIsOrganizationAdmin(user?.id, orgId);
   
   // Check if user is admin and redirect if not
   useEffect(() => {
     // Only check admin status if loading is complete
     if (!adminCheckLoading && !isOrgAdmin && user && orgId) {
-      logger.info("Admin check failed - redirecting", { isOrgAdmin, adminCheckLoading, userId: user.id });
+      logger.info("Admin check failed - redirecting", { 
+        isOrgAdmin, 
+        adminCheckLoading, 
+        userId: user.id 
+      });
+      
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit this organization",
         variant: "destructive",
       });
+      
       navigate(`/organizations/${orgId}`);
     }
   }, [isOrgAdmin, adminCheckLoading, navigate, orgId, toast, user]);
-
-  // Log when query finishes loading
-  useEffect(() => {
-    if (!isLoading) {
-      logger.info("Organization query completed:", { 
-        hasData: !!organization, 
-        hasError: !!error,
-        errorMessage: error?.message
-      });
-    }
-  }, [isLoading, organization, error]);
 
   return (
     <Layout>

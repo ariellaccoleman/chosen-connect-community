@@ -1,10 +1,12 @@
 
-import React, { useState, ReactElement } from "react";
+import React, { useState, ReactElement, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";
 import { OrganizationWithLocation, OrganizationFormValues } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { organizationSchema } from "./organizationSchema";
 
 // Define the props that can be passed to children
 interface OrganizationFormChildProps {
@@ -29,18 +31,41 @@ export function OrganizationEditForm({
   const updateOrganization = useUpdateOrganization();
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Initialize react-hook-form with the organization data
+  // Log props received
+  useEffect(() => {
+    logger.info("OrganizationEditForm - Mounted with props:", {
+      orgId,
+      organizationName: organization?.name || "missing",
+      hasChildren: !!children
+    });
+  }, [orgId, organization, children]);
+  
+  // Initialize react-hook-form with the organization data and zod resolver
   const form = useForm<OrganizationFormValues>({
+    resolver: zodResolver(organizationSchema),
     defaultValues: {
-      name: organization.name,
-      description: organization.description || "",
-      website_url: organization.website_url || "",
-      logo_url: organization.logo_url || ""
+      name: organization?.name || "",
+      description: organization?.description || "",
+      website_url: organization?.website_url || "",
+      logo_url: organization?.logo_url || ""
     }
   });
 
+  // Log form initialization
+  useEffect(() => {
+    logger.info("OrganizationEditForm - Form initialized", {
+      formControl: form.control ? "valid" : "missing",
+      formMethods: Object.keys(form).join(", ")
+    });
+  }, [form]);
+
   const handleLogoChange = (url: string) => {
-    form.setValue("logo_url", url);
+    if (form && form.setValue) {
+      form.setValue("logo_url", url);
+      logger.info("Logo URL updated", { url });
+    } else {
+      logger.error("Cannot update logo URL, form or setValue is undefined");
+    }
   };
 
   const onSubmit = async (values: OrganizationFormValues) => {
@@ -75,30 +100,51 @@ export function OrganizationEditForm({
     }
   };
 
-  // Helper function to properly type-check when cloning elements
+  // Helper function to safely clone children with additional props
   const enhanceChild = (child: React.ReactNode, index?: number): React.ReactNode => {
-    // Skip non-element nodes
-    if (!React.isValidElement(child)) return child;
+    // Skip non-element nodes (strings, null, etc.)
+    if (!React.isValidElement(child)) {
+      logger.debug("Skipping non-element child:", { childType: typeof child });
+      return child;
+    }
 
-    // Clone with proper typing
-    return React.cloneElement(
-      child as ReactElement<Partial<OrganizationFormChildProps>>, 
-      { 
-        key: index, 
-        form,
-        handleLogoChange,
-        organization,
-        isSubmitting
-      }
-    );
+    try {
+      // Log cloning information
+      logger.debug("Cloning element:", {
+        elementType: (child.type as any)?.name || typeof child.type,
+        hasProps: !!child.props,
+        childProps: Object.keys(child.props || {}).join(', ')
+      });
+
+      // Clone with proper typing and wrap in try-catch
+      return React.cloneElement(
+        child as ReactElement<Partial<OrganizationFormChildProps>>, 
+        { 
+          key: index, 
+          form,
+          handleLogoChange,
+          organization,
+          isSubmitting
+        }
+      );
+    } catch (err) {
+      logger.error("Error cloning element:", err);
+      return <div className="text-red-500 p-2">Error rendering component</div>;
+    }
   };
+
+  if (!organization) {
+    logger.warn("OrganizationEditForm - No organization data provided");
+    return <div className="text-red-500 p-4">Error: Missing organization data</div>;
+  }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
-      {/* Clone children and pass form props with proper typing */}
       {children && Array.isArray(children) ? (
+        // Handle array of children
         children.map((child, index) => enhanceChild(child, index))
       ) : (
+        // Handle single child
         enhanceChild(children)
       )}
     </form>

@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import OrganizationTags from "@/components/organizations/OrganizationTags";
 import { OrganizationBasicInfo } from "./OrganizationBasicInfo";
@@ -27,23 +27,39 @@ export function OrganizationEditTabs({
 }: OrganizationEditTabsProps) {
   const [activeTab, setActiveTab] = useState("basic");
   
-  // Add debug logging
-  logger.info("OrganizationEditTabs - Rendering with props:", { 
-    hasForm: !!form,
-    orgId, 
-    isOrgAdmin,
-    hasOrganization: !!organization,
-    organizationName: organization?.name || "undefined"
-  });
+  // Add extensive debug logging for props
+  useEffect(() => {
+    logger.info("OrganizationEditTabs - Mount with props:", { 
+      hasForm: !!form,
+      formControlCount: form?.control ? "valid" : "missing",
+      orgId, 
+      isOrgAdmin,
+      hasOrganization: !!organization
+    });
+    
+    return () => {
+      logger.info("OrganizationEditTabs - Unmounting");
+    };
+  }, [form, organization, orgId, isOrgAdmin]);
   
   // Safety checks to prevent rendering with invalid data
-  if (!form || !organization) {
-    logger.warn("OrganizationEditTabs - Missing required props:", { 
-      hasForm: !!form, 
-      hasOrganization: !!organization 
-    });
-    return null;
+  if (!form) {
+    logger.warn("OrganizationEditTabs - Missing required form prop");
+    return <div className="p-4 text-red-500">Error: Form data is missing</div>;
   }
+  
+  if (!organization) {
+    logger.warn("OrganizationEditTabs - Missing required organization data");
+    return <div className="p-4 text-red-500">Error: Organization data is missing</div>;
+  }
+  
+  // More detailed logging of what's actually in the form object
+  logger.debug("OrganizationEditTabs - Form object contents:", { 
+    hasControl: !!form.control,
+    hasWatch: !!form.watch,
+    hasHandleSubmit: !!form.handleSubmit,
+    formState: form.formState ? "exists" : "missing"
+  });
   
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>

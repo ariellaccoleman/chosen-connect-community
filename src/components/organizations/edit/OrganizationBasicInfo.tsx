@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { OrganizationFormValues } from "@/types";
 import FormInput from "@/components/common/form/FormInput";
@@ -23,15 +23,33 @@ export function OrganizationBasicInfo({
   organization,
   isSubmitting = false
 }: OrganizationBasicInfoProps) {
-  // Log for debugging
-  logger.info("OrganizationBasicInfo - Rendering with organization:", {
-    name: organization?.name || "undefined",
-    hasForm: !!form
-  });
+  // Enhanced logging for debugging
+  useEffect(() => {
+    logger.info("OrganizationBasicInfo - Component mounted with props:", {
+      hasForm: !!form,
+      formControlExists: !!form?.control,
+      organizationName: organization?.name || "missing",
+      isSubmitting
+    });
+    
+    return () => {
+      logger.info("OrganizationBasicInfo - Component unmounting");
+    };
+  }, [form, organization, isSubmitting]);
 
-  // Check if we have form values
-  const logoUrl = form.watch("logo_url") || "";
-  const orgName = form.watch("name") || "";
+  // Check if we have form values and provide fallbacks
+  const logoUrl = form?.watch?.("logo_url") || organization?.logo_url || "";
+  const orgName = form?.watch?.("name") || organization?.name || "";
+  
+  // Extra safety check for form
+  if (!form || !form.control) {
+    logger.error("OrganizationBasicInfo - Invalid form object:", { 
+      formExists: !!form,
+      formKeys: form ? Object.keys(form).join(', ') : "N/A",
+      controlExists: !!form?.control
+    });
+    return <div className="text-red-500 p-4">Error: Form controller is missing</div>;
+  }
 
   return (
     <div className="space-y-6">
