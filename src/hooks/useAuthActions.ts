@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { User } from '@supabase/supabase-js';
 import { toast } from "@/components/ui/sonner";
+import { authApi } from '@/api/authApi';
 
 interface UseAuthActionsProps {
   setLoading: (loading: boolean) => void;
@@ -77,19 +78,31 @@ export const useAuthActions = ({
   };
 
   const logout = async () => {
+    console.log("Logout function called");
     setLoading(true);
     setError(null);
     try {
+      // Use direct Supabase client call instead of the API wrapper
+      // This helps avoid potential issues with session validation
       const { error } = await supabase.auth.signOut();
+      
       if (error) {
+        console.error("Logout error:", error);
         setError(error);
+        toast.error("Logout failed: " + error.message);
       } else {
+        console.log("Logout successful");
+        // Reset auth state immediately before navigation
         setUser(null);
         setIsAdmin(false);
+        toast.success("You have been logged out successfully");
+        // Navigate after resetting state
         navigate('/auth');
       }
     } catch (err) {
-      setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
+      console.error("Logout exception:", err);
+      setError(err instanceof Error ? err : new Error('An unexpected error occurred during logout.'));
+      toast.error("Logout failed due to an unexpected error");
     } finally {
       setLoading(false);
     }

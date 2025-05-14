@@ -71,11 +71,23 @@ export const authApi = {
    */
   async logout(): Promise<ApiResponse<boolean>> {
     return apiClient.authQuery(async (auth) => {
-      const { error } = await auth.signOut();
+      // Debug logging to help troubleshoot
+      console.log("Attempting to sign out");
       
-      if (error) throw error;
-      
-      return createSuccessResponse(true);
+      try {
+        const { error } = await auth.signOut();
+        
+        if (error) {
+          console.error("Sign out error:", error);
+          throw error;
+        }
+        
+        console.log("Sign out successful");
+        return createSuccessResponse(true);
+      } catch (err) {
+        console.error("Sign out exception:", err);
+        throw err;
+      }
     });
   },
   
