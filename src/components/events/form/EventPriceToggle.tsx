@@ -1,8 +1,8 @@
 
 import React from "react";
-import { FormField, FormItem, FormControl, FormLabel } from "@/components/ui/form";
-import { Switch } from "@/components/ui/switch";
 import { Control } from "react-hook-form";
+import { Switch } from "@/components/ui/switch";
+import { FormField, FormItem, FormLabel, FormControl } from "@/components/ui/form";
 import { CreateEventFormValues } from "./EventFormSchema";
 
 interface EventPriceToggleProps {
@@ -15,12 +15,14 @@ const EventPriceToggle: React.FC<EventPriceToggleProps> = ({ control }) => {
       control={control}
       name="is_paid"
       render={({ field }) => (
-        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
           <div className="space-y-0.5">
-            <FormLabel>Paid Event</FormLabel>
-            <p className="text-sm text-muted-foreground">
-              Toggle this if your event requires payment
-            </p>
+            <FormLabel className="text-base">
+              Paid Event
+            </FormLabel>
+            <div className="text-sm text-gray-500">
+              Toggle if this is a paid event requiring a fee
+            </div>
           </div>
           <FormControl>
             <Switch
