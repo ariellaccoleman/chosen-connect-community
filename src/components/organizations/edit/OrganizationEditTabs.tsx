@@ -36,6 +36,15 @@ export function OrganizationEditTabs({
     organizationName: organization?.name || "undefined"
   });
   
+  // Safety checks to prevent rendering with invalid data
+  if (!form || !organization) {
+    logger.warn("OrganizationEditTabs - Missing required props:", { 
+      hasForm: !!form, 
+      hasOrganization: !!organization 
+    });
+    return null;
+  }
+  
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="mb-6">
@@ -44,14 +53,12 @@ export function OrganizationEditTabs({
       </TabsList>
       
       <TabsContent value="basic">
-        {form && organization && (
-          <OrganizationBasicInfo 
-            form={form} 
-            handleLogoChange={handleLogoChange}
-            organization={organization}
-            isSubmitting={isSubmitting}
-          />
-        )}
+        <OrganizationBasicInfo 
+          form={form} 
+          handleLogoChange={handleLogoChange}
+          organization={organization}
+          isSubmitting={isSubmitting}
+        />
       </TabsContent>
       
       <TabsContent value="tags">

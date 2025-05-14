@@ -16,9 +16,9 @@ import {
 } from "@/components/organizations/edit";
 
 const OrganizationEdit = () => {
-  // Ensure we're using the correct param name that matches the route definition
+  // Get the orgId from URL parameters without destructuring
   const params = useParams();
-  const { orgId } = params;
+  const orgId = params.orgId;
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -30,10 +30,7 @@ const OrganizationEdit = () => {
     pathname: window.location.pathname
   });
   
-  logger.info("OrganizationEdit - Component mounted with params:", { orgId });
-  logger.info("OrganizationEdit - Current user:", { userId: user?.id });
-  
-  // The organization query - added explicit type check
+  // The organization query - pass orgId directly
   const { data: organizationData, isLoading, error } = useOrganization(orgId);
   
   // Safely access organization data
@@ -94,13 +91,13 @@ const OrganizationEdit = () => {
           <OrganizationEditError error={error} orgId={orgId} />
         ) : (
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <OrganizationEditHeader orgId={orgId!} />
+            <OrganizationEditHeader orgId={orgId || ''} />
             <OrganizationEditForm 
               organization={organization} 
-              orgId={orgId!}
+              orgId={orgId || ''}
             >
               <OrganizationEditTabs 
-                orgId={orgId!} 
+                orgId={orgId || ''} 
                 isOrgAdmin={isOrgAdmin}
                 organization={organization}
               />
