@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { organizationsApi } from "@/api";
+import { organizationCrudApi } from "@/api/organizations/organizationsApi";
 import { useFilterTags } from "./useTagQueries";
 import { logger } from "@/utils/logger";
 
@@ -8,7 +8,7 @@ export function useOrganizationQueries() {
   const useOrganizations = () => {
     return useQuery({
       queryKey: ["organizations"],
-      queryFn: organizationsApi.getAllOrganizations,
+      queryFn: organizationCrudApi.getAllOrganizations,
     });
   };
 
@@ -21,7 +21,7 @@ export function useOrganizationQueries() {
 export const useOrganizations = () => {
   return useQuery({
     queryKey: ["organizations"],
-    queryFn: organizationsApi.getAllOrganizations,
+    queryFn: organizationCrudApi.getAllOrganizations,
   });
 };
 
@@ -33,7 +33,7 @@ export const useUserOrganizationRelationships = (profileId?: string) => {
         logger.warn("useUserOrganizationRelationships called without profileId");
         return Promise.resolve({ data: [] });
       }
-      return organizationsApi.getUserOrganizationRelationships(profileId);
+      return organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
     },
     enabled: !!profileId
   });
@@ -47,8 +47,11 @@ export const useOrganization = (id?: string) => {
         logger.warn("useOrganization called without id");
         return Promise.resolve({ data: null });
       }
-      return organizationsApi.getOrganizationById(id);
+      return organizationCrudApi.getOrganizationById(id);
     },
     enabled: !!id
   });
 };
+
+// Add the missing import that was likely causing the destructuring error
+import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi";

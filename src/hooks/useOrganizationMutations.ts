@@ -1,6 +1,6 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { organizationsApi } from "@/api";
+import { organizationCrudApi, organizationRelationshipsApi } from "@/api";
 import { ProfileOrganizationRelationship, OrganizationFormValues } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { logger } from "@/utils/logger";
@@ -13,7 +13,7 @@ export const useAddOrganizationRelationship = () => {
   
   return useMutation({
     mutationFn: (relationship: Partial<ProfileOrganizationRelationship>) => 
-      organizationsApi.addOrganizationRelationship(relationship),
+      organizationRelationshipsApi.addOrganizationRelationship(relationship),
     onSuccess: (_, variables) => {
       logger.info("Successfully added organization relationship", variables);
       queryClient.invalidateQueries({ queryKey: ["organization-relationships", variables.profile_id] });
@@ -34,7 +34,7 @@ export const useUpdateOrganizationRelationship = () => {
   
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<ProfileOrganizationRelationship> }) => 
-      organizationsApi.updateOrganizationRelationship(id, data),
+      organizationRelationshipsApi.updateOrganizationRelationship(id, data),
     onSuccess: (_, variables) => {
       logger.info("Successfully updated organization relationship", variables);
       // Since we don't know the profile_id here, invalidate all relationship queries
@@ -55,7 +55,7 @@ export const useDeleteOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => organizationsApi.deleteOrganizationRelationship(id),
+    mutationFn: (id: string) => organizationRelationshipsApi.deleteOrganizationRelationship(id),
     onSuccess: () => {
       logger.info("Successfully deleted organization relationship");
       // Since we don't know the profile_id here, invalidate all relationship queries
@@ -82,7 +82,7 @@ export const useUpdateOrganization = () => {
     }) => {
       logger.info("Updating organization:", { orgId, data });
       
-      return organizationsApi.updateOrganization(orgId, {
+      return organizationCrudApi.updateOrganization(orgId, {
         name: data.name,
         description: data.description,
         website_url: data.website_url,
