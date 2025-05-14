@@ -16,17 +16,16 @@ import {
 } from "@/components/organizations/edit";
 
 const OrganizationEdit = () => {
-  // Get the orgId from URL parameters without destructuring
-  const params = useParams();
-  const orgId = params.orgId;
+  // Get the orgId from URL parameters with proper typing
+  const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
   
   // Enhanced logging for debugging URL parameters
   logger.info("OrganizationEdit - URL Parameters:", { 
-    allParams: params,
-    extractedOrgId: orgId,
+    orgId,
+    idType: typeof orgId,
     pathname: window.location.pathname
   });
   
