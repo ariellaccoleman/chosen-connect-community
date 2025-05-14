@@ -45,7 +45,7 @@ export const getEntityTags = async (
 export const getEntitiesWithTag = async (
   tagId: string,
   entityType?: EntityType | string
-): Promise<ApiResponse<TagAssignment[]>> {
+): Promise<ApiResponse<TagAssignment[]>> => {
   try {
     if (!tagId) return createSuccessResponse([]);
     
