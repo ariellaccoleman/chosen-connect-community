@@ -70,17 +70,25 @@ export function OrganizationEditForm({
   return (
     <form onSubmit={form.handleSubmit(onSubmit)}>
       {/* Clone children and pass form props */}
-      {React.Children.map(children, (child) => {
-        if (React.isValidElement(child)) {
+      {children && Array.isArray(children) ? (
+        children.map((child, index) => {
+          if (!React.isValidElement(child)) return child;
           return React.cloneElement(child, { 
+            key: index,
             form,
             handleLogoChange,
             organization,
             isSubmitting
           });
-        }
-        return child;
-      })}
+        })
+      ) : children && React.isValidElement(children) ? (
+        React.cloneElement(children, { 
+          form,
+          handleLogoChange,
+          organization,
+          isSubmitting
+        })
+      ) : null}
     </form>
   );
 }
