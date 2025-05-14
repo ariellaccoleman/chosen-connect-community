@@ -15,6 +15,7 @@ import EventTypeSelector from "./form/EventTypeSelector";
 import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
+import { toast } from "@/components/ui/use-toast";
 
 interface EventFormProps {
   onCancel?: () => void;
@@ -26,14 +27,21 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
   const [locationFieldVisible, setLocationFieldVisible] = useState(false);
+  
+  // Get today's date and current time for default values
+  const today = new Date();
+  const defaultDate = today.toISOString().split('T')[0];
+  const hours = String(today.getHours()).padStart(2, '0');
+  const minutes = String(today.getMinutes()).padStart(2, '0');
+  const defaultTime = `${hours}:${minutes}`;
 
   const form = useForm<CreateEventFormValues>({
     resolver: zodResolver(createEventSchema),
     defaultValues: {
       title: "",
       description: "",
-      start_date: "",
-      start_time: "",
+      start_date: defaultDate,
+      start_time: defaultTime,
       duration_hours: 1,
       duration_minutes: 0,
       is_virtual: true,
@@ -49,57 +57,68 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
   const isSubmitting = createEventMutation.isPending;
 
   const handleSubmit = async (values: CreateEventFormValues) => {
-    if (!user?.id) return;
-
-    // Ensure required fields are provided
-    if (!values.title || !values.start_date || !values.start_time) {
+    if (!user?.id) {
+      toast({
+        title: "Authentication Error",
+        description: "You must be logged in to create an event",
+        variant: "destructive"
+      });
       return;
     }
 
-    // Calculate start and end timestamps
-    const startDateTime = `${values.start_date}T${values.start_time}`;
-    
-    // Calculate end time by adding duration to start time
-    const startDate = new Date(startDateTime);
-    const endDate = new Date(startDate.getTime());
-    endDate.setHours(endDate.getHours() + values.duration_hours);
-    endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
-    
-    const start_time = formatDateForDb(startDate.toISOString());
-    const end_time = formatDateForDb(endDate.toISOString());
+    try {
+      // Calculate start and end timestamps
+      const startDateTime = `${values.start_date}T${values.start_time}`;
+      
+      // Calculate end time by adding duration to start time
+      const startDate = new Date(startDateTime);
+      const endDate = new Date(startDate.getTime());
+      endDate.setHours(endDate.getHours() + values.duration_hours);
+      endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
+      
+      const start_time = formatDateForDb(startDate.toISOString());
+      const end_time = formatDateForDb(endDate.toISOString());
 
-    // If event is not paid, ensure price is null
-    if (!values.is_paid) {
-      values.price = null;
-    }
+      // If event is not paid, ensure price is null
+      if (!values.is_paid) {
+        values.price = null;
+      }
 
-    // If event is virtual, ensure location_id is null
-    if (values.is_virtual) {
-      values.location_id = null;
-    }
+      // If event is virtual, ensure location_id is null
+      if (values.is_virtual) {
+        values.location_id = null;
+      }
 
-    // Convert form values to CreateEventInput
-    const eventInput: CreateEventInput = {
-      title: values.title,
-      description: values.description || "",
-      start_time,
-      end_time,
-      is_virtual: values.is_virtual,
-      location_id: values.is_virtual ? null : values.location_id,
-      tag_id: values.tag_id || null,
-      is_paid: values.is_paid,
-      price: values.is_paid ? values.price : null,
-    };
+      // Convert form values to CreateEventInput
+      const eventInput: CreateEventInput = {
+        title: values.title,
+        description: values.description || "",
+        start_time,
+        end_time,
+        is_virtual: values.is_virtual,
+        location_id: values.is_virtual ? null : values.location_id,
+        tag_id: values.tag_id || null,
+        is_paid: values.is_paid,
+        price: values.is_paid ? values.price : null,
+      };
 
-    await createEventMutation.mutateAsync({
-      event: eventInput,
-      hostId: user.id,
-    });
+      await createEventMutation.mutateAsync({
+        event: eventInput,
+        hostId: user.id,
+      });
 
-    if (onSuccess) {
-      onSuccess();
-    } else {
-      navigate("/events");
+      if (onSuccess) {
+        onSuccess();
+      } else {
+        navigate("/events");
+      }
+    } catch (error) {
+      console.error("Error creating event:", error);
+      toast({
+        title: "Error",
+        description: "There was a problem creating your event.",
+        variant: "destructive",
+      });
     }
   };
 
