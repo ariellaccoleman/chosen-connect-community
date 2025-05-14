@@ -5,7 +5,10 @@
  */
 
 export * from './cacheUtils';
-export * from './tagAssignments';
+// Re-export everything from tagAssignments except fetchEntityTags to avoid conflict
+import { assignTag, removeTagAssignment } from './tagAssignments';
+export { assignTag, removeTagAssignment };
+
 export * from './tagDisplay';
 export * from './tagEntityTypes';
 export * from './tagOperations';

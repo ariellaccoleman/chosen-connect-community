@@ -69,33 +69,8 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Fetch tags for a specific entity
-export const fetchEntityTags = async (
-  entityId: string, 
-  entityType: EntityType | string
-): Promise<any[]> => {
-  try {
-    // Validate entity type
-    if (!isValidEntityType(entityType)) {
-      console.error(`Invalid entity type: ${entityType}`);
-      return [];
-    }
-    
-    // Import the API function dynamically
-    const entityTagsApi = await import("@/api/tags/entityTagsApi");
-    const response = await entityTagsApi.getEntityTags(entityId, entityType);
-    
-    if (response.status !== 'success' || !response.data) {
-      console.error("Error fetching entity tags:", response.error);
-      return [];
-    }
-    
-    return response.data;
-  } catch (error) {
-    console.error("Error in fetchEntityTags:", error);
-    return [];
-  }
-};
+// No longer defining fetchEntityTags here - it's defined in tagAssignments.ts
+// We'll import it from there when needed
 
 // Find or create a tag
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
