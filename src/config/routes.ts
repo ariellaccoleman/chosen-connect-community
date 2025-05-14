@@ -12,7 +12,7 @@ export const APP_ROUTES = {
   ORGANIZATION_DETAIL: '/organizations/:orgId',
   ORGANIZATION_EDIT: '/organizations/:orgId/edit',
   MANAGE_ORGANIZATIONS: '/organizations/manage-connections',
-  COMMUNITY: '/community',
+  COMMUNITY: '/directory',
   ADMIN_DASHBOARD: '/admin',
   ADMIN_TAGS: '/admin/tags',
   TEST_DATA_GENERATOR: '/admin/test-data-generator',
@@ -20,6 +20,7 @@ export const APP_ROUTES = {
   // Events
   CREATE_EVENT: '/events/create',
   EVENTS: '/events',
+  EVENT_DETAIL: '/events/:eventId',
 };
 
 export const ROUTE_ACCESS = {
@@ -42,6 +43,7 @@ export const ROUTE_ACCESS = {
   // Events
   [APP_ROUTES.CREATE_EVENT]: { requiresAuth: true },
   [APP_ROUTES.EVENTS]: { requiresAuth: false },
+  [APP_ROUTES.EVENT_DETAIL]: { requiresAuth: false },
 };
 
 export const getRoutesConfig = () => {
