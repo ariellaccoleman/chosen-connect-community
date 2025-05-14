@@ -49,7 +49,11 @@ const FormActions = ({
         type="submit" 
         className="bg-chosen-blue hover:bg-chosen-navy"
         disabled={isSubmitting}
-        onClick={() => console.log("Submit button clicked")}
+        onClick={() => {
+          console.log("Submit button clicked");
+          // The actual form submission is handled by the form's onSubmit handler
+          // This onClick is just for logging purposes
+        }}
       >
         {isSubmitting ? "Saving..." : submitLabel}
       </Button>

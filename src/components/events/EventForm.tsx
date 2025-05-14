@@ -56,10 +56,14 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const isPaid = form.watch("is_paid");
   const isSubmitting = createEventMutation.isPending;
 
+  console.log("Rendering EventForm component", { isSubmitting, isPaid, isVirtual });
+
   const handleSubmit = async (values: CreateEventFormValues) => {
+    console.log("handleSubmit called with values:", values);
     logger.info("Form submitted with values:", values);
     
     if (!user?.id) {
+      console.error("No user ID found, cannot submit form");
       logger.error("Authentication error: No user ID found");
       toast({
         title: "Authentication Error",
@@ -70,9 +74,11 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
     }
 
     try {
+      console.log("Processing form submission with user:", user.id);
       logger.info("Processing form submission...");
       // Calculate start and end timestamps
       const startDateTime = `${values.start_date}T${values.start_time}`;
+      console.log("Start date time:", startDateTime);
       logger.info("Start date time:", startDateTime);
       
       // Calculate end time by adding duration to start time
@@ -81,6 +87,10 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       endDate.setHours(endDate.getHours() + values.duration_hours);
       endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
       
+      console.log("Calculated dates:", { 
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString() 
+      });
       logger.info("Calculated dates:", { 
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString() 
@@ -89,6 +99,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       const start_time = formatDateForDb(startDate.toISOString());
       const end_time = formatDateForDb(endDate.toISOString());
 
+      console.log("Formatted dates for DB:", { start_time, end_time });
       logger.info("Formatted dates for DB:", { start_time, end_time });
 
       // If event is not paid, ensure price is null
@@ -114,21 +125,32 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
         price: values.is_paid ? values.price : null,
       };
 
+      console.log("About to submit event to API:", eventInput);
       logger.info("Submitting event to API:", eventInput);
+
+      console.log("createEventMutation status:", {
+        isPending: createEventMutation.isPending,
+        isError: createEventMutation.isError,
+        error: createEventMutation.error
+      });
 
       const result = await createEventMutation.mutateAsync({
         event: eventInput,
         hostId: user.id,
       });
 
+      console.log("Event creation successful with result:", result);
       logger.info("Event creation result:", result);
 
       if (onSuccess) {
+        console.log("Calling onSuccess callback");
         onSuccess();
       } else {
+        console.log("No onSuccess callback, navigating to /events");
         navigate("/events");
       }
     } catch (error) {
+      console.error("Error creating event:", error);
       logger.error("Error creating event:", error);
       toast({
         title: "Error",
@@ -139,7 +161,12 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   };
 
   return (
-    <FormWrapper form={form} onSubmit={handleSubmit} className="space-y-6">
+    <FormWrapper 
+      form={form} 
+      onSubmit={handleSubmit} 
+      className="space-y-6"
+      id="event-form"
+    >
       <h2 className="text-2xl font-bold">Create New Event</h2>
       
       <EventBasicDetails control={form.control} />
