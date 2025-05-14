@@ -18,7 +18,7 @@ const formatProfileData = (data: any, authUser?: User | null): ProfileWithDetail
   // Format location if available
   if (profile.location) {
     const location = profile.location as Location;
-    profile.location.formatted_location = [location.city, location.region, location.country]
+    profile.formatted_location = [location.city, location.region, location.country]
       .filter(Boolean)
       .join(', ');
   }
@@ -58,5 +58,5 @@ export const useCurrentProfile = (userId: string | undefined, authUser?: User | 
   });
 };
 
-// For consistency with how the hook is being used in Dashboard.tsx
+// For consistency with how the hook was previously used
 export const useProfileQueries = useCurrentProfile;

@@ -40,7 +40,12 @@ const ProfileBasicInfo = ({ form }: ProfileBasicInfoProps) => {
         <ProfileFields form={form} />
         
         {/* Location Selector */}
-        <LocationSelector form={form} />
+        <LocationSelector 
+          control={form.control} 
+          label="Location" 
+          fieldName="location_id"
+          form={form}
+        />
       </CardContent>
     </Card>
   );

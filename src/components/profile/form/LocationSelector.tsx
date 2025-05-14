@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Control } from "react-hook-form";
+import { Control, UseFormReturn } from "react-hook-form";
 import { 
   FormField,
   FormItem,
@@ -20,10 +20,11 @@ interface LocationSelectorProps {
   control: Control<any>;
   label: string;
   required?: boolean;
-  fieldName: string;
+  fieldName?: string;
+  form?: UseFormReturn<any>;
 }
 
-const LocationSelector = ({ control, label, required = false, fieldName }: LocationSelectorProps) => {
+const LocationSelector = ({ control, label, required = false, fieldName = "location_id", form }: LocationSelectorProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationWithDetails | null>(null);
@@ -89,7 +90,12 @@ const LocationSelector = ({ control, label, required = false, fieldName }: Locat
                                 key={location.id}
                                 value={displayValue}
                                 onSelect={() => {
-                                  form.setValue(fieldName, location.id);
+                                  // Use the appropriate form API to set the value
+                                  if (form) {
+                                    form.setValue(fieldName, location.id);
+                                  } else {
+                                    field.onChange(location.id);
+                                  }
                                   setSelectedLocation(location);
                                   setOpen(false);
                                 }}

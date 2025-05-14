@@ -49,6 +49,11 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
   const handleSubmit = async (values: CreateEventFormValues) => {
     if (!user?.id) return;
 
+    // Ensure required fields are provided
+    if (!values.title || !values.start_time || !values.end_time) {
+      return;
+    }
+
     // If event is not paid, ensure price is null
     if (!values.is_paid) {
       values.price = null;
