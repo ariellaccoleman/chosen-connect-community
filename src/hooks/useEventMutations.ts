@@ -19,10 +19,10 @@ export function useEventMutations() {
       logger.info("Event API response:", response);
 
       if (response.error) {
-        console.error("API returned error:", response.error);
-        logger.error("Event creation error:", response.error);
-        showErrorToast(response.error);
-        throw response.error;
+        const errorMessage = response.error.message || "Failed to create event";
+        console.error("API returned error:", errorMessage, response.error);
+        logger.error("Event creation error:", errorMessage);
+        throw new Error(errorMessage);
       }
 
       return response.data;
@@ -33,10 +33,11 @@ export function useEventMutations() {
       queryClient.invalidateQueries({ queryKey: ["events"] });
       toast.success("Event created successfully");
     },
-    onError: (error) => {
-      console.error("Mutation error:", error);
-      logger.error("Event mutation error:", error);
-      toast.error("Failed to create event. Please try again.");
+    onError: (error: Error) => {
+      const errorMessage = error?.message || "Failed to create event";
+      console.error("Mutation error:", errorMessage);
+      logger.error("Event mutation error:", errorMessage);
+      toast.error(errorMessage || "Failed to create event. Please try again.");
     }
   });
 

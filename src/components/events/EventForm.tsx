@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -116,14 +115,12 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
 
       logger.info("Submitting event to API:", eventInput);
 
-      const result = await createEventMutation.mutateAsync({
+      await createEventMutation.mutateAsync({
         event: eventInput,
         hostId: user.id,
       });
 
-      logger.info("Event creation result:", result);
-
-      toast.success("Event created successfully");
+      logger.info("Event created successfully");
 
       if (onSuccess) {
         logger.info("Calling onSuccess callback");

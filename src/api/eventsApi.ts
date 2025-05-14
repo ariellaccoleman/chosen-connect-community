@@ -14,6 +14,8 @@ export const eventsApi = {
    */
   async createEvent(event: CreateEventInput, hostId: string): Promise<ApiResponse<EventWithDetails>> {
     try {
+      console.log("Creating event with data:", { ...event, host_id: hostId });
+      
       const { data, error } = await apiClient.query(async (client) => {
         return client.from("events").insert({
           title: event.title,
@@ -30,12 +32,23 @@ export const eventsApi = {
       });
 
       if (error) {
-        return createErrorResponse(error);
+        console.error("Supabase error creating event:", error);
+        return createErrorResponse({
+          code: error.code || "unknown_error",
+          message: error.message || "Failed to create event: " + (error.details || "unknown error"),
+          details: error
+        });
       }
 
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
-      return createErrorResponse(error);
+      console.error("Exception creating event:", error);
+      const message = error instanceof Error ? error.message : "Unknown error creating event";
+      return createErrorResponse({
+        code: "exception",
+        message: message,
+        details: error
+      });
     }
   },
 
