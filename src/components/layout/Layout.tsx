@@ -4,12 +4,11 @@ import BaseLayout from "@/components/layout/BaseLayout";
 
 interface LayoutProps {
   children: ReactNode;
-  includeNavbar?: boolean;
 }
 
-const Layout = ({ children, includeNavbar = true }: LayoutProps) => {
+const Layout = ({ children }: LayoutProps) => {
   return (
-    <BaseLayout includeNavbar={includeNavbar}>
+    <BaseLayout>
       {children}
     </BaseLayout>
   );

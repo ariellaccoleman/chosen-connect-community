@@ -23,7 +23,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   // Show loading skeleton when auth state is loading
   if (loading) {
     return (
-      <BaseLayout includeNavbar={true}>
+      <BaseLayout>
         <div className="container py-8">
           <Skeleton className="h-10 w-1/4 mb-6" />
           <div className="space-y-6">
@@ -42,7 +42,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   }
 
   return (
-    <BaseLayout includeNavbar={true}>
+    <BaseLayout>
       {children}
     </BaseLayout>
   );
