@@ -43,18 +43,19 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       logger.debug(`Fetching all ${entityName}`, params);
       
       return await apiClient.query(async (client) => {
-        let query = client
-          .from(tableName)
-          .select(defaultSelect);
+        // We need to use the callback pattern instead of directly chaining methods
+        // to avoid TypeScript errors related to table names
+        let query = client.from(tableName);
+        let selectQuery = query.select(defaultSelect);
         
         // Apply filters if provided
         if (params?.filters) {
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                query = query.in(key, value);
+                selectQuery = selectQuery.in(key, value);
               } else {
-                query = query.eq(key, value);
+                selectQuery = selectQuery.eq(key, value);
               }
             }
           });
@@ -64,21 +65,21 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         if (params?.search) {
           // This is a simplified approach - in real implementation,
           // you would define which fields to search
-          query = query.ilike('name', `%${params.search}%`);
+          selectQuery = selectQuery.ilike('name', `%${params.search}%`);
         }
         
         // Apply pagination
         if (params?.page !== undefined && params?.limit !== undefined) {
           const start = (params.page - 1) * params.limit;
-          query = query.range(start, start + params.limit - 1);
+          selectQuery = selectQuery.range(start, start + params.limit - 1);
         }
         
         // Apply sorting
         const sortField = params?.sortBy || defaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
-        query = query.order(sortField, { ascending: sortOrder === 'asc' });
+        selectQuery = selectQuery.order(sortField, { ascending: sortOrder === 'asc' });
         
-        const { data, error } = await query;
+        const { data, error } = await selectQuery;
         
         if (error) throw error;
         
@@ -205,27 +206,27 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       logger.debug(`Deleting ${entityName} with ID: ${String(id)}`);
       
       return await apiClient.query(async (client) => {
-        let error;
+        let error = null;
         
         if (softDelete) {
-          // Soft delete - check if the table has deleted_at column first
+          // Soft delete - update deleted_at field
           const updateData = { updated_at: new Date().toISOString() } as Record<string, any>;
           updateData.deleted_at = new Date().toISOString();
           
-          const { error: updateError } = await client
+          const result = await client
             .from(tableName)
             .update(updateData)
             .eq(idField, id);
           
-          error = updateError;
+          error = result.error;
         } else {
           // Hard delete
-          const { error: deleteError } = await client
+          const result = await client
             .from(tableName)
             .delete()
             .eq(idField, id);
           
-          error = deleteError;
+          error = result.error;
         }
         
         if (error) throw error;
@@ -281,9 +282,10 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       return await apiClient.query(async (client) => {
         const updates = await Promise.all(
           items.map(async (item) => {
+            const transformedData = transformRequest(item.data);
             const { data, error } = await client
               .from(tableName)
-              .update(transformRequest(item.data))
+              .update(transformedData)
               .eq(idField, item.id)
               .select(defaultSelect)
               .single();
@@ -312,27 +314,27 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
       logger.debug(`Batch deleting ${entityName}s, count:`, ids.length);
       
       return await apiClient.query(async (client) => {
-        let error;
+        let error = null;
         
         if (softDelete) {
           // Soft delete - update deleted_at field
           const updateData = { updated_at: new Date().toISOString() } as Record<string, any>;
           updateData.deleted_at = new Date().toISOString();
           
-          const { error: updateError } = await client
+          const result = await client
             .from(tableName)
             .update(updateData)
             .in(idField, ids);
           
-          error = updateError;
+          error = result.error;
         } else {
           // Hard delete
-          const { error: deleteError } = await client
+          const result = await client
             .from(tableName)
             .delete()
             .in(idField, ids);
           
-          error = deleteError;
+          error = result.error;
         }
         
         if (error) throw error;
