@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -30,13 +29,6 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
               <p className="text-xs text-gray-500 truncate">{user.email}</p>
             </div>
           </div>
-          <Link 
-            to="/dashboard" 
-            className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
-            onClick={onClose}
-          >
-            Dashboard
-          </Link>
           <Link 
             to="/profile/edit" 
             className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"

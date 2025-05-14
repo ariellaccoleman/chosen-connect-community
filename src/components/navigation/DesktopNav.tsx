@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, ShieldCheck } from "lucide-react";
@@ -24,7 +23,6 @@ const DesktopNav = () => {
     return (
       <>
         <div className="hidden md:flex items-center space-x-8">
-          <Link to="/dashboard" className="text-gray-700 hover:text-chosen-blue font-medium">Dashboard</Link>
           <Link to="/organizations" className="text-gray-700 hover:text-chosen-blue font-medium">Organizations</Link>
           <Link to="/events" className="text-gray-700 hover:text-chosen-blue font-medium">Events</Link>
           <Link to="/directory" className="text-gray-700 hover:text-chosen-blue font-medium">Community Directory</Link>
