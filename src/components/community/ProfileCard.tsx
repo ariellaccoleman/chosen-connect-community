@@ -6,14 +6,19 @@ import { ProfileBio } from "./ProfileBio";
 import { ProfileSocialLinks } from "./ProfileSocialLinks";
 import { Link } from "react-router-dom";
 import TagList from "../tags/TagList";
+import { APP_ROUTES } from "@/config/routes";
+import { generatePath } from 'react-router-dom';
 
 interface ProfileCardProps {
   profile: ProfileWithDetails;
 }
 
 const ProfileCard = ({ profile }: ProfileCardProps) => {
+  // Generate the correct profile view URL using the APP_ROUTES constant
+  const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
+
   return (
-    <Link to={`/directory/${profile.id}`} className="block">
+    <Link to={profileUrl} className="block">
       <div className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
         <div className="flex flex-col md:flex-row md:gap-6">
           {/* Left Column - Avatar and basic info */}

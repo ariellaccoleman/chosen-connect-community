@@ -45,7 +45,7 @@ const AppRoutes = () => {
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProfileView />} /> {/* Make accessible without auth */}
       <Route path={APP_ROUTES.ORGANIZATIONS} element={<Organizations />} />
       <Route path={APP_ROUTES.CREATE_ORGANIZATION} element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<OrganizationDetail />} />

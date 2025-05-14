@@ -30,7 +30,7 @@ export const ROUTE_ACCESS = {
   [APP_ROUTES.AUTH]: { requiresAuth: false },
   [APP_ROUTES.DASHBOARD]: { requiresAuth: true },
   [APP_ROUTES.PROFILE_EDIT]: { requiresAuth: true },
-  [APP_ROUTES.PROFILE_VIEW]: { requiresAuth: false },
+  [APP_ROUTES.PROFILE_VIEW]: { requiresAuth: false }, // Set to public access
   [APP_ROUTES.ORGANIZATIONS]: { requiresAuth: false },
   [APP_ROUTES.CREATE_ORGANIZATION]: { requiresAuth: true },
   [APP_ROUTES.ORGANIZATION_DETAIL]: { requiresAuth: false },
