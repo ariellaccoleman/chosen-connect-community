@@ -1,14 +1,9 @@
 
 /**
- * Tag utility functions
- * Central export point for tag utilities
+ * Export all tag utility functions
  */
-
 export * from './cacheUtils';
-// Re-export everything from tagAssignments except those that might conflict
-import { assignTag, removeTagAssignment, fetchEntityTags } from './tagAssignments';
-export { assignTag, removeTagAssignment, fetchEntityTags };
-
+export * from './tagAssignments';
 export * from './tagDisplay';
 export * from './tagEntityTypes';
 export * from './tagOperations';

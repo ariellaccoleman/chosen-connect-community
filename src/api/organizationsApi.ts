@@ -1,4 +1,3 @@
-
 import { 
   OrganizationWithLocation, 
   ProfileOrganizationRelationship, 
@@ -53,7 +52,7 @@ export const organizationsApi = {
    * Get organization by ID
    */
   async getOrganizationById(id: string): Promise<ApiResponse<OrganizationWithLocation | null>> {
-    logger.info(`API call: getOrganizationById with ID: ${id}`);
+    logger.info(`API call: getOrganizationById with ID: "${id}"`);
     
     if (!id) {
       logger.error("getOrganizationById was called with a falsy ID value");
@@ -62,7 +61,7 @@ export const organizationsApi = {
     
     return apiClient.query(async (client) => {
       // Log the exact query we're about to make
-      logger.info(`Executing query to fetch organization with ID: ${id}`);
+      logger.info(`Executing query to fetch organization with ID: "${id}"`);
       
       const { data, error } = await client
         .from('organizations')
@@ -78,19 +77,22 @@ export const organizationsApi = {
         throw error;
       }
       
-      let formattedOrg = null;
-      
       if (data) {
-        logger.info(`Found organization data for ID ${id}:`, data);
-        formattedOrg = {
+        logger.info(`Found organization data for ID ${id}:`, { 
+          name: data.name, 
+          id: data.id 
+        });
+        
+        const formattedOrg = {
           ...data,
           location: data.location ? formatLocationWithDetails(data.location) : undefined
         } as OrganizationWithLocation;
+        
+        return createSuccessResponse(formattedOrg);
       } else {
-        logger.warn(`No organization found with ID ${id}`);
+        logger.warn(`No organization found with ID "${id}"`);
+        return createSuccessResponse(null);
       }
-      
-      return createSuccessResponse(formattedOrg);
     });
   },
   

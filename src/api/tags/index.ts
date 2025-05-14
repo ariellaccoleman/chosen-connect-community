@@ -1,10 +1,10 @@
 
 /**
- * Main entry point for all tag-related API functionality
- * This file re-exports all tag API functionality from individual modules
+ * Tag API - Main export file
+ * Centralizes all tag-related API functionality
  */
-
-// Re-export all tag functionality
+ 
+// Re-export all individual tag API modules
 export * from './assignmentApi';
 export * from './cacheApi';
 export * from './entityTagsApi';

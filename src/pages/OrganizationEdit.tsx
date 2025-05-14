@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -69,7 +68,7 @@ const OrganizationEdit = () => {
   // Set form values when organization data is loaded
   useEffect(() => {
     if (organization) {
-      logger.info("Organization data loaded:", organization);
+      logger.info("Organization data loaded:", { name: organization.name, id: organization.id });
       form.reset({
         name: organization.name,
         description: organization.description || "",
@@ -173,6 +172,9 @@ const OrganizationEdit = () => {
         <div className="container mx-auto py-6 max-w-3xl">
           <div className="flex justify-center items-center h-64">
             <p>Error loading organization: {error.message}</p>
+            <Button className="mt-4" onClick={() => navigate('/organizations')}>
+              Return to Organizations
+            </Button>
           </div>
         </div>
       </Layout>
@@ -185,8 +187,14 @@ const OrganizationEdit = () => {
     return (
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
-          <div className="flex justify-center items-center h-64">
-            <p>Organization not found</p>
+          <div className="flex flex-col justify-center items-center h-64">
+            <p className="text-xl mb-4">Organization not found</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              The organization with ID {id} could not be found.
+            </p>
+            <Button onClick={() => navigate('/organizations')}>
+              Return to Organizations
+            </Button>
           </div>
         </div>
       </Layout>

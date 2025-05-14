@@ -1,4 +1,3 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Organization, OrganizationWithLocation } from "@/types";
@@ -38,16 +37,27 @@ export const useOrganization = (id: string | undefined) => {
       }
       
       try {
+        // Explicitly log the ID before making the API call
+        logger.info(`About to call organizationsApi.getOrganizationById with ID: "${id}"`);
+        
         const response = await organizationsApi.getOrganizationById(id);
+        
+        logger.info(`API response received for ID ${id}:`, { 
+          success: !response.error,
+          hasData: !!response.data,
+          error: response.error
+        });
         
         if (response.error) {
           logger.error(`Error in useOrganization hook for ID ${id}:`, response.error);
           throw response.error;
         }
         
-        logger.info(`useOrganization query successful for ID: ${id}`, { 
-          dataExists: !!response.data 
-        });
+        if (!response.data) {
+          logger.warn(`Organization not found for ID: ${id}`);
+        } else {
+          logger.info(`Organization found for ID ${id}:`, { name: response.data.name });
+        }
         
         return response.data;
       } catch (error) {
@@ -57,6 +67,7 @@ export const useOrganization = (id: string | undefined) => {
     },
     enabled: !!id,
     refetchOnWindowFocus: false,
+    retry: 1, // Limit retries to avoid excessive API calls
   });
 };
 
