@@ -61,3 +61,28 @@ export const createMutationHandlers = (
     }
   };
 };
+
+/**
+ * Create standardized toast messages for entity operations
+ */
+export const createEntityToasts = (entityName: string, pluralName?: string) => {
+  const plural = pluralName || `${entityName}s`;
+  
+  return {
+    // Single entity operations
+    created: () => toast.success(`${entityName} created successfully`),
+    updated: () => toast.success(`${entityName} updated successfully`),
+    deleted: () => toast.success(`${entityName} deleted successfully`),
+    createError: (message?: string) => toast.error(message || `Failed to create ${entityName}`),
+    updateError: (message?: string) => toast.error(message || `Failed to update ${entityName}`),
+    deleteError: (message?: string) => toast.error(message || `Failed to delete ${entityName}`),
+    
+    // Multiple entity operations
+    batchCreated: (count: number) => toast.success(`${count} ${plural} created successfully`),
+    batchUpdated: (count: number) => toast.success(`${count} ${plural} updated successfully`),
+    batchDeleted: (count: number) => toast.success(`${count} ${plural} deleted successfully`),
+    batchCreateError: (message?: string) => toast.error(message || `Failed to create ${plural}`),
+    batchUpdateError: (message?: string) => toast.error(message || `Failed to update ${plural}`),
+    batchDeleteError: (message?: string) => toast.error(message || `Failed to delete ${plural}`)
+  };
+};
