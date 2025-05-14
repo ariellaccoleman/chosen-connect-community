@@ -1,7 +1,6 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { handleApiError } from "./errorHandler";
-import { PostgrestQueryBuilder } from "@supabase/supabase-js";
 
 /**
  * Core API client that wraps Supabase client with error handling
@@ -46,7 +45,7 @@ export const apiClient = {
   
   // Helper to safely execute dynamic table queries
   // This is a workaround for TypeScript's limitation with dynamic table names
-  table<T = any>(tableName: string): PostgrestQueryBuilder<any, any, T> {
+  table<T = any>(tableName: string) {
     return supabase.from(tableName as any);
   }
 };

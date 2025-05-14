@@ -80,6 +80,12 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
       tagData = { ...tagData, type: tagData.type.toString() };
     }
     
+    // Ensure name is provided
+    if (!tagData.name) {
+      console.error("Tag name is required");
+      return null;
+    }
+    
     // Call the API function that properly uses the apiClient
     const response = await apiFindOrCreateTag(tagData);
     
@@ -127,6 +133,12 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
     // If type is provided as EntityType, convert to string
     if (tagData.type && isValidEntityType(tagData.type)) {
       tagData = { ...tagData, type: tagData.type.toString() };
+    }
+    
+    // Ensure name is provided
+    if (!tagData.name) {
+      console.error("Tag name is required");
+      return null;
     }
     
     // Call the API function that properly uses the apiClient

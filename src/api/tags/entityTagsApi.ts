@@ -45,9 +45,9 @@ export const getEntityTags = async (
 export const getEntitiesWithTag = async (
   tagId: string,
   entityType?: EntityType | string
-): Promise<TagAssignment[]> => {
+): Promise<ApiResponse<TagAssignment[]>> {
   try {
-    if (!tagId) return [];
+    if (!tagId) return createSuccessResponse([]);
     
     return apiClient.query(async (client) => {
       let query = client
@@ -71,6 +71,6 @@ export const getEntitiesWithTag = async (
     });
   } catch (error) {
     console.error("Error fetching entities with tag:", error);
-    return [];
+    return createSuccessResponse([]);
   }
 };

@@ -41,7 +41,7 @@ export const getFilterTags = async (options: {
       
       if (error) throw error;
       
-      return createSuccessResponse(data || []);
+      return createSuccessResponse(data as Tag[] || []);
     }
     
     // For non-targetType queries, use the standard approach
@@ -64,7 +64,7 @@ export const getFilterTags = async (options: {
     
     if (error) throw error;
     
-    return createSuccessResponse(data || []);
+    return createSuccessResponse(data as Tag[] || []);
   });
 };
 
@@ -94,7 +94,7 @@ export const getSelectionTags = async (options: {
       );
       
       if (!cacheError && cachedResults && Array.isArray(cachedResults) && cachedResults.length > 0) {
-        return createSuccessResponse(cachedResults);
+        return createSuccessResponse(cachedResults as Tag[]);
       }
     }
     
@@ -146,7 +146,7 @@ export const getSelectionTags = async (options: {
         );
       }
       
-      return createSuccessResponse(data || []);
+      return createSuccessResponse(data as Tag[] || []);
     }
     
     // For non-targetType queries, use the standard approach
@@ -169,7 +169,7 @@ export const getSelectionTags = async (options: {
     
     if (error) throw error;
     
-    return createSuccessResponse(data || []);
+    return createSuccessResponse(data as Tag[] || []);
   });
 };
 
