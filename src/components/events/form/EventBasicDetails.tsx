@@ -12,15 +12,10 @@ import { EntityType } from "@/types/entityTypes";
 
 interface EventBasicDetailsProps {
   control: Control<any>;
+  onTypeChange?: (isVirtual: boolean) => void;
 }
 
-// Update EventTypeSelector interface to make onTypeChange optional
-interface UpdatedEventTypeSelectorProps {
-  control: Control<any>;
-  onTypeChange?: (type: string) => void;
-}
-
-const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
+const EventBasicDetails = ({ control, onTypeChange }: EventBasicDetailsProps) => {
   return (
     <div className="space-y-6">
       <FormField
@@ -55,30 +50,6 @@ const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
         )}
       />
 
-      <EventTypeSelector 
-        control={control} 
-      />
-
-      <FormField
-        control={control}
-        name="location_id"
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Location</FormLabel>
-            <FormControl>
-              <LocationSelector
-                control={control}
-                label="Location"
-                fieldName="location_id"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-
-      <EventPriceToggle control={control} />
-      
       <FormField
         control={control}
         name="tag_id"

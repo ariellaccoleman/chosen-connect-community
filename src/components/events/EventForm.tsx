@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -5,17 +6,19 @@ import { createEventSchema, CreateEventFormValues } from "./form/EventFormSchema
 import { useAuth } from "@/hooks/useAuth";
 import { useEventMutations } from "@/hooks/useEventMutations";
 import FormActions from "@/components/common/form/FormActions";
-import LocationSelector from "@/components/profile/form/LocationSelector";
 import { useNavigate } from "react-router-dom";
 import FormInput from "@/components/common/form/FormInput";
-import { EventBasicDetails, EventTypeSelector, EventPriceToggle } from "./form";
+import { EventBasicDetails } from "./form";
 import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
 import { logger } from "@/utils/logger";
-import { toast } from "sonner";
 import { useFormError } from "@/hooks/useFormError";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 import { FormWrapper } from "@/components/common/form";
+import FormTextarea from "@/components/common/form/FormTextarea";
+import EventTypeSelector from "./form/EventTypeSelector";
+import EventPriceToggle from "./form/EventPriceToggle";
+import LocationSelector from "@/components/profile/form/LocationSelector";
 
 interface EventFormProps {
   onSuccess?: () => void;
@@ -67,7 +70,6 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
     if (!user?.id) {
       const error = new Error("Authentication error: No user ID found");
       logger.error(error.message);
-      toast.error("You must be logged in to create an event");
       if (onError) onError(error);
       return;
     }
@@ -145,37 +147,89 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
         <FormWrapper
           form={form}
           onSubmit={handleFormSubmit}
-          className="space-y-6"
+          className="space-y-8"
           id="event-form"
         >
-          <EventBasicDetails control={form.control} />
-          
-          <EventTypeSelector 
-            control={form.control} 
-            onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)} 
-          />
-          
-          {!isVirtual && (
-            <LocationSelector
-              control={form.control}
-              label="Event Location"
-              required={!isVirtual}
-              fieldName="location_id"
+          {/* Basic Details */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Event Details</h3>
+            <EventBasicDetails 
+              control={form.control} 
+              onTypeChange={setLocationFieldVisible} 
             />
-          )}
+          </div>
           
-          <EventPriceToggle control={form.control} />
-          
-          {isPaid && (
-            <FormInput
-              name="price"
-              control={form.control}
-              label="Price"
-              type="number"
-              placeholder="0.00"
-              required={isPaid}
+          {/* Date and Time Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Date & Time</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormInput
+                name="start_date"
+                control={form.control}
+                label="Start Date"
+                type="date"
+                required={true}
+              />
+              <FormInput
+                name="start_time"
+                control={form.control}
+                label="Start Time"
+                type="time"
+                required={true}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <FormInput
+                name="duration_hours"
+                control={form.control}
+                label="Duration (Hours)"
+                type="number"
+                required={true}
+              />
+              <FormInput
+                name="duration_minutes"
+                control={form.control}
+                label="Duration (Minutes)"
+                type="number"
+                required={true}
+              />
+            </div>
+          </div>
+
+          {/* Location Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Location</h3>
+            <EventTypeSelector 
+              control={form.control} 
+              onTypeChange={(isVirtual) => setLocationFieldVisible(!isVirtual)}
             />
-          )}
+            
+            {!isVirtual && (
+              <LocationSelector
+                control={form.control}
+                label="Event Location"
+                required={!isVirtual}
+                fieldName="location_id"
+              />
+            )}
+          </div>
+          
+          {/* Price Section */}
+          <div className="space-y-6">
+            <h3 className="text-lg font-semibold">Pricing</h3>
+            <EventPriceToggle control={form.control} />
+            
+            {isPaid && (
+              <FormInput
+                name="price"
+                control={form.control}
+                label="Price"
+                type="number"
+                placeholder="0.00"
+                required={isPaid}
+              />
+            )}
+          </div>
           
           <FormActions
             isSubmitting={isSubmitting}
