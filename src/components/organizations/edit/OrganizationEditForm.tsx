@@ -75,13 +75,21 @@ export function OrganizationEditForm({ organization, orgId, children }: Organiza
     }
   };
 
+  // Clone children and pass form and handleLogoChange props
+  const childrenWithProps = React.Children.map(children, child => {
+    if (React.isValidElement(child)) {
+      return React.cloneElement(child as React.ReactElement, { 
+        form, 
+        handleLogoChange,
+        organization 
+      });
+    }
+    return child;
+  });
+
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {React.Children.map(children, child =>
-        React.isValidElement(child)
-          ? React.cloneElement(child as React.ReactElement<any>, { form, handleLogoChange })
-          : child
-      )}
+      {childrenWithProps}
     </form>
   );
 }

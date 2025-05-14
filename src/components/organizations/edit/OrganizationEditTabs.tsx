@@ -32,11 +32,13 @@ export function OrganizationEditTabs({
       </TabsList>
       
       <TabsContent value="basic">
-        <OrganizationBasicInfo 
-          form={form} 
-          handleLogoChange={handleLogoChange}
-          organization={organization}
-        />
+        {form && (
+          <OrganizationBasicInfo 
+            form={form} 
+            handleLogoChange={handleLogoChange}
+            organization={organization}
+          />
+        )}
       </TabsContent>
       
       <TabsContent value="tags">
