@@ -18,20 +18,14 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      // Updated to use onSettled instead of onError
-      onSettled: (data, error) => {
-        if (error) {
-          console.error('Query error:', error);
-        }
-      },
+      onError: (error: Error) => {
+        console.error('Query error:', error);
+      }
     },
     mutations: {
-      // Updated to use onSettled instead of onError
-      onSettled: (data, error) => {
-        if (error) {
-          console.error('Mutation error:', error);
-        }
-      },
+      onError: (error: Error) => {
+        console.error('Mutation error:', error);
+      }
     },
   },
 });
