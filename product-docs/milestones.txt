@@ -23,7 +23,6 @@
 2. Search and filters for people, orgs, and tags    
 3. Autocomplete UX with scoped tag visibility    
 4. Bookmarking/favoriting    
-5. Basic badge system (e.g., Hiring, Connector)    
 
 ---
 
