@@ -21,6 +21,27 @@ export const assignTag = async (
 
   return apiClient.query(async (client) => {
     try {
+      // Add debug logging to track host ID
+      if (entityType === 'event') {
+        const { data: event, error: eventError } = await client
+          .from('events')
+          .select('host_id')
+          .eq('id', entityId)
+          .single();
+          
+        if (eventError) {
+          logger.error(`Failed to fetch event ${entityId} for host verification:`, eventError);
+        } else {
+          const { data: currentUser } = await client.auth.getUser();
+          logger.info("Event host verification:", {
+            eventId: entityId,
+            eventHostId: event?.host_id || 'unknown',
+            currentUserId: currentUser?.user?.id || 'not authenticated',
+            isMatching: event?.host_id === currentUser?.user?.id
+          });
+        }
+      }
+      
       // Step 1: Update tag_entity_types to ensure this tag is associated with this entity type
       const entityTypeResponse = await updateTagEntityType(tagId, entityType);
       
@@ -77,13 +98,34 @@ export const removeTagAssignment = async (assignmentId: string): Promise<ApiResp
       // First get the assignment details to identify tag_id and entity_type
       const { data: assignment, error: getError } = await client
         .from('tag_assignments')
-        .select('tag_id, target_type')
+        .select('tag_id, target_type, target_id')
         .eq('id', assignmentId)
         .maybeSingle();
       
       if (getError) {
         logger.error("Error fetching tag assignment:", getError);
         return createErrorResponse(getError);
+      }
+      
+      // Add debug logging for event host verification similar to assignTag
+      if (assignment && assignment.target_type === 'event') {
+        const { data: event, error: eventError } = await client
+          .from('events')
+          .select('host_id')
+          .eq('id', assignment.target_id)
+          .single();
+          
+        if (eventError) {
+          logger.error(`Failed to fetch event ${assignment.target_id} for host verification:`, eventError);
+        } else {
+          const { data: currentUser } = await client.auth.getUser();
+          logger.info("Event host verification (delete):", {
+            eventId: assignment.target_id,
+            eventHostId: event?.host_id || 'unknown',
+            currentUserId: currentUser?.user?.id || 'not authenticated',
+            isMatching: event?.host_id === currentUser?.user?.id
+          });
+        }
       }
       
       // Delete the assignment

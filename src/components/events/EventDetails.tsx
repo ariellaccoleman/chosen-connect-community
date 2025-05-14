@@ -1,10 +1,12 @@
 
 import React, { useState } from "react";
 import { EventWithDetails } from "@/types";
-import { Calendar, MapPin, Video, DollarSign } from "lucide-react";
+import { Calendar, MapPin, Video, DollarSign, UserCheck } from "lucide-react";
 import { format } from "date-fns";
 import EntityTagManager from "../tags/EntityTagManager";
 import { EntityType } from "@/types/entityTypes";
+import { useAuth } from "@/hooks/useAuth";
+import { logger } from "@/utils/logger";
 
 interface EventDetailsProps {
   event: EventWithDetails;
@@ -12,6 +14,21 @@ interface EventDetailsProps {
 }
 
 const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
+  const { user } = useAuth();
+  
+  // Explicitly log auth status and host matching for debugging
+  React.useEffect(() => {
+    if (event && user) {
+      logger.info("EventDetails - checking host status:", {
+        eventId: event.id,
+        eventHostId: event.host_id,
+        currentUserId: user.id,
+        isHost: event.host_id === user.id,
+        isAdminProp: isAdmin
+      });
+    }
+  }, [event, user, isAdmin]);
+
   const formatEventDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "EEEE, MMMM d, yyyy • h:mm a");
@@ -23,6 +40,17 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-2xl font-bold mb-4">{event.title}</h2>
+      
+      {/* Host info with badge */}
+      {event.host && (
+        <div className="flex items-center mb-4 bg-blue-50 p-2 rounded">
+          <UserCheck className="h-5 w-5 mr-2 text-blue-500" />
+          <span className="text-sm">
+            Hosted by: <span className="font-medium">{event.host.first_name} {event.host.last_name}</span>
+            {isAdmin && <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">You are the host</span>}
+          </span>
+        </div>
+      )}
       
       {/* Date and Time */}
       {event.start_time && (
@@ -103,6 +131,8 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
           entityType={EntityType.EVENT}
           isAdmin={isAdmin}
           isEditing={isAdmin}
+          onTagSuccess={() => logger.info(`Tag operation successful for event ${event.id}`)}
+          onTagError={(err) => logger.error(`Tag error for event ${event.id}:`, err)}
         />
       </div>
     </div>

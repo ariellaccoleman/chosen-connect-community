@@ -32,7 +32,12 @@ export const useTagAssignmentMutations = () => {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      logger.info("Executing assignTag mutation:", { tagId, entityId, entityType });
+      logger.info("Executing assignTag mutation with details:", { 
+        tagId, 
+        entityId, 
+        entityType,
+        currentUserId: queryClient.getQueryData(["auth", "user"])?.id || "not logged in"
+      });
       console.log("Executing assignTag mutation:", { tagId, entityId, entityType });
       
       const response = await assignTag(tagId, entityId, entityType);
