@@ -1,6 +1,7 @@
 
 import * as z from "zod";
 
+// Export the schema and type from here to be used across event form components
 export const createEventSchema = z.object({
   title: z.string().min(2, { message: "Title must be at least 2 characters" }),
   description: z.string().optional(),
