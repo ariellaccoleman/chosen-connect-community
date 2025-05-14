@@ -14,6 +14,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocations } from "@/hooks/useLocations";
+import { useLocationById } from "@/hooks/useLocationById";
 import { LocationWithDetails } from "@/types";
 
 interface LocationSelectorProps {
@@ -29,26 +30,29 @@ const LocationSelector = ({ control, label, required = false, fieldName = "locat
   const [open, setOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationWithDetails | null>(null);
   
+  // Get the current value from the form if available
+  const currentLocationId = form?.getValues(fieldName) || control._getWatch?.(fieldName);
+  
   // Only pass the search term after basic cleaning
   const cleanedSearch = locationSearch.trim();
   
+  // Get locations for dropdown
   const { data: locationsData = [], isLoading: isLoadingLocations } = useLocations(cleanedSearch);
+  
+  // Get specific location by ID if we have an ID but not the location object
+  const { data: locationById } = useLocationById(
+    currentLocationId && !selectedLocation ? currentLocationId : undefined
+  );
   
   // Ensure locations is always a valid array
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
   
+  // Update selected location when locationById changes
   useEffect(() => {
-    // If we have a selected location ID but not the full object, try to load it
-    const currentValue = form?.getValues(fieldName) || control._getWatch?.(fieldName);
-    if (currentValue && !selectedLocation) {
-      // Load the specific location by ID
-      useLocations('', currentValue).data?.then(locationData => {
-        if (locationData && locationData.length > 0) {
-          setSelectedLocation(locationData[0]);
-        }
-      });
+    if (locationById && !selectedLocation) {
+      setSelectedLocation(locationById);
     }
-  }, [fieldName, form, control, selectedLocation]);
+  }, [locationById, selectedLocation]);
   
   return (
     <FormField
