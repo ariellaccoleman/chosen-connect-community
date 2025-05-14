@@ -17,13 +17,13 @@ export const ProfileAvatar = ({ profile }: ProfileAvatarProps) => {
   };
 
   return (
-    <div className="w-16 h-16 relative bg-gray-50 rounded-full overflow-hidden">
+    <div className="flex-shrink-0 w-16 h-16 relative rounded-full overflow-hidden">
       {profile.avatar_url ? (
         <div className="h-full w-full flex items-center justify-center">
           <img 
             src={profile.avatar_url} 
             alt={`${profile.full_name || 'User'} avatar`}
-            className="object-cover w-full h-full"
+            className="object-cover w-full h-full rounded-full"
           />
         </div>
       ) : (
