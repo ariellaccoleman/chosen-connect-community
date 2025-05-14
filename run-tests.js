@@ -17,7 +17,8 @@ try {
     'ts-jest',
     '@types/jest',
     '@testing-library/react',
-    '@testing-library/jest-dom'
+    '@testing-library/jest-dom',
+    '@testing-library/user-event'
   ];
   
   try {
@@ -34,8 +35,10 @@ if (!existsSync('./tests/setup')) {
 }
 
 // Run tests
+const testPathPattern = process.argv[2] || '';
 try {
-  execSync('npx jest', { stdio: 'inherit' });
+  console.log(`Running tests${testPathPattern ? ` matching pattern: ${testPathPattern}` : ''}...`);
+  execSync(`npx jest ${testPathPattern}`, { stdio: 'inherit' });
 } catch (error) {
   console.error('Tests failed with error:', error);
   process.exit(1);

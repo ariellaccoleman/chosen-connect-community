@@ -15,8 +15,13 @@ const config = {
     'src/api/**/*.ts',
     'src/utils/**/*.ts',
     'src/hooks/**/*.ts',
+    'src/components/**/*.tsx',
+    'src/pages/**/*.tsx',
     '!src/**/*.d.ts'
-  ]
+  ],
+  clearMocks: true,
+  resetMocks: false, // We want to control mocks explicitly
+  restoreMocks: false // We'll restore mocks in afterEach/afterAll hooks
 };
 
 module.exports = config;

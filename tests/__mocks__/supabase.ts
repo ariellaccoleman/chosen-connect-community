@@ -23,6 +23,9 @@ export const mockErrorResponse = {
 };
 
 export const mockSupabase = {
+  // For tracking the current table being queried
+  currentTable: null,
+  
   // Auth methods
   auth: {
     signUp: jest.fn().mockResolvedValue(mockAuthResponse),
@@ -43,7 +46,11 @@ export const mockSupabase = {
   update: jest.fn().mockReturnThis(),
   delete: jest.fn().mockReturnThis(),
   eq: jest.fn().mockReturnThis(),
+  order: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
   single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+  maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null }),
+  in: jest.fn().mockReturnThis(),
   
   // Storage methods
   storage: {
@@ -64,9 +71,20 @@ jest.mock('@/integrations/supabase/client', () => ({
 }));
 
 export const resetSupabaseMocks = () => {
+  // Reset all mock functions
+  Object.keys(mockSupabase).forEach(key => {
+    if (typeof mockSupabase[key] === 'function' && mockSupabase[key].mockClear) {
+      mockSupabase[key].mockClear();
+    }
+  });
+  
+  // Reset auth mocks
   Object.keys(mockSupabase.auth).forEach(key => {
     if (typeof mockSupabase.auth[key] === 'function' && mockSupabase.auth[key].mockClear) {
       mockSupabase.auth[key].mockClear();
     }
   });
+  
+  // Reset currentTable
+  mockSupabase.currentTable = null;
 };
