@@ -1,3 +1,4 @@
+
 import { TagAssignment } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
@@ -34,7 +35,7 @@ export const assignTag = async (
           target_id: entityId,
           target_type: entityType
         })
-        .select()
+        .select('*')
         .single();
       
       if (error) throw error;

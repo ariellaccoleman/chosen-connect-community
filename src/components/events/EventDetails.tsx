@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { EventWithDetails } from "@/types";
 import { Calendar, MapPin, Video, DollarSign } from "lucide-react";
 import { format } from "date-fns";
