@@ -5,4 +5,4 @@
  * @deprecated Use imports from src/utils/tags/index.ts instead
  */
 
-export * from './tags';
+export * from './tags/index';
