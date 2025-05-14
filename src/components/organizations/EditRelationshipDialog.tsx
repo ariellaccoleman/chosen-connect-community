@@ -16,8 +16,8 @@ const EditRelationshipDialog = ({ relationship, isOpen, onClose }: EditRelations
 
   const handleSubmit = async (values: RelationshipFormValues) => {
     await updateRelationship.mutateAsync({
-      relationshipId: relationship.id,
-      relationshipData: {
+      id: relationship.id,
+      data: {
         connection_type: values.connection_type,
         department: values.department || null,
         notes: values.notes || null
