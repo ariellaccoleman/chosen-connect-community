@@ -19,9 +19,9 @@ entityRegistry.register({
   },
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: id }),
-    getCreateUrl: () => APP_ROUTES.PROFILE_CREATE,
+    getCreateUrl: () => APP_ROUTES.PROFILE_EDIT,
     getEditUrl: (id) => generatePath(APP_ROUTES.PROFILE_EDIT, { profileId: id }),
-    getListUrl: () => APP_ROUTES.COMMUNITY_DIRECTORY,
+    getListUrl: () => APP_ROUTES.COMMUNITY,
     getIcon: () => <User className="h-4 w-4" />,
     getTypeLabel: () => "Person",
     getSingularName: () => "person",
@@ -47,7 +47,7 @@ entityRegistry.register({
   },
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: id }),
-    getCreateUrl: () => APP_ROUTES.ORGANIZATION_CREATE,
+    getCreateUrl: () => APP_ROUTES.CREATE_ORGANIZATION,
     getEditUrl: (id) => generatePath(APP_ROUTES.ORGANIZATION_EDIT, { orgId: id }),
     getListUrl: () => APP_ROUTES.ORGANIZATIONS,
     getIcon: () => <Building className="h-4 w-4" />,
@@ -75,8 +75,8 @@ entityRegistry.register({
   },
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: id }),
-    getCreateUrl: () => APP_ROUTES.EVENT_CREATE,
-    getEditUrl: (id) => generatePath(APP_ROUTES.EVENT_EDIT, { eventId: id }),
+    getCreateUrl: () => APP_ROUTES.CREATE_EVENT,
+    getEditUrl: (id) => generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: id }),
     getListUrl: () => APP_ROUTES.EVENTS,
     getIcon: () => <Calendar className="h-4 w-4" />,
     getTypeLabel: () => "Event",
