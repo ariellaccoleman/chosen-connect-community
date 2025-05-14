@@ -44,8 +44,21 @@ const OrganizationEdit = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
-  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   
+  // Check if id is undefined or invalid
+  useEffect(() => {
+    if (!id || id === "undefined") {
+      toast({
+        title: "Invalid Organization",
+        description: "No organization selected for editing",
+        variant: "destructive",
+      });
+      navigate("/organizations");
+      return;
+    }
+  }, [id, navigate, toast]);
+  
+  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
   const { data: organization, isLoading: loading, error } = useOrganization(id);
   
   const form = useForm<OrganizationFormValues>({
@@ -72,7 +85,8 @@ const OrganizationEdit = () => {
 
   // Check if user is admin and redirect if not
   useEffect(() => {
-    if (!loading && !isOrgAdmin) {
+    // Only check admin status if we have a valid organization ID and loading is complete
+    if (!loading && !isOrgAdmin && id && id !== "undefined") {
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit this organization",
@@ -87,7 +101,14 @@ const OrganizationEdit = () => {
   };
 
   const onSubmit = async (data: OrganizationFormValues) => {
-    if (!id) return;
+    if (!id || id === "undefined") {
+      toast({
+        title: "Error",
+        description: "Invalid organization ID",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       const { error } = await supabase
@@ -118,6 +139,19 @@ const OrganizationEdit = () => {
       });
     }
   };
+
+  // Skip rendering the form if ID is invalid - early return
+  if (!id || id === "undefined") {
+    return (
+      <Layout>
+        <div className="container mx-auto py-6 max-w-3xl">
+          <div className="flex justify-center items-center h-64">
+            <p>Invalid organization ID - redirecting...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   if (loading) {
     return (
