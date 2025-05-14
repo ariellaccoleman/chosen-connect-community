@@ -2,24 +2,27 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video } from "lucide-react";
+import { Calendar, MapPin, Video, AlertCircle } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";
+import { logger } from "@/utils/logger";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
   const { data: events = [], isLoading, error } = useEvents();
   
   useEffect(() => {
-    console.log("Events page mounted");
-  }, []);
+    logger.info("Events page mounted");
+    logger.info("Events data:", { count: events.length, events });
+  }, [events.length]);
 
   const formatEventDate = (dateString: string) => {
     try {
       return format(new Date(dateString), "MMM d, yyyy • h:mm a");
     } catch (e) {
+      logger.error("Error formatting date:", e, { dateString });
       return "Date unavailable";
     }
   };
@@ -66,7 +69,20 @@ const Events: React.FC = () => {
             <Skeleton className="h-48 w-full rounded-lg" />
           </div>
         ) : error ? (
-          <p className="text-red-500">Error loading events. Please try again later.</p>
+          <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center text-red-600 mb-2">
+              <AlertCircle size={20} className="mr-2" />
+              <h3 className="font-medium">Error loading events</h3>
+            </div>
+            <p className="text-red-500 mb-4">{error instanceof Error ? error.message : "Failed to load events. Please try again later."}</p>
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.reload()}
+              className="text-red-600 border-red-300 hover:bg-red-50"
+            >
+              Try Again
+            </Button>
+          </div>
         ) : events.length === 0 ? (
           <div>
             <p className="text-gray-500 mb-6">Your events will appear here.</p>
@@ -86,7 +102,8 @@ const Events: React.FC = () => {
                 <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
                 <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
                 
-                <div className="text-sm text-gray-600 mb-2">
+                <div className="text-sm text-gray-600 mb-2 flex items-center">
+                  <Calendar className="h-3 w-3 mr-1" />
                   {event.start_time && formatEventDate(event.start_time)}
                 </div>
                 

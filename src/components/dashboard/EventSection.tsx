@@ -3,13 +3,20 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { APP_ROUTES } from "@/config/routes";
-import { PlusCircle, Calendar } from "lucide-react";
+import { PlusCircle, Calendar, AlertCircle } from "lucide-react";
 import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logger } from "@/utils/logger";
 
 const EventSection: React.FC = () => {
-  const { data: events = [], isLoading } = useEvents();
+  const { data: events = [], isLoading, error } = useEvents();
+  
+  logger.info("EventSection rendering", { 
+    eventCount: events.length, 
+    isLoading, 
+    hasError: !!error 
+  });
   
   // Get the 3 most recent upcoming events
   const upcomingEvents = events
@@ -21,6 +28,7 @@ const EventSection: React.FC = () => {
     try {
       return format(new Date(dateString), "MMM d, yyyy • h:mm a");
     } catch (e) {
+      logger.error("Error formatting date:", e, { dateString });
       return "Date unavailable";
     }
   };
@@ -48,6 +56,14 @@ const EventSection: React.FC = () => {
         <div className="space-y-3">
           <Skeleton className="h-14 w-full" />
           <Skeleton className="h-14 w-full" />
+        </div>
+      ) : error ? (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-md">
+          <div className="flex items-center text-red-600 mb-2">
+            <AlertCircle size={16} className="mr-2" />
+            <span className="font-medium">Error loading events</span>
+          </div>
+          <p className="text-sm text-red-500">{error instanceof Error ? error.message : "Unknown error"}</p>
         </div>
       ) : upcomingEvents.length > 0 ? (
         <div className="mt-4 space-y-3">

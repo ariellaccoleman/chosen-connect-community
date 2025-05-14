@@ -78,7 +78,8 @@ export const eventsApi = {
   async getEvents(): Promise<ApiResponse<EventWithDetails[]>> {
     try {
       const { data, error } = await apiClient.query(async (client) => {
-        const events = await client
+        // First, fetch all events with their locations and hosts
+        const { data: events, error: eventsError } = await client
           .from("events")
           .select(`
             *,
@@ -87,10 +88,13 @@ export const eventsApi = {
           `)
           .order("start_time", { ascending: true });
           
-        if (events.error) throw events.error;
+        if (eventsError) {
+          console.error("Error fetching events:", eventsError);
+          throw eventsError;
+        }
         
         // For each event, fetch its tags
-        const eventsWithTags = await Promise.all((events.data || []).map(async (event) => {
+        const eventsWithTags = await Promise.all((events || []).map(async (event) => {
           const { data: tagAssignments, error: tagError } = await client
             .from('tag_assignments')
             .select(`
@@ -112,11 +116,13 @@ export const eventsApi = {
       });
 
       if (error) {
+        console.error("Error in getEvents:", error);
         return createErrorResponse(error);
       }
 
       return createSuccessResponse(data as EventWithDetails[]);
     } catch (error) {
+      console.error("Exception in getEvents:", error);
       return createErrorResponse(error);
     }
   }

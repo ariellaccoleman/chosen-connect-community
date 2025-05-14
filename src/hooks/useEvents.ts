@@ -15,8 +15,15 @@ export function useEvents() {
         throw new Error(response.error.message || "Failed to fetch events");
       }
       
-      logger.info(`Successfully fetched ${response.data?.length || 0} events`);
-      return response.data || [];
+      if (!response.data || !Array.isArray(response.data)) {
+        logger.error("Invalid events data format:", response.data);
+        return [];
+      }
+      
+      logger.info(`Successfully fetched ${response.data.length} events:`, response.data);
+      return response.data;
     },
+    retry: 1, // Reduce retry attempts to avoid excessive fetching
+    staleTime: 1000 * 60 * 5, // Cache events for 5 minutes
   });
 }
