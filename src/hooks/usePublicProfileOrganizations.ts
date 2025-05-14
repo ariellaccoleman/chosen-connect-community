@@ -2,6 +2,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { ProfileOrganizationRelationshipWithDetails } from '@/types';
+import { formatOrganizationRelationships } from '@/utils/organizationFormatters';
+import { logger } from '@/utils/logger';
 
 // Hook to fetch organization relationships for a public profile
 export const usePublicProfileOrganizations = (profileId: string | undefined) => {
@@ -22,11 +24,12 @@ export const usePublicProfileOrganizations = (profileId: string | undefined) => 
         .eq('profile_id', profileId);
       
       if (error) {
-        console.error('Error fetching profile organizations:', error);
+        logger.error(`Error fetching profile organizations for ${profileId}:`, error);
         return [];
       }
       
-      return data || [];
+      // Format the relationships to ensure they have the correct structure with formatted_location
+      return formatOrganizationRelationships(data || []);
     },
     enabled: !!profileId,
   });

@@ -4,6 +4,7 @@ import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
 import TagList from "@/components/tags/TagList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/types/entityTypes";
+import { TagAssignmentWithDetails } from "@/types";
 
 interface PublicProfileTagsProps {
   profileId: string;

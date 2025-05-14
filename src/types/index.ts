@@ -17,3 +17,24 @@ export interface OrganizationFormValues {
   website_url?: string;
   logo_url?: string;
 }
+
+/**
+ * Tag assignment with detailed tag information
+ */
+export interface TagAssignmentWithDetails {
+  id: string;
+  tag_id: string;
+  target_id: string;
+  target_type: string;
+  created_at: string;
+  updated_at: string;
+  tag?: {
+    id: string;
+    name: string;
+    description: string | null;
+    type: string | null;
+    created_at: string;
+    updated_at: string;
+    created_by: string | null;
+  };
+}

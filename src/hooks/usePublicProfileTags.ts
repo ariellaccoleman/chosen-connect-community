@@ -1,8 +1,21 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TagAssignmentWithDetails } from '@/types';
+import { TagAssignment } from '@/utils/tags';
 import { EntityType } from '@/types/entityTypes';
+
+// Type that includes the tag details joined from the tags table
+export interface TagAssignmentWithDetails extends TagAssignment {
+  tag: {
+    id: string;
+    name: string;
+    description: string | null;
+    type: string | null;
+    created_at: string;
+    updated_at: string;
+    created_by: string | null;
+  };
+}
 
 // Hook to fetch tags assigned to a public profile
 export const usePublicProfileTags = (profileId: string | undefined) => {
@@ -25,7 +38,7 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
         return [];
       }
       
-      return data || [];
+      return data || [] as TagAssignmentWithDetails[];
     },
     enabled: !!profileId,
   });
