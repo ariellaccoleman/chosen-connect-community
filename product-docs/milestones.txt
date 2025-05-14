@@ -1,0 +1,96 @@
+## 🧱 **Milestone 1: Core Identity & Directory (MVP foundations)**
+
+**Goal:** Let users join, create a meaningful profile, and connect with organizations.
+
+### Deliverables:
+
+1. User authentication (LinkedIn, email/password – hidden for now)    
+2. Profile creation and editing (with normalized location data)    
+3. Organization directory (viewing only)    
+4. Add/edit org relationships (ally, current, former)    
+5. Request to manage an organization profile    
+6. Admin UI for org verification and access approvals    
+
+---
+
+## 📇 **Milestone 2: Search, Tagging & Discovery**
+
+**Goal:** Enable users to find each other, discover content, and begin self-organizing.
+
+### Deliverables:
+
+1. Tagging system with types (person, org, event, guide)    
+2. Search and filters for people, orgs, and tags    
+3. Autocomplete UX with scoped tag visibility    
+4. Bookmarking/favoriting    
+5. Basic badge system (e.g., Hiring, Connector)    
+
+---
+
+## 🗓️ **Milestone 3: Events & Real-Time Collaboration**
+
+**Goal:** Power community events and collaboration in real time.
+
+### Deliverables:
+
+1. Event creation (free/paid, in-person/virtual)    
+2. Event registration + calendar integration    
+3. Automatic + customizable reminders    
+4. Chat channels (public and DMs)    
+5. Slack-style UI with threads, hashtags, and opt-in notifications    
+
+---
+
+## 🧠 **Milestone 4: Guides, Hubs & Structured Knowledge**
+
+**Goal:** Create, curate, and explore structured content around shared causes.
+
+### Deliverables:
+
+1. Public + members-only guides (markdown-based)    
+2. Hub views generated from tag-based aggregation    
+3. Guide-to-org and guide-to-member links    
+4. Public preview of select guides for SEO    
+5. Admin UX to curate featured hubs
+   
+
+---
+
+## 💼 **Milestone 5: Jobs, Intros & Insider Connections**
+
+**Goal:** Support career mobility, hiring, and mentorship within the network.
+
+### Deliverables:
+
+1. Job board    
+2. Job posting tied to verified org connections    
+3. Insider intros via org relationships    
+4. Highlight connectors and badge display    
+5. Show people at companies of interest (with filters)
+
+---
+
+## 🛒 **Milestone 6: Business Directory & Monetization**
+
+**Goal:** Promote pro-Israel businesses and introduce revenue streams.
+
+### Deliverables:
+
+1. Unified business/service directory (tagged and filterable)
+2. Split presentation between product and service businesses    
+3. Sponsorship and donation flows    
+4. Membership tiers (Free, Community, Pro, Partner)    
+5. Stripe integration and discount code support    
+
+---
+## 🛡️ **Milestone 7: Safety, Moderation & Trust**
+
+**Goal:** Protect the community and support admins/moderators.
+
+### Deliverables:
+
+1. Moderator role with customizable permissions    
+2. Content/report review queue    
+3. Profile-level privacy controls (public/member/private)    
+4. Company profile claim/approval workflows    
+5. Admin dashboard and feature flag toggles
