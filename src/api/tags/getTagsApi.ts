@@ -1,8 +1,8 @@
-import { Tag } from "@/utils/tags";
+
+import { Tag } from "@/utils/tags/types";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 import { typedRpc } from "../core/typedRpc";
-import { Database } from "@/integrations/supabase/types";
 
 /**
  * API functions for retrieving tags with various filters

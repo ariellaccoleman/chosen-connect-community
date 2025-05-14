@@ -2,6 +2,15 @@
 import { createApiOperations } from '../core/apiFactory';
 import { Tag } from '@/types';
 
+// Re-export all tag-related API functions
+export * from './assignmentApi';
+export * from './entityTagsApi';
+export * from './getTagsApi';
+export * from './tagCrudApi';
+export * from './tagEntityTypesApi';
+export * from './cacheApi';
+export * from './organizationTagsApi';
+
 /**
  * Create API operations for tags
  */

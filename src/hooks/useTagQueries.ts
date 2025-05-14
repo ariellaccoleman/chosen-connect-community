@@ -1,6 +1,7 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { getEntityTags, getEntitiesWithTag, getSelectionTags } from "@/api/tags";
+import { getEntityTags, getEntitiesWithTag } from "@/api/tags/entityTagsApi";
+import { getSelectionTags } from "@/api/tags/getTagsApi";
 import { TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 

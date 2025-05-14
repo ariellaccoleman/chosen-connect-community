@@ -38,3 +38,19 @@ export interface TagAssignmentWithDetails {
     created_by: string | null;
   };
 }
+
+/**
+ * Tag type definition
+ */
+export interface Tag {
+  id: string;
+  name: string;
+  description: string | null;
+  type: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  created_at?: string;
+  updated_at?: string;
+  createdBy?: string | null;
+  created_by?: string | null;
+}
