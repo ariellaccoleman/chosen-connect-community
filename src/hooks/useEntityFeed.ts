@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Entity, toEntity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";

@@ -1,19 +1,19 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserOrganizationRelationships, useAddOrganizationRelationship } from "@/hooks/useOrganizations";
+import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
 import { useOrganizations } from "@/hooks/useOrganizationQueries";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
-import { ProfileOrganizationRelationshipWithDetails } from "@/types";
+import { ProfileOrganizationRelationshipWithDetails, OrganizationWithLocation } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import OrganizationTabs from "@/components/organizations/OrganizationTabs";
 import OrganizationConnectionsHeader from "@/components/organizations/OrganizationConnectionsHeader";
 import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
+import { useAddOrganizationRelationship } from "@/hooks/useOrganizationMutations";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();

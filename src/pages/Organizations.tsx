@@ -1,7 +1,6 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useOrganizations } from "@/hooks/useOrganizations";
+import { useOrganizations } from "@/hooks/useOrganizationQueries";
 import { useTagFilter } from "@/hooks/useTagFilter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -17,13 +16,11 @@ import { Entity } from "@/types/entity";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
-  const { data: organizationsResponse = [], isLoading, error } = useOrganizations();
+  const { data: organizationsResponse, isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
   
   // Extract organizations from the response
-  const organizations = Array.isArray(organizationsResponse) 
-    ? organizationsResponse 
-    : organizationsResponse.data || [];
+  const organizations = organizationsResponse?.data || [];
   
   // Use our tag filter hook
   const { 

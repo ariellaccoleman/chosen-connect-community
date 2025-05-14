@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,6 +13,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useCreateOrganization } from "@/hooks/useOrganizationMutations";
+import { ApiResponse } from "@/api/core/errorHandler";
+import { Organization } from "@/types";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -51,9 +52,9 @@ const CreateOrganization = () => {
       userId: user.id
     });
 
-    // If successful and we have an organization ID, navigate to it
-    if (result?.data?.id) {
-      navigate(`/organizations/${result.data.id}`);
+    // If successful and we have an organization ID from the result
+    if (result && typeof result === 'string') {
+      navigate(`/organizations/${result}`);
     }
   };
 

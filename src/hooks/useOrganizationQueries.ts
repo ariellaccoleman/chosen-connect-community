@@ -4,6 +4,8 @@ import { organizationCrudApi } from "@/api/organizations/organizationsApi";
 import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi";
 import { useFilterTags } from "./useTagQueries";
 import { logger } from "@/utils/logger";
+import { ApiResponse } from "@/api/core/errorHandler";
+import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from "@/types";
 
 export function useOrganizationQueries() {
   const useOrganizations = () => {
@@ -20,19 +22,19 @@ export function useOrganizationQueries() {
 }
 
 export const useOrganizations = () => {
-  return useQuery({
+  return useQuery<ApiResponse<OrganizationWithLocation[]>, Error>({
     queryKey: ["organizations"],
     queryFn: organizationCrudApi.getAllOrganizations,
   });
 };
 
 export const useUserOrganizationRelationships = (profileId?: string) => {
-  return useQuery({
+  return useQuery<ApiResponse<ProfileOrganizationRelationshipWithDetails[]>, Error>({
     queryKey: ["organization-relationships", profileId],
     queryFn: () => {
       if (!profileId) {
         logger.warn("useUserOrganizationRelationships called without profileId");
-        return Promise.resolve({ data: [] });
+        return Promise.resolve({ data: [], status: 'success', error: null });
       }
       return organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
     },
@@ -51,12 +53,12 @@ export const useOrganization = (id?: string) => {
     idLength: id?.length
   });
   
-  return useQuery({
+  return useQuery<ApiResponse<OrganizationWithLocation | null>, Error>({
     queryKey: ["organization", id],
     queryFn: () => {
       if (!id) {
         logger.warn("useOrganization called without id");
-        return Promise.resolve({ data: null });
+        return Promise.resolve({ data: null, status: 'success', error: null });
       }
       
       // Log before the API call

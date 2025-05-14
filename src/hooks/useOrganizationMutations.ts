@@ -1,8 +1,10 @@
+
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { organizationCrudApi, organizationRelationshipsApi } from "@/api";
-import { ProfileOrganizationRelationship, OrganizationFormValues } from "@/types";
+import { ProfileOrganizationRelationship, OrganizationFormValues, Organization } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { logger } from "@/utils/logger";
+import { ApiResponse } from "@/api/core/errorHandler";
 
 /**
  * Hook to create a new organization with all necessary relationships
@@ -25,7 +27,7 @@ export const useCreateOrganization = () => {
       logger.info("Creating organization:", data);
       return organizationCrudApi.createOrganization(data, userId);
     },
-    onSuccess: (response) => {
+    onSuccess: (response: ApiResponse<Organization>) => {
       const organizationId = response.data?.id;
       logger.info("Successfully created organization:", organizationId);
       
