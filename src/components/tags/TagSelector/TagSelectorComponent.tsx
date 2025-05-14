@@ -7,9 +7,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Tag, fetchSelectionTags, invalidateTagCache } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
+import { EntityType } from "@/types/entityTypes";
 
 interface TagSelectorComponentProps {
-  targetType: "person" | "organization";
+  targetType: EntityType;
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;
 }
@@ -41,7 +42,7 @@ const TagSelectorComponent = ({
       try {
         const fetchedTags = await fetchSelectionTags({ 
           searchQuery: searchValue,
-          targetType,  // Pass targetType to get both entity-specific and general tags
+          targetType,
           skipCache: searchValue === "" // Skip cache for initial load
         });
         setTags(fetchedTags);

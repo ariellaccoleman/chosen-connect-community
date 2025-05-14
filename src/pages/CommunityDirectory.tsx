@@ -9,6 +9,7 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { useTagFilter } from "@/hooks/useTagFilter";
 import TagFilter from "@/components/filters/TagFilter";
+import { EntityType } from "@/types/entityTypes";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -20,7 +21,7 @@ const CommunityDirectory = () => {
     setSelectedTagId, 
     tags, 
     isLoading: isTagsLoading 
-  } = useTagFilter({ entityType: "person" });
+  } = useTagFilter({ entityType: EntityType.PERSON });
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useProfiles(user?.id || "");
@@ -56,7 +57,7 @@ const CommunityDirectory = () => {
             <div className="md:w-64">
               <TagFilter
                 selectedTagId={selectedTagId}
-                onSelectTag={setSelectedTagId}
+                onTagSelect={setSelectedTagId}
                 tags={tags}
                 isLoading={isTagsLoading}
               />

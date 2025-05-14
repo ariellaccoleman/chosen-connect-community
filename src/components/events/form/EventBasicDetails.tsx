@@ -14,6 +14,12 @@ interface EventBasicDetailsProps {
   control: Control<any>;
 }
 
+// Update EventTypeSelector interface to make onTypeChange optional
+interface UpdatedEventTypeSelectorProps {
+  control: Control<any>;
+  onTypeChange?: (type: string) => void;
+}
+
 const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
   return (
     <div className="space-y-6">
@@ -51,7 +57,6 @@ const EventBasicDetails = ({ control }: EventBasicDetailsProps) => {
 
       <EventTypeSelector 
         control={control} 
-        onTypeChange={() => {}} // Empty function as it's now optional
       />
 
       <FormField

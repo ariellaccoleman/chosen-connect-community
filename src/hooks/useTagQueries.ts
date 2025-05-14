@@ -14,7 +14,7 @@ interface TagQueryOptions {
   type?: string;
   createdBy?: string;
   searchQuery?: string;
-  targetType?: EntityType | string;
+  targetType?: EntityType;
   enabled?: boolean;
   skipCache?: boolean; // Option to bypass cache
 }
@@ -23,11 +23,7 @@ interface TagQueryOptions {
 export const useFilterTags = (options: TagQueryOptions = {}) => {
   // Validate entity type if provided
   const validatedOptions = { ...options };
-  if (validatedOptions.targetType && !isValidEntityType(validatedOptions.targetType)) {
-    console.warn(`Invalid entity type: ${validatedOptions.targetType}, using default`);
-    validatedOptions.targetType = undefined;
-  }
-
+  
   return useQuery({
     queryKey: ["tags", "filter", validatedOptions],
     queryFn: () => fetchFilterTags(validatedOptions),
@@ -45,11 +41,7 @@ export const useFilterTags = (options: TagQueryOptions = {}) => {
 export const useSelectionTags = (options: TagQueryOptions = {}) => {
   // Validate entity type if provided
   const validatedOptions = { ...options };
-  if (validatedOptions.targetType && !isValidEntityType(validatedOptions.targetType)) {
-    console.warn(`Invalid entity type: ${validatedOptions.targetType}, using default`);
-    validatedOptions.targetType = undefined;
-  }
-
+  
   return useQuery({
     queryKey: ["tags", "selection", validatedOptions],
     queryFn: () => fetchSelectionTags(validatedOptions),

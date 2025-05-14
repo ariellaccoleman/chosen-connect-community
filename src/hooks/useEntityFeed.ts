@@ -4,9 +4,6 @@ import { Entity, toEntity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags } from "./useTagQueries";
 import { useTagFilter } from "./useTagFilter";
-import { EventWithDetails } from "@/types";
-import { ProfileWithDetails } from "@/types";
-import { OrganizationWithLocation } from "@/types";
 import { useEvents } from "./useEvents";
 import { useCommunityProfiles } from "./useCommunityProfiles";
 import { useOrganizations } from "./useOrganizations";
@@ -42,15 +39,17 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   
   const { data: organizations = [], isLoading: orgsLoading } = useOrganizations();
   
-  // Set up tag filtering if needed
-  const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter();
+  // Set up tag filtering
+  const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter({
+    entityType: undefined // Don't filter by a specific entity type since we're handling multiple types
+  });
   
   // If tagId is provided in options, set it as the selected tag
   useEffect(() => {
     if (options.tagId) {
       setSelectedTagId(options.tagId);
     }
-  }, [options.tagId]);
+  }, [options.tagId, setSelectedTagId]);
   
   // Combine and convert entities
   useEffect(() => {
@@ -116,7 +115,8 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
     includeEvents,
     includeProfiles,
     includeOrgs,
-    options.limit
+    options.limit,
+    filterItemsByTag
   ]);
   
   return {

@@ -6,7 +6,7 @@ import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
 
 interface UseTagFilterOptions {
-  entityType?: EntityType | string;
+  entityType?: EntityType;
   enabled?: boolean;
 }
 

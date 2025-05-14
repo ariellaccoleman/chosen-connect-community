@@ -1,9 +1,8 @@
-
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizations";
 import { useTagFilter } from "@/hooks/useTagFilter";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -12,6 +11,7 @@ import { OrganizationWithLocation } from "@/types";
 import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
+import { EntityType } from "@/types/entityTypes";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -26,8 +26,7 @@ const OrganizationsList = () => {
     isLoading: isTagsLoading, 
     filterItemsByTag 
   } = useTagFilter({ 
-    entityType: "organization", 
-    enabled: true 
+    entityType: EntityType.ORGANIZATION 
   });
 
   // Show error toast if organization loading fails
@@ -74,7 +73,7 @@ const OrganizationsList = () => {
           
           <TagFilter 
             selectedTagId={selectedTagId} 
-            onSelectTag={setSelectedTagId} 
+            onTagSelect={setSelectedTagId} 
             tags={tags}
             isLoading={isTagsLoading}
           />
