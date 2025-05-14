@@ -23,7 +23,7 @@ const UserAvatar = ({ profile, size = "md", className = "", isAdmin = false }: U
 
   // Debug for UserAvatar
   console.log("UserAvatar rendering:", { 
-    profile: profile?.full_name || "No profile", 
+    profile: profile?.first_name && profile?.last_name ? `${profile.first_name} ${profile.last_name}` : "No profile", 
     hasAvatar: !!profile?.avatar_url, 
     isAdmin, 
     initials: getInitials() 
