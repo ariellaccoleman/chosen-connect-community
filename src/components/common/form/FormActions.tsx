@@ -32,27 +32,6 @@ const FormActions = ({
     end: "justify-end"
   };
 
-  const handleButtonClick = () => {
-    console.log("Submit button clicked");
-    logger.info("Submit button clicked");
-    
-    if (formId) {
-      console.log(`Triggering submit on form with id: ${formId}`);
-      logger.info(`Triggering submit on form with id: ${formId}`);
-      
-      // Find the form and submit it
-      const form = document.getElementById(formId) as HTMLFormElement;
-      if (form) {
-        console.log("Form found, submitting programmatically");
-        logger.info("Form found, submitting programmatically");
-        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
-      } else {
-        console.error(`Form with id ${formId} not found`);
-        logger.error(`Form with id ${formId} not found`);
-      }
-    }
-  };
-
   return (
     <div className={cn(
       "flex space-x-4 mt-6", 
@@ -73,7 +52,7 @@ const FormActions = ({
         type="submit" 
         className="bg-chosen-blue hover:bg-chosen-navy"
         disabled={isSubmitting}
-        onClick={handleButtonClick}
+        form={formId}
       >
         {isSubmitting ? "Saving..." : submitLabel}
       </Button>

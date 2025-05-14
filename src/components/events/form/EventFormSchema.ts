@@ -9,18 +9,11 @@ export const createEventSchema = z.object({
   start_time: z.string().min(1, { message: "Start time is required" }),
   duration_hours: z.number().min(0).default(1),
   duration_minutes: z.number().min(0).max(59).default(0),
-  is_virtual: z.boolean().default(false),
+  is_virtual: z.boolean().default(true),
   location_id: z.string().nullable().optional(),
   tag_id: z.string().nullable().optional(),
   is_paid: z.boolean().default(false),
-  price: z.number().nullable().optional()
-    .refine(val => {
-      // If is_paid is true, price is required and must be greater than 0
-      if (val === null && true) {
-        return false;
-      }
-      return val === null || val > 0;
-    }, { message: "Price must be greater than 0" }),
+  price: z.number().nullable().optional(),
 });
 
 export type CreateEventFormValues = z.infer<typeof createEventSchema>;

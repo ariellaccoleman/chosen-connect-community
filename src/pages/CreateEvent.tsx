@@ -4,6 +4,7 @@ import EventForm from "@/components/events/EventForm";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate, useNavigate } from "react-router-dom";
 import { logger } from "@/utils/logger";
+import { toast } from "sonner";
 
 const CreateEvent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -25,6 +26,7 @@ const CreateEvent: React.FC = () => {
 
   const handleSuccess = () => {
     logger.info("Event created successfully, navigating to events page");
+    toast.success("Event created successfully!");
     navigate("/events");
   };
 
