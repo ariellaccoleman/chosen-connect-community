@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { organizationsApi } from "@/api";
-import { ProfileOrganizationRelationship } from "@/types";
+import { ProfileOrganizationRelationship, OrganizationFormValues } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { logger } from "@/utils/logger";
 
@@ -65,6 +65,39 @@ export const useDeleteOrganizationRelationship = () => {
     onError: (error) => {
       logger.error("Failed to delete organization relationship:", error);
       toast.error("Failed to remove organization connection");
+    }
+  });
+};
+
+/**
+ * Hook to update an organization's details
+ */
+export const useUpdateOrganization = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ orgId, data }: { 
+      orgId: string; 
+      data: OrganizationFormValues;
+    }) => {
+      logger.info("Updating organization:", { orgId, data });
+      
+      return organizationsApi.updateOrganization(orgId, {
+        name: data.name,
+        description: data.description,
+        website_url: data.website_url,
+        logo_url: data.logo_url,
+        updated_at: new Date().toISOString(),
+      });
+    },
+    onSuccess: (_, variables) => {
+      logger.info("Successfully updated organization:", variables.orgId);
+      // Invalidate both organization lists and the specific organization
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      queryClient.invalidateQueries({ queryKey: ["organization", variables.orgId] });
+    },
+    onError: (error) => {
+      logger.error("Error updating organization:", error);
     }
   });
 };

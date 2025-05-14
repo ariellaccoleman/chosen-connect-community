@@ -6,7 +6,7 @@ import { OrganizationWithLocation } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { useNavigate } from "react-router-dom";
 import { organizationSchema, OrganizationFormValues } from "./organizationSchema";
-import { supabase } from "@/integrations/supabase/client";
+import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";
 import { logger } from "@/utils/logger";
 
 interface OrganizationEditFormProps {
@@ -18,6 +18,7 @@ interface OrganizationEditFormProps {
 export function OrganizationEditForm({ organization, orgId, children }: OrganizationEditFormProps) {
   const { toast } = useToast();
   const navigate = useNavigate();
+  const updateOrganizationMutation = useUpdateOrganization();
 
   // Log debugging information
   logger.info("OrganizationEditForm - Rendering with props:", { 
@@ -52,18 +53,10 @@ export function OrganizationEditForm({ organization, orgId, children }: Organiza
     try {
       logger.info("Submitting organization update:", { id: orgId, data });
       
-      const { error } = await supabase
-        .from("organizations")
-        .update({
-          name: data.name,
-          description: data.description,
-          website_url: data.website_url,
-          logo_url: data.logo_url,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", orgId);
-
-      if (error) throw error;
+      await updateOrganizationMutation.mutateAsync({ 
+        orgId, 
+        data 
+      });
       
       toast({
         title: "Success",
