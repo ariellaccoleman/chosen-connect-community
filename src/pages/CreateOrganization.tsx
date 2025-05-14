@@ -12,9 +12,8 @@ import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "@/components/ui/sonner";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { supabase } from "@/integrations/supabase/client";
+import { useCreateOrganization } from "@/hooks/useOrganizationMutations";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -27,7 +26,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
 const CreateOrganization = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createOrganization = useCreateOrganization();
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
@@ -40,58 +39,21 @@ const CreateOrganization = () => {
 
   const onSubmit = async (values: OrganizationFormValues) => {
     if (!user) {
-      toast.error("You must be logged in to create an organization");
       return;
     }
     
-    setIsSubmitting(true);
-    
-    try {
-      // Insert organization
-      const { data: organizationData, error: orgError } = await supabase
-        .from("organizations")
-        .insert({
-          name: values.name,
-          description: values.description || null,
-          website_url: values.website_url || null,
-        })
-        .select()
-        .single();
-        
-      if (orgError) throw orgError;
-      
-      // Make the creator an admin of the organization
-      if (organizationData) {
-        const { error: adminError } = await supabase
-          .from("organization_admins")
-          .insert({
-            organization_id: organizationData.id,
-            profile_id: user.id,
-            role: "owner",
-            is_approved: true,
-          });
-          
-        if (adminError) throw adminError;
-        
-        // Also create a relationship between the user and the org
-        const { error: relationshipError } = await supabase
-          .from("org_relationships")
-          .insert({
-            organization_id: organizationData.id,
-            profile_id: user.id,
-            connection_type: "current",
-          });
-          
-        if (relationshipError) throw relationshipError;
+    const result = await createOrganization.mutateAsync({
+      data: {
+        name: values.name,
+        description: values.description,
+        website_url: values.website_url,
+      },
+      userId: user.id
+    });
 
-        toast.success("Organization created successfully!");
-        navigate(`/organizations/${organizationData.id}`);
-      }
-    } catch (error) {
-      console.error("Error creating organization:", error);
-      toast.error("Failed to create organization. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    // If successful and we have an organization ID, navigate to it
+    if (result?.data?.id) {
+      navigate(`/organizations/${result.data.id}`);
     }
   };
 
@@ -162,10 +124,10 @@ const CreateOrganization = () => {
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
-                    disabled={isSubmitting}
+                    disabled={createOrganization.isPending}
                     className="bg-chosen-blue hover:bg-chosen-navy"
                   >
-                    {isSubmitting ? "Creating..." : "Create Organization"}
+                    {createOrganization.isPending ? "Creating..." : "Create Organization"}
                   </Button>
                 </div>
               </form>

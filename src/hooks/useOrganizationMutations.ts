@@ -1,9 +1,48 @@
-
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { organizationCrudApi, organizationRelationshipsApi } from "@/api";
 import { ProfileOrganizationRelationship, OrganizationFormValues } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { logger } from "@/utils/logger";
+
+/**
+ * Hook to create a new organization with all necessary relationships
+ */
+export const useCreateOrganization = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ 
+      data, 
+      userId 
+    }: { 
+      data: { 
+        name: string; 
+        description?: string; 
+        website_url?: string; 
+      }; 
+      userId: string 
+    }) => {
+      logger.info("Creating organization:", data);
+      return organizationCrudApi.createOrganization(data, userId);
+    },
+    onSuccess: (response) => {
+      const organizationId = response.data?.id;
+      logger.info("Successfully created organization:", organizationId);
+      
+      // Invalidate organizations queries to refresh lists
+      queryClient.invalidateQueries({ queryKey: ["organizations"] });
+      
+      // Show success message
+      toast.success("Organization created successfully!");
+      
+      return organizationId;
+    },
+    onError: (error) => {
+      logger.error("Failed to create organization:", error);
+      toast.error("Failed to create organization. Please try again.");
+    }
+  });
+};
 
 /**
  * Hook to add an organization relationship
