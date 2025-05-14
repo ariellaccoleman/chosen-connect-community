@@ -2,14 +2,12 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
-import { OrganizationWithLocation, LocationWithDetails, Location } from "@/types";
-import { formatLocation } from "@/utils/formatters/locationFormatters";
+import { OrganizationWithLocation } from "@/types";
 import OrganizationAdmins from "@/components/organizations/OrganizationAdmins";
 import { useIsOrganizationAdmin, useOrganizationRole } from "@/hooks/useOrganizationAdmins";
 import OrganizationInfo from "@/components/organizations/OrganizationInfo";
 import OrganizationAdminAlert from "@/components/organizations/OrganizationAdminAlert";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
+import { useUserOrganizationRelationships, useOrganization } from "@/hooks/useOrganizationQueries";
 import OrganizationDetailHeader from "@/components/organizations/OrganizationDetailHeader";
 import EntityTagManager from "@/components/tags/EntityTagManager";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,12 +17,14 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 const OrganizationDetail = () => {
-  // Changed from 'id' to 'orgId' to match the route parameter name
-  const { id: orgId } = useParams<{ id: string }>();
+  // Updated to use orgId parameter name to match the route definition
+  const { orgId } = useParams<{ orgId: string }>();
   const { user, isAdmin } = useAuth();
-  const [organization, setOrganization] = useState<OrganizationWithLocation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("details");
+  const [activeTab, setActiveTab] = useState("members");
+  
+  // Use the useOrganization hook instead of direct query
+  const { data: organizationResponse, isLoading } = useOrganization(orgId);
+  const organization = organizationResponse?.data as OrganizationWithLocation;
   
   // Update all useIsOrganizationAdmin calls with the correct ID
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, orgId);
@@ -34,59 +34,16 @@ const OrganizationDetail = () => {
   const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
   const relationships = relationshipsResponse?.data || [];
 
+  // Log organization data for debugging
   useEffect(() => {
-    const fetchOrganization = async () => {
-      if (!orgId) {
-        logger.error("OrganizationDetail - No organization ID in URL params");
-        setLoading(false);
-        return;
-      }
+    if (organization) {
+      logger.info(`OrganizationDetail - Successfully loaded organization: ${organization.name}`);
+    } else if (!isLoading && orgId) {
+      logger.warn(`OrganizationDetail - No organization found with ID: ${orgId}`);
+    }
+  }, [organization, isLoading, orgId]);
 
-      try {
-        logger.info(`OrganizationDetail - Fetching organization with ID: ${orgId}`);
-        setLoading(true);
-        const { data, error } = await supabase
-          .from("organizations")
-          .select(`
-            *,
-            location:locations(*)
-          `)
-          .eq("id", orgId)
-          .single();
-
-        if (error) {
-          logger.error(`OrganizationDetail - Error fetching organization: ${error.message}`);
-          throw error;
-        }
-
-        // Format the location
-        const organizationWithLocation: OrganizationWithLocation = {
-          ...data,
-          location: undefined
-        };
-
-        if (data && data.location) {
-          const locationData = data.location as Location;
-          const locationWithDetails: LocationWithDetails = {
-            ...locationData,
-            formatted_location: formatLocation(locationData)
-          };
-          organizationWithLocation.location = locationWithDetails;
-        }
-
-        logger.info(`OrganizationDetail - Successfully fetched organization: ${data.name}`);
-        setOrganization(organizationWithLocation);
-      } catch (error) {
-        logger.error("Error fetching organization:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrganization();
-  }, [orgId]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto py-6 max-w-3xl">
         <div className="flex justify-center items-center h-64">
