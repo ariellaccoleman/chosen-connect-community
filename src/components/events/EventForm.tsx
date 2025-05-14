@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,9 @@ import EventTypeSelector from "./form/EventTypeSelector";
 import EventPriceToggle from "./form/EventPriceToggle";
 import LocationSelector from "@/components/profile/form/LocationSelector";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import EntityTagManager from "@/components/tags/EntityTagManager";
+import { EntityType } from "@/types/entityTypes";
 
 interface EventFormProps {
   onSuccess?: () => void;
@@ -278,8 +280,5 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess, onError }) => {
     </ErrorBoundary>
   );
 };
-
-// Need to import Button for after event creation
-import { Button } from "@/components/ui/button";
 
 export default EventForm;
