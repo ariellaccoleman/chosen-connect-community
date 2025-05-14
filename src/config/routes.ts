@@ -1,178 +1,152 @@
+import { generatePath } from 'react-router-dom';
 
-import { ReactNode } from "react";
+export const APP_ROUTES = {
+  HOME: '/',
+  ABOUT: '/about',
+  AUTH: '/auth',
+  DASHBOARD: '/dashboard',
+  PROFILE_EDIT: '/profile/edit',
+  PROFILE_VIEW: '/profile/:profileId',
+  ORGANIZATIONS: '/organizations',
+  CREATE_ORGANIZATION: '/organizations/create',
+  ORGANIZATION_DETAIL: '/organizations/:orgId',
+  ORGANIZATION_EDIT: '/organizations/:orgId/edit',
+  MANAGE_ORGANIZATION_CONNECTIONS: '/organizations/:orgId/connections',
+  COMMUNITY: '/community',
+  ADMIN_DASHBOARD: '/admin',
+  ADMIN_TAGS: '/admin/tags',
+  TEST_DATA_GENERATOR: '/admin/test-data-generator',
 
-// Page components
-import Index from "@/pages/Index";
-import NotFound from "@/pages/NotFound";
-import Auth from "@/pages/Auth";
-import Dashboard from "@/pages/Dashboard";
-import ProfileEdit from "@/pages/ProfileEdit";
-import ProfileView from "@/pages/ProfileView";
-import Organizations from "@/pages/Organizations";
-import OrganizationDetail from "@/pages/OrganizationDetail";
-import OrganizationEdit from "@/pages/OrganizationEdit";
-import ManageOrganizationConnections from "@/pages/ManageOrganizationConnections";
-import CommunityDirectory from "@/pages/CommunityDirectory";
-import CreateOrganization from "@/pages/CreateOrganization";
-import TestDataGenerator from "@/pages/TestDataGenerator";
-import About from "@/pages/About";
-import CommunityGuide from "@/components/community-guide/CommunityGuide";
-import AdminDashboard from "@/pages/AdminDashboard";
-import AdminTags from "@/pages/AdminTags";
-
-export type RouteConfig = {
-  path: string;
-  component: React.ComponentType<any>;
-  exact?: boolean;
-  auth?: 'public' | 'protected' | 'admin';
-  layout?: 'default' | 'none';
-  title?: string;
-  children?: RouteConfig[];
+  // Events
+  CREATE_EVENT: '/events/create',
+  EVENTS: '/events',
 };
 
-// Organize routes by feature area
-const routes: RouteConfig[] = [
-  // Public routes
-  {
-    path: "/",
-    component: Index,
-    exact: true,
-    auth: "public",
-    layout: "default",
-    title: "Home"
-  },
-  {
-    path: "/about",
-    component: About,
-    exact: true,
-    auth: "public",
-    layout: "default",
-    title: "About"
-  },
-  {
-    path: "/community-guide",
-    component: CommunityGuide,
-    exact: true,
-    auth: "public",
-    layout: "default",
-    title: "Community Guide"
-  },
-  {
-    path: "/auth",
-    component: Auth,
-    exact: true,
-    auth: "public",
-    layout: "none",
-    title: "Authentication"
-  },
-  
-  // Protected routes
-  {
-    path: "/dashboard",
-    component: Dashboard,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Dashboard"
-  },
-  {
-    path: "/profile",
-    component: ProfileEdit,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Edit Profile"
-  },
-  {
-    path: "/organizations",
-    component: Organizations,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Organizations"
-  },
-  {
-    path: "/organizations/new",
-    component: CreateOrganization,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Create Organization"
-  },
-  {
-    path: "/organizations/:id",
-    component: OrganizationDetail,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Organization Details"
-  },
-  {
-    path: "/organizations/:id/edit",
-    component: OrganizationEdit,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Edit Organization"
-  },
-  {
-    path: "/organizations/manage",
-    component: ManageOrganizationConnections,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Manage Organization Connections"
-  },
-  {
-    path: "/directory",
-    component: CommunityDirectory,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Community Directory"
-  },
-  {
-    path: "/directory/:id",
-    component: ProfileView,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Profile View"
-  },
-  
-  // Admin routes
-  {
-    path: "/admin",
-    component: AdminDashboard,
-    exact: true,
-    auth: "admin",
-    layout: "default",
-    title: "Admin Dashboard"
-  },
-  {
-    path: "/admin/generate-test-data",
-    component: TestDataGenerator,
-    exact: true,
-    auth: "protected",
-    layout: "default",
-    title: "Generate Test Data"
-  },
-  {
-    path: "/admin/tags",
-    component: AdminTags,
-    exact: true,
-    auth: "admin",
-    layout: "default",
-    title: "Admin Tags"
-  },
-  
-  // Catch-all route (404)
-  {
-    path: "*",
-    component: NotFound,
-    layout: "default",
-    title: "Page Not Found"
-  }
-];
+export const ROUTE_ACCESS = {
+  [APP_ROUTES.HOME]: { requiresAuth: false },
+  [APP_ROUTES.ABOUT]: { requiresAuth: false },
+  [APP_ROUTES.AUTH]: { requiresAuth: false },
+  [APP_ROUTES.DASHBOARD]: { requiresAuth: true },
+  [APP_ROUTES.PROFILE_EDIT]: { requiresAuth: true },
+  [APP_ROUTES.PROFILE_VIEW]: { requiresAuth: false },
+  [APP_ROUTES.ORGANIZATIONS]: { requiresAuth: false },
+  [APP_ROUTES.CREATE_ORGANIZATION]: { requiresAuth: true },
+  [APP_ROUTES.ORGANIZATION_DETAIL]: { requiresAuth: false },
+  [APP_ROUTES.ORGANIZATION_EDIT]: { requiresAuth: true },
+  [APP_ROUTES.MANAGE_ORGANIZATION_CONNECTIONS]: { requiresAuth: true },
+  [APP_ROUTES.COMMUNITY]: { requiresAuth: false },
+  [APP_ROUTES.ADMIN_DASHBOARD]: { requiresAuth: true, requiresAdmin: true },
+  [APP_ROUTES.ADMIN_TAGS]: { requiresAuth: true, requiresAdmin: true },
+  [APP_ROUTES.TEST_DATA_GENERATOR]: { requiresAuth: true, requiresAdmin: true },
 
-export default routes;
+  // Events
+  [APP_ROUTES.CREATE_EVENT]: { requiresAuth: true },
+  [APP_ROUTES.EVENTS]: { requiresAuth: false },
+};
+
+export const getRoutesConfig = () => {
+  return [
+    {
+      path: APP_ROUTES.HOME,
+      id: 'home',
+      label: 'Home',
+      showInNav: true,
+    },
+    {
+      path: APP_ROUTES.ABOUT,
+      id: 'about',
+      label: 'About',
+      showInNav: true,
+    },
+    {
+      path: APP_ROUTES.COMMUNITY,
+      id: 'community',
+      label: 'Community',
+      showInNav: true,
+    },
+    {
+      path: APP_ROUTES.DASHBOARD,
+      id: 'dashboard',
+      label: 'Dashboard',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.PROFILE_EDIT,
+      id: 'profile-edit',
+      label: 'Edit Profile',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.PROFILE_VIEW,
+      id: 'profile-view',
+      label: 'View Profile',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ORGANIZATIONS,
+      id: 'organizations',
+      label: 'Organizations',
+      showInNav: true,
+    },
+    {
+      path: APP_ROUTES.CREATE_ORGANIZATION,
+      id: 'create-organization',
+      label: 'Create Organization',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ORGANIZATION_DETAIL,
+      id: 'organization-detail',
+      label: 'Organization Detail',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ORGANIZATION_EDIT,
+      id: 'organization-edit',
+      label: 'Edit Organization',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.MANAGE_ORGANIZATION_CONNECTIONS,
+      id: 'manage-organization-connections',
+      label: 'Manage Organization Connections',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ADMIN_DASHBOARD,
+      id: 'admin-dashboard',
+      label: 'Admin Dashboard',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ADMIN_TAGS,
+      id: 'admin-tags',
+      label: 'Admin Tags',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.TEST_DATA_GENERATOR,
+      id: 'test-data-generator',
+      label: 'Test Data Generator',
+      showInNav: false,
+    },
+    
+    // Events
+    {
+      path: APP_ROUTES.CREATE_EVENT,
+      id: 'create-event',
+      label: 'Create Event',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.EVENTS,
+      id: 'events',
+      label: 'Events',
+      showInNav: true,
+    },
+  ];
+};
+
+export const REDIRECT_PATHS = {
+  // Add events-related redirects if needed
+};

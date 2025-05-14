@@ -1,106 +1,66 @@
 
-import { Routes, Route } from "react-router-dom";
-import ProtectedRoute from "./ProtectedRoute";
-import AdminRoute from "./AdminRoute";
-import PublicRoute from "./PublicRoute";
-import routes, { RouteConfig } from "@/config/routes";
-import Layout from "@/components/layout/Layout";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { useLayout } from "@/contexts/LayoutContext";
-import { useEffect } from "react";
+import { Routes, Route } from 'react-router-dom';
+import { APP_ROUTES } from '@/config/routes';
+
+// Public Routes
+import Index from '@/pages/Index';
+import About from '@/pages/About';
+import Auth from '@/pages/Auth';
+import NotFound from '@/pages/NotFound';
+
+// Protected Routes
+import Dashboard from '@/pages/Dashboard';
+import ProfileEdit from '@/pages/ProfileEdit';
+import ProfileView from '@/pages/ProfileView';
+import Organizations from '@/pages/Organizations';
+import CreateOrganization from '@/pages/CreateOrganization';
+import OrganizationDetail from '@/pages/OrganizationDetail';
+import OrganizationEdit from '@/pages/OrganizationEdit';
+import ManageOrganizationConnections from '@/pages/ManageOrganizationConnections';
+import CommunityDirectory from '@/pages/CommunityDirectory';
+import TestDataGenerator from '@/pages/TestDataGenerator';
+
+// Admin Routes
+import AdminDashboard from '@/pages/AdminDashboard';
+import AdminTags from '@/pages/AdminTags';
+
+// Route Guards
+import PublicRoute from './PublicRoute';
+import ProtectedRoute from './ProtectedRoute';
+import AdminRoute from './AdminRoute';
+
+// New Event Routes
+import CreateEvent from '@/pages/CreateEvent';
 
 const AppRoutes = () => {
-  const { setPageTitle } = useLayout();
-  
-  // Reset page title when component unmounts
-  useEffect(() => {
-    return () => {
-      setPageTitle("");
-    };
-  }, [setPageTitle]);
-
-  // Function to render a route with the appropriate wrapper
-  const renderRoute = (route: RouteConfig) => {
-    const Component = route.component;
-    
-    // Set page title when route changes
-    useEffect(() => {
-      if (route.title) {
-        setPageTitle(route.title);
-      }
-    }, [route.title]);
-
-    // For routes using the 'none' layout, render the component directly without any layout
-    if (route.layout === 'none') {
-      return <Component />;
-    }
-    
-    // For dashboard layout, use the DashboardLayout component
-    if (route.auth === "protected") {
-      return (
-        <ProtectedRoute>
-          {route.component === Layout ? (
-            <Component />
-          ) : route.layout === 'default' ? (
-            <Layout includeNavbar={true}>
-              <Component />
-            </Layout>
-          ) : (
-            <Component />
-          )}
-        </ProtectedRoute>
-      );
-    } else if (route.auth === "admin") {
-      return (
-        <AdminRoute>
-          {route.component === Layout ? (
-            <Component />
-          ) : route.layout === 'default' ? (
-            <Layout includeNavbar={true}>
-              <Component />
-            </Layout>
-          ) : (
-            <Component />
-          )}
-        </AdminRoute>
-      );
-    } else if (route.auth === "public") {
-      return (
-        <PublicRoute>
-          {route.component === Layout ? (
-            <Component />
-          ) : route.layout === 'default' ? (
-            <Layout includeNavbar={true}>
-              <Component />
-            </Layout>
-          ) : (
-            <Component />
-          )}
-        </PublicRoute>
-      );
-    }
-    
-    // For any other route type
-    return route.component === Layout ? (
-      <Component />
-    ) : route.layout === 'default' ? (
-      <Layout includeNavbar={true}>
-        <Component />
-      </Layout>
-    ) : (
-      <Component />
-    );
-  };
-
   return (
     <Routes>
-      {routes.map((route) => (
-        <Route
-          key={route.path}
-          path={route.path}
-          element={renderRoute(route)}
-        />
-      ))}
+      {/* Public Routes */}
+      <Route path={APP_ROUTES.HOME} element={<PublicRoute><Index /></PublicRoute>} />
+      <Route path={APP_ROUTES.ABOUT} element={<PublicRoute><About /></PublicRoute>} />
+      <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
+      
+      {/* Protected Routes */}
+      <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATIONS} element={<ProtectedRoute><Organizations /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.CREATE_ORGANIZATION} element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.MANAGE_ORGANIZATION_CONNECTIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      
+      {/* Event Routes */}
+      <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
+      
+      {/* Admin Routes */}
+      <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
+      
+      {/* Not Found */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };
