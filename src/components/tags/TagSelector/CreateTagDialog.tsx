@@ -27,7 +27,12 @@ const CreateTagDialog = ({
   });
 
   const handleCreateTag = async (values: TagFormValues) => {
-    const tag = await createTag(values, targetType);
+    // Ensure we pass the name property explicitly, making it non-optional for TypeScript
+    const tag = await createTag({
+      name: values.name, // This ensures name is passed as a required property
+      description: values.description
+    }, targetType);
+    
     if (tag) {
       onClose();
     }
