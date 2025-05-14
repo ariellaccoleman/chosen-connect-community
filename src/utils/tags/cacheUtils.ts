@@ -1,10 +1,16 @@
 
 import { supabase } from "@/integrations/supabase/client";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 /**
  * Utility function to update tag cache for specific entity type 
  */
-export const updateTagCache = async (entityType: "person" | "organization", data: any[]) => {
+export const updateTagCache = async (entityType: EntityType | string, data: any[]) => {
+  if (!isValidEntityType(entityType)) {
+    console.error(`Invalid entity type for cache: ${entityType}`);
+    return false;
+  }
+  
   const cacheKey = `selection_tags_${entityType}`;
   
   try {
@@ -22,9 +28,14 @@ export const updateTagCache = async (entityType: "person" | "organization", data
 /**
  * Utility function to invalidate tag cache
  */
-export const invalidateTagCache = async (entityType?: "person" | "organization") => {
+export const invalidateTagCache = async (entityType?: EntityType | string) => {
   try {
     if (entityType) {
+      if (!isValidEntityType(entityType)) {
+        console.error(`Invalid entity type for cache invalidation: ${entityType}`);
+        return false;
+      }
+      
       // Delete specific entity type cache
       const cacheKey = `selection_tags_${entityType}`;
       await supabase
@@ -32,11 +43,18 @@ export const invalidateTagCache = async (entityType?: "person" | "organization")
         .delete()
         .eq('key', cacheKey);
     } else {
-      // Delete all selection_tags_* cache entries
+      // Delete all selection_tags_* cache entries for all known entity types
+      const cachePatterns = Object.values(EntityType).map(type => `selection_tags_${type}`);
+      
+      // Construct an OR condition for all cache keys
+      const orCondition = cachePatterns
+        .map(pattern => `key.eq.${pattern}`)
+        .join(',');
+      
       await supabase
         .from('cache')
         .delete()
-        .or('key.like.selection_tags_person,key.like.selection_tags_organization');
+        .or(orCondition);
     }
     return true;
   } catch (error) {

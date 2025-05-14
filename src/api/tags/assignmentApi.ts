@@ -2,6 +2,7 @@ import { TagAssignment } from "@/utils/tags";
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 import { updateTagEntityType } from "./tagEntityTypesApi";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 /**
  * Assign a tag to an entity
@@ -9,8 +10,13 @@ import { updateTagEntityType } from "./tagEntityTypesApi";
 export const assignTag = async (
   tagId: string,
   entityId: string,
-  entityType: "person" | "organization"
+  entityType: EntityType | string
 ): Promise<ApiResponse<TagAssignment>> => {
+  // Validate entity type
+  if (!isValidEntityType(entityType)) {
+    throw new Error(`Invalid entity type: ${entityType}`);
+  }
+
   return apiClient.query(async (client) => {
     try {
       // Step 1: Update tag_entity_types to ensure this tag is associated with this entity type

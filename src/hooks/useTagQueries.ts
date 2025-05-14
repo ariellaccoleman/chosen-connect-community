@@ -7,23 +7,31 @@ import {
   fetchSelectionTags, 
   fetchEntityTags
 } from "@/utils/tags";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 // Common options for tag queries
 interface TagQueryOptions {
   type?: string;
   createdBy?: string;
   searchQuery?: string;
-  targetType?: "person" | "organization";
+  targetType?: EntityType | string;
   enabled?: boolean;
   skipCache?: boolean; // Option to bypass cache
 }
 
 // Hook for fetching tags for filtering lists (e.g. directory pages)
 export const useFilterTags = (options: TagQueryOptions = {}) => {
+  // Validate entity type if provided
+  const validatedOptions = { ...options };
+  if (validatedOptions.targetType && !isValidEntityType(validatedOptions.targetType)) {
+    console.warn(`Invalid entity type: ${validatedOptions.targetType}, using default`);
+    validatedOptions.targetType = undefined;
+  }
+
   return useQuery({
-    queryKey: ["tags", "filter", options],
-    queryFn: () => fetchFilterTags(options),
-    enabled: options.enabled !== false,
+    queryKey: ["tags", "filter", validatedOptions],
+    queryFn: () => fetchFilterTags(validatedOptions),
+    enabled: validatedOptions.enabled !== false,
     retry: 1,
     meta: {
       onError: (error: any) => {
@@ -35,12 +43,19 @@ export const useFilterTags = (options: TagQueryOptions = {}) => {
 
 // Hook for fetching tags for selection components (e.g. typeaheads)
 export const useSelectionTags = (options: TagQueryOptions = {}) => {
+  // Validate entity type if provided
+  const validatedOptions = { ...options };
+  if (validatedOptions.targetType && !isValidEntityType(validatedOptions.targetType)) {
+    console.warn(`Invalid entity type: ${validatedOptions.targetType}, using default`);
+    validatedOptions.targetType = undefined;
+  }
+
   return useQuery({
-    queryKey: ["tags", "selection", options],
-    queryFn: () => fetchSelectionTags(options),
-    enabled: options.enabled !== false,
+    queryKey: ["tags", "selection", validatedOptions],
+    queryFn: () => fetchSelectionTags(validatedOptions),
+    enabled: validatedOptions.enabled !== false,
     retry: 1,
-    staleTime: options.skipCache ? 0 : 5 * 60 * 1000, // 5 minutes cache unless skipCache is true
+    staleTime: validatedOptions.skipCache ? 0 : 5 * 60 * 1000, // 5 minutes cache unless skipCache is true
     meta: {
       onError: (error: any) => {
         console.error("Error in useSelectionTags query:", error);
@@ -58,13 +73,21 @@ export const useTags = (options: TagQueryOptions = {}) => {
 // Hook for fetching tags assigned to a specific entity
 export const useEntityTags = (
   entityId?: string,
-  entityType?: "person" | "organization",
+  entityType?: EntityType | string,
   options: { enabled?: boolean } = {}
 ) => {
+  // Validate entity type if provided
+  const validEntityType = entityType && isValidEntityType(entityType) 
+    ? entityType 
+    : entityType === "person" ? EntityType.PERSON 
+    : entityType === "organization" ? EntityType.ORGANIZATION 
+    : entityType === "event" ? EntityType.EVENT 
+    : undefined;
+
   return useQuery({
-    queryKey: ["entity-tags", entityId, entityType],
+    queryKey: ["entity-tags", entityId, validEntityType],
     queryFn: () => 
-      entityId && entityType ? fetchEntityTags(entityId, entityType) : [],
-    enabled: !!entityId && !!entityType && options.enabled !== false
+      entityId && validEntityType ? fetchEntityTags(entityId, validEntityType) : [],
+    enabled: !!entityId && !!validEntityType && options.enabled !== false
   });
 };

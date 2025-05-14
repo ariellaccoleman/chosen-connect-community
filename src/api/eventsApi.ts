@@ -39,6 +39,26 @@ export const eventsApi = {
           details: error
         });
       }
+      
+      // If a tag was selected, create a tag assignment
+      if (event.tag_id && data) {
+        try {
+          await apiClient.query(async (client) => {
+            const { error: tagError } = await client.from('tag_assignments').insert({
+              tag_id: event.tag_id,
+              target_id: data.id,
+              target_type: 'event'
+            });
+            
+            if (tagError) {
+              console.error("Error creating tag assignment for event:", tagError);
+            }
+          });
+        } catch (tagErr) {
+          console.error("Exception creating tag assignment:", tagErr);
+          // Don't fail the event creation if tag assignment fails
+        }
+      }
 
       return createSuccessResponse(data as EventWithDetails);
     } catch (error) {
@@ -58,7 +78,7 @@ export const eventsApi = {
   async getEvents(): Promise<ApiResponse<EventWithDetails[]>> {
     try {
       const { data, error } = await apiClient.query(async (client) => {
-        return client
+        const events = await client
           .from("events")
           .select(`
             *,
@@ -66,6 +86,29 @@ export const eventsApi = {
             host:profiles(*)
           `)
           .order("start_time", { ascending: true });
+          
+        if (events.error) throw events.error;
+        
+        // For each event, fetch its tags
+        const eventsWithTags = await Promise.all((events.data || []).map(async (event) => {
+          const { data: tagAssignments, error: tagError } = await client
+            .from('tag_assignments')
+            .select(`
+              *,
+              tag:tags(*)
+            `)
+            .eq('target_id', event.id)
+            .eq('target_type', 'event');
+            
+          if (tagError) {
+            console.error(`Error fetching tags for event ${event.id}:`, tagError);
+            return { ...event, tags: [] };
+          }
+          
+          return { ...event, tags: tagAssignments || [] };
+        }));
+        
+        return eventsWithTags;
       });
 
       if (error) {

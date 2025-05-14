@@ -5,6 +5,7 @@ import {
   removeTagAssignment,
   invalidateTagCache 
 } from "@/utils/tags";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 /**
  * Hook for tag assignment mutations
@@ -22,8 +23,13 @@ export const useTagAssignmentMutations = () => {
     }: {
       tagId: string;
       entityId: string;
-      entityType: "person" | "organization"; 
+      entityType: EntityType | string; 
     }) => {
+      // Validate entity type
+      if (!isValidEntityType(entityType)) {
+        throw new Error(`Invalid entity type: ${entityType}`);
+      }
+      
       return assignTag(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
@@ -51,8 +57,9 @@ export const useTagAssignmentMutations = () => {
       // Also invalidate tags in case entity types changed
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       // Clear both person and organization tag caches to be safe
-      invalidateTagCache("person");
-      invalidateTagCache("organization");
+      Object.values(EntityType).forEach(type => {
+        invalidateTagCache(type);
+      });
     },
     onError: (error) => {
       console.error("Error in removeAssignmentMutation:", error);
