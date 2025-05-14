@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { UseFormReturn } from "react-hook-form";
+import { Control } from "react-hook-form";
 import { 
   FormField,
   FormItem,
@@ -15,13 +15,15 @@ import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLocations } from "@/hooks/useLocations";
 import { LocationWithDetails } from "@/types";
-import { ProfileFormValues } from "../schema/profileSchema";
 
 interface LocationSelectorProps {
-  form: UseFormReturn<ProfileFormValues>;
+  control: Control<any>;
+  label: string;
+  required?: boolean;
+  fieldName: string;
 }
 
-const LocationSelector = ({ form }: LocationSelectorProps) => {
+const LocationSelector = ({ control, label, required = false, fieldName }: LocationSelectorProps) => {
   const [locationSearch, setLocationSearch] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<LocationWithDetails | null>(null);
@@ -30,39 +32,14 @@ const LocationSelector = ({ form }: LocationSelectorProps) => {
   
   // Ensure locations is always a valid array
   const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
-
-  // Effect to fetch the selected location when the component mounts
-  useEffect(() => {
-    const locationId = form.getValues("location_id");
-    if (locationId && !selectedLocation) {
-      // Find the location in the current locations array
-      const location = locations.find(loc => loc.id === locationId);
-      if (location) {
-        setSelectedLocation(location);
-      } else if (locationId) {
-        // If the location isn't in the current results, fetch it specifically
-        const fetchLocation = async () => {
-          try {
-            const { data: specificLocation } = await useLocations(undefined, locationId).refetch();
-            if (specificLocation && specificLocation.length > 0) {
-              setSelectedLocation(specificLocation[0]);
-            }
-          } catch (error) {
-            console.error("Error fetching specific location:", error);
-          }
-        };
-        fetchLocation();
-      }
-    }
-  }, [form, locations, selectedLocation]);
   
   return (
     <FormField
-      control={form.control}
-      name="location_id"
+      control={control}
+      name={fieldName}
       render={({ field }) => (
         <FormItem className="flex flex-col">
-          <FormLabel>Location</FormLabel>
+          <FormLabel>{label}{required && <span className="text-red-500 ml-1">*</span>}</FormLabel>
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <FormControl>
@@ -112,7 +89,7 @@ const LocationSelector = ({ form }: LocationSelectorProps) => {
                                 key={location.id}
                                 value={displayValue}
                                 onSelect={() => {
-                                  form.setValue("location_id", location.id);
+                                  form.setValue(fieldName, location.id);
                                   setSelectedLocation(location);
                                   setOpen(false);
                                 }}

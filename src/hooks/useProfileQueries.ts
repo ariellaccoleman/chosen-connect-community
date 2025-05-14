@@ -31,6 +31,7 @@ const formatProfileData = (data: any, authUser?: User | null): ProfileWithDetail
   return profile;
 };
 
+// Main hook for getting the current user's profile
 export const useCurrentProfile = (userId: string | undefined, authUser?: User | null) => {
   return useQuery({
     queryKey: ['profile', userId],
@@ -57,28 +58,5 @@ export const useCurrentProfile = (userId: string | undefined, authUser?: User | 
   });
 };
 
-export const useProfiles = (userId: string | undefined) => {
-  return useQuery({
-    queryKey: ['profiles', userId],
-    queryFn: async (): Promise<ProfileWithDetails | null> => {
-      if (!userId) return null;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          *,
-          location:locations(*)
-        `)
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return null;
-      }
-      
-      return formatProfileData(data);
-    },
-    enabled: !!userId,
-  });
-};
+// For consistency with how the hook is being used in Dashboard.tsx
+export const useProfileQueries = useCurrentProfile;
