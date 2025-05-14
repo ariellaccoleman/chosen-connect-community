@@ -33,8 +33,8 @@ const CreateTagDialog = ({
     }
   };
 
-  // Fix: Ensure name is always a non-optional string to match TagFormValues
-  const formInitialValues: TagFormValues = {
+  // Let TypeScript infer the type instead of explicitly annotating it
+  const formInitialValues = {
     name: initialValue || "", // Ensure name is never undefined
     description: ""
   };
