@@ -125,10 +125,14 @@ export const getSelectionTags = async (options: {
 
     // If targetType is provided, get tags that have that entity type
     if (targetType && isValidEntityType(targetType)) {
-      query = query.in('id', client
+      // Fix: Instead of passing the query directly, we need to create a subquery
+      const subquery = client
         .from('tag_entity_types')
         .select('tag_id')
-        .eq('entity_type', targetType));
+        .eq('entity_type', targetType);
+      
+      // Now use the .in() method correctly with a column name and a subquery
+      query = query.in('id', subquery);
     }
 
     const { data, error } = await query

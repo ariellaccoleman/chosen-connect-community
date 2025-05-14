@@ -12,7 +12,7 @@ export const useEntityTags = (entityId: string, entityType: string) => {
     queryKey: ["entity-tags", entityId, entityType],
     queryFn: async () => {
       const response = await getEntityTags(entityId, entityType);
-      return response.status === 'success' ? response.data : [];
+      return response.status === 'success' ? response.data || [] : [];
     },
     enabled: !!entityId && !!entityType,
   });
@@ -25,11 +25,11 @@ export const useFilterTags = (tagId: string | null, entityType?: string) => {
   return useQuery<TagAssignment[]>({
     queryKey: ["filter-tags", tagId, entityType],
     queryFn: async () => {
-      const response = await getEntitiesWithTag(tagId as string, entityType);
-      return response.status === 'success' ? response.data : [];
+      if (!tagId) return [];
+      const response = await getEntitiesWithTag(tagId, entityType);
+      return response.status === 'success' ? response.data || [] : [];
     },
     enabled: !!tagId,
-    initialData: [],
   });
 };
 

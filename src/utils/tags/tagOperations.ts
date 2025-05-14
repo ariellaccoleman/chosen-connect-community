@@ -1,4 +1,3 @@
-
 import { getTags, getFilterTags, getSelectionTags } from "@/api/tags";
 import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
 import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
@@ -93,14 +92,7 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
     };
     
     // Call the API function that properly uses the apiClient
-    const tag = await apiFindOrCreateTag(tagInsert);
-    
-    if (!tag) {
-      console.error("Error finding or creating tag");
-      return null;
-    }
-    
-    return tag;
+    return await apiFindOrCreateTag(tagInsert);
   } catch (error) {
     console.error("Error finding or creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it

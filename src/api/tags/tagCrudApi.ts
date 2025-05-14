@@ -26,6 +26,7 @@ export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> =
   }
 
   try {
+    // Use a simpler approach that returns Tag directly, not ApiResponse<Tag>
     const tag = await apiClient.query<Tag | null>(async (client) => {
       // First check if the tag exists
       const { data: existingTags, error: findError } = await client
@@ -39,11 +40,6 @@ export const findOrCreateTag = async (tagData: TagInsert): Promise<Tag | null> =
       // If tag exists, return it
       if (existingTags) {
         return existingTags as Tag;
-      }
-
-      // Ensure name is provided for insert
-      if (!tagData.name) {
-        throw new Error("Tag name is required");
       }
 
       // If not, create a new tag
