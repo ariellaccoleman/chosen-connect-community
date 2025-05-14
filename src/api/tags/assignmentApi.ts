@@ -44,6 +44,17 @@ export const assignTag = async (
         .single();
       
       if (error) {
+        // Provide more descriptive error for RLS violations
+        if (error.code === '42501') { // PostgreSQL permission denied code
+          const errorDetails = {
+            code: "rls_violation",
+            message: `Permission denied: You don't have permission to assign tags to this ${entityType}. Ensure you are the ${entityType === 'event' ? 'host of the event' : 'admin of the organization'}.`,
+            details: error
+          };
+          logger.error("RLS violation in assignTag:", errorDetails);
+          return createErrorResponse(errorDetails);
+        }
+        
         logger.error("Error in assignTag:", error);
         return createErrorResponse(error);
       }
@@ -82,6 +93,18 @@ export const removeTagAssignment = async (assignmentId: string): Promise<ApiResp
         .eq('id', assignmentId);
       
       if (deleteError) {
+        // Provide more descriptive error for RLS violations
+        if (deleteError.code === '42501') { // PostgreSQL permission denied code
+          const entityType = assignment?.target_type || 'entity';
+          const errorDetails = {
+            code: "rls_violation",
+            message: `Permission denied: You don't have permission to remove tags from this ${entityType}. Ensure you are the ${entityType === 'event' ? 'host of the event' : 'admin of the organization'}.`,
+            details: deleteError
+          };
+          logger.error("RLS violation in removeTagAssignment:", errorDetails);
+          return createErrorResponse(errorDetails);
+        }
+        
         logger.error("Error deleting tag assignment:", deleteError);
         return createErrorResponse(deleteError);
       }

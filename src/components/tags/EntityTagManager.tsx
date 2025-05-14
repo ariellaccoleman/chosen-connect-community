@@ -14,6 +14,8 @@ interface EntityTagManagerProps {
   isAdmin?: boolean;
   isEditing?: boolean;
   onFinishEditing?: () => void;
+  onTagSuccess?: () => void;
+  onTagError?: (error: Error) => void;
 }
 
 const EntityTagManager = ({
@@ -21,7 +23,9 @@ const EntityTagManager = ({
   entityType,
   isAdmin = false,
   isEditing = false,
-  onFinishEditing
+  onFinishEditing,
+  onTagSuccess,
+  onTagError
 }: EntityTagManagerProps) => {
   const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
@@ -70,22 +74,38 @@ const EntityTagManager = ({
         entityId, 
         entityType 
       });
-      // Success toast is handled in the mutation
+      
+      // Call success callback if provided
+      if (onTagSuccess) {
+        onTagSuccess();
+      }
     } catch (error) {
       logger.error("Error assigning tag:", error);
       console.error("Error assigning tag:", error);
-      // Error toast is handled in the mutation
+      
+      // Call error callback if provided
+      if (onTagError && error instanceof Error) {
+        onTagError(error);
+      }
     }
   };
   
   const handleRemoveTag = async (assignmentId: string) => {
     try {
       await removeTagAssignment(assignmentId);
-      // Success toast is handled in the mutation
+      
+      // Call success callback if provided
+      if (onTagSuccess) {
+        onTagSuccess();
+      }
     } catch (error) {
       logger.error("Error removing tag:", error);
       console.error("Error removing tag:", error);
-      // Error toast is handled in the mutation
+      
+      // Call error callback if provided
+      if (onTagError && error instanceof Error) {
+        onTagError(error);
+      }
     }
   };
   

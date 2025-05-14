@@ -4,6 +4,8 @@ import EntityTagManager from "@/components/tags/EntityTagManager";
 import { EntityType } from "@/types/entityTypes";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 interface EventTagsManagerProps {
   eventId: string;
@@ -11,6 +13,20 @@ interface EventTagsManagerProps {
 
 const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
   const navigate = useNavigate();
+
+  // Log component mounting for debugging
+  React.useEffect(() => {
+    logger.info(`EventTagsManager mounted for event ${eventId}`);
+  }, [eventId]);
+
+  const handleTagSuccess = () => {
+    toast.success("Tag added successfully to your event");
+  };
+
+  const handleTagError = (error: Error) => {
+    toast.error(`Error adding tag: ${error.message}`);
+    logger.error("Error in event tag management:", error);
+  };
 
   return (
     <div className="space-y-6">
@@ -30,6 +46,8 @@ const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
           entityType={EntityType.EVENT}
           isAdmin={true}
           isEditing={true}
+          onTagSuccess={handleTagSuccess}
+          onTagError={handleTagError}
         />
       </div>
     </div>
