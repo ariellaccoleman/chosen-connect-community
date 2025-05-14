@@ -8,6 +8,7 @@ import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
+import TagList from "@/components/tags/TagList";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
@@ -120,6 +121,12 @@ const Events: React.FC = () => {
                   </div>
                   
                   {renderLocationInfo(event)}
+                  
+                  {event.tags && event.tags.length > 0 && (
+                    <div className="mt-2 mb-2">
+                      <TagList tagAssignments={event.tags} />
+                    </div>
+                  )}
                   
                   {event.host && (
                     <div className="mt-3 pt-3 border-t text-sm text-gray-500">

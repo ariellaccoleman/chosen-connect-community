@@ -8,6 +8,7 @@ import { useEvents } from "@/hooks/useEvents";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/utils/logger";
+import TagList from "@/components/tags/TagList";
 
 const EventSection: React.FC = () => {
   const { data: events = [], isLoading, error, refetch } = useEvents();
@@ -100,6 +101,11 @@ const EventSection: React.FC = () => {
                   <Calendar className="h-3 w-3 mr-1" />
                   {formatEventDate(event.start_time)}
                 </div>
+                {event.tags && event.tags.length > 0 && (
+                  <div className="mt-2">
+                    <TagList tagAssignments={event.tags} />
+                  </div>
+                )}
               </div>
             ))}
           </div>
