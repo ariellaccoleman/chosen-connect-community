@@ -15,14 +15,14 @@ import EventTypeSelector from "./form/EventTypeSelector";
 import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
-import { toast } from "@/components/ui/use-toast";
+import { logger } from "@/utils/logger";
+import { toast } from "@/hooks/use-toast";
 
 interface EventFormProps {
-  onCancel?: () => void;
   onSuccess?: () => void;
 }
 
-const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
+const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
@@ -57,7 +57,10 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
   const isSubmitting = createEventMutation.isPending;
 
   const handleSubmit = async (values: CreateEventFormValues) => {
+    logger.info("Form submitted with values:", values);
+    
     if (!user?.id) {
+      logger.error("Authentication error: No user ID found");
       toast({
         title: "Authentication Error",
         description: "You must be logged in to create an event",
@@ -67,8 +70,10 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
     }
 
     try {
+      logger.info("Processing form submission...");
       // Calculate start and end timestamps
       const startDateTime = `${values.start_date}T${values.start_time}`;
+      logger.info("Start date time:", startDateTime);
       
       // Calculate end time by adding duration to start time
       const startDate = new Date(startDateTime);
@@ -76,8 +81,15 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       endDate.setHours(endDate.getHours() + values.duration_hours);
       endDate.setMinutes(endDate.getMinutes() + values.duration_minutes);
       
+      logger.info("Calculated dates:", { 
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString() 
+      });
+      
       const start_time = formatDateForDb(startDate.toISOString());
       const end_time = formatDateForDb(endDate.toISOString());
+
+      logger.info("Formatted dates for DB:", { start_time, end_time });
 
       // If event is not paid, ensure price is null
       if (!values.is_paid) {
@@ -102,10 +114,14 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
         price: values.is_paid ? values.price : null,
       };
 
-      await createEventMutation.mutateAsync({
+      logger.info("Submitting event to API:", eventInput);
+
+      const result = await createEventMutation.mutateAsync({
         event: eventInput,
         hostId: user.id,
       });
+
+      logger.info("Event creation result:", result);
 
       if (onSuccess) {
         onSuccess();
@@ -113,7 +129,7 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
         navigate("/events");
       }
     } catch (error) {
-      console.error("Error creating event:", error);
+      logger.error("Error creating event:", error);
       toast({
         title: "Error",
         description: "There was a problem creating your event.",
@@ -156,7 +172,6 @@ const EventForm: React.FC<EventFormProps> = ({ onCancel, onSuccess }) => {
       
       <FormActions
         isSubmitting={isSubmitting}
-        onCancel={onCancel}
         submitLabel="Create Event"
       />
     </FormWrapper>

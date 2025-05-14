@@ -49,6 +49,7 @@ const FormActions = ({
         type="submit" 
         className="bg-chosen-blue hover:bg-chosen-navy"
         disabled={isSubmitting}
+        onClick={() => console.log("Submit button clicked")}
       >
         {isSubmitting ? "Saving..." : submitLabel}
       </Button>
