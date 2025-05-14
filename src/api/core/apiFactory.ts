@@ -4,7 +4,6 @@ import { ListParams, QueryOptions, ApiOperations } from "./types";
 import { ApiResponse, createErrorResponse, createSuccessResponse } from "./errorHandler";
 import { apiClient } from "./apiClient";
 import { logger } from "@/utils/logger";
-import { PostgrestFilterBuilder } from "@supabase/supabase-js";
 
 /**
  * Creates standardized CRUD API operations for a specific entity type
@@ -16,14 +15,14 @@ import { PostgrestFilterBuilder } from "@supabase/supabase-js";
  */
 export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>>(
   entityName: string,
-  tableName: keyof typeof supabase.from extends string ? keyof typeof supabase.from : string,
+  tableName: string,
   options: {
     idField?: string;
     defaultSelect?: string;
     defaultOrderBy?: string;
     softDelete?: boolean;
     transformResponse?: (item: any) => T;
-    transformRequest?: (item: TCreate | TUpdate) => any;
+    transformRequest?: (item: TCreate | TUpdate) => Record<string, any>;
   } = {}
 ): ApiOperations<T, TId, TCreate, TUpdate> {
   // Set default options
@@ -33,7 +32,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
     defaultOrderBy = 'created_at',
     softDelete = false,
     transformResponse = (item) => item as T,
-    transformRequest = (item) => item
+    transformRequest = (item) => item as Record<string, any>
   } = options;
 
   /**
@@ -84,7 +83,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         if (error) throw error;
         
         // Transform response data
-        const transformedData = data.map(transformResponse);
+        const transformedData = data ? data.map(transformResponse) : [];
         
         return createSuccessResponse(transformedData);
       });
@@ -135,7 +134,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         
         if (error) throw error;
         
-        const transformedData = data.map(transformResponse);
+        const transformedData = data ? data.map(transformResponse) : [];
         
         return createSuccessResponse(transformedData);
       });
@@ -210,7 +209,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         
         if (softDelete) {
           // Soft delete - check if the table has deleted_at column first
-          const updateData = { updated_at: new Date().toISOString() } as any;
+          const updateData = { updated_at: new Date().toISOString() } as Record<string, any>;
           updateData.deleted_at = new Date().toISOString();
           
           const { error: updateError } = await client
@@ -258,7 +257,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         
         if (error) throw error;
         
-        const transformedData = data.map(transformResponse);
+        const transformedData = data ? data.map(transformResponse) : [];
         
         return createSuccessResponse(transformedData);
       });
@@ -317,7 +316,7 @@ export function createApiOperations<T, TId = string, TCreate = Partial<T>, TUpda
         
         if (softDelete) {
           // Soft delete - update deleted_at field
-          const updateData = { updated_at: new Date().toISOString() } as any;
+          const updateData = { updated_at: new Date().toISOString() } as Record<string, any>;
           updateData.deleted_at = new Date().toISOString();
           
           const { error: updateError } = await client
