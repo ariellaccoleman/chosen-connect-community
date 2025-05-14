@@ -7,6 +7,7 @@ import { formatOrganizationRelationships } from "@/utils/formatters/organization
 import { formatLocationWithDetails } from "@/utils/formatters/locationFormatters";
 import { EntityType } from "@/types/entityTypes";
 import { organizationsApi } from "@/api";
+import { logger } from "@/utils/logger";
 
 export const useOrganizations = () => {
   return useQuery({
@@ -24,18 +25,38 @@ export const useOrganizations = () => {
 };
 
 export const useOrganization = (id: string | undefined) => {
+  logger.info(`useOrganization hook called with ID: ${id || 'undefined'}`);
+  
   return useQuery({
     queryKey: ["organization", id],
     queryFn: async () => {
-      if (!id) return null;
+      logger.info(`useOrganization queryFn executing for ID: ${id}`);
       
-      const response = await organizationsApi.getOrganizationById(id);
-      if (response.error) {
-        throw response.error;
+      if (!id) {
+        logger.warn("useOrganization called with undefined ID");
+        return null;
       }
-      return response.data;
+      
+      try {
+        const response = await organizationsApi.getOrganizationById(id);
+        
+        if (response.error) {
+          logger.error(`Error in useOrganization hook for ID ${id}:`, response.error);
+          throw response.error;
+        }
+        
+        logger.info(`useOrganization query successful for ID: ${id}`, { 
+          dataExists: !!response.data 
+        });
+        
+        return response.data;
+      } catch (error) {
+        logger.error(`Exception in useOrganization hook for ID ${id}:`, error);
+        throw error;
+      }
     },
     enabled: !!id,
+    refetchOnWindowFocus: false,
   });
 };
 
@@ -58,6 +79,8 @@ export const useUserOrganizationRelationships = (userId?: string) => {
     queryFn: async () => {
       if (!userId) return [];
       
+      logger.info(`Fetching organization relationships for user: ${userId}`);
+      
       const { data, error } = await supabase
         .from("org_relationships")
         .select(`
@@ -70,8 +93,11 @@ export const useUserOrganizationRelationships = (userId?: string) => {
         .eq("profile_id", userId);
         
       if (error) {
+        logger.error(`Error fetching relationships for user ${userId}:`, error);
         throw error;
       }
+      
+      logger.info(`Found ${data?.length || 0} organization relationships for user ${userId}`);
       
       // Format the organization relationships to include formatted location
       return formatOrganizationRelationships(data || []);

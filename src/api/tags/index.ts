@@ -1,11 +1,14 @@
 
 /**
- * Export all tag-related API functionality
+ * Main entry point for all tag-related API functionality
+ * This file re-exports all tag API functionality from individual modules
  */
-export * from './tagCrudApi';
-export * from './entityTagsApi';
-export * from './tagEntityTypesApi';
+
+// Re-export all tag functionality
 export * from './assignmentApi';
-export * from './getTagsApi';
 export * from './cacheApi';
+export * from './entityTagsApi';
+export * from './getTagsApi';
 export * from './invalidateCache';
+export * from './tagCrudApi';
+export * from './tagEntityTypesApi';

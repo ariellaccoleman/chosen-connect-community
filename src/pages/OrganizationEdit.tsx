@@ -27,6 +27,7 @@ import OrganizationTags from "@/components/organizations/OrganizationTags";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useOrganization } from "@/hooks/useOrganizationQueries";
+import { logger } from "@/utils/logger";
 
 // Define form schema
 const organizationSchema = z.object({
@@ -45,8 +46,9 @@ const OrganizationEdit = () => {
   const [activeTab, setActiveTab] = useState("basic");
   const { toast } = useToast();
   
-  // Add console logs to debug the route parameter
-  console.log("Organization Edit - Route param id:", id);
+  // Enhanced logging for debugging
+  logger.info("OrganizationEdit - Component mounted with params:", { id });
+  logger.info("OrganizationEdit - Current user:", { userId: user?.id });
   
   // The organization query
   const { data: organization, isLoading, error } = useOrganization(id);
@@ -67,20 +69,34 @@ const OrganizationEdit = () => {
   // Set form values when organization data is loaded
   useEffect(() => {
     if (organization) {
-      console.log("Organization data loaded:", organization);
+      logger.info("Organization data loaded:", organization);
       form.reset({
         name: organization.name,
         description: organization.description || "",
         website_url: organization.website_url || "",
         logo_url: organization.logo_url || "",
       });
+    } else if (!isLoading) {
+      logger.error("Organization data is null despite loading being complete");
     }
-  }, [organization, form]);
+  }, [organization, form, isLoading]);
+
+  // Log when query finishes loading
+  useEffect(() => {
+    if (!isLoading) {
+      logger.info("Organization query completed:", { 
+        hasData: !!organization, 
+        hasError: !!error,
+        errorMessage: error?.message
+      });
+    }
+  }, [isLoading, organization, error]);
 
   // Check if user is admin and redirect if not
   useEffect(() => {
     // Only check admin status if loading is complete
     if (!adminCheckLoading && !isOrgAdmin && user && id) {
+      logger.info("Admin check failed - redirecting", { isOrgAdmin, adminCheckLoading, userId: user.id });
       toast({
         title: "Access Denied",
         description: "You don't have permission to edit this organization",
@@ -105,6 +121,8 @@ const OrganizationEdit = () => {
     }
     
     try {
+      logger.info("Submitting organization update:", { id, data });
+      
       const { error } = await supabase
         .from("organizations")
         .update({
@@ -125,7 +143,7 @@ const OrganizationEdit = () => {
       
       navigate(`/organizations/${id}`);
     } catch (error) {
-      console.error("Error updating organization:", error);
+      logger.error("Error updating organization:", error);
       toast({
         title: "Error",
         description: "Failed to update organization",
@@ -149,6 +167,7 @@ const OrganizationEdit = () => {
 
   // Show an error state if there was a problem loading the data
   if (error) {
+    logger.error("Error rendering organization edit:", error);
     return (
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
@@ -162,6 +181,7 @@ const OrganizationEdit = () => {
 
   // Show a not found state if we couldn't find the organization
   if (!organization) {
+    logger.error("Organization not found for ID:", id);
     return (
       <Layout>
         <div className="container mx-auto py-6 max-w-3xl">
