@@ -1,4 +1,3 @@
-
 import { LocationWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
 import { ApiResponse, createSuccessResponse } from "./core/errorHandler";
@@ -23,21 +22,15 @@ export const locationsApi = {
       } else if (searchTerm) {
         // For search functionality, handle terms with or without commas
         if (searchTerm.includes(',')) {
-          // For comma-separated searches, split and search the parts individually
-          const parts = searchTerm.split(',').map(part => part.trim()).filter(Boolean);
+          // For comma-separated searches, use the first part to search
+          // but match the ENTIRE pattern in full_name to handle region matching
+          const firstPart = searchTerm.split(',')[0].trim().replace(/[%_]/g, '');
+          const cleanedFullTerm = searchTerm.replace(/[%_]/g, '');
           
-          if (parts.length >= 1) {
-            // Search for the first part in city, and full_name
-            const firstPart = parts[0].replace(/[%,_]/g, '');
-            query = query.ilike('full_name', `%${firstPart}%`);
-            
-            // If there are additional parts, narrow search based on those parts as well
-            if (parts.length >= 2) {
-              // For the second part, typically a state/region, match it in the full_name
-              const combinedSearch = parts.join(', ').replace(/[%,_]/g, '');
-              query = query.ilike('full_name', `%${combinedSearch}%`);
-            }
-          }
+          // This approach allows partial matches on the second part (after comma)
+          // It will match "Washington, D" against "Washington, District of Columbia"
+          query = query.ilike('full_name', `%${firstPart}%`)
+                       .ilike('full_name', `%${cleanedFullTerm}%`);
         } else {
           // Clean the search term to avoid SQL injection and escape special characters
           const cleanedSearchTerm = searchTerm.replace(/[%,_]/g, '');
