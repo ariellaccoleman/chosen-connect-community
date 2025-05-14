@@ -4,11 +4,9 @@ import { Control } from "react-hook-form";
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import LocationSelector from "@/components/profile/form/LocationSelector";
-import EventTypeSelector from "./EventTypeSelector";
-import EventPriceToggle from "./EventPriceToggle";
 import TagSelector from "@/components/tags/TagSelector";
 import { EntityType } from "@/types/entityTypes";
+import { Tag } from "@/utils/tags";
 
 interface EventBasicDetailsProps {
   control: Control<any>;
@@ -60,8 +58,12 @@ const EventBasicDetails = ({ control, onTypeChange }: EventBasicDetailsProps) =>
               <div className="mb-2">
                 <TagSelector
                   targetType={EntityType.EVENT}
-                  onTagSelected={(tag) => field.onChange(tag.id)}
+                  onTagSelected={(tag: Tag) => {
+                    console.log("Tag selected:", tag);
+                    field.onChange(tag.id);
+                  }}
                   isAdmin={true}
+                  currentSelectedTagId={field.value}
                 />
               </div>
             </FormControl>

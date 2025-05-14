@@ -13,6 +13,7 @@ interface TagSelectorComponentProps {
   targetType: EntityType;
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;
+  currentSelectedTagId?: string | null;
 }
 
 /**
@@ -21,12 +22,14 @@ interface TagSelectorComponentProps {
 const TagSelectorComponent = ({ 
   targetType, 
   onTagSelected, 
-  isAdmin = false 
+  isAdmin = false,
+  currentSelectedTagId
 }: TagSelectorComponentProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [tags, setTags] = useState<Tag[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const { user } = useAuth();
 
   // Load tags when search criteria changes
@@ -34,6 +37,30 @@ const TagSelectorComponent = ({
     loadTagsWithDebounce();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchValue, targetType, isAdmin, user?.id, open]);
+
+  // Find and set the selected tag when currentSelectedTagId changes
+  useEffect(() => {
+    if (currentSelectedTagId) {
+      const findSelectedTag = async () => {
+        try {
+          const allTags = await fetchSelectionTags({ 
+            targetType,
+            skipCache: true
+          });
+          const found = allTags.find(tag => tag.id === currentSelectedTagId);
+          if (found) {
+            setSelectedTag(found);
+          }
+        } catch (err) {
+          console.error("Error fetching selected tag:", err);
+        }
+      };
+      
+      findSelectedTag();
+    } else {
+      setSelectedTag(null);
+    }
+  }, [currentSelectedTagId, targetType]);
 
   /**
    * Load tags with debounce to prevent excessive API calls
@@ -97,23 +124,56 @@ const TagSelectorComponent = ({
   const handleTagCreated = (tag: Tag) => {
     // Force cache invalidation when a new tag is created
     invalidateTagCache(targetType);
+    setSelectedTag(tag);
     // Call the parent's onTagSelected callback
     onTagSelected(tag);
   };
 
+  /**
+   * Handle tag selection
+   */
+  const handleTagSelection = (tag: Tag) => {
+    setSelectedTag(tag);
+    onTagSelected(tag);
+    setSearchValue("");
+    setOpen(false);
+  };
+
   return (
     <>
-      <TagSelectorPopover 
-        open={open}
-        setOpen={setOpen}
-        searchValue={searchValue}
-        setSearchValue={setSearchValue}
-        tags={tags}
-        targetType={targetType}
-        onTagSelected={onTagSelected}
-        handleOpenCreateDialog={handleOpenCreateDialog}
-        user={user}
-      />
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className="w-full justify-between"
+          >
+            {selectedTag ? (
+              <span className="flex items-center">
+                <TagIcon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">{selectedTag.name}</span>
+              </span>
+            ) : (
+              <span className="flex items-center">
+                <TagIcon className="mr-2 h-4 w-4 shrink-0" />
+                <span className="truncate">Select a tag</span>
+              </span>
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="p-0 w-[300px]">
+          <TagSearch 
+            searchValue={searchValue}
+            setSearchValue={setSearchValue}
+            tags={tags}
+            targetType={targetType}
+            onTagSelected={handleTagSelection}
+            handleOpenCreateDialog={handleOpenCreateDialog}
+            user={user}
+          />
+        </PopoverContent>
+      </Popover>
 
       <CreateTagDialog
         isOpen={isCreateDialogOpen}
@@ -124,66 +184,6 @@ const TagSelectorComponent = ({
         isAdmin={isAdmin}
       />
     </>
-  );
-};
-
-/**
- * The popover component for tag selection
- */
-interface TagSelectorPopoverProps {
-  open: boolean;
-  setOpen: (open: boolean) => void;
-  searchValue: string;
-  setSearchValue: (value: string) => void;
-  tags: Tag[];
-  targetType: EntityType;
-  onTagSelected: (tag: Tag) => void;
-  handleOpenCreateDialog: () => void;
-  user: any;
-}
-
-const TagSelectorPopover = ({
-  open,
-  setOpen,
-  searchValue,
-  setSearchValue,
-  tags,
-  targetType,
-  onTagSelected,
-  handleOpenCreateDialog,
-  user
-}: TagSelectorPopoverProps) => {
-  const handleTagSelection = (tag: Tag) => {
-    onTagSelected(tag);
-    setSearchValue("");
-    setOpen(false);
-  };
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between"
-        >
-          <TagIcon className="mr-2 h-4 w-4 shrink-0" />
-          <span className="truncate">Add tag</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="p-0 w-[300px]">
-        <TagSearch 
-          searchValue={searchValue}
-          setSearchValue={setSearchValue}
-          tags={tags}
-          targetType={targetType}
-          onTagSelected={handleTagSelection}
-          handleOpenCreateDialog={handleOpenCreateDialog}
-          user={user}
-        />
-      </PopoverContent>
-    </Popover>
   );
 };
 
