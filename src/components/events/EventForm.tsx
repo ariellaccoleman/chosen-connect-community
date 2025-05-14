@@ -16,7 +16,7 @@ import EventPriceToggle from "./form/EventPriceToggle";
 import { CreateEventInput } from "@/types";
 import { formatDateForDb } from "@/utils/formatters";
 import { logger } from "@/utils/logger";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 
 interface EventFormProps {
   onSuccess?: () => void;
@@ -27,12 +27,13 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const { createEventMutation } = useEventMutations();
   const [locationFieldVisible, setLocationFieldVisible] = useState(false);
+  const formId = "event-form";
   
   // Get today's date for default date
   const today = new Date();
   const defaultDate = today.toISOString().split('T')[0];
   
-  // Default time is now 1:00 PM
+  // Default time is 1:00 PM
   const defaultTime = "13:00";
 
   const form = useForm<CreateEventFormValues>({
@@ -59,8 +60,8 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
   console.log("Rendering EventForm component", { isSubmitting, isPaid, isVirtual });
 
   const handleSubmit = async (values: CreateEventFormValues) => {
-    console.log("handleSubmit called with values:", values);
-    logger.info("Form submitted with values:", values);
+    console.log("EventForm handleSubmit called with values:", values);
+    logger.info("EventForm handleSubmit called with values:", values);
     
     if (!user?.id) {
       console.error("No user ID found, cannot submit form");
@@ -165,7 +166,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       form={form} 
       onSubmit={handleSubmit} 
       className="space-y-6"
-      id="event-form"
+      id={formId}
     >
       <h2 className="text-2xl font-bold">Create New Event</h2>
       
@@ -200,6 +201,7 @@ const EventForm: React.FC<EventFormProps> = ({ onSuccess }) => {
       <FormActions
         isSubmitting={isSubmitting}
         submitLabel="Create Event"
+        formId={formId}
       />
     </FormWrapper>
   );

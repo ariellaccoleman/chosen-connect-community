@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { eventsApi } from "@/api";
 import { CreateEventInput } from "@/types";
 import { showErrorToast } from "@/api/core/errorHandler";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
 
 export function useEventMutations() {
@@ -31,12 +31,20 @@ export function useEventMutations() {
       console.log("Mutation succeeded with data:", data);
       logger.info("Event creation successful:", data);
       queryClient.invalidateQueries({ queryKey: ["events"] });
-      toast.success("Event created successfully");
+      toast({
+        title: "Success",
+        description: "Event created successfully",
+        variant: "default"
+      });
     },
     onError: (error) => {
       console.error("Mutation error:", error);
       logger.error("Event mutation error:", error);
-      toast.error("Failed to create event. Please try again.");
+      toast({
+        title: "Error",
+        description: "Failed to create event. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
