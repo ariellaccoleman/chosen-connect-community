@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -72,8 +71,8 @@ const Dashboard = () => {
     );
   }
 
-  // Get user role from app_metadata
-  const userRole = user?.app_metadata?.role || "Not specified";
+  // Get user role from user_metadata
+  const userRole = user?.user_metadata?.role || "Not specified";
 
   return (
     <div className="container mx-auto py-6 space-y-4">

@@ -24,8 +24,8 @@ const formatProfileData = (data: any, authUser?: User | null): ProfileWithDetail
   }
   
   // Add role from auth user metadata if available
-  if (authUser && authUser.app_metadata?.role) {
-    profile.role = authUser.app_metadata.role;
+  if (authUser && authUser.user_metadata?.role) {
+    profile.role = authUser.user_metadata.role;
   }
   
   return profile;
