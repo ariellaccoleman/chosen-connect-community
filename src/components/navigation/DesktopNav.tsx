@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, ShieldCheck } from "lucide-react";
@@ -77,7 +78,6 @@ const DesktopNav = () => {
       <div className="hidden md:flex items-center space-x-8">
         <Link to="/" className="text-gray-700 hover:text-chosen-blue font-medium">Home</Link>
         <Link to="/about" className="text-gray-700 hover:text-chosen-blue font-medium">About</Link>
-        <Link to="/events" className="text-gray-700 hover:text-chosen-blue font-medium">Events</Link>
         <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
       </div>
       

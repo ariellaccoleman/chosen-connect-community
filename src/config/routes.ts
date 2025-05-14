@@ -1,3 +1,4 @@
+
 import { generatePath } from 'react-router-dom';
 
 export const APP_ROUTES = {
@@ -40,10 +41,10 @@ export const ROUTE_ACCESS = {
   [APP_ROUTES.ADMIN_TAGS]: { requiresAuth: true, requiresAdmin: true },
   [APP_ROUTES.TEST_DATA_GENERATOR]: { requiresAuth: true, requiresAdmin: true },
 
-  // Events
+  // Events - Update to require authentication
   [APP_ROUTES.CREATE_EVENT]: { requiresAuth: true },
-  [APP_ROUTES.EVENTS]: { requiresAuth: false },
-  [APP_ROUTES.EVENT_DETAIL]: { requiresAuth: false },
+  [APP_ROUTES.EVENTS]: { requiresAuth: true },
+  [APP_ROUTES.EVENT_DETAIL]: { requiresAuth: true },
 };
 
 export const getRoutesConfig = () => {
@@ -133,7 +134,7 @@ export const getRoutesConfig = () => {
       showInNav: false,
     },
     
-    // Events
+    // Events - Set to not show in navigation by default (will be shown conditionally in nav components)
     {
       path: APP_ROUTES.CREATE_EVENT,
       id: 'create-event',
@@ -144,7 +145,7 @@ export const getRoutesConfig = () => {
       path: APP_ROUTES.EVENTS,
       id: 'events',
       label: 'Events',
-      showInNav: true,
+      showInNav: false,
     },
   ];
 };

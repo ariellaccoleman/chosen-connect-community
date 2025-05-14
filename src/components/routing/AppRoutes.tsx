@@ -52,9 +52,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       <Route path={APP_ROUTES.COMMUNITY} element={<CommunityDirectory />} />
       
-      {/* Event Routes */}
+      {/* Event Routes - Make sure they are protected */}
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.EVENTS} element={<Events />} />
+      <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
