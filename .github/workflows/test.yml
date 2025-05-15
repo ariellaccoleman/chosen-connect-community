@@ -19,6 +19,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Make test script executable
-        run: chmod +x run-tests.js
+        run: chmod +x run-tests.cjs
       - name: Run tests
-        run: ./run-tests.js
+        run: ./run-tests.cjs
