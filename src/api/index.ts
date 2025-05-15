@@ -1,11 +1,17 @@
 
 /**
- * Re-export all API functionality
+ * Re-export API modules for easier imports
  */
-export * from './authApi';
-export * from './profilesApi';
-export * from './organizations';
-export * from './locationsApi';
+
+// Core API functionality
+export * from './core';
+
+// API services
 export * from './tags';
 export * from './events';
 
+// Legacy exports
+export { authApi } from './authApi';
+export { eventsApi } from './eventsApi';
+export { locationsApi } from './locationsApi';
+export { organizationCrudApi } from './organizations';
