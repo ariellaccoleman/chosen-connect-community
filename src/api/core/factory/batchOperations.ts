@@ -22,6 +22,7 @@ export function createBatchOperations<
     transformResponse?: (item: any) => T;
     transformRequest?: (item: any) => Record<string, any>;
     softDelete?: boolean;
+    repository?: any; // Allow repository to be passed through
   } = {}
 ) {
   return createBatchOps<T, TId, TCreate, TUpdate, Table>(
