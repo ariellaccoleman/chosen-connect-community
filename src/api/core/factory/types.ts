@@ -14,6 +14,9 @@ export type TableInsert<T extends TableNames> = Database['public']['Tables'][T][
 // Get the Update type for a specific table
 export type TableUpdate<T extends TableNames> = Database['public']['Tables'][T]['Update'];
 
+// Define a column key type that's safe for any table
+export type TableColumnName<T extends TableNames> = keyof Database['public']['Tables'][T]['Row'];
+
 // Options type for the API factory function
 export interface ApiFactoryOptions<T> {
   idField?: string;

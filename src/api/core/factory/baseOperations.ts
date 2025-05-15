@@ -3,7 +3,7 @@ import { logger } from "@/utils/logger";
 import { apiClient } from "../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../errorHandler";
 import { ApiResponse } from "../types";
-import { TableNames } from "./types";
+import { TableNames, TableColumnName } from "./types";
 
 /**
  * Creates standardized base CRUD operations for a specific entity type
@@ -53,9 +53,11 @@ export function createBaseOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                selectQuery = selectQuery.in(key, value);
+                // Using type assertion for the column name since we can't validate it at compile time
+                selectQuery = selectQuery.in(key as string, value);
               } else {
-                selectQuery = selectQuery.eq(key, value);
+                // Using type assertion for the column name since we can't validate it at compile time
+                selectQuery = selectQuery.eq(key as string, value);
               }
             }
           });
@@ -63,6 +65,7 @@ export function createBaseOperations<
         
         // Apply search if provided
         if (params?.search) {
+          // Using type assertion for 'name' since we can't validate it at compile time
           selectQuery = selectQuery.ilike('name', `%${params.search}%`);
         }
         
@@ -75,7 +78,7 @@ export function createBaseOperations<
         // Apply sorting
         const sortField = params?.sortBy || defaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
-        selectQuery = selectQuery.order(sortField, { ascending: sortOrder === 'asc' });
+        selectQuery = selectQuery.order(sortField as string, { ascending: sortOrder === 'asc' });
         
         const { data, error } = await selectQuery;
         
@@ -103,7 +106,7 @@ export function createBaseOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .eq(idField, id as any)
+          .eq(idField as string, id as any)
           .maybeSingle();
         
         if (error) throw error;
@@ -129,7 +132,7 @@ export function createBaseOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .in(idField, ids as any[]);
+          .in(idField as string, ids as any[]);
         
         if (error) throw error;
         
@@ -182,7 +185,7 @@ export function createBaseOperations<
         const { data: updatedData, error } = await client
           .from(tableName)
           .update(transformedData as any)
-          .eq(idField, id as any)
+          .eq(idField as string, id as any)
           .select(defaultSelect)
           .single();
         
@@ -214,7 +217,7 @@ export function createBaseOperations<
           const result = await client
             .from(tableName)
             .update(updateData as any)
-            .eq(idField, id as any);
+            .eq(idField as string, id as any);
           
           error = result.error;
         } else {
@@ -222,7 +225,7 @@ export function createBaseOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .eq(idField, id as any);
+            .eq(idField as string, id as any);
           
           error = result.error;
         }
