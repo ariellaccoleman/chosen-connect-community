@@ -14,7 +14,7 @@ interface QueryOperationsOptions<T> {
   defaultSelect?: string;
   defaultOrderBy?: string;
   transformResponse?: (item: any) => T;
-  repository?: DataRepository<T>;
+  repository?: DataRepository<T> | (() => DataRepository<T>);
 }
 
 /**
@@ -35,8 +35,11 @@ export function createQueryOperations<
     defaultSelect = '*',
     defaultOrderBy = 'created_at',
     transformResponse = (item) => item as T,
-    repository
+    repository: repoOption
   } = options;
+
+  // Resolve repository (handle both direct instances and factory functions)
+  const repository = typeof repoOption === 'function' ? repoOption() : repoOption;
 
   // Type assertion for string fields
   const typedIdField = idField as string;

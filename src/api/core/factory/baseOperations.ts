@@ -36,14 +36,27 @@ export function createBaseOperations<
   const queryOperations = createQueryOperations<T, TId, Table>(
     entityName, 
     tableName, 
-    options
+    {
+      idField: options.idField,
+      defaultSelect: options.defaultSelect,
+      defaultOrderBy: options.defaultOrderBy,
+      transformResponse: options.transformResponse,
+      repository: options.repository
+    }
   );
   
   // Create mutation operations (create, update, delete)
   const mutationOperations = createMutationOperations<T, TId, TCreate, TUpdate, Table>(
     entityName,
     tableName,
-    options
+    {
+      idField: options.idField,
+      defaultSelect: options.defaultSelect,
+      softDelete: options.softDelete,
+      transformResponse: options.transformResponse,
+      transformRequest: options.transformRequest,
+      repository: options.repository
+    }
   );
   
   // Combine all operations

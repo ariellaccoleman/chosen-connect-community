@@ -15,7 +15,7 @@ interface MutationOperationsOptions<T> {
   softDelete?: boolean;
   transformResponse?: (item: any) => T;
   transformRequest?: (item: any) => Record<string, any>;
-  repository?: DataRepository<T>;
+  repository?: DataRepository<T> | (() => DataRepository<T>);
 }
 
 /**
@@ -39,8 +39,11 @@ export function createMutationOperations<
     softDelete = false,
     transformResponse = (item) => item as T,
     transformRequest = (item) => item as unknown as Record<string, any>,
-    repository
+    repository: repoOption
   } = options;
+
+  // Resolve repository (handle both direct instances and factory functions)
+  const repository = typeof repoOption === 'function' ? repoOption() : repoOption;
 
   // Type assertion for ID field
   const typedIdField = idField as string;

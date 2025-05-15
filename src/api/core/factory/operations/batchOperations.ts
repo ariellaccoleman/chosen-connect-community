@@ -6,18 +6,18 @@ import { TableNames } from "../types";
 import { DataRepository } from "../../repository/repositoryFactory";
 
 /**
- * Options for creating batch operations
+ * Options for batch operations
  */
 interface BatchOperationsOptions<T> {
   idField?: string;
   defaultSelect?: string;
   transformResponse?: (item: any) => T;
   transformRequest?: (item: any) => Record<string, any>;
-  repository?: DataRepository<T>;
+  repository?: DataRepository<T> | (() => DataRepository<T>);
 }
 
 /**
- * Creates standardized batch operations for an entity
+ * Creates standardized batch operations
  */
 export function createBatchOperations<
   T,
@@ -36,12 +36,12 @@ export function createBatchOperations<
     defaultSelect = '*',
     transformResponse = (item) => item as T,
     transformRequest = (item) => item as unknown as Record<string, any>,
-    repository
+    repository: repoOption
   } = options;
 
-  // Type assertion for ID field
-  const typedIdField = idField as string;
-  
+  // Resolve repository (handle both direct instances and factory functions)
+  const repository = typeof repoOption === 'function' ? repoOption() : repoOption;
+
   /**
    * Create multiple entities in a single operation
    */
