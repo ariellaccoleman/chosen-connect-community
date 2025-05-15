@@ -88,6 +88,26 @@ export function createChainableMock() {
       });
     }
   });
+
+  // Override implementation for the terminal methods that return promises
+  mock.then = function(onFulfilled) {
+    const mockResponse = this._responses[currentTable] || { data: null, error: null };
+    
+    // If this is an error response, we should reject the promise
+    if (mockResponse.error) {
+      return Promise.reject(mockResponse.error).catch(error => { 
+        throw error; // Ensure errors are properly thrown, not swallowed
+      });
+    }
+    
+    return Promise.resolve(mockResponse).then(onFulfilled);
+  };
+
+  // Add proper catch method to handle rejections
+  mock.catch = function(onRejected) {
+    const mockResponse = this._responses[currentTable] || { data: null, error: null };
+    return Promise.resolve(mockResponse).catch(onRejected);
+  };
   
   return mock;
 }

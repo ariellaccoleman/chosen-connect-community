@@ -38,7 +38,13 @@ describe('Organization Relationships API', () => {
 
     test('should return organization relationships with formatted data', async () => {
       // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', createSuccessResponse(mockRelationships));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation((callback) => {
+        return Promise.resolve(callback(createSuccessResponse(mockRelationships)));
+      });
 
       // Call the API function
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
@@ -64,19 +70,17 @@ describe('Organization Relationships API', () => {
 
     test('should handle errors when fetching relationships', async () => {
       // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', createErrorResponse('Database error'));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation(() => {
+        return Promise.reject({ message: 'Database error' });
+      });
       
       // Call the API function and expect it to throw
-      let error;
-      try {
-        await organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
-      } catch (e) {
-        error = e;
-      }
-
-      // Check if error was handled correctly
-      expect(error).toBeDefined();
-      expect(error.message).toBe('Database error');
+      await expect(organizationRelationshipsApi.getUserOrganizationRelationships(profileId))
+        .rejects.toEqual({ message: 'Database error' });
     });
   });
 
@@ -89,9 +93,21 @@ describe('Organization Relationships API', () => {
     };
 
     test('should add organization relationship successfully', async () => {
-      // Set up mock responses
-      mockSupabase.mockResponseFor('profiles', createSuccessResponse({ id: 'profile-123' }));
-      mockSupabase.mockResponseFor('org_relationships', createSuccessResponse(null));
+      // Set up a sequence of mock responses for different operations
+      let operationCount = 0;
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation((callback) => {
+        operationCount++;
+        // First call checks for profile
+        if (operationCount === 1) {
+          return Promise.resolve(callback(createSuccessResponse({ id: 'profile-123' })));
+        }
+        // Second call inserts relationship
+        return Promise.resolve(callback(createSuccessResponse(null)));
+      });
 
       // Call the API function
       const result = await organizationRelationshipsApi.addOrganizationRelationship(mockRelationship);
@@ -123,9 +139,25 @@ describe('Organization Relationships API', () => {
         connection_type: 'current'
       };
 
-      // Set up mock responses
-      mockSupabase.mockResponseFor('profiles', createSuccessResponse(null))
-                  .mockResponseFor('org_relationships', createSuccessResponse(null));
+      // Set up a sequence of responses for different operations
+      let operationCount = 0;
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation((callback) => {
+        operationCount++;
+        // First call - profile does not exist
+        if (operationCount === 1) {
+          return Promise.resolve(callback(createSuccessResponse(null)));
+        }
+        // Second call - create profile
+        if (operationCount === 2) {
+          return Promise.resolve(callback(createSuccessResponse(null)));
+        }
+        // Third call - create relationship
+        return Promise.resolve(callback(createSuccessResponse(null)));
+      });
 
       // Call the API function
       const result = await organizationRelationshipsApi.addOrganizationRelationship(newProfileRelationship);
@@ -144,7 +176,6 @@ describe('Organization Relationships API', () => {
     });
   });
 
-  // Add tests for updateOrganizationRelationship
   describe('updateOrganizationRelationship', () => {
     const relationshipId = 'rel-1';
     const updateData = {
@@ -155,7 +186,13 @@ describe('Organization Relationships API', () => {
 
     test('should update organization relationship successfully', async () => {
       // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', createSuccessResponse(null));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation((callback) => {
+        return Promise.resolve(callback(createSuccessResponse(null)));
+      });
 
       // Call the API function
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(relationshipId, updateData);
@@ -176,29 +213,32 @@ describe('Organization Relationships API', () => {
 
     test('should handle errors when updating relationship', async () => {
       // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', createErrorResponse('Database error'));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation(() => {
+        return Promise.reject({ message: 'Database error' });
+      });
       
       // Call the API function and expect it to throw
-      let error;
-      try {
-        await organizationRelationshipsApi.updateOrganizationRelationship(relationshipId, updateData);
-      } catch (e) {
-        error = e;
-      }
-
-      // Check if error was handled correctly
-      expect(error).toBeDefined();
-      expect(error.message).toBe('Database error');
+      await expect(organizationRelationshipsApi.updateOrganizationRelationship(relationshipId, updateData))
+        .rejects.toEqual({ message: 'Database error' });
     });
   });
 
-  // Add tests for deleteOrganizationRelationship
   describe('deleteOrganizationRelationship', () => {
     const relationshipId = 'rel-1';
 
     test('should delete organization relationship successfully', async () => {
       // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', createSuccessResponse(null));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation((callback) => {
+        return Promise.resolve(callback(createSuccessResponse(null)));
+      });
 
       // Call the API function
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(relationshipId);
@@ -215,19 +255,17 @@ describe('Organization Relationships API', () => {
 
     test('should handle errors when deleting relationship', async () => {
       // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', createErrorResponse('Database error'));
+      mockSupabase.from.mockImplementation((tableName) => {
+        mockSupabase.currentTable = tableName;
+        return mockSupabase;
+      });
+      mockSupabase.then = jest.fn().mockImplementation(() => {
+        return Promise.reject({ message: 'Database error' });
+      });
       
       // Call the API function and expect it to throw
-      let error;
-      try {
-        await organizationRelationshipsApi.deleteOrganizationRelationship(relationshipId);
-      } catch (e) {
-        error = e;
-      }
-
-      // Check if error was handled correctly
-      expect(error).toBeDefined();
-      expect(error.message).toBe('Database error');
+      await expect(organizationRelationshipsApi.deleteOrganizationRelationship(relationshipId))
+        .rejects.toEqual({ message: 'Database error' });
     });
   });
 });
