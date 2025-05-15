@@ -136,9 +136,12 @@ export function createBatchOperations<
       if (softDelete) {
         // For soft delete, update all records with deleted_at
         return await apiClient.query(async (client) => {
+          // Use type assertion to resolve TypeScript error
+          const updateData = { deleted_at: new Date().toISOString() } as any;
+          
           const { error } = await client
             .from(tableName)
-            .update({ deleted_at: new Date().toISOString() })
+            .update(updateData)
             .in(idField, ids as any[]);
           
           if (error) throw error;
