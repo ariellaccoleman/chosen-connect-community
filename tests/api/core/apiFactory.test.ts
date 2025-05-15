@@ -81,6 +81,14 @@ describe('API Factory', () => {
         error: null
       });
     });
+
+    // Set up mock for order method to handle test case for getAll with filters
+    mockSupabase.order.mockImplementation(() => {
+      return Promise.resolve({
+        data: [{ id: '1', name: 'Test' }],
+        error: null
+      });
+    });
   });
   
   test('creates operations with correct table name', () => {
@@ -104,13 +112,12 @@ describe('API Factory', () => {
       'tags'
     );
     
-    mockSupabase.order.mockImplementation(() => {
-      return Promise.resolve({
-        data: [{ id: '1', name: 'Test' }],
-        error: null
-      });
+    // Update the mock implementation for this specific test
+    mockSupabase.eq.mockImplementation(function(field, value) {
+      // Track the calls directly inside the mock function
+      return mockSupabase;
     });
-    
+
     // Execute
     await testOps.getAll({ filters: { status: 'active' } });
     
