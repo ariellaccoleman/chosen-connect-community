@@ -1,4 +1,5 @@
 
+//Confirm it's node
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
