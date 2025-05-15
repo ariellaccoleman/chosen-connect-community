@@ -1,3 +1,4 @@
+
 import { logger } from "@/utils/logger";
 import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -105,7 +106,7 @@ export function createBatchOperations<
         const updates = items.map(item => {
           const { id, ...updateData } = item;
           return {
-            [typedIdField]: id,
+            [idField]: id, // Using idField directly instead of typedIdField
             ...transformRequest(updateData as any)
           };
         });
@@ -141,7 +142,7 @@ export function createBatchOperations<
         const { error } = await client
           .from(tableName)
           .delete()
-          .in(typedIdField, ids as any[]);
+          .in(idField, ids as any[]); // Using idField directly instead of typedIdField
         
         if (error) throw error;
         

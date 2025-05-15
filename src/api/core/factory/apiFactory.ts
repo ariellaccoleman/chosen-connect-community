@@ -1,7 +1,7 @@
 
 import { ApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
-import { createBatchOperations } from "./batchOperations";
+import { createBatchOperations } from "./operations/batchOperations";
 import { ApiFactoryOptions, TableNames } from "./types";
 import { createQueryOperations } from "./operations/queryOperations";
 import { createMutationOperations } from "./operations/mutationOperations";
@@ -10,7 +10,7 @@ import { createRepository, DataRepository } from "../repository/repositoryFactor
 /**
  * Enhanced API Factory options with repository support
  */
-export interface ApiFactoryConfig<T> extends ApiFactoryOptions<T> {
+export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'repository'> {
   /**
    * Enable query operations
    */
@@ -25,6 +25,11 @@ export interface ApiFactoryConfig<T> extends ApiFactoryOptions<T> {
    * Enable batch operations
    */
   useBatchOperations?: boolean;
+  
+  /**
+   * Repository instance or factory function
+   */
+  repository?: DataRepository<T> | (() => DataRepository<T>);
 }
 
 /**
@@ -87,7 +92,10 @@ export function createApiFactory<
       entity,
       tableName,
       {
-        ...options,
+        idField: options.idField,
+        defaultSelect: options.defaultSelect,
+        defaultOrderBy: options.defaultOrderBy,
+        transformResponse: options.transformResponse,
         repository: dataRepository
       }
     );
@@ -100,7 +108,11 @@ export function createApiFactory<
       entity,
       tableName,
       {
-        ...options,
+        idField: options.idField,
+        defaultSelect: options.defaultSelect,
+        softDelete: options.softDelete,
+        transformResponse: options.transformResponse,
+        transformRequest: options.transformRequest,
         repository: dataRepository
       }
     );
@@ -113,7 +125,10 @@ export function createApiFactory<
       entity,
       tableName,
       {
-        ...options,
+        idField: options.idField,
+        defaultSelect: options.defaultSelect,
+        transformResponse: options.transformResponse,
+        transformRequest: options.transformRequest,
         repository: dataRepository
       }
     );
