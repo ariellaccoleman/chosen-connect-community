@@ -40,17 +40,36 @@ export const mockSupabase = {
   },
   
   // Database methods
-  from: jest.fn().mockReturnThis(),
-  select: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockReturnThis(),
-  update: jest.fn().mockReturnThis(),
-  delete: jest.fn().mockReturnThis(),
-  eq: jest.fn().mockReturnThis(),
-  order: jest.fn().mockReturnThis(),
-  limit: jest.fn().mockReturnThis(),
+  from: jest.fn(function(table) {
+    this.currentTable = table;
+    return this;
+  }),
+  select: jest.fn(function() {
+    return this;
+  }),
+  insert: jest.fn(function() {
+    return this;
+  }),
+  update: jest.fn(function() {
+    return this;
+  }),
+  delete: jest.fn(function() {
+    return this;
+  }),
+  eq: jest.fn(function() {
+    return this;
+  }),
+  order: jest.fn(function() {
+    return this;
+  }),
+  limit: jest.fn(function() {
+    return this;
+  }),
   single: jest.fn().mockResolvedValue({ data: {}, error: null }),
   maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null }),
-  in: jest.fn().mockReturnThis(),
+  in: jest.fn(function() {
+    return this;
+  }),
   
   // Storage methods
   storage: {

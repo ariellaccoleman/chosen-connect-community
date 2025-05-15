@@ -1,4 +1,3 @@
-
 import { organizationCrudApi } from '@/api/organizations/organizationsApi';
 import { mockSupabase, resetSupabaseMocks } from '../../__mocks__/supabase';
 import { ApiResponse } from '@/api/core/errorHandler';
@@ -25,8 +24,9 @@ describe('Organization CRUD API', () => {
         }
       ];
 
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.select.mockImplementation(() => mockSupabase);
+      // Setup mock implementation
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
       mockSupabase.order.mockResolvedValue({
         data: mockOrgs,
         error: null
@@ -49,11 +49,11 @@ describe('Organization CRUD API', () => {
 
     test('should handle errors when fetching organizations', async () => {
       // Mock an error response
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.select.mockImplementation(() => mockSupabase);
-      mockSupabase.order.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error', code: 'PGRST' }
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
+      mockSupabase.order.mockRejectedValue({
+        message: 'Database error', 
+        code: 'PGRST'
       });
 
       // Call the API method
@@ -78,9 +78,9 @@ describe('Organization CRUD API', () => {
         location: { id: 'loc-1', city: 'New York', country: 'USA' } 
       };
 
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.select.mockImplementation(() => mockSupabase);
-      mockSupabase.eq.mockImplementation(() => mockSupabase);
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
+      mockSupabase.eq.mockReturnValue(mockSupabase);
       mockSupabase.maybeSingle.mockResolvedValue({
         data: mockOrg,
         error: null
@@ -103,9 +103,9 @@ describe('Organization CRUD API', () => {
     });
 
     test('should return null when organization is not found', async () => {
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.select.mockImplementation(() => mockSupabase);
-      mockSupabase.eq.mockImplementation(() => mockSupabase);
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
+      mockSupabase.eq.mockReturnValue(mockSupabase);
       mockSupabase.maybeSingle.mockResolvedValue({
         data: null,
         error: null
@@ -130,12 +130,12 @@ describe('Organization CRUD API', () => {
     });
 
     test('should handle errors when fetching an organization', async () => {
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.select.mockImplementation(() => mockSupabase);
-      mockSupabase.eq.mockImplementation(() => mockSupabase);
-      mockSupabase.maybeSingle.mockResolvedValue({
-        data: null,
-        error: { message: 'Database error', code: 'PGRST' }
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
+      mockSupabase.eq.mockReturnValue(mockSupabase);
+      mockSupabase.maybeSingle.mockRejectedValue({
+        message: 'Database error', 
+        code: 'PGRST'
       });
 
       // Call the API method
@@ -163,22 +163,16 @@ describe('Organization CRUD API', () => {
       const userId = 'user-123';
       const createdOrg = { ...orgData, id: 'new-org-id' };
 
-      // Mock the profile check
-      mockSupabase.from.mockImplementation((table) => {
-        mockSupabase.currentTable = table;
-        return mockSupabase;
+      // Setup mocks for all required interactions
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
+      mockSupabase.eq.mockReturnValue(mockSupabase);
+      mockSupabase.maybeSingle.mockResolvedValue({ 
+        data: { id: userId }, 
+        error: null 
       });
-      mockSupabase.select.mockImplementation(() => mockSupabase);
-      mockSupabase.eq.mockImplementation(() => mockSupabase);
-      mockSupabase.maybeSingle.mockImplementation(() => {
-        if (mockSupabase.currentTable === 'profiles') {
-          return Promise.resolve({ data: { id: userId }, error: null });
-        }
-        return Promise.resolve({ data: null, error: null });
-      });
-
-      // Mock the organization insert
-      mockSupabase.insert.mockImplementation(() => mockSupabase);
+      mockSupabase.insert.mockReturnValue(mockSupabase);
+      mockSupabase.select.mockReturnValue(mockSupabase);
       mockSupabase.single.mockResolvedValue({
         data: createdOrg,
         error: null
@@ -283,8 +277,8 @@ describe('Organization CRUD API', () => {
         description: 'Updated description' 
       };
 
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.update.mockImplementation(() => mockSupabase);
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.update.mockReturnValue(mockSupabase);
       mockSupabase.eq.mockResolvedValue({
         data: null,
         error: null
@@ -307,8 +301,8 @@ describe('Organization CRUD API', () => {
       const orgId = 'org-1';
       const updateData = { name: 'Updated Org Name' };
 
-      mockSupabase.from.mockImplementation(() => mockSupabase);
-      mockSupabase.update.mockImplementation(() => mockSupabase);
+      mockSupabase.from.mockReturnValue(mockSupabase);
+      mockSupabase.update.mockReturnValue(mockSupabase);
       mockSupabase.eq.mockResolvedValue({
         data: null,
         error: { message: 'Database error', code: 'PGRST' }
