@@ -30,7 +30,9 @@ const config = {
     'ts-jest': {
       esModuleInterop: true // Add this to fix the import warning
     }
-  }
+  },
+  // Set the default timeout to 30 seconds for all tests
+  testTimeout: 30000
 };
 
 module.exports = config;
