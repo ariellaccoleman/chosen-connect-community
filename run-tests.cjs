@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
@@ -72,6 +73,12 @@ process.env.TEST_RUN_ID = testRunId;
 process.env.SUPABASE_URL = SUPABASE_URL;
 process.env.SUPABASE_KEY = SUPABASE_KEY;
 process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
+
+// Log environment variables for debugging
+console.log('Test environment:');
+console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
+console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
+console.log(`- TEST_RUN_ID: ${testRunId}`);
 
 // Run tests with custom reporter
 const testPathPattern = process.argv[2] || '';

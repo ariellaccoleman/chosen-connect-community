@@ -55,11 +55,20 @@ serve(async (req) => {
 
   // Extract API key from request headers
   const apiKey = req.headers.get('x-api-key')
-  if (!apiKey || apiKey !== Deno.env.get('TEST_REPORTING_API_KEY')) {
+  const expectedApiKey = Deno.env.get('TEST_REPORTING_API_KEY')
+
+  // Debug logging for API key validation
+  console.log(`API key validation: expected key ${expectedApiKey ? 'is set' : 'is not set'}, provided key ${apiKey ? 'is provided' : 'is not provided'}`)
+
+  if (!apiKey || apiKey !== expectedApiKey) {
     return new Response(JSON.stringify({ 
       error: 'Unauthorized', 
-      message: 'No API key found in request',
-      hint: 'No `x-api-key` request header was found or it was invalid.'
+      message: 'Invalid API key',
+      hint: 'The provided x-api-key header does not match the expected TEST_REPORTING_API_KEY value.',
+      debug: {
+        keyProvided: !!apiKey,
+        keyExpectedSet: !!expectedApiKey,
+      }
     }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -88,7 +97,8 @@ serve(async (req) => {
         .single();
       
       if (fetchError) {
-        return new Response(JSON.stringify({ error: 'Failed to fetch current test run' }), {
+        console.error('Error fetching current test run:', fetchError);
+        return new Response(JSON.stringify({ error: 'Failed to fetch current test run', details: fetchError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
@@ -112,7 +122,8 @@ serve(async (req) => {
         .eq('id', testRunId);
       
       if (updateError) {
-        return new Response(JSON.stringify({ error: 'Failed to update test run' }), {
+        console.error('Error updating test run:', updateError);
+        return new Response(JSON.stringify({ error: 'Failed to update test run', details: updateError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
@@ -136,7 +147,7 @@ serve(async (req) => {
 
       if (testRunError) {
         console.error('Error creating test run:', testRunError)
-        return new Response(JSON.stringify({ error: 'Failed to create test run' }), {
+        return new Response(JSON.stringify({ error: 'Failed to create test run', details: testRunError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
@@ -182,7 +193,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error('Error processing request:', error)
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
