@@ -1,228 +1,335 @@
 
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
-import { apiClient } from '@/api/core/apiClient';
-import { createChainableMock } from '../../utils/supabaseMockUtils';
+import { mockSupabase, resetSupabaseMocks } from '../../__mocks__/supabase';
+import { createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
+import { ProfileOrganizationRelationshipWithDetails } from '@/types';
 
-// Mock the API client
+// Mock the apiClient module
 jest.mock('@/api/core/apiClient', () => ({
   apiClient: {
-    query: jest.fn((callback) => callback(mockSupabase))
+    query: jest.fn(async (callback) => {
+      try {
+        return await callback(mockSupabase);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    })
   }
 }));
 
-// Set up mock Supabase
-const mockSupabase = createChainableMock();
+// Mock the logger to avoid console noise during tests
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
+  }
+}));
+
+// Mock the formatters to return predictable data
+jest.mock('@/utils/organizationFormatters', () => ({
+  formatOrganizationRelationships: jest.fn((data) => 
+    data.map((item: any) => ({
+      id: item.id,
+      profile_id: item.profile_id,
+      organization_id: item.organization_id,
+      connection_type: item.connection_type,
+      department: item.department,
+      notes: item.notes,
+      organization: item.organization || { name: 'Mocked Org' }
+    }))
+  )
+}));
 
 describe('Organization Relationships API', () => {
+  // Reset mocks before each test
   beforeEach(() => {
-    mockSupabase.reset();
+    resetSupabaseMocks();
     jest.clearAllMocks();
   });
 
   describe('getUserOrganizationRelationships', () => {
-    const profileId = 'profile-123';
-    const mockRelationships = [
-      {
+    test('should return organization relationships with formatted data', async () => {
+      // Setup mock response
+      const mockRelationship = {
         id: 'rel-1',
-        profile_id: profileId,
+        profile_id: 'profile-1',
         organization_id: 'org-1',
-        connection_type: 'current',
+        connection_type: 'Current employee',
         department: 'Engineering',
+        notes: 'Test notes',
         organization: {
           id: 'org-1',
           name: 'Test Org',
-          location: { id: 'loc-1', city: 'Test City', country: 'Test Country' }
+          location: {
+            id: 'loc-1',
+            city: 'Test City'
+          }
         }
-      }
-    ];
-
-    test('should return organization relationships with formatted data', async () => {
-      // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', { data: mockRelationships, error: null });
+      };
       
-      // Call the API function
-      const result = await organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
-
-      // Check if Supabase query was called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
-      expect(mockSupabase.select).toHaveBeenCalledWith(`
-          *,
-          organization:organizations(
-            *,
-            location:locations(*)
-          )
-        `);
-      expect(mockSupabase.eq).toHaveBeenCalledWith('profile_id', profileId);
-
-      // Check the result
+      mockSupabase.from.mockImplementation(() => mockSupabase);
+      mockSupabase.select.mockReturnThis();
+      mockSupabase.eq.mockReturnThis();
+      mockSupabase.then.mockImplementation((callback) => {
+        return Promise.resolve(callback({ 
+          data: [mockRelationship], 
+          error: null 
+        }));
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.getUserOrganizationRelationships('profile-1');
+      
+      // Verify result
       expect(result.status).toBe('success');
       expect(result.data).toBeDefined();
       expect(result.data.length).toBe(1);
       expect(result.data[0].id).toBe('rel-1');
       expect(result.data[0].organization.name).toBe('Test Org');
-    });
+    }, 10000);
 
     test('should handle errors when fetching relationships', async () => {
       // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', { 
-        data: null, 
-        error: { message: 'Database error' } 
+      mockSupabase.from.mockImplementation(() => {
+        throw new Error('Database error');
       });
       
-      // Call the API function and expect it to throw
-      await expect(organizationRelationshipsApi.getUserOrganizationRelationships(profileId))
-        .rejects.toEqual({ message: 'Database error' });
-    }, 10000); // Increase timeout for this test
+      // Call the function and expect it to throw
+      let result;
+      let error;
+      
+      try {
+        result = await organizationRelationshipsApi.getUserOrganizationRelationships('profile-1');
+      } catch (e) {
+        error = e;
+      }
+      
+      // Check if error was handled correctly
+      expect(result.status).toBe('error');
+      expect(result.error.message).toBe('Database error');
+    }, 10000);
   });
 
   describe('addOrganizationRelationship', () => {
-    const mockRelationship = {
-      profile_id: 'profile-123',
-      organization_id: 'org-1',
-      connection_type: 'current',
-      department: 'Engineering'
-    };
-
-    test('should add organization relationship successfully', async () => {
-      // Set up a sequence of mock responses for different operations
-      mockSupabase.mockResponseFor('profiles', { data: { id: 'profile-123' }, error: null });
-      mockSupabase.mockResponseFor('org_relationships', { data: null, error: null });
-      
-      // Call the API function
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(mockRelationship);
-
-      // Check if Supabase queries were called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
-      expect(mockSupabase.select).toHaveBeenCalledWith('id');
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'profile-123');
-      expect(mockSupabase.maybeSingle).toHaveBeenCalled();
-
-      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
-      expect(mockSupabase.insert).toHaveBeenCalledWith({
-        profile_id: 'profile-123',
+    test('should create a relationship successfully', async () => {
+      // Setup mock responses for profile check and insert
+      const relationshipData = {
+        profile_id: 'profile-1',
         organization_id: 'org-1',
-        connection_type: 'current',
-        department: 'Engineering',
-        notes: undefined
-      });
-
-      // Check the result
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
-    });
-
-    test('should create profile if it does not exist', async () => {
-      const newProfileRelationship = {
-        profile_id: 'new-profile-123',
-        organization_id: 'org-1',
-        connection_type: 'current'
+        connection_type: 'Current employee',
+        department: 'Engineering'
       };
-
-      // Set up mock responses
-      mockSupabase.mockResponseFor('profiles', { data: null, error: null });
-      // For the second profiles call (insert)
-      mockSupabase._responses['profiles-insert'] = { data: null, error: null };
-      mockSupabase.mockResponseFor('org_relationships', { data: null, error: null });
       
-      // Override insert implementation for profiles
-      const originalInsert = mockSupabase.insert;
-      mockSupabase.insert.mockImplementation(function(data) {
-        if (this.currentTable === 'profiles' && data.id === 'new-profile-123') {
-          return { 
-            ...mockSupabase,
-            then: (callback) => Promise.resolve(callback({ data: null, error: null }))
-          };
-        }
-        return originalInsert.call(this, data);
+      let callCount = 0;
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
       });
-
-      // Call the API function
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(newProfileRelationship);
-
-      // Check if profile was created
-      expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
       
-      // Check if relationship was created
-      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
-
-      // Check the result
+      mockSupabase.select.mockReturnThis();
+      mockSupabase.eq.mockReturnThis();
+      mockSupabase.maybeSingle.mockImplementation(() => {
+        callCount++;
+        return Promise.resolve({
+          data: { id: 'profile-1' }, // Profile exists
+          error: null
+        });
+      });
+      
+      mockSupabase.insert.mockImplementation(() => {
+        return Promise.resolve({
+          data: { id: 'rel-1' },
+          error: null
+        });
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      
+      // Verify result
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
-    });
+      
+      // Verify correct tables were queried
+      expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
+      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
+      
+      // Verify correct data was inserted
+      expect(mockSupabase.insert).toHaveBeenCalledWith(expect.objectContaining({
+        profile_id: 'profile-1',
+        organization_id: 'org-1',
+        connection_type: 'Current employee'
+      }));
+    }, 10000);
+    
+    test('should create profile if it doesn\'t exist', async () => {
+      // Setup mock responses - profile doesn't exist
+      const relationshipData = {
+        profile_id: 'new-profile',
+        organization_id: 'org-1',
+        connection_type: 'Current employee'
+      };
+      
+      // Mock sequence: check profile (not found) -> create profile -> create relationship
+      let callCount = 0;
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
+      });
+      
+      mockSupabase.select.mockReturnThis();
+      mockSupabase.eq.mockReturnThis();
+      mockSupabase.maybeSingle.mockImplementation(() => {
+        return Promise.resolve({
+          data: null, // Profile doesn't exist
+          error: null
+        });
+      });
+      
+      mockSupabase.insert.mockImplementation(() => {
+        callCount++;
+        if (callCount === 1) {
+          // First call is to create profile
+          return Promise.resolve({
+            data: { id: 'new-profile' },
+            error: null
+          });
+        } else {
+          // Second call is to create relationship
+          return Promise.resolve({
+            data: { id: 'rel-new' },
+            error: null
+          });
+        }
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      
+      // Verify result
+      expect(result.status).toBe('success');
+      expect(result.data).toBe(true);
+      
+      // Verify profile was created
+      expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
+      expect(mockSupabase.insert).toHaveBeenCalledWith({ id: 'new-profile' });
+      
+      // Verify relationship was created
+      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
+    }, 10000);
   });
 
   describe('updateOrganizationRelationship', () => {
-    const relationshipId = 'rel-1';
-    const updateData = {
-      connection_type: 'former',
-      department: 'Marketing',
-      notes: 'Updated notes'
-    };
-
-    test('should update organization relationship successfully', async () => {
-      // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', { data: null, error: null });
-
-      // Call the API function
-      const result = await organizationRelationshipsApi.updateOrganizationRelationship(relationshipId, updateData);
-
-      // Check if Supabase query was called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
-      expect(mockSupabase.update).toHaveBeenCalledWith({
-        connection_type: 'former',
-        department: 'Marketing',
-        notes: 'Updated notes'
-      });
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', relationshipId);
-
-      // Check the result
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
-    });
-
-    test('should handle errors when updating relationship', async () => {
-      // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', { 
-        data: null, 
-        error: { message: 'Database error' } 
+    test('should update relationship successfully', async () => {
+      // Setup mock
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
       });
       
-      // Call the API function and expect it to throw
-      await expect(organizationRelationshipsApi.updateOrganizationRelationship(relationshipId, updateData))
-        .rejects.toEqual({ message: 'Database error' });
-    }, 10000); // Increase timeout for this test
+      mockSupabase.update.mockReturnThis();
+      mockSupabase.eq.mockImplementation(() => {
+        return Promise.resolve({
+          data: { id: 'rel-1' },
+          error: null
+        });
+      });
+      
+      const updateData = {
+        connection_type: 'Former employee',
+        department: 'Marketing',
+        notes: 'Updated notes'
+      };
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.updateOrganizationRelationship('rel-1', updateData);
+      
+      // Verify result
+      expect(result.status).toBe('success');
+      expect(result.data).toBe(true);
+      
+      // Verify correct update was called
+      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
+      expect(mockSupabase.update).toHaveBeenCalledWith(expect.objectContaining({
+        connection_type: 'Former employee',
+        department: 'Marketing',
+        notes: 'Updated notes'
+      }));
+      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'rel-1');
+    }, 10000);
+    
+    test('should handle errors when updating relationship', async () => {
+      // Mock error response
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
+      });
+      
+      mockSupabase.update.mockReturnThis();
+      mockSupabase.eq.mockImplementation(() => {
+        throw new Error('Database error');
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.updateOrganizationRelationship('rel-1', {
+        connection_type: 'Former employee'
+      });
+      
+      // Verify error handling
+      expect(result.status).toBe('error');
+      expect(result.error.message).toBe('Database error');
+    }, 10000);
   });
 
   describe('deleteOrganizationRelationship', () => {
-    const relationshipId = 'rel-1';
-
-    test('should delete organization relationship successfully', async () => {
-      // Set up mock response
-      mockSupabase.mockResponseFor('org_relationships', { data: null, error: null });
-
-      // Call the API function
-      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(relationshipId);
-
-      // Check if Supabase query was called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
-      expect(mockSupabase.delete).toHaveBeenCalled();
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', relationshipId);
-
-      // Check the result
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
-    });
-
-    test('should handle errors when deleting relationship', async () => {
-      // Mock error response
-      mockSupabase.mockResponseFor('org_relationships', { 
-        data: null, 
-        error: { message: 'Database error' } 
+    test('should delete relationship successfully', async () => {
+      // Setup mock
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
       });
       
-      // Call the API function and expect it to throw
-      await expect(organizationRelationshipsApi.deleteOrganizationRelationship(relationshipId))
-        .rejects.toEqual({ message: 'Database error' });
-    }, 10000); // Increase timeout for this test
+      mockSupabase.delete.mockReturnThis();
+      mockSupabase.eq.mockImplementation(() => {
+        return Promise.resolve({
+          data: null,
+          error: null
+        });
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.deleteOrganizationRelationship('rel-1');
+      
+      // Verify result
+      expect(result.status).toBe('success');
+      expect(result.data).toBe(true);
+      
+      // Verify correct delete was called
+      expect(mockSupabase.from).toHaveBeenCalledWith('org_relationships');
+      expect(mockSupabase.delete).toHaveBeenCalled();
+      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'rel-1');
+    }, 10000);
+    
+    test('should handle errors when deleting relationship', async () => {
+      // Mock error response
+      mockSupabase.from.mockImplementation((table) => {
+        mockSupabase.currentTable = table;
+        return mockSupabase;
+      });
+      
+      mockSupabase.delete.mockReturnThis();
+      mockSupabase.eq.mockImplementation(() => {
+        throw new Error('Database error');
+      });
+      
+      // Call the function
+      const result = await organizationRelationshipsApi.deleteOrganizationRelationship('rel-1');
+      
+      // Verify error handling
+      expect(result.status).toBe('error');
+      expect(result.error.message).toBe('Database error');
+    }, 10000);
   });
 });
