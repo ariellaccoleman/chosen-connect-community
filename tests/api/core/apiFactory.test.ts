@@ -1,3 +1,4 @@
+
 import { createApiOperations } from '@/api/core/apiFactory';
 import { mockSupabase, resetSupabaseMocks } from '../../__mocks__/supabase';
 import { ApiResponse } from '@/api/core/errorHandler';
@@ -14,6 +15,62 @@ describe('API Factory', () => {
   // Reset mocks before each test
   beforeEach(() => {
     resetSupabaseMocks();
+    
+    // Set up specific mock implementations for common operations
+    mockSupabase.from.mockImplementation(function(tableName) {
+      mockSupabase.currentTable = tableName;
+      return mockSupabase;
+    });
+    
+    mockSupabase.select.mockReturnValue(mockSupabase);
+    mockSupabase.insert.mockReturnValue(mockSupabase);
+    mockSupabase.update.mockReturnValue(mockSupabase);
+    mockSupabase.delete.mockReturnValue(mockSupabase);
+    mockSupabase.eq.mockReturnValue(mockSupabase);
+    
+    // Mock the single method for create and update operations
+    mockSupabase.single.mockImplementation(() => {
+      // For create operation
+      if (mockSupabase.insert.mock.calls.length > 0) {
+        const newEntityData = mockSupabase.insert.mock.calls[0][0];
+        return Promise.resolve({
+          data: { id: '999', ...newEntityData, created_at: new Date().toISOString() },
+          error: null
+        });
+      }
+      
+      // For update operation
+      if (mockSupabase.update.mock.calls.length > 0) {
+        const updateData = mockSupabase.update.mock.calls[0][0];
+        return Promise.resolve({
+          data: { 
+            id: '123', 
+            name: 'Test Entity', 
+            ...updateData,
+            created_at: new Date().toISOString()
+          },
+          error: null
+        });
+      }
+      
+      return Promise.resolve({ data: {}, error: null });
+    });
+    
+    // Set up specific mock for error case
+    mockSupabase.maybeSingle.mockImplementation(() => {
+      if (mockSupabase.eq.mock.calls.length > 0 && 
+          mockSupabase.eq.mock.calls[0][1] === 'invalid-id') {
+        return Promise.resolve({ 
+          data: null, 
+          error: { message: 'Database error', code: 'DB_ERROR' }
+        });
+      }
+      
+      return Promise.resolve({
+        data: { id: '123', name: 'Test Entity' },
+        error: null
+      });
+    });
   });
   
   test('creates operations with correct table name', () => {
@@ -22,10 +79,6 @@ describe('API Factory', () => {
       'testEntity', 
       'tags'
     );
-    mockSupabase.from.mockImplementation((tableName) => {
-      mockSupabase.currentTable = tableName;
-      return mockSupabase;
-    });
     
     // Execute getAll to check the table name
     testOps.getAll();
@@ -40,9 +93,13 @@ describe('API Factory', () => {
       'testEntity', 
       'tags'
     );
-    mockSupabase.select.mockReturnThis();
-    mockSupabase.eq.mockReturnThis();
-    mockSupabase.order.mockResolvedValue({ data: [{ id: '1', name: 'Test' }], error: null });
+    
+    mockSupabase.order.mockImplementation(() => {
+      return Promise.resolve({
+        data: [{ id: '1', name: 'Test' }],
+        error: null
+      });
+    });
     
     // Execute
     await testOps.getAll({ filters: { status: 'active' } });
@@ -57,12 +114,6 @@ describe('API Factory', () => {
       'testEntity', 
       'tags'
     );
-    mockSupabase.select.mockReturnThis();
-    mockSupabase.eq.mockReturnThis();
-    mockSupabase.maybeSingle.mockResolvedValue({ 
-      data: { id: '123', name: 'Test Entity' }, 
-      error: null 
-    });
     
     // Execute
     const result = await testOps.getById('123');
@@ -79,14 +130,6 @@ describe('API Factory', () => {
       'tags'
     );
     const newEntity = { name: 'New Entity', description: 'Description' };
-    
-    mockSupabase.from.mockReturnThis();
-    mockSupabase.insert.mockReturnThis();
-    mockSupabase.select.mockReturnThis();
-    mockSupabase.single.mockResolvedValue({
-      data: { id: '999', ...newEntity, created_at: new Date().toISOString() },
-      error: null
-    });
     
     // Execute
     const result = await testOps.create(newEntity);
@@ -105,20 +148,6 @@ describe('API Factory', () => {
     );
     const updateData = { description: 'Updated description' };
     
-    mockSupabase.from.mockReturnThis();
-    mockSupabase.update.mockReturnThis();
-    mockSupabase.eq.mockReturnThis();
-    mockSupabase.select.mockReturnThis();
-    mockSupabase.single.mockResolvedValue({
-      data: { 
-        id: '123', 
-        name: 'Test Entity', 
-        description: 'Updated description',
-        created_at: new Date().toISOString()
-      },
-      error: null
-    });
-    
     // Execute
     const result = await testOps.update('123', updateData);
     
@@ -135,9 +164,9 @@ describe('API Factory', () => {
       'tags'
     );
     
-    mockSupabase.from.mockReturnThis();
-    mockSupabase.delete.mockReturnThis();
-    mockSupabase.eq.mockResolvedValue({ error: null });
+    mockSupabase.eq.mockImplementation(() => {
+      return Promise.resolve({ data: true, error: null });
+    });
     
     // Execute
     const result = await testOps.delete('123');
@@ -154,11 +183,6 @@ describe('API Factory', () => {
       'testEntity', 
       'tags'
     );
-    const testError = { message: 'Database error', code: 'DB_ERROR' };
-    
-    mockSupabase.from.mockReturnThis();
-    mockSupabase.select.mockReturnThis();
-    mockSupabase.eq.mockResolvedValue({ data: null, error: testError });
     
     // Execute
     const result = await testOps.getById('invalid-id');

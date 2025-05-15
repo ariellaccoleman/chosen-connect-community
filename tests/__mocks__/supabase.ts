@@ -19,7 +19,7 @@ export const mockAuthResponse = {
 
 export const mockErrorResponse = {
   data: { user: null, session: null },
-  error: { message: 'Invalid credentials', status: 400 }
+  error: { message: 'Database error', code: 'DB_ERROR' }
 };
 
 export const mockSupabase = {
@@ -75,37 +75,29 @@ export const mockSupabase = {
     return this;
   }),
   single: jest.fn(function() {
-    return {
-      then: (callback) => Promise.resolve({ data: {}, error: null }).then(callback),
-      catch: (callback) => Promise.resolve({ data: {}, error: null }).catch(callback)
-    };
+    return this;
   }),
   maybeSingle: jest.fn(function() {
-    return {
-      then: (callback) => Promise.resolve({ data: {}, error: null }).then(callback),
-      catch: (callback) => Promise.resolve({ data: {}, error: null }).catch(callback)
-    };
+    return this;
   }),
   
-  // Method for handling promise resolution
+  // Add proper promise resolution
   then: jest.fn(function(callback) {
+    // Handle the standard error case for 'invalid-id'
+    if (this.currentTable && this.currentTable === 'tags' && 
+        mockSupabase.eq.mock.calls.length > 0 && 
+        mockSupabase.eq.mock.calls[0][1] === 'invalid-id') {
+      return Promise.resolve({ 
+        data: null, 
+        error: mockErrorResponse.error 
+      }).then(callback);
+    }
     return Promise.resolve({ data: {}, error: null }).then(callback);
   }),
+  
   catch: jest.fn(function(callback) {
     return Promise.resolve({ data: {}, error: null }).catch(callback);
-  }),
-  
-  // Storage methods
-  storage: {
-    from: jest.fn().mockReturnThis(),
-    upload: jest.fn().mockReturnThis(),
-    getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://example.com/test.jpg' } })
-  },
-  
-  // Edge functions
-  functions: {
-    invoke: jest.fn().mockResolvedValue({ data: {}, error: null })
-  }
+  })
 };
 
 // Mock the actual Supabase client import
