@@ -3,7 +3,7 @@ import { logger } from "@/utils/logger";
 import { apiClient } from "../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../errorHandler";
 import { ApiResponse } from "../types";
-import { TableNames } from "./types";
+import { TableNames, TableColumnName } from "./types";
 
 /**
  * Creates standardized batch operations for a specific entity type
@@ -33,6 +33,9 @@ export function createBatchOperations<
     transformResponse = (item) => item as T,
     transformRequest = (item) => item as unknown as Record<string, any>
   } = options;
+  
+  // Type assertion for ID field - ensures it's a valid column for this table
+  const typedIdField = idField as TableColumnName<Table>;
 
   /**
    * Create multiple entities at once
@@ -81,7 +84,7 @@ export function createBatchOperations<
             const { data, error } = await client
               .from(tableName)
               .update(transformedData as any)
-              .eq(idField, item.id as any)
+              .eq(typedIdField, item.id as any)
               .select(defaultSelect)
               .single();
             
@@ -119,7 +122,7 @@ export function createBatchOperations<
           const result = await client
             .from(tableName)
             .update(updateData as any)
-            .in(idField, ids as any[]);
+            .in(typedIdField, ids as any[]);
           
           error = result.error;
         } else {
@@ -127,7 +130,7 @@ export function createBatchOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .in(idField, ids as any[]);
+            .in(typedIdField, ids as any[]);
           
           error = result.error;
         }

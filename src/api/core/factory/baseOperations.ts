@@ -3,7 +3,7 @@ import { logger } from "@/utils/logger";
 import { apiClient } from "../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../errorHandler";
 import { ApiResponse } from "../types";
-import { TableNames } from "./types";
+import { TableNames, TableColumnName } from "./types";
 
 /**
  * Creates standardized base CRUD operations for a specific entity type
@@ -36,6 +36,12 @@ export function createBaseOperations<
     transformRequest = (item) => item as unknown as Record<string, any>
   } = options;
 
+  // Type assertion for ID field - ensures it's a valid column for this table
+  const typedIdField = idField as TableColumnName<Table>;
+  
+  // Type assertion for default order by - ensures it's a valid column for this table
+  const typedDefaultOrderBy = defaultOrderBy as TableColumnName<Table>;
+
   /**
    * Get all entities with optional filtering and pagination
    */
@@ -53,9 +59,11 @@ export function createBaseOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                selectQuery = selectQuery.in(key, value);
+                // We're asserting that the key is a valid column name
+                selectQuery = selectQuery.in(key as TableColumnName<Table>, value);
               } else {
-                selectQuery = selectQuery.eq(key, value);
+                // We're asserting that the key is a valid column name
+                selectQuery = selectQuery.eq(key as TableColumnName<Table>, value);
               }
             }
           });
@@ -63,7 +71,8 @@ export function createBaseOperations<
         
         // Apply search if provided
         if (params?.search) {
-          selectQuery = selectQuery.ilike('name', `%${params.search}%`);
+          // Using type assertion for 'name' since we're assuming it exists
+          selectQuery = selectQuery.ilike('name' as TableColumnName<Table>, `%${params.search}%`);
         }
         
         // Apply pagination
@@ -73,7 +82,7 @@ export function createBaseOperations<
         }
         
         // Apply sorting
-        const sortField = params?.sortBy || defaultOrderBy;
+        const sortField = params?.sortBy ? params.sortBy as TableColumnName<Table> : typedDefaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
         selectQuery = selectQuery.order(sortField, { ascending: sortOrder === 'asc' });
         
@@ -103,7 +112,7 @@ export function createBaseOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .eq(idField, id as any)
+          .eq(typedIdField, id as any)
           .maybeSingle();
         
         if (error) throw error;
@@ -129,7 +138,7 @@ export function createBaseOperations<
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
-          .in(idField, ids as any[]);
+          .in(typedIdField, ids as any[]);
         
         if (error) throw error;
         
@@ -182,7 +191,7 @@ export function createBaseOperations<
         const { data: updatedData, error } = await client
           .from(tableName)
           .update(transformedData as any)
-          .eq(idField, id as any)
+          .eq(typedIdField, id as any)
           .select(defaultSelect)
           .single();
         
@@ -214,7 +223,7 @@ export function createBaseOperations<
           const result = await client
             .from(tableName)
             .update(updateData as any)
-            .eq(idField, id as any);
+            .eq(typedIdField, id as any);
           
           error = result.error;
         } else {
@@ -222,7 +231,7 @@ export function createBaseOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .eq(idField, id as any);
+            .eq(typedIdField, id as any);
           
           error = result.error;
         }
