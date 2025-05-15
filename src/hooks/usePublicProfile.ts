@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { profilesApi } from '@/api';
+import { profilesApi } from '@/api/profilesApi';
 import { ProfileWithDetails } from '@/types';
 import { showErrorToast } from '@/api/core/errorHandler';
 

@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { eventsApi } from "@/api";
+import { getById } from "@/api/events/eventsApi";
 import { logger } from "@/utils/logger";
 
 export function useEventById(eventId: string | undefined) {
@@ -15,7 +15,7 @@ export function useEventById(eventId: string | undefined) {
       logger.info(`Fetching event with ID: ${eventId}`);
       
       try {
-        const response = await eventsApi.getById(eventId);
+        const response = await getById(eventId);
         
         if (response.error) {
           logger.error(`Error fetching event ${eventId}:`, response.error);

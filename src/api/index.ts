@@ -10,6 +10,9 @@ export * from './core';
 export * from './tags';
 export * from './events';
 
+// Organization APIs
+export * from './organizations'; // This will now include organizationRelationshipsApi
+
 // Legacy exports
 export { authApi } from './authApi';
 export { eventsApi } from './eventsApi';

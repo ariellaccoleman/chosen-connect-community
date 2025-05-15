@@ -1,6 +1,8 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { organizationCrudApi, organizationRelationshipsApi } from "@/api";
+import { organizationsApi } from "@/api/organizationsApi"; // Import from legacy path
+import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi"; // Import directly from module
+import { organizationCrudApi } from "@/api/organizations"; // Import from new path
 import { ProfileOrganizationRelationship, OrganizationFormValues, Organization } from "@/types";
 import { toast } from "@/components/ui/sonner";
 import { logger } from "@/utils/logger";

@@ -1,6 +1,6 @@
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { eventsApi } from "@/api";
+import { create, update } from "@/api/events/eventsApi";
 import { CreateEventInput } from "@/types";
 import { showErrorToast } from "@/api/core/errorHandler";
 import { toast } from "sonner";
@@ -20,7 +20,7 @@ export function useEventMutations() {
         host_id: hostId
       } as any; // Using 'as any' because host_id isn't in CreateEventInput
       
-      const response = await eventsApi.create(eventWithHost);
+      const response = await create(eventWithHost);
       console.log("API response received:", response);
       logger.info("Event API response:", response);
 
@@ -52,7 +52,7 @@ export function useEventMutations() {
       console.log("In updateEventMutation mutationFn with:", { eventId, eventData });
       logger.info("Starting event update mutation", { eventId, eventData });
       
-      const response = await eventsApi.update(eventId, eventData);
+      const response = await update(eventId, eventData);
       console.log("API update response received:", response);
       logger.info("Event update API response:", response);
 

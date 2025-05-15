@@ -55,11 +55,15 @@ export function createApiFactory<
 }: {
   tableName: Table;
   entityName?: string;
-} & ApiFactoryConfig<T>): ApiOperations<T, TId, TCreate, TUpdate> {
+  repository?: DataRepository<T> | (() => DataRepository<T>);
+  useQueryOperations?: boolean;
+  useMutationOperations?: boolean;
+  useBatchOperations?: boolean;
+} & ApiFactoryOptions<T>): ApiOperations<T, TId, TCreate, TUpdate> {
   // Use provided repository or create one
   const dataRepository = typeof repository === 'function'
     ? repository()
-    : repository || createRepository<T>(tableName);
+    : repository || createRepository<T>(tableName as string);
   
   // Use entityName or generate from tableName
   const entity = entityName || 

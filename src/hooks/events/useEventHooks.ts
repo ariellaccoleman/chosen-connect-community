@@ -1,6 +1,6 @@
 
 import { EventWithDetails, CreateEventInput } from "@/types/event";
-import { eventsApi } from "@/api";
+import { eventsApi } from "@/api/events/eventsApi";
 import { createQueryHooks } from "../core/factory/queryHookFactory";
 
 /**

@@ -1,6 +1,6 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { eventsApi } from "@/api";
+import { getAll } from "@/api/events/eventsApi";
 import { logger } from "@/utils/logger";
 
 export function useEvents() {
@@ -9,7 +9,7 @@ export function useEvents() {
     queryFn: async () => {
       logger.info("Fetching events");
       try {
-        const response = await eventsApi.getAll();
+        const response = await getAll();
         
         if (response.error) {
           logger.error("Error fetching events:", response.error);
