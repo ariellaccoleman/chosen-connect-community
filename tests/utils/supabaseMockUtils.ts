@@ -85,8 +85,8 @@ export function createChainableMock() {
     }
   });
 
-  // Override implementation for the terminal methods that return promises
-  mock.then = jest.fn().mockImplementation(function(onFulfilled) {
+  // Override implementation for the then method that returns promises
+  mock.then.mockImplementation(function(onFulfilled) {
     const mockResponse = this._responses[this.currentTable];
     
     // If this is an error response, we should reject the promise
@@ -98,7 +98,7 @@ export function createChainableMock() {
   });
 
   // Add proper catch method to handle rejections
-  mock.catch = jest.fn().mockImplementation(function(onRejected) {
+  mock.catch.mockImplementation(function(onRejected) {
     const mockResponse = this._responses[this.currentTable];
     
     if (mockResponse && mockResponse.error) {
@@ -119,6 +119,10 @@ export function createChainableMock() {
         return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
       },
       catch: (onRejected) => {
+        const mockResponse = this._responses[this.currentTable];
+        if (mockResponse && mockResponse.error) {
+          return Promise.reject(mockResponse.error).catch(onRejected);
+        }
         return Promise.resolve({ data: null, error: null }).catch(onRejected);
       }
     };
@@ -134,6 +138,10 @@ export function createChainableMock() {
         return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
       },
       catch: (onRejected) => {
+        const mockResponse = this._responses[this.currentTable];
+        if (mockResponse && mockResponse.error) {
+          return Promise.reject(mockResponse.error).catch(onRejected);
+        }
         return Promise.resolve({ data: null, error: null }).catch(onRejected);
       }
     };

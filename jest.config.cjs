@@ -6,8 +6,8 @@ const config = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
-      jsx: 'react-jsx',  // Set the JSX flag for ts-jest
-      isolatedModules: true // Move this setting here from globals
+      jsx: 'react-jsx',  // Set the JSX flag explicitly for ts-jest
+      isolatedModules: true
     }]
   },
   moduleNameMapper: {
@@ -26,11 +26,6 @@ const config = {
   clearMocks: true,
   resetMocks: false, // We want to control mocks explicitly
   restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
-  globals: {
-    'ts-jest': {
-      esModuleInterop: true // Add this to fix the import warning
-    }
-  },
   // Set the default timeout to 30 seconds for all tests
   testTimeout: 30000
 };
