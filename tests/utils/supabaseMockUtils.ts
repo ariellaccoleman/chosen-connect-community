@@ -163,3 +163,53 @@ export function createSuccessResponse(data: any) {
 export function createErrorResponse(message: string) {
   return { data: null, error: { message } };
 }
+
+/**
+ * Test adapter for the batch operations API
+ * Maps the object-style parameter in tests to the positional parameters the API expects
+ */
+export function testCreateBatchOperations<T>(options: {
+  tableName: string;
+  entityName?: string;
+  idField?: string;
+  defaultSelect?: string;
+  clientFn?: () => any;
+  repository?: any;
+  transformResponse?: (item: any) => T;
+  transformRequest?: (item: any) => Record<string, any>;
+  softDelete?: boolean;
+}) {
+  // Extract options to match the actual API signature
+  const { 
+    tableName, 
+    entityName = tableName,  // Use tableName as entityName if not provided
+    idField, 
+    defaultSelect, 
+    clientFn, 
+    repository,
+    transformResponse,
+    transformRequest,
+    softDelete
+  } = options;
+  
+  // Function to create repository if clientFn is provided
+  const repositoryOption = clientFn ? 
+    { repository: { from: () => clientFn() } } : 
+    (repository ? { repository } : {});
+  
+  // Pass parameters in the order expected by the API
+  return require('@/api/core/factory/operations/batchOperations')
+    .createBatchOperations(
+      entityName,
+      tableName,
+      {
+        idField,
+        defaultSelect,
+        transformResponse,
+        transformRequest,
+        softDelete,
+        ...repositoryOption
+      }
+    );
+}
+

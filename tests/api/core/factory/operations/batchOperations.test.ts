@@ -1,6 +1,6 @@
 
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
-import { createChainableMock, createSuccessResponse } from '../../../../utils/supabaseMockUtils';
+import { createChainableMock, createSuccessResponse, testCreateBatchOperations } from '../../../../utils/supabaseMockUtils';
 
 // Setup mock client
 const mockSupabase = createChainableMock();
@@ -15,7 +15,7 @@ describe('Batch Operations', () => {
   });
 
   test('should create batch operations object', () => {
-    const operations = createBatchOperations({
+    const operations = testCreateBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
     });
@@ -26,7 +26,7 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch create operation', async () => {
-    const operations = createBatchOperations({
+    const operations = testCreateBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
     });
@@ -55,7 +55,7 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch update operation', async () => {
-    const operations = createBatchOperations({
+    const operations = testCreateBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
     });
@@ -81,7 +81,7 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch delete operation', async () => {
-    const operations = createBatchOperations({
+    const operations = testCreateBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
     });
@@ -105,7 +105,7 @@ describe('Batch Operations', () => {
   });
 
   test('should handle errors in batch operations', async () => {
-    const operations = createBatchOperations({
+    const operations = testCreateBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
     });

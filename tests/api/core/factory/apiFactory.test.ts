@@ -1,6 +1,6 @@
 
 import { createApiFactory } from '@/api/core/factory/apiFactory';
-import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
+import { createChainableMock, createSuccessResponse, testCreateBatchOperations } from '../../../utils/supabaseMockUtils';
 
 // Setup mock client
 const mockSupabase = createChainableMock();

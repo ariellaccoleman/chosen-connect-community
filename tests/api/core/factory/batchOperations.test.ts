@@ -15,10 +15,14 @@ describe('Batch Operations', () => {
   });
 
   test('should create batch operations object', () => {
-    const operations = createBatchOperations({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase
-    });
+    // Create operations with the existing API signature
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any, // Type assertion to handle TableNames type
+      { 
+        repository: { from: () => mockSupabase }
+      }
+    );
 
     expect(operations).toHaveProperty('batchCreate');
     expect(operations).toHaveProperty('batchUpdate');
@@ -26,10 +30,13 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch create operation', async () => {
-    const operations = createBatchOperations({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase
-    });
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any, // Type assertion to handle TableNames type
+      { 
+        repository: { from: () => mockSupabase }
+      }
+    );
 
     const items = [
       { name: 'Item 1' },
@@ -55,10 +62,13 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch update operation', async () => {
-    const operations = createBatchOperations({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase
-    });
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any, // Type assertion to handle TableNames type
+      { 
+        repository: { from: () => mockSupabase }
+      }
+    );
 
     const updates = [
       { id: 'id-1', name: 'Updated Item 1' },
@@ -81,10 +91,13 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch delete operation', async () => {
-    const operations = createBatchOperations({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase
-    });
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any, // Type assertion to handle TableNames type
+      { 
+        repository: { from: () => mockSupabase }
+      }
+    );
 
     const ids = ['id-1', 'id-2'];
 
@@ -105,10 +118,13 @@ describe('Batch Operations', () => {
   });
 
   test('should handle errors in batch operations', async () => {
-    const operations = createBatchOperations({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase
-    });
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any, // Type assertion to handle TableNames type
+      { 
+        repository: { from: () => mockSupabase }
+      }
+    );
 
     // Setup error response
     mockSupabase.from.mockImplementation(() => {
