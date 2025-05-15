@@ -39,7 +39,7 @@ export const mockSupabase = {
     })
   },
   
-  // Database methods
+  // Database methods - properly chaining
   from: jest.fn(function(table) {
     this.currentTable = table;
     return this;
@@ -59,16 +59,26 @@ export const mockSupabase = {
   eq: jest.fn(function() {
     return this;
   }),
+  in: jest.fn(function() {
+    return this;
+  }),
   order: jest.fn(function() {
+    return this;
+  }),
+  range: jest.fn(function() {
     return this;
   }),
   limit: jest.fn(function() {
     return this;
   }),
-  single: jest.fn().mockResolvedValue({ data: {}, error: null }),
-  maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null }),
-  in: jest.fn(function() {
+  ilike: jest.fn(function() {
     return this;
+  }),
+  single: jest.fn(function() {
+    return Promise.resolve({ data: {}, error: null });
+  }),
+  maybeSingle: jest.fn(function() {
+    return Promise.resolve({ data: {}, error: null });
   }),
   
   // Storage methods
