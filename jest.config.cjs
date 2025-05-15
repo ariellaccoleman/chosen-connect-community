@@ -5,8 +5,8 @@ const config = {
   testEnvironment: 'jsdom',
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-      jsx: 'react-jsx',  // Set the JSX flag explicitly for ts-jest
+      tsconfig: 'tsconfig.test.json',
+      jsx: 'react-jsx',
       isolatedModules: true
     }]
   },
@@ -26,7 +26,6 @@ const config = {
   clearMocks: true,
   resetMocks: false, // We want to control mocks explicitly
   restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
-  // Set the default timeout to 30 seconds for all tests
   testTimeout: 30000
 };
 

@@ -75,13 +75,19 @@ export const mockSupabase = {
     return this;
   }),
   single: jest.fn(function() {
-    return Promise.resolve({ data: {}, error: null });
+    return {
+      then: (callback) => Promise.resolve({ data: {}, error: null }).then(callback),
+      catch: (callback) => Promise.resolve({ data: {}, error: null }).catch(callback)
+    };
   }),
   maybeSingle: jest.fn(function() {
-    return Promise.resolve({ data: {}, error: null });
+    return {
+      then: (callback) => Promise.resolve({ data: {}, error: null }).then(callback),
+      catch: (callback) => Promise.resolve({ data: {}, error: null }).catch(callback)
+    };
   }),
   
-  // Add then/catch methods to handle promise behavior
+  // Method for handling promise resolution
   then: jest.fn(function(callback) {
     return Promise.resolve({ data: {}, error: null }).then(callback);
   }),

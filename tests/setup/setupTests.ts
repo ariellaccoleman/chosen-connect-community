@@ -2,23 +2,7 @@
 // Add global test setup here
 import '@testing-library/jest-dom';
 
-beforeAll(() => {
-  // Setup global test environment
-  console.error = jest.fn();
-  console.warn = jest.fn();
-});
-
-afterAll(() => {
-  // Cleanup after all tests
-  jest.restoreAllMocks();
-});
-
-// Reset mocks between tests
-afterEach(() => {
-  jest.clearAllMocks();
-});
-
-// Mock resize observer which isn't available in jsdom
+// Define global mocks for browser APIs that aren't available in jsdom
 global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
@@ -38,4 +22,21 @@ Object.defineProperty(window, 'matchMedia', {
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
+});
+
+// Add global Jest config
+beforeAll(() => {
+  // Setup global test environment
+  console.error = jest.fn();
+  console.warn = jest.fn();
+});
+
+afterAll(() => {
+  // Cleanup after all tests
+  jest.restoreAllMocks();
+});
+
+// Reset mocks between tests
+afterEach(() => {
+  jest.clearAllMocks();
 });

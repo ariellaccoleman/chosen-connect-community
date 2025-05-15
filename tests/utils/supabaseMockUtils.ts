@@ -87,43 +87,46 @@ export function createChainableMock() {
 
   // Override implementation for the then method that returns promises
   mock.then.mockImplementation(function(onFulfilled) {
-    const mockResponse = this._responses[this.currentTable];
+    const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
     
     // If this is an error response, we should reject the promise
     if (mockResponse && mockResponse.error) {
-      return Promise.reject(mockResponse.error);
+      return Promise.reject(mockResponse.error).then(undefined, error => {
+        if (onFulfilled) return onFulfilled({ data: null, error });
+        throw error;
+      });
     }
     
-    return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+    return Promise.resolve(mockResponse).then(onFulfilled);
   });
 
   // Add proper catch method to handle rejections
   mock.catch.mockImplementation(function(onRejected) {
-    const mockResponse = this._responses[this.currentTable];
+    const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
     
     if (mockResponse && mockResponse.error) {
       return Promise.reject(mockResponse.error).catch(onRejected);
     }
     
-    return Promise.resolve(mockResponse || { data: null, error: null }).catch(onRejected);
+    return Promise.resolve(mockResponse).catch(onRejected);
   });
   
   // Special implementation for single and maybeSingle
   mock.single.mockImplementation(function() {
     return {
       then: (onFulfilled) => {
-        const mockResponse = this._responses[this.currentTable];
+        const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
         if (mockResponse && mockResponse.error) {
           return Promise.reject(mockResponse.error);
         }
-        return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+        return Promise.resolve(mockResponse).then(onFulfilled);
       },
       catch: (onRejected) => {
-        const mockResponse = this._responses[this.currentTable];
+        const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
         if (mockResponse && mockResponse.error) {
           return Promise.reject(mockResponse.error).catch(onRejected);
         }
-        return Promise.resolve({ data: null, error: null }).catch(onRejected);
+        return Promise.resolve(mockResponse).catch(onRejected);
       }
     };
   });
@@ -131,18 +134,18 @@ export function createChainableMock() {
   mock.maybeSingle.mockImplementation(function() {
     return {
       then: (onFulfilled) => {
-        const mockResponse = this._responses[this.currentTable];
+        const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
         if (mockResponse && mockResponse.error) {
           return Promise.reject(mockResponse.error);
         }
-        return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+        return Promise.resolve(mockResponse).then(onFulfilled);
       },
       catch: (onRejected) => {
-        const mockResponse = this._responses[this.currentTable];
+        const mockResponse = this._responses[this.currentTable] || { data: null, error: null };
         if (mockResponse && mockResponse.error) {
           return Promise.reject(mockResponse.error).catch(onRejected);
         }
-        return Promise.resolve({ data: null, error: null }).catch(onRejected);
+        return Promise.resolve(mockResponse).catch(onRejected);
       }
     };
   });
