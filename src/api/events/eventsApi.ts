@@ -4,6 +4,7 @@ import { EventWithDetails, CreateEventInput } from '@/types/event';
 import { formatDateForDb } from '@/utils/formatters';
 import { Database } from '@/integrations/supabase/types';
 import { logger } from '@/utils/logger';
+import { apiClient } from '@/api/core/apiClient';
 
 // Define the raw event type from the database
 type Event = Database['public']['Tables']['events']['Row'];

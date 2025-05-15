@@ -9,7 +9,7 @@ export function useEvents() {
     queryFn: async () => {
       logger.info("Fetching events");
       try {
-        const response = await eventsApi.getEvents();
+        const response = await eventsApi.getAllEvents();
         
         if (response.error) {
           logger.error("Error fetching events:", response.error);
