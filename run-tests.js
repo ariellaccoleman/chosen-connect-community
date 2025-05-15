@@ -18,6 +18,7 @@ try {
     'jest',
     'ts-jest',
     '@types/jest',
+    'jest-environment-jsdom',  // Added this package
     '@testing-library/react',
     '@testing-library/jest-dom',
     '@testing-library/user-event'
