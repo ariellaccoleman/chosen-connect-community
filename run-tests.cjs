@@ -11,7 +11,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.s
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 
 // Create a custom Jest reporter to capture test results
-const TEST_REPORTER_PATH = './tests/setup/testReporter.js';
+const TEST_REPORTER_PATH = './tests/setup/testReporter.cjs'; // Changed extension to .cjs
 if (!existsSync(TEST_REPORTER_PATH)) {
   const testReporterDir = './tests/setup';
   if (!existsSync(testReporterDir)) {
