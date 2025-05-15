@@ -41,11 +41,12 @@ export const mockSupabase = {
   
   // Storage methods - ensure these match what's expected in the tests
   storage: {
-    from: jest.fn().mockReturnThis(),
-    upload: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
-    getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://test-url.com' } }),
-    list: jest.fn().mockResolvedValue({ data: [], error: null }),
-    remove: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+    from: jest.fn().mockReturnValue({
+      upload: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+      getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://test-url.com' } }),
+      list: jest.fn().mockResolvedValue({ data: [], error: null }),
+      remove: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null })
+    }),
     createBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
     getBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
     listBuckets: jest.fn().mockResolvedValue({ data: [], error: null })
@@ -54,7 +55,9 @@ export const mockSupabase = {
   // Functions methods - ensure these match what's expected in the tests
   functions: {
     invoke: jest.fn().mockResolvedValue({ data: { result: 'success' }, error: null }),
-    createClient: jest.fn().mockReturnThis()
+    createClient: jest.fn().mockReturnValue({
+      invoke: jest.fn().mockResolvedValue({ data: { result: 'success' }, error: null })
+    })
   },
   
   // Database methods - properly chaining
@@ -72,7 +75,12 @@ export const mockSupabase = {
     return this;
   }),
   delete: jest.fn(function() {
-    return this;
+    return {
+      eq: (field, value) => {
+        mockSupabase.eq(field, value);
+        return Promise.resolve({ data: true, error: null });
+      }
+    };
   }),
   eq: jest.fn(function() {
     return this;
@@ -93,16 +101,52 @@ export const mockSupabase = {
     return this;
   }),
   single: jest.fn(function() {
+    // For create operation
+    if (mockSupabase.insert.mock.calls.length > 0) {
+      const newEntityData = mockSupabase.insert.mock.calls[0][0];
+      return Promise.resolve({
+        data: { id: '999', ...newEntityData, created_at: new Date().toISOString() },
+        error: null
+      });
+    }
+    
+    // For update operation
+    if (mockSupabase.update.mock.calls.length > 0) {
+      const updateData = mockSupabase.update.mock.calls[0][0];
+      return Promise.resolve({
+        data: { 
+          id: '123', 
+          name: 'Test Entity', 
+          ...updateData,
+          created_at: new Date().toISOString()
+        },
+        error: null
+      });
+    }
+    
     return this;
   }),
   maybeSingle: jest.fn(function() {
-    return this;
+    // Handle the standard error case for 'invalid-id'
+    if (this.currentTable === 'tags' && 
+        mockSupabase.eq.mock.calls.length > 0 && 
+        mockSupabase.eq.mock.calls[0][1] === 'invalid-id') {
+      return Promise.resolve({ 
+        data: null, 
+        error: mockErrorResponse.error 
+      });
+    }
+    
+    return Promise.resolve({ 
+      data: { id: '123', name: 'Test Entity' },
+      error: null 
+    });
   }),
   
   // Add proper promise resolution
   then: jest.fn(function(callback) {
     // Handle the standard error case for 'invalid-id'
-    if (this.currentTable && this.currentTable === 'tags' && 
+    if (this.currentTable === 'tags' && 
         mockSupabase.eq.mock.calls.length > 0 && 
         mockSupabase.eq.mock.calls[0][1] === 'invalid-id') {
       return Promise.resolve({ 
@@ -110,6 +154,18 @@ export const mockSupabase = {
         error: mockErrorResponse.error 
       }).then(callback);
     }
+    
+    // For regular queries, return sample data
+    if (mockSupabase.select.mock.calls.length > 0) {
+      // If we're doing a filtered query
+      if (mockSupabase.eq.mock.calls.length > 0) {
+        return Promise.resolve({ 
+          data: [{ id: '1', name: 'Test' }],
+          error: null 
+        }).then(callback);
+      }
+    }
+    
     return Promise.resolve({ data: {}, error: null }).then(callback);
   }),
   

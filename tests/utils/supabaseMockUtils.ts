@@ -72,7 +72,7 @@ export function createChainableMock() {
     }
   };
   
-  // Make each method return the mock itself for chaining
+  // Make each method return the mock itself for chaining and properly record calls
   Object.keys(mock).forEach(key => {
     if (key !== '_responses' && key !== 'mockResponseFor' && key !== 'reset' && key !== 'currentTable' && 
         key !== 'then' && key !== 'catch') {
