@@ -1,9 +1,11 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
 const { existsSync } = require('fs');
 const { v4: uuidv4 } = require('uuid');
-const fetch = require('node-fetch');
+// Replace node-fetch with a compatible CommonJS alternative
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // Supabase URL and key - will be used in production
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
