@@ -81,6 +81,14 @@ export const mockSupabase = {
     return Promise.resolve({ data: {}, error: null });
   }),
   
+  // Add then/catch methods to handle promise behavior
+  then: jest.fn(function(callback) {
+    return Promise.resolve({ data: {}, error: null }).then(callback);
+  }),
+  catch: jest.fn(function(callback) {
+    return Promise.resolve({ data: {}, error: null }).catch(callback);
+  }),
+  
   // Storage methods
   storage: {
     from: jest.fn().mockReturnThis(),
