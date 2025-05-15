@@ -55,7 +55,7 @@ export const saveTestResult = async (
       .from('test_results')
       .insert({
         test_run_id: testRunId,
-        test_suite,
+        test_suite: testSuite,
         test_name: testName,
         status,
         duration_ms: durationMs,
