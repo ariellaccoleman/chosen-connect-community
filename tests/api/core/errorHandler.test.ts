@@ -6,10 +6,10 @@ import {
   showErrorToast,
   ApiError
 } from '@/api/core/errorHandler';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/hooks/use-toast';
 
 // Mock the toast function
-jest.mock('@/components/ui/sonner', () => ({
+jest.mock('@/hooks/use-toast', () => ({
   toast: {
     error: jest.fn(),
     success: jest.fn()

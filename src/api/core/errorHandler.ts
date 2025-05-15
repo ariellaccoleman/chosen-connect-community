@@ -1,6 +1,6 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "@/hooks/use-toast";
 
 /**
  * Types of API errors that can occur

@@ -1,6 +1,6 @@
 
 import { logger } from './logger';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/hooks/use-toast';
 
 /**
  * Standard error handler that logs errors and optionally shows a toast notification
