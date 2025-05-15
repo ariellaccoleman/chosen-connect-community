@@ -1,6 +1,5 @@
 
-import { ReactNode, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { ReactNode } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import BaseLayout from "@/components/layout/BaseLayout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,19 +9,14 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const navigate = useNavigate();
   const { user, loading } = useAuth();
 
-  useEffect(() => {
-    // Only redirect when the auth state is fully loaded and no user exists
-    if (!loading && !user) {
-      console.log("DashboardLayout: User not authenticated, redirecting to auth");
-      navigate("/auth", { replace: true });
-    }
-  }, [user, loading, navigate]);
-
   // Add debug log
-  console.log("DashboardLayout - Auth state:", { user: !!user, loading });
+  console.log("DashboardLayout - Auth state:", { 
+    user: !!user, 
+    loading,
+    redirectionDebug: "Fixed redirection in DashboardLayout" 
+  });
 
   // Show loading skeleton when auth state is loading
   if (loading) {
@@ -40,7 +34,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     );
   }
 
-  // Return null when no user is authenticated
+  // Return null when no user is authenticated - this lets ProtectedRoute handle the redirect
   if (!user) {
     return null;
   }

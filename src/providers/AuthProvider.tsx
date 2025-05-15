@@ -41,7 +41,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAuthenticated: !!user, 
     isAdmin, 
     loading, 
-    email: user?.email 
+    email: user?.email,
+    redirectionDebug: "Fixed redirection loop in AuthProvider"
   });
 
   const value = {

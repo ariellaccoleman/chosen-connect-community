@@ -1,10 +1,10 @@
 
 import { useState, useEffect } from "react";
-import { Navigate, useSearchParams, useLocation } from "react-router-dom";
+import { useSearchParams, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 
-// Import our new components
+// Import our components
 import AuthLayout from "@/components/auth/AuthLayout";
 import AuthTabs from "@/components/auth/AuthTabs";
 import ForgotPasswordForm from "@/components/auth/ForgotPasswordForm";
@@ -30,15 +30,14 @@ const Auth = () => {
   }, [searchParams]);
 
   // Add debug logs
-  console.log("Auth page - Auth state:", { user, loading, authMode });
+  console.log("Auth page - Auth state:", { 
+    user, 
+    loading, 
+    authMode,
+    redirectionDebug: "Fixed redirection in Auth page" 
+  });
 
-  // Redirect if already logged in, but don't redirect if we're on the reset password page
-  if (user && !loading && authMode !== "resetPassword") {
-    console.log("Auth page - User is logged in, redirecting to dashboard");
-    // Get the intended destination if available, otherwise go to dashboard
-    const from = location.state?.from || "/dashboard";
-    return <Navigate to={from} replace />;
-  }
+  // We'll let PublicRoute handle the redirection to avoid loops
 
   const handleTabChange = (value: string) => {
     setAuthMode(value as AuthMode);
