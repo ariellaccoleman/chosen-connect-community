@@ -76,7 +76,7 @@ export function createApiFactory<
     tableName,
     {
       ...options,
-      // Pass repository to operations
+      // We need to pass repository in a way that baseOperations expects
       repository: dataRepository
     }
   );

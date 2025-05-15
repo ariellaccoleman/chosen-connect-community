@@ -1,6 +1,7 @@
 
 import { Database } from "@/integrations/supabase/types";
 import { ApiOperations } from "../types";
+import { DataRepository } from "../repository/repositoryFactory";
 
 // Define a type for valid table names from the Database type
 export type TableNames = keyof Database['public']['Tables'];
@@ -26,4 +27,5 @@ export interface ApiFactoryOptions<T> {
   softDelete?: boolean;
   transformResponse?: (item: any) => T;
   transformRequest?: (item: any) => Record<string, any>;
+  repository?: DataRepository<T>;
 }
