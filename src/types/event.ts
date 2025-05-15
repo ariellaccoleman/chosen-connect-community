@@ -26,4 +26,3 @@ export interface CreateEventInput {
   price: number | null;
   // Remove tag_id as we'll use tag assignments directly
 }
-
