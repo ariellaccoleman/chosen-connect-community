@@ -81,7 +81,7 @@ export function createBatchOperations<
             const { data, error } = await client
               .from(tableName)
               .update(transformedData as any)
-              .eq(idField as string, item.id as any)
+              .eq(idField, item.id as any)
               .select(defaultSelect)
               .single();
             
@@ -119,7 +119,7 @@ export function createBatchOperations<
           const result = await client
             .from(tableName)
             .update(updateData as any)
-            .in(idField as string, ids as any[]);
+            .in(idField, ids as any[]);
           
           error = result.error;
         } else {
@@ -127,7 +127,7 @@ export function createBatchOperations<
           const result = await client
             .from(tableName)
             .delete()
-            .in(idField as string, ids as any[]);
+            .in(idField, ids as any[]);
           
           error = result.error;
         }
