@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
@@ -18,7 +19,6 @@ if (!existsSync(TEST_REPORTER_PATH)) {
     execSync('mkdir -p ./tests/setup', { stdio: 'inherit' });
   }
   
-  // Creating the test reporter will be handled by the AI through lov-write
   console.log('Creating test reporter at', TEST_REPORTER_PATH);
 }
 
@@ -67,17 +67,28 @@ for (const dep of additionalDeps) {
 }
 
 // Generate a test run ID
-const testRunId = uuidv4();
+const testRunId = process.env.TEST_RUN_ID || uuidv4();
 process.env.TEST_RUN_ID = testRunId;
 process.env.SUPABASE_URL = SUPABASE_URL;
 process.env.SUPABASE_KEY = SUPABASE_KEY;
 process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
 
+// Make sure SERVICE_ROLE_KEY is available for the edge function
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. This may cause issues with the test reporting edge function.');
+}
+
 // Log environment variables for debugging
-console.log('Test environment:');
+console.log('================= Test Environment =================');
 console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
+console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
+console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
 console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
 console.log(`- TEST_RUN_ID: ${testRunId}`);
+console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
+console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
+console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
+console.log('===================================================');
 
 // Run tests with custom reporter
 const testPathPattern = process.argv[2] || '';
@@ -85,8 +96,9 @@ try {
   console.log(`Running tests${testPathPattern ? ` matching pattern: ${testPathPattern}` : ''}...`);
   console.log(`Test run ID: ${testRunId}`);
   
+  // Add verbose flag for more detailed test output
   execSync(
-    `npx jest ${testPathPattern} --reporters=default --reporters=${TEST_REPORTER_PATH}`,
+    `npx jest ${testPathPattern} --verbose --reporters=default --reporters=${TEST_REPORTER_PATH}`,
     { 
       stdio: 'inherit',
       env: {

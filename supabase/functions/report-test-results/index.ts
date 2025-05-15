@@ -37,8 +37,11 @@ interface TestResultRequest {
 }
 
 serve(async (req) => {
+  console.log(`[report-test-results] Received ${req.method} request`)
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('[report-test-results] Handling CORS preflight request')
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -47,6 +50,7 @@ serve(async (req) => {
 
   // Check if the request is a POST
   if (req.method !== 'POST') {
+    console.log(`[report-test-results] Method not allowed: ${req.method}`)
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -58,9 +62,13 @@ serve(async (req) => {
   const expectedApiKey = Deno.env.get('TEST_REPORTING_API_KEY')
 
   // Debug logging for API key validation
-  console.log(`API key validation: expected key ${expectedApiKey ? 'is set' : 'is not set'}, provided key ${apiKey ? 'is provided' : 'is not provided'}`)
+  console.log(`[report-test-results] API key validation:`)
+  console.log(`- Expected key ${expectedApiKey ? 'is set' : 'is not set'}`)
+  console.log(`- Provided key ${apiKey ? 'is provided' : 'is not provided'}`)
+  console.log(`- Keys match: ${apiKey === expectedApiKey}`)
 
   if (!apiKey || apiKey !== expectedApiKey) {
+    console.error('[report-test-results] Unauthorized: Invalid API key')
     return new Response(JSON.stringify({ 
       error: 'Unauthorized', 
       message: 'Invalid API key',
@@ -68,6 +76,8 @@ serve(async (req) => {
       debug: {
         keyProvided: !!apiKey,
         keyExpectedSet: !!expectedApiKey,
+        keyLength: apiKey ? apiKey.length : 0,
+        expectedKeyLength: expectedApiKey ? expectedApiKey.length : 0
       }
     }), {
       status: 401,
@@ -78,6 +88,7 @@ serve(async (req) => {
   try {
     // Parse the request body
     const requestData: TestRunRequest = await req.json()
+    console.log(`[report-test-results] Processing request with ${requestData.test_results.length} test results`)
     
     // If we have a test_run_id in the first test result, this is an update to an existing test run
     const existingTestRunId = requestData.test_results.length > 0 ? 
@@ -88,6 +99,7 @@ serve(async (req) => {
     if (existingTestRunId) {
       // Update the existing test run
       testRunId = existingTestRunId;
+      console.log(`[report-test-results] Updating existing test run: ${testRunId}`)
       
       // Update the test run with new counts (add to existing)
       const { data: currentRun, error: fetchError } = await supabase
@@ -97,7 +109,7 @@ serve(async (req) => {
         .single();
       
       if (fetchError) {
-        console.error('Error fetching current test run:', fetchError);
+        console.error('[report-test-results] Error fetching current test run:', fetchError);
         return new Response(JSON.stringify({ error: 'Failed to fetch current test run', details: fetchError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -108,6 +120,8 @@ serve(async (req) => {
       const newPassedTests = (currentRun.passed_tests || 0) + requestData.passed_tests;
       const newFailedTests = (currentRun.failed_tests || 0) + requestData.failed_tests;
       const newSkippedTests = (currentRun.skipped_tests || 0) + requestData.skipped_tests;
+      
+      console.log(`[report-test-results] Updated counts: ${newPassedTests} passed, ${newFailedTests} failed, ${newSkippedTests} skipped, total: ${newTotalTests}`)
       
       const { error: updateError } = await supabase
         .from('test_runs')
@@ -122,7 +136,7 @@ serve(async (req) => {
         .eq('id', testRunId);
       
       if (updateError) {
-        console.error('Error updating test run:', updateError);
+        console.error('[report-test-results] Error updating test run:', updateError);
         return new Response(JSON.stringify({ error: 'Failed to update test run', details: updateError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -130,6 +144,7 @@ serve(async (req) => {
       }
     } else {
       // Create a new test run
+      console.log('[report-test-results] Creating new test run')
       const { data: testRunData, error: testRunError } = await supabase
         .from('test_runs')
         .insert({
@@ -146,7 +161,7 @@ serve(async (req) => {
         .single()
 
       if (testRunError) {
-        console.error('Error creating test run:', testRunError)
+        console.error('[report-test-results] Error creating test run:', testRunError)
         return new Response(JSON.stringify({ error: 'Failed to create test run', details: testRunError }), {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -154,6 +169,7 @@ serve(async (req) => {
       }
 
       testRunId = testRunData.id
+      console.log(`[report-test-results] New test run created with ID: ${testRunId}`)
     }
 
     // Process test results
@@ -169,6 +185,8 @@ serve(async (req) => {
         console_output: result.console_output || null,
       }))
 
+      console.log(`[report-test-results] Processing ${testResults.length} test results for run ${testRunId}`)
+
       // Insert test results in batches if there are many
       const batchSize = 20;
       for (let i = 0; i < testResults.length; i += batchSize) {
@@ -178,7 +196,7 @@ serve(async (req) => {
           .insert(batch);
 
         if (resultsError) {
-          console.error('Error inserting test results batch:', resultsError)
+          console.error('[report-test-results] Error inserting test results batch:', resultsError)
           // Continue with the next batch, don't exit completely
         }
       }
@@ -192,7 +210,7 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
-    console.error('Error processing request:', error)
+    console.error('[report-test-results] Error processing request:', error)
     return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
