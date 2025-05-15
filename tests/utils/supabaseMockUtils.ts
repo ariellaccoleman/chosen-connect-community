@@ -9,6 +9,7 @@ export function createChainableMock() {
   
   // Create the basic mock structure
   const mock = {
+    currentTable: '',
     from: jest.fn(),
     select: jest.fn(),
     insert: jest.fn(),
@@ -46,7 +47,8 @@ export function createChainableMock() {
     maybeSingle: jest.fn(),
     csv: jest.fn(),
     rpc: jest.fn(),
-    // Add any other methods you need to chain
+    then: jest.fn(),
+    catch: jest.fn(),
     
     // Store the mock responses for each table or operation
     _responses: {} as Record<string, any>,
@@ -65,49 +67,77 @@ export function createChainableMock() {
         }
       });
       this._responses = {};
-      currentTable = '';
+      this.currentTable = '';
       return this;
     }
   };
   
   // Make each method return the mock itself for chaining
   Object.keys(mock).forEach(key => {
-    if (key !== '_responses' && key !== 'mockResponseFor' && key !== 'reset') {
+    if (key !== '_responses' && key !== 'mockResponseFor' && key !== 'reset' && key !== 'currentTable' && 
+        key !== 'then' && key !== 'catch') {
       mock[key].mockImplementation((...args) => {
         if (key === 'from') {
-          currentTable = args[0];
+          mock.currentTable = args[0];
         }
-        
-        // Special case for methods that should return data
-        if (['single', 'maybeSingle'].includes(key)) {
-          const mockResponse = mock._responses[currentTable] || { data: null, error: null };
-          return Promise.resolve(mockResponse);
-        }
-        
         return mock;
       });
     }
   });
 
   // Override implementation for the terminal methods that return promises
-  mock.then = function(onFulfilled) {
-    const mockResponse = this._responses[currentTable] || { data: null, error: null };
+  mock.then = jest.fn().mockImplementation(function(onFulfilled) {
+    const mockResponse = this._responses[this.currentTable];
     
     // If this is an error response, we should reject the promise
-    if (mockResponse.error) {
-      return Promise.reject(mockResponse.error).catch(error => { 
-        throw error; // Ensure errors are properly thrown, not swallowed
-      });
+    if (mockResponse && mockResponse.error) {
+      return Promise.reject(mockResponse.error);
     }
     
-    return Promise.resolve(mockResponse).then(onFulfilled);
-  };
+    return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+  });
 
   // Add proper catch method to handle rejections
-  mock.catch = function(onRejected) {
-    const mockResponse = this._responses[currentTable] || { data: null, error: null };
-    return Promise.resolve(mockResponse).catch(onRejected);
-  };
+  mock.catch = jest.fn().mockImplementation(function(onRejected) {
+    const mockResponse = this._responses[this.currentTable];
+    
+    if (mockResponse && mockResponse.error) {
+      return Promise.reject(mockResponse.error).catch(onRejected);
+    }
+    
+    return Promise.resolve(mockResponse || { data: null, error: null }).catch(onRejected);
+  });
+  
+  // Special implementation for single and maybeSingle
+  mock.single.mockImplementation(function() {
+    return {
+      then: (onFulfilled) => {
+        const mockResponse = this._responses[this.currentTable];
+        if (mockResponse && mockResponse.error) {
+          return Promise.reject(mockResponse.error);
+        }
+        return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+      },
+      catch: (onRejected) => {
+        return Promise.resolve({ data: null, error: null }).catch(onRejected);
+      }
+    };
+  });
+  
+  mock.maybeSingle.mockImplementation(function() {
+    return {
+      then: (onFulfilled) => {
+        const mockResponse = this._responses[this.currentTable];
+        if (mockResponse && mockResponse.error) {
+          return Promise.reject(mockResponse.error);
+        }
+        return Promise.resolve(mockResponse || { data: null, error: null }).then(onFulfilled);
+      },
+      catch: (onRejected) => {
+        return Promise.resolve({ data: null, error: null }).catch(onRejected);
+      }
+    };
+  });
   
   return mock;
 }
