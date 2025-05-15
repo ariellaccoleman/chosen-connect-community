@@ -1,6 +1,6 @@
 
-// ES Module syntax for Jest configuration
-export default {
+/** @type {import('jest').Config} */
+const config = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   transform: {
@@ -23,3 +23,5 @@ export default {
   resetMocks: false, // We want to control mocks explicitly
   restoreMocks: false // We'll restore mocks in afterEach/afterAll hooks
 };
+
+module.exports = config;

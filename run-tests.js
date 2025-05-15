@@ -1,14 +1,11 @@
+#!/usr/bin/env node
 
-import { execSync } from 'child_process';
-import { existsSync } from 'fs';
-import { mkdir } from 'fs/promises';
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
+const { execSync } = require('child_process');
+const { existsSync } = require('fs');
 
 // Check if Jest is installed
 try {
-  // Using dynamic import to check if Jest is available
-  await import('jest');
+  require.resolve('jest');
   console.log('Jest is installed, running tests...');
 } catch (e) {
   console.log('Jest is not installed. Installing required packages...');
@@ -18,7 +15,6 @@ try {
     'jest',
     'ts-jest',
     '@types/jest',
-    'jest-environment-jsdom',  // Added this package
     '@testing-library/react',
     '@testing-library/jest-dom',
     '@testing-library/user-event'
@@ -34,11 +30,7 @@ try {
 
 // Ensure test setup directory exists
 if (!existsSync('./tests/setup')) {
-  try {
-    await mkdir('./tests/setup', { recursive: true });
-  } catch (error) {
-    console.error('Failed to create setup directory:', error);
-  }
+  execSync('mkdir -p ./tests/setup', { stdio: 'inherit' });
 }
 
 // Run tests
