@@ -1,6 +1,4 @@
 
-#!/usr/bin/env node
-
 import { execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { mkdir } from 'fs/promises';
