@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tag } from "lucide-react";
+import { Tag, ClipboardList } from "lucide-react";
 
 const AdminDashboard = () => {
   const { isAdmin } = useAuth();
@@ -26,6 +26,13 @@ const AdminDashboard = () => {
           <Link to="/admin/tags" className="flex items-center">
             <Tag className="mr-2 h-4 w-4" />
             Manage Tags
+          </Link>
+        </Button>
+        
+        <Button asChild variant="ghost" className="w-full justify-start">
+          <Link to="/admin/tests" className="flex items-center">
+            <ClipboardList className="mr-2 h-4 w-4" />
+            Test Reports
           </Link>
         </Button>
       </nav>

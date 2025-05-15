@@ -22,3 +22,10 @@ jobs:
         run: chmod +x run-tests.cjs
       - name: Run tests
         run: ./run-tests.cjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          APP_URL: 'https://app.chosen.dev'
+

@@ -745,6 +745,95 @@ export type Database = {
           },
         ]
       }
+      test_results: {
+        Row: {
+          console_output: string | null
+          created_at: string | null
+          duration_ms: number
+          error_message: string | null
+          id: string
+          stack_trace: string | null
+          status: Database["public"]["Enums"]["test_status"]
+          test_name: string
+          test_run_id: string
+          test_suite: string
+        }
+        Insert: {
+          console_output?: string | null
+          created_at?: string | null
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          stack_trace?: string | null
+          status: Database["public"]["Enums"]["test_status"]
+          test_name: string
+          test_run_id: string
+          test_suite: string
+        }
+        Update: {
+          console_output?: string | null
+          created_at?: string | null
+          duration_ms?: number
+          error_message?: string | null
+          id?: string
+          stack_trace?: string | null
+          status?: Database["public"]["Enums"]["test_status"]
+          test_name?: string
+          test_run_id?: string
+          test_suite?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_results_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      test_runs: {
+        Row: {
+          created_at: string | null
+          duration_ms: number
+          failed_tests: number
+          git_branch: string | null
+          git_commit: string | null
+          id: string
+          passed_tests: number
+          run_at: string | null
+          skipped_tests: number
+          status: Database["public"]["Enums"]["test_run_status"]
+          total_tests: number
+        }
+        Insert: {
+          created_at?: string | null
+          duration_ms?: number
+          failed_tests?: number
+          git_branch?: string | null
+          git_commit?: string | null
+          id?: string
+          passed_tests?: number
+          run_at?: string | null
+          skipped_tests?: number
+          status?: Database["public"]["Enums"]["test_run_status"]
+          total_tests?: number
+        }
+        Update: {
+          created_at?: string | null
+          duration_ms?: number
+          failed_tests?: number
+          git_branch?: string | null
+          git_commit?: string | null
+          id?: string
+          passed_tests?: number
+          run_at?: string | null
+          skipped_tests?: number
+          status?: Database["public"]["Enums"]["test_run_status"]
+          total_tests?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -775,6 +864,8 @@ export type Database = {
       chat_channel_type: "group" | "dm"
       org_connection_type: "current" | "former" | "connected_insider"
       pricing_tier: "free" | "community" | "pro" | "partner"
+      test_run_status: "success" | "failure" | "in_progress"
+      test_status: "passed" | "failed" | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -893,6 +984,8 @@ export const Constants = {
       chat_channel_type: ["group", "dm"],
       org_connection_type: ["current", "former", "connected_insider"],
       pricing_tier: ["free", "community", "pro", "partner"],
+      test_run_status: ["success", "failure", "in_progress"],
+      test_status: ["passed", "failed", "skipped"],
     },
   },
 } as const

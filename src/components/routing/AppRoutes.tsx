@@ -24,6 +24,8 @@ import TestDataGenerator from '@/pages/TestDataGenerator';
 // Admin Routes
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminTags from '@/pages/AdminTags';
+import AdminTestReports from '@/pages/AdminTestReports';
+import AdminTestRunDetail from '@/pages/AdminTestRunDetail';
 
 // Route Guards
 import PublicRoute from './PublicRoute';
@@ -64,6 +66,8 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
       <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
+      <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
+      <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
       
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />

@@ -17,6 +17,8 @@ export const APP_ROUTES = {
   COMMUNITY_GUIDE: '/community-guide',
   ADMIN_DASHBOARD: '/admin',
   ADMIN_TAGS: '/admin/tags',
+  ADMIN_TESTS: '/admin/tests',
+  ADMIN_TEST_DETAIL: '/admin/tests/:testRunId',
   TEST_DATA_GENERATOR: '/admin/test-data-generator',
 
   // Events
@@ -41,6 +43,8 @@ export const ROUTE_ACCESS = {
   [APP_ROUTES.COMMUNITY_GUIDE]: { requiresAuth: false },
   [APP_ROUTES.ADMIN_DASHBOARD]: { requiresAuth: true, requiresAdmin: true },
   [APP_ROUTES.ADMIN_TAGS]: { requiresAuth: true, requiresAdmin: true },
+  [APP_ROUTES.ADMIN_TESTS]: { requiresAuth: true, requiresAdmin: true },
+  [APP_ROUTES.ADMIN_TEST_DETAIL]: { requiresAuth: true, requiresAdmin: true },
   [APP_ROUTES.TEST_DATA_GENERATOR]: { requiresAuth: true, requiresAdmin: true },
 
   // Events - Update to require authentication
@@ -133,6 +137,12 @@ export const getRoutesConfig = () => {
       path: APP_ROUTES.ADMIN_TAGS,
       id: 'admin-tags',
       label: 'Admin Tags',
+      showInNav: false,
+    },
+    {
+      path: APP_ROUTES.ADMIN_TESTS,
+      id: 'admin-tests',
+      label: 'Test Reports',
       showInNav: false,
     },
     {
