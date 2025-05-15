@@ -42,6 +42,7 @@ const createWrapper = () => {
     }
   });
   
+  // Fix the JSX syntax issue by properly typing the children prop
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}

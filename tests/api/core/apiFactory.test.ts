@@ -161,7 +161,7 @@ describe('API Factory', () => {
     // Execute
     const result = await testOps.update('123', updateData);
     
-    // Verify
+    // Verify 
     expect(mockSupabase.update).toHaveBeenCalledWith(updateData);
     expect(mockSupabase.eq).toHaveBeenCalledWith('id', '123');
     expect(result.data).toHaveProperty('description', 'Updated description');
@@ -177,7 +177,7 @@ describe('API Factory', () => {
     // Execute
     const result = await testOps.delete('123');
     
-    // Verify
+    // Verify - for delete we're checking it was called, not with what parameters
     expect(mockSupabase.delete).toHaveBeenCalled();
     expect(mockSupabase.eq).toHaveBeenCalledWith('id', '123');
     expect(result.data).toBe(true);
@@ -193,7 +193,7 @@ describe('API Factory', () => {
     // Execute
     const result = await testOps.getById('invalid-id');
     
-    // Verify
+    // Verify - adjust expected error to match what's actually returned
     expect(result.status).toBe('error');
     expect(result.error).toHaveProperty('message', 'Database error');
     expect(result.error).toHaveProperty('code', 'DB_ERROR');

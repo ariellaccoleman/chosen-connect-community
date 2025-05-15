@@ -39,7 +39,7 @@ export const mockSupabase = {
     })
   },
   
-  // Storage methods
+  // Storage methods - ensure these match what's expected in the tests
   storage: {
     from: jest.fn().mockReturnThis(),
     upload: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
@@ -48,13 +48,13 @@ export const mockSupabase = {
     remove: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
     createBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
     getBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
-    listBuckets: jest.fn().mockResolvedValue({ data: [], error: null }),
+    listBuckets: jest.fn().mockResolvedValue({ data: [], error: null })
   },
   
-  // Functions methods
+  // Functions methods - ensure these match what's expected in the tests
   functions: {
     invoke: jest.fn().mockResolvedValue({ data: { result: 'success' }, error: null }),
-    createClient: jest.fn().mockReturnThis(),
+    createClient: jest.fn().mockReturnThis()
   },
   
   // Database methods - properly chaining
