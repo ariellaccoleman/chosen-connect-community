@@ -25,9 +25,9 @@ export function createBatchOperations<
     repository?: any; // Allow repository to be passed through
   } = {}
 ) {
-  return createBatchOps<T, TId, TCreate, TUpdate, Table>(
+  return createBatchOps<T, TId, TCreate, TUpdate, Table>({
     entityName,
     tableName,
-    options
-  );
+    ...options
+  });
 }

@@ -10,12 +10,15 @@ import { DataRepository } from "../../repository/repositoryFactory";
  * Options for batch operations
  */
 interface BatchOperationsOptions<T> {
+  tableName: string;
+  entityName?: string;
   idField?: string;
   defaultSelect?: string;
   transformResponse?: (item: any) => T;
   transformRequest?: (item: any) => Record<string, any>;
   repository?: DataRepository<T> | (() => DataRepository<T>);
   softDelete?: boolean;
+  clientFn?: () => any;
 }
 
 /**
@@ -28,18 +31,19 @@ export function createBatchOperations<
   TUpdate = Partial<T>,
   Table extends TableNames = TableNames
 >(
-  entityName: string,
-  tableName: Table,
-  options: BatchOperationsOptions<T> = {}
+  options: BatchOperationsOptions<T>
 ) {
   // Set default options
   const {
+    tableName,
+    entityName = tableName,
     idField = 'id',
     defaultSelect = '*',
     transformResponse = (item) => item as T,
     transformRequest = (item) => item as unknown as Record<string, any>,
     repository: repoOption,
-    softDelete = false
+    softDelete = false,
+    clientFn,
   } = options;
 
   // Resolve repository (handle both direct instances and factory functions)
@@ -136,8 +140,8 @@ export function createBatchOperations<
       if (softDelete) {
         // For soft delete, update all records with deleted_at
         return await apiClient.query(async (client) => {
-          // Use type assertion to resolve TypeScript error
-          const updateData = { deleted_at: new Date().toISOString() } as any;
+          // Fix TypeScript error by using proper type assertion
+          const updateData = { deleted_at: new Date().toISOString() } as Record<string, any>;
           
           const { error } = await client
             .from(tableName)

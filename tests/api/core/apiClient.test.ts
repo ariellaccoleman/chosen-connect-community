@@ -20,6 +20,7 @@ jest.mock('@/api/core/errorHandler', () => ({
 describe('API Client', () => {
   beforeEach(() => {
     resetSupabaseMocks();
+    jest.clearAllMocks();
   });
 
   test('query executes callback with supabase client and returns result on success', async () => {
@@ -42,6 +43,7 @@ describe('API Client', () => {
     expect(result.status).toBe('error');
     expect(result.error?.message).toBe('Database query failed');
     expect(result.data).toBeNull();
+    expect(handleApiError).toHaveBeenCalledWith(testError);
   });
 
   test('authQuery executes callback with supabase.auth', async () => {
@@ -51,6 +53,7 @@ describe('API Client', () => {
     const result = await apiClient.authQuery(mockCallback);
     
     expect(mockCallback).toHaveBeenCalled();
+    expect(mockCallback).toHaveBeenCalledWith(expect.objectContaining(mockSupabase.auth));
     expect(result).toEqual(mockData);
   });
 
@@ -64,6 +67,7 @@ describe('API Client', () => {
     const result = await apiClient.storageQuery(mockCallback);
     
     expect(mockCallback).toHaveBeenCalled(); 
+    expect(mockCallback).toHaveBeenCalledWith(expect.objectContaining(mockSupabase.storage));
     expect(result).toEqual(mockData);
   });
 
@@ -77,6 +81,7 @@ describe('API Client', () => {
     const result = await apiClient.functionQuery(mockCallback);
     
     expect(mockCallback).toHaveBeenCalled();
+    expect(mockCallback).toHaveBeenCalledWith(expect.objectContaining(mockSupabase.functions));
     expect(result).toEqual(mockData);
   });
 });
