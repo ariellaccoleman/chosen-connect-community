@@ -4,7 +4,10 @@ const config = {
   preset: 'ts-jest',
   testEnvironment: 'jsdom',
   transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: 'tsconfig.json' }]
+    '^.+\\.(ts|tsx)$': ['ts-jest', {
+      tsconfig: 'tsconfig.json',
+      jsx: 'react-jsx'  // Set the JSX flag for ts-jest
+    }]
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1'
@@ -21,7 +24,13 @@ const config = {
   ],
   clearMocks: true,
   resetMocks: false, // We want to control mocks explicitly
-  restoreMocks: false // We'll restore mocks in afterEach/afterAll hooks
+  restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
+  globals: {
+    'ts-jest': {
+      isolatedModules: true,
+      esModuleInterop: true
+    }
+  }
 };
 
 module.exports = config;
