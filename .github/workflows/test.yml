@@ -21,4 +21,4 @@ jobs:
       - name: Make test script executable
         run: chmod +x run-tests.js
       - name: Run tests
-        run: ./run-tests.js
+        run: node run-tests.js
