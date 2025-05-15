@@ -77,15 +77,9 @@ export function createApiFactory<
     }
   );
   
-  // Additional operations based on configuration
-  // Fix: Remove tableName from operations object and create a separate result
-  const operations: Partial<ApiOperations<T, TId, TCreate, TUpdate>> = {
-    ...baseOps,
-  };
-  
-  // Store tableName in a separate field that we'll add to the final result
+  // Create a result object with baseOps and tableName
   const result = {
-    ...operations,
+    ...baseOps,
     tableName
   } as ApiOperations<T, TId, TCreate, TUpdate>;
   
@@ -130,5 +124,10 @@ export function createApiFactory<
   
   return result;
 }
+
+/**
+ * Alias for createApiFactory for backwards compatibility
+ */
+export const createApiOperations = createApiFactory;
 
 export * from "./types";

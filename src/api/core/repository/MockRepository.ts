@@ -1,3 +1,4 @@
+
 import { DataRepository, RepositoryQuery, RepositoryResponse } from './DataRepository';
 
 /**
@@ -116,6 +117,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
   private sortConfig: { column: string; ascending: boolean } | null = null;
   private limitValue: number | null = null;
   private rangeValues: [number, number] | null = null;
+  private selectFields: string = '*';
 
   constructor(
     tableName: string,
@@ -167,6 +169,11 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
   range(from: number, to: number): RepositoryQuery<T> {
     this.rangeValues = [from, to];
+    return this;
+  }
+  
+  select(fields: string = '*'): RepositoryQuery<T> {
+    this.selectFields = fields;
     return this;
   }
 

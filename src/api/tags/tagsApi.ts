@@ -1,14 +1,14 @@
 
-import { createApiOperations } from '../core/apiFactory';
+import { createApiFactory } from '../core/factory/apiFactory';
 import { Tag } from '@/types';
 
 /**
  * Create API operations for tags using the factory pattern
  */
-export const tagsApi = createApiOperations<Tag, string, Partial<Tag>, Partial<Tag>, 'tags'>(
-  'tag',
-  'tags',
+export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>, 'tags'>(
   {
+    tableName: 'tags',
+    entityName: 'tag',
     defaultOrderBy: 'name',
     transformResponse: (data) => ({
       id: data.id,
@@ -26,7 +26,10 @@ export const tagsApi = createApiOperations<Tag, string, Partial<Tag>, Partial<Ta
       if (data.type !== undefined) transformed.type = data.type;
       if (data.createdBy !== undefined) transformed.created_by = data.createdBy;
       return transformed;
-    }
+    },
+    useQueryOperations: true,
+    useMutationOperations: true,
+    useBatchOperations: true
   }
 );
 

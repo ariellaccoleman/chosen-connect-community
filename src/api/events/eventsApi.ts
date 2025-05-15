@@ -1,5 +1,5 @@
 
-import { createApiOperations } from '../core/apiFactory';
+import { createApiFactory } from '../core/factory/apiFactory';
 import { EventWithDetails, CreateEventInput } from '@/types/event';
 import { formatDateForDb } from '@/utils/formatters';
 import { Database } from '@/integrations/supabase/types';
@@ -12,10 +12,10 @@ type Event = Database['public']['Tables']['events']['Row'];
 /**
  * Create API operations for events using the factory pattern
  */
-export const eventsApi = createApiOperations<EventWithDetails, string, CreateEventInput, Partial<CreateEventInput>, 'events'>(
-  'event',
-  'events',
+export const eventsApi = createApiFactory<EventWithDetails, string, CreateEventInput, Partial<CreateEventInput>, 'events'>(
   {
+    tableName: 'events',
+    entityName: 'event',
     defaultOrderBy: 'start_time',
     defaultSelect: '*, location:locations(*), host:profiles(*)',
     
@@ -73,7 +73,12 @@ export const eventsApi = createApiOperations<EventWithDetails, string, CreateEve
       }
       
       return transformed;
-    }
+    },
+    
+    // Enable all operation types
+    useQueryOperations: true,
+    useMutationOperations: true,
+    useBatchOperations: true
   }
 );
 
