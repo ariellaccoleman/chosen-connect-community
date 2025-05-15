@@ -27,5 +27,5 @@ export interface ApiFactoryOptions<T> {
   softDelete?: boolean;
   transformResponse?: (item: any) => T;
   transformRequest?: (item: any) => Record<string, any>;
-  repository?: DataRepository<T>;
+  repository?: DataRepository<T> | (() => DataRepository<T>);
 }

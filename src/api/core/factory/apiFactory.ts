@@ -12,11 +12,6 @@ import { createRepository, DataRepository } from "../repository/repositoryFactor
  */
 export interface ApiFactoryConfig<T> extends ApiFactoryOptions<T> {
   /**
-   * Optional repository instance or factory function
-   */
-  repository?: DataRepository<T> | (() => DataRepository<T>);
-  
-  /**
    * Enable query operations
    */
   useQueryOperations?: boolean;
