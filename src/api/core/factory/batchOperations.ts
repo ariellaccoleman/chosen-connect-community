@@ -5,6 +5,7 @@ import { TableNames } from "./types";
 /**
  * Creates standardized batch operations for a specific entity type
  * This is a wrapper around the implementation in operations/batchOperations.ts
+ * @deprecated Use the version from operations/batchOperations directly
  */
 export function createBatchOperations<
   T,
