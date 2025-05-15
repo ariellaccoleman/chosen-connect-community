@@ -1,6 +1,6 @@
 
 import { logger } from './logger';
-import { toast } from '@/hooks/use-toast';
+import { sonnerToast as toast } from '@/hooks/use-toast';
 
 /**
  * Standard error handler that logs errors and optionally shows a toast notification
