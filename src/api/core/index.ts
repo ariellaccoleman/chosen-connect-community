@@ -12,7 +12,12 @@ export * from './factory/types';
 export * from './repository/repositoryFactory';
 
 // Error handling
-export * from './errorHandler';
+export {
+  createSuccessResponse,
+  createErrorResponse,
+  handleApiError,
+  // Avoid re-exporting ApiResponse here to prevent duplicate
+} from './errorHandler';
 
 // API Client
 export * from './apiClient';

@@ -1,4 +1,3 @@
-
 import { logger } from "@/utils/logger";
 import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -56,8 +55,9 @@ export function createBatchOperations<
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const { data, error } = await repository
-          .insert(transformedItems as any[])
+        const insertQuery = repository.insert(transformedItems as any[]);
+        // Fixed: Make sure to build the query correctly
+        const { data, error } = await insertQuery
           .select(defaultSelect)
           .execute();
         

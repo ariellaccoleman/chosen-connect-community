@@ -18,7 +18,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
     const query = supabase
-      .from(this.tableName)
+      .from(this.tableName as any)
       .select(selectQuery);
     
     return new SupabaseQuery<T>(query);
@@ -29,7 +29,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   insert(data: any): RepositoryQuery<T> {
     const query = supabase
-      .from(this.tableName)
+      .from(this.tableName as any)
       .insert(data);
     
     return new SupabaseQuery<T>(query);
@@ -40,7 +40,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   update(data: any): RepositoryQuery<T> {
     const query = supabase
-      .from(this.tableName)
+      .from(this.tableName as any)
       .update(data);
     
     return new SupabaseQuery<T>(query);
@@ -51,7 +51,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   delete(): RepositoryQuery<T> {
     const query = supabase
-      .from(this.tableName)
+      .from(this.tableName as any)
       .delete();
     
     return new SupabaseQuery<T>(query);
@@ -100,6 +100,12 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
 
   range(from: number, to: number): RepositoryQuery<T> {
     this.query = this.query.range(from, to);
+    return this;
+  }
+
+  // Add this method to satisfy the error about select not existing
+  select(select = '*'): RepositoryQuery<T> {
+    this.query = this.query.select(select);
     return this;
   }
 

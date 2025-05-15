@@ -98,6 +98,13 @@ export interface RepositoryQuery<T = any> {
   range(from: number, to: number): RepositoryQuery<T>;
   
   /**
+   * Select specific fields
+   * @param select Fields to select
+   * @returns The query builder for chaining
+   */
+  select(select?: string): RepositoryQuery<T>;
+  
+  /**
    * Get a single result
    * @returns Promise with the result
    */

@@ -78,10 +78,16 @@ export function createApiFactory<
   );
   
   // Additional operations based on configuration
+  // Fix: Remove tableName from operations object and create a separate result
   const operations: Partial<ApiOperations<T, TId, TCreate, TUpdate>> = {
     ...baseOps,
-    tableName,
   };
+  
+  // Store tableName in a separate field that we'll add to the final result
+  const result = {
+    ...operations,
+    tableName
+  } as ApiOperations<T, TId, TCreate, TUpdate>;
   
   // Add query operations if requested
   if (useQueryOperations) {
@@ -93,7 +99,7 @@ export function createApiFactory<
         repository: dataRepository
       }
     );
-    Object.assign(operations, queryOps);
+    Object.assign(result, queryOps);
   }
   
   // Add mutation operations if requested
@@ -106,7 +112,7 @@ export function createApiFactory<
         repository: dataRepository
       }
     );
-    Object.assign(operations, { ...mutationOps });
+    Object.assign(result, { ...mutationOps });
   }
   
   // Add batch operations if requested
@@ -119,10 +125,10 @@ export function createApiFactory<
         repository: dataRepository
       }
     );
-    Object.assign(operations, batchOps);
+    Object.assign(result, batchOps);
   }
   
-  return operations as ApiOperations<T, TId, TCreate, TUpdate>;
+  return result;
 }
 
 export * from "./types";
