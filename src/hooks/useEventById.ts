@@ -15,7 +15,7 @@ export function useEventById(eventId: string | undefined) {
       logger.info(`Fetching event with ID: ${eventId}`);
       
       try {
-        const response = await eventsApi.getEventById(eventId);
+        const response = await eventsApi.getById(eventId);
         
         if (response.error) {
           logger.error(`Error fetching event ${eventId}:`, response.error);

@@ -77,13 +77,13 @@ export const eventsApi = createApiOperations<EventWithDetails, string, CreateEve
   }
 );
 
-// Extract individual operations for direct usage
+// Export individual operations for direct usage
 export const {
-  getAll: getAllEvents,
-  getById: getEventById,
-  getByIds: getEventsByIds,
-  create: createEvent,
-  update: updateEvent,
+  getAll,
+  getById,
+  getByIds,
+  create,
+  update,
   delete: deleteEvent
 } = eventsApi;
 
