@@ -3,7 +3,7 @@ import { logger } from "@/utils/logger";
 import { apiClient } from "../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../errorHandler";
 import { ApiResponse } from "../types";
-import { TableNames, TableColumnName } from "./types";
+import { TableNames } from "./types";
 
 /**
  * Creates standardized batch operations for a specific entity type
@@ -34,8 +34,8 @@ export function createBatchOperations<
     transformRequest = (item) => item as unknown as Record<string, any>
   } = options;
   
-  // Type assertion for ID field - ensures it's a valid column for this table
-  const typedIdField = idField as TableColumnName<Table>;
+  // Type assertion for ID field - ensures it's a valid string
+  const typedIdField = idField as string;
 
   /**
    * Create multiple entities at once

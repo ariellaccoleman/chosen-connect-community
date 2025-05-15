@@ -37,10 +37,10 @@ export function createBaseOperations<
   } = options;
 
   // Type assertion for ID field - ensures it's a valid column for this table
-  const typedIdField = idField as TableColumnName<Table>;
+  const typedIdField = idField as string;
   
   // Type assertion for default order by - ensures it's a valid column for this table
-  const typedDefaultOrderBy = defaultOrderBy as TableColumnName<Table>;
+  const typedDefaultOrderBy = defaultOrderBy as string;
 
   /**
    * Get all entities with optional filtering and pagination
@@ -59,11 +59,11 @@ export function createBaseOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                // We're asserting that the key is a valid column name
-                selectQuery = selectQuery.in(key as TableColumnName<Table>, value);
+                // Use string assertion for key
+                selectQuery = selectQuery.in(key as string, value as any[]);
               } else {
-                // We're asserting that the key is a valid column name
-                selectQuery = selectQuery.eq(key as TableColumnName<Table>, value);
+                // Use string assertion for key
+                selectQuery = selectQuery.eq(key as string, value as any);
               }
             }
           });
@@ -71,8 +71,8 @@ export function createBaseOperations<
         
         // Apply search if provided
         if (params?.search) {
-          // Using type assertion for 'name' since we're assuming it exists
-          selectQuery = selectQuery.ilike('name' as TableColumnName<Table>, `%${params.search}%`);
+          // Use string assertion for 'name'
+          selectQuery = selectQuery.ilike('name' as string, `%${params.search}%`);
         }
         
         // Apply pagination
@@ -82,7 +82,7 @@ export function createBaseOperations<
         }
         
         // Apply sorting
-        const sortField = params?.sortBy ? params.sortBy as TableColumnName<Table> : typedDefaultOrderBy;
+        const sortField = params?.sortBy ? params.sortBy as string : typedDefaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
         selectQuery = selectQuery.order(sortField, { ascending: sortOrder === 'asc' });
         

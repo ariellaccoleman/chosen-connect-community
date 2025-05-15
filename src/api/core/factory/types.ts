@@ -15,7 +15,8 @@ export type TableInsert<T extends TableNames> = Database['public']['Tables'][T][
 export type TableUpdate<T extends TableNames> = Database['public']['Tables'][T]['Update'];
 
 // Define a type for valid column names for a specific table
-export type TableColumnName<T extends TableNames> = keyof Database['public']['Tables'][T]['Row'];
+// Use string type intersection to ensure TS knows this is a string
+export type TableColumnName<T extends TableNames> = keyof Database['public']['Tables'][T]['Row'] & string;
 
 // Options type for the API factory function
 export interface ApiFactoryOptions<T> {
