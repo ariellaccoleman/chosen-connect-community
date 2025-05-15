@@ -1,6 +1,4 @@
 
-
-# This file was created by Lovable. Edit it carefully.
 project_id = "nvaqqkffmfuxdnwnqhxo"
 
 [functions.import-geonames]
@@ -8,3 +6,4 @@ project_id = "nvaqqkffmfuxdnwnqhxo"
 [functions.import-local-geonames]
 
 [functions.report-test-results]
+verify_jwt = false

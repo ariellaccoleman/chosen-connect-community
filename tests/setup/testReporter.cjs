@@ -18,7 +18,7 @@ class TestReporter {
     if (!this.testRunId) {
       try {
         // Create a new test run in Supabase
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -105,7 +105,7 @@ class TestReporter {
       if (this.testRunId) {
         try {
           // Use the edge function to save test results
-          const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
+          const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -140,7 +140,7 @@ class TestReporter {
     if (this.testRunId) {
       try {
         // Update test run with final results using the edge function
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

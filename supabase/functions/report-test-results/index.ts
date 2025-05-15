@@ -7,6 +7,13 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// Set up CORS headers for cross-origin requests
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-key',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 interface TestRunRequest {
   total_tests: number
   passed_tests: number
@@ -30,20 +37,32 @@ interface TestResultRequest {
 }
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: corsHeaders
+    })
+  }
+
   // Check if the request is a POST
   if (req.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
       status: 405,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
   // Extract API key from request headers
   const apiKey = req.headers.get('x-api-key')
   if (!apiKey || apiKey !== Deno.env.get('TEST_REPORTING_API_KEY')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    return new Response(JSON.stringify({ 
+      error: 'Unauthorized', 
+      message: 'No API key found in request',
+      hint: 'No `x-api-key` request header was found or it was invalid.'
+    }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
@@ -71,7 +90,7 @@ serve(async (req) => {
       if (fetchError) {
         return new Response(JSON.stringify({ error: 'Failed to fetch current test run' }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
       
@@ -95,7 +114,7 @@ serve(async (req) => {
       if (updateError) {
         return new Response(JSON.stringify({ error: 'Failed to update test run' }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
     } else {
@@ -119,7 +138,7 @@ serve(async (req) => {
         console.error('Error creating test run:', testRunError)
         return new Response(JSON.stringify({ error: 'Failed to create test run' }), {
           status: 500,
-          headers: { 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
 
@@ -159,13 +178,13 @@ serve(async (req) => {
       test_run_id: testRunId 
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   } catch (error) {
     console.error('Error processing request:', error)
     return new Response(JSON.stringify({ error: 'Internal server error' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 })
