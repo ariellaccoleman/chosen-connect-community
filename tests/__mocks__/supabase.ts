@@ -39,6 +39,24 @@ export const mockSupabase = {
     })
   },
   
+  // Storage methods
+  storage: {
+    from: jest.fn().mockReturnThis(),
+    upload: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+    getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: 'https://test-url.com' } }),
+    list: jest.fn().mockResolvedValue({ data: [], error: null }),
+    remove: jest.fn().mockResolvedValue({ data: { path: 'test-path' }, error: null }),
+    createBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
+    getBucket: jest.fn().mockResolvedValue({ data: { name: 'test-bucket' }, error: null }),
+    listBuckets: jest.fn().mockResolvedValue({ data: [], error: null }),
+  },
+  
+  // Functions methods
+  functions: {
+    invoke: jest.fn().mockResolvedValue({ data: { result: 'success' }, error: null }),
+    createClient: jest.fn().mockReturnThis(),
+  },
+  
   // Database methods - properly chaining
   from: jest.fn(function(table) {
     this.currentTable = table;
@@ -117,6 +135,20 @@ export const resetSupabaseMocks = () => {
   Object.keys(mockSupabase.auth).forEach(key => {
     if (typeof mockSupabase.auth[key] === 'function' && mockSupabase.auth[key].mockClear) {
       mockSupabase.auth[key].mockClear();
+    }
+  });
+  
+  // Reset storage mocks
+  Object.keys(mockSupabase.storage).forEach(key => {
+    if (typeof mockSupabase.storage[key] === 'function' && mockSupabase.storage[key].mockClear) {
+      mockSupabase.storage[key].mockClear();
+    }
+  });
+  
+  // Reset functions mocks
+  Object.keys(mockSupabase.functions).forEach(key => {
+    if (typeof mockSupabase.functions[key] === 'function' && mockSupabase.functions[key].mockClear) {
+      mockSupabase.functions[key].mockClear();
     }
   });
   

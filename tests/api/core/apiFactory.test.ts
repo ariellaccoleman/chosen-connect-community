@@ -56,6 +56,16 @@ describe('API Factory', () => {
       return Promise.resolve({ data: {}, error: null });
     });
     
+    // Setup for delete operation
+    mockSupabase.delete.mockImplementation(() => {
+      return {
+        eq: (field, value) => {
+          mockSupabase.eq(field, value);
+          return Promise.resolve({ data: true, error: null });
+        }
+      };
+    });
+    
     // Set up specific mock for error case
     mockSupabase.maybeSingle.mockImplementation(() => {
       if (mockSupabase.eq.mock.calls.length > 0 && 
@@ -163,10 +173,6 @@ describe('API Factory', () => {
       'testEntity', 
       'tags'
     );
-    
-    mockSupabase.eq.mockImplementation(() => {
-      return Promise.resolve({ data: true, error: null });
-    });
     
     // Execute
     const result = await testOps.delete('123');
