@@ -18,27 +18,32 @@ class TestReporter {
     if (!this.testRunId) {
       try {
         // Create a new test run in Supabase
-        const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/test_runs`, {
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': process.env.SUPABASE_KEY,
-            'Authorization': `Bearer ${process.env.SUPABASE_KEY}`
+            'x-api-key': process.env.TEST_REPORTING_API_KEY || 'test-key'
           },
           body: JSON.stringify({
             status: 'in_progress',
             git_commit: process.env.GITHUB_SHA || null,
             git_branch: process.env.GITHUB_REF_NAME || null,
+            total_tests: 0,
+            passed_tests: 0,
+            failed_tests: 0,
+            skipped_tests: 0,
+            duration_ms: 0,
+            test_results: []
           })
         });
         
         if (response.ok) {
           const data = await response.json();
-          this.testRunId = data[0].id;
+          this.testRunId = data.test_run_id;
           process.env.TEST_RUN_ID = this.testRunId;
           console.log(`Created test run with ID: ${this.testRunId}`);
         } else {
-          console.error('Failed to create test run in Supabase');
+          console.error('Failed to create test run via edge function:', await response.text());
         }
       } catch (error) {
         console.error('Error creating test run:', error);
@@ -77,6 +82,12 @@ class TestReporter {
         testName = `Test #${this.results.total}`;
       }
       
+      // Safely handle possibly undefined properties
+      const failureMessages = result.failureMessages || [];
+      const consoleOutput = result.console && result.console.length > 0 
+        ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
+        : null;
+      
       // Collect result details
       const testResult = {
         test_run_id: this.testRunId,
@@ -84,33 +95,39 @@ class TestReporter {
         test_name: testName,
         status: testStatus,
         duration_ms: result.duration || 0,
-        error_message: result.failureMessages && result.failureMessages.length > 0 ? result.failureMessages[0] : null,
-        stack_trace: result.failureMessages && result.failureMessages.length > 0 ? result.failureMessages.join('\n') : null,
-        console_output: result.console && result.console.length > 0 
-          ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
-          : null
+        error_message: failureMessages.length > 0 ? failureMessages[0] : null,
+        stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
+        console_output: consoleOutput
       };
       
       this.results.testResults.push(testResult);
       
       if (this.testRunId) {
         try {
-          // Save test result to Supabase
-          const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/test_results`, {
+          // Use the edge function to save test results
+          const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'apikey': process.env.SUPABASE_KEY,
-              'Authorization': `Bearer ${process.env.SUPABASE_KEY}`
+              'x-api-key': process.env.TEST_REPORTING_API_KEY || 'test-key'
             },
-            body: JSON.stringify(testResult)
+            body: JSON.stringify({
+              total_tests: 1,
+              passed_tests: testStatus === 'passed' ? 1 : 0,
+              failed_tests: testStatus === 'failed' ? 1 : 0,
+              skipped_tests: testStatus === 'skipped' ? 1 : 0,
+              duration_ms: result.duration || 0,
+              git_commit: process.env.GITHUB_SHA || null,
+              git_branch: process.env.GITHUB_REF_NAME || null,
+              test_results: [testResult]
+            })
           });
           
           if (!response.ok) {
-            console.error(`Failed to save test result for ${testResult.test_name}`);
+            console.error(`Failed to save test result for ${testName}: ${await response.text()}`);
           }
         } catch (error) {
-          console.error(`Error saving test result for ${testResult.test_name}:`, error);
+          console.error(`Error saving test result for ${testName}:`, error);
         }
       }
     }
@@ -122,13 +139,12 @@ class TestReporter {
   async onRunComplete(contexts, results) {
     if (this.testRunId) {
       try {
-        // Update test run with final results
-        const response = await fetch(`${process.env.SUPABASE_URL}/rest/v1/test_runs?id=eq.${this.testRunId}`, {
-          method: 'PATCH',
+        // Update test run with final results using the edge function
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/report-test-results`, {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'apikey': process.env.SUPABASE_KEY,
-            'Authorization': `Bearer ${process.env.SUPABASE_KEY}`
+            'x-api-key': process.env.TEST_REPORTING_API_KEY || 'test-key'
           },
           body: JSON.stringify({
             total_tests: this.results.total,
@@ -136,7 +152,9 @@ class TestReporter {
             failed_tests: this.results.failed,
             skipped_tests: this.results.skipped,
             duration_ms: this.results.duration,
-            status: this.results.failed > 0 ? 'failure' : 'success'
+            git_commit: process.env.GITHUB_SHA || null,
+            git_branch: process.env.GITHUB_REF_NAME || null,
+            test_results: [] // Don't send results again, just update the summary
           })
         });
         
@@ -144,7 +162,7 @@ class TestReporter {
           console.log(`Test run updated: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped`);
           console.log(`View full results at ${process.env.APP_URL || ''}/admin/tests/${this.testRunId}`);
         } else {
-          console.error('Failed to update test run in Supabase');
+          console.error('Failed to update test run via edge function:', await response.text());
         }
       } catch (error) {
         console.error('Error updating test run:', error);
