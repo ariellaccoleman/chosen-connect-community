@@ -1,8 +1,11 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
 const { existsSync } = require('fs');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
 
 // Supabase URL and key
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
@@ -88,6 +91,25 @@ console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
 console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
 console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
 console.log('===================================================');
+
+// Create a test to verify if API keys are set correctly
+const verifyEnvTestPath = './tests/setup/verify-env.test.ts';
+const setupDir = './tests/setup';
+
+if (!existsSync(setupDir)) {
+  fs.mkdirSync(setupDir, { recursive: true });
+}
+
+fs.writeFileSync(verifyEnvTestPath, `
+describe('Test environment', () => {
+  test('Verify required environment variables are set', () => {
+    expect(process.env.SUPABASE_URL).toBeDefined();
+    expect(process.env.TEST_REPORTING_API_KEY).toBeDefined();
+    expect(process.env.TEST_RUN_ID).toBeDefined();
+    console.log('All required environment variables are set');
+  });
+});
+`);
 
 // Run tests with custom reporter
 const testPathPattern = process.argv[2] || '';

@@ -16,7 +16,6 @@ class TestReporter {
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
     console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || 'not set'}`);
     console.log(`TEST_REPORTING_API_KEY: ${process.env.TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
-    console.log(`SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
   }
 
   async onRunStart() {
@@ -139,6 +138,7 @@ class TestReporter {
       
       try {
         console.log(`Sending test result to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
+        
         // Use the edge function to save test results
         const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',
@@ -161,6 +161,16 @@ class TestReporter {
         if (!response.ok) {
           const errorText = await response.text();
           console.error(`Failed to save test result for ${testName}: ${errorText}`);
+          console.error('Response status:', response.status);
+          
+          // Try to parse the error message
+          try {
+            const errorJson = JSON.parse(errorText);
+            console.error('Error details:', JSON.stringify(errorJson, null, 2));
+          } catch (e) {
+            // If not JSON, just log the raw text
+            console.error('Error response:', errorText);
+          }
         } else {
           console.log(`Successfully reported test result for ${testName}`);
         }
@@ -188,14 +198,20 @@ class TestReporter {
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
           body: JSON.stringify({
+            test_results: [{
+              test_run_id: this.testRunId,
+              test_suite: 'Summary',
+              test_name: 'Final Results',
+              status: this.results.failed > 0 ? 'failed' : 'passed',
+              duration_ms: this.results.duration,
+            }],
             total_tests: this.results.total,
             passed_tests: this.results.passed,
             failed_tests: this.results.failed,
             skipped_tests: this.results.skipped,
             duration_ms: this.results.duration,
             git_commit: process.env.GITHUB_SHA || null,
-            git_branch: process.env.GITHUB_REF_NAME || null,
-            test_results: [] // Don't send results again, just update the summary
+            git_branch: process.env.GITHUB_REF_NAME || null
           })
         });
         
@@ -205,6 +221,7 @@ class TestReporter {
         } else {
           const errorText = await response.text();
           console.error('Failed to update test run via edge function:', errorText);
+          console.error('Response status:', response.status);
         }
       } catch (error) {
         console.error('Error updating test run:', error);
