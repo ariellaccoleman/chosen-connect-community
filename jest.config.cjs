@@ -6,7 +6,8 @@ const config = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       tsconfig: 'tsconfig.json',
-      jsx: 'react-jsx'  // Set the JSX flag for ts-jest
+      jsx: 'react-jsx',  // Set the JSX flag for ts-jest
+      isolatedModules: true // Move this setting here from globals
     }]
   },
   moduleNameMapper: {
@@ -27,8 +28,7 @@ const config = {
   restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
   globals: {
     'ts-jest': {
-      isolatedModules: true,
-      esModuleInterop: true
+      esModuleInterop: true // Add this to fix the import warning
     }
   }
 };

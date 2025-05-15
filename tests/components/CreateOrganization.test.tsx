@@ -76,9 +76,7 @@ describe('CreateOrganization Component', () => {
 
   test('handles form submission correctly', async () => {
     // Mock successful mutation response
-    mockMutateAsync.mockResolvedValueOnce({
-      data: { id: 'new-org-id', name: 'Test Org' }
-    });
+    mockMutateAsync.mockResolvedValueOnce('new-org-id');
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     

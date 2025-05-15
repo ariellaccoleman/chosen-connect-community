@@ -1,115 +1,130 @@
 
-import { createApiOperations } from '@/api/core/factory/apiFactory';
-import { mockSupabase, resetSupabaseMocks } from '../../../__mocks__/supabase';
-import { setupMockQueryResponse } from '../../../utils/apiTestUtils';
+import { createApiFactory } from '@/api/core/factory/apiFactory';
+import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
 
-// Create test entity type
-interface TestEntity {
-  id: string;
-  name: string;
-  description?: string;
-  created_at: string;
-}
+// Setup mock client
+const mockSupabase = createChainableMock();
+
+// Test table name
+const TABLE_NAME = 'test_table';
 
 describe('API Factory', () => {
   beforeEach(() => {
-    resetSupabaseMocks();
+    mockSupabase.reset();
+    jest.clearAllMocks();
   });
 
-  test('creates operations with all expected methods', () => {
-    const api = createApiOperations<TestEntity>('testEntity', 'test_entities');
-    
-    // Verify that all expected methods exist
-    expect(api.getAll).toBeDefined();
-    expect(api.getById).toBeDefined();
-    expect(api.getByIds).toBeDefined();
-    expect(api.create).toBeDefined();
-    expect(api.update).toBeDefined();
-    expect(api.delete).toBeDefined();
-    expect(api.batchCreate).toBeDefined();
-    expect(api.batchUpdate).toBeDefined();
-    expect(api.batchDelete).toBeDefined();
+  test('should create a factory with base operations', () => {
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      // Using a mock function to enable testing the provided client
+      clientFn: () => mockSupabase
+    });
+
+    // Check basic structure
+    expect(factory).toHaveProperty('getAll');
+    expect(factory).toHaveProperty('getById');
+    expect(factory).toHaveProperty('create');
+    expect(factory).toHaveProperty('update');
+    expect(factory).toHaveProperty('delete');
+    expect(factory).toHaveProperty('tableName');
   });
 
-  test('getById uses correct table and ID', async () => {
-    // Setup test data
-    const testEntity: TestEntity = {
-      id: 'test-123',
-      name: 'Test Entity',
-      created_at: new Date().toISOString()
-    };
-    
-    // Create API
-    const api = createApiOperations<TestEntity>('testEntity', 'test_entities');
-    
+  test('should create a factory with extended query operations', () => {
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      useQueryOperations: true
+    });
+
+    // Check query operations
+    expect(factory).toHaveProperty('query');
+    expect(factory).toHaveProperty('queryById');
+  });
+
+  test('should create a factory with extended mutation operations', () => {
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      useMutationOperations: true
+    });
+
+    // Check mutation operations
+    expect(factory).toHaveProperty('createOne');
+    expect(factory).toHaveProperty('updateOne');
+    expect(factory).toHaveProperty('deleteOne');
+  });
+
+  test('should create a factory with extended batch operations', () => {
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      useBatchOperations: true
+    });
+
+    // Check batch operations
+    expect(factory).toHaveProperty('batchCreate');
+    expect(factory).toHaveProperty('batchUpdate');
+    expect(factory).toHaveProperty('batchDelete');
+  });
+
+  test('should enable all operations when requested', () => {
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      useQueryOperations: true,
+      useMutationOperations: true,
+      useBatchOperations: true
+    });
+
+    // Check that all operations are present
+    expect(factory).toHaveProperty('getAll');
+    expect(factory).toHaveProperty('query');
+    expect(factory).toHaveProperty('createOne');
+    expect(factory).toHaveProperty('batchCreate');
+  });
+
+  test('should allow custom formatters', async () => {
+    // Mock formatter function
+    const mockFormatter = jest.fn((data) => ({
+      ...data,
+      formatted: true
+    }));
+
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      formatters: {
+        formatItem: mockFormatter
+      }
+    });
+
     // Setup mock response
-    setupMockQueryResponse(testEntity);
-    
-    // Call getById
-    await api.getById('test-123');
-    
-    // Verify correct parameters used
-    expect(mockSupabase.from).toHaveBeenCalledWith('test_entities');
-    expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'test-123');
+    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
+
+    // Call getAll
+    await factory.getAll();
+
+    // Verify formatter was called
+    expect(mockFormatter).toHaveBeenCalled();
   });
-  
-  test('getById with custom idField', async () => {
-    // Create API with custom ID field
-    const api = createApiOperations<TestEntity>('testEntity', 'test_entities', {
-      idField: 'custom_id'
+
+  test('should allow custom select statements', async () => {
+    const customSelect = 'id, name, custom_field';
+    
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      defaultSelect: customSelect
     });
-    
-    // Setup mock
-    setupMockQueryResponse({
-      id: 'internal-id',
-      custom_id: 'test-custom-123',
-      name: 'Custom ID Entity',
-      created_at: new Date().toISOString()
-    });
-    
-    // Call getById
-    await api.getById('test-custom-123');
-    
-    // Verify custom ID field used
-    expect(mockSupabase.from).toHaveBeenCalledWith('test_entities');
-    expect(mockSupabase.eq).toHaveBeenCalledWith('custom_id', 'test-custom-123');
-  });
-  
-  test('transformResponse correctly transforms data', async () => {
-    // Mock raw DB data
-    const rawData = {
-      id: 'test-123',
-      name: 'Test Entity',
-      description: 'A description',
-      created_at: new Date().toISOString(),
-      extra_field: 'This should be filtered out'
-    };
-    
-    // Setup transformer
-    const api = createApiOperations<TestEntity>('testEntity', 'test_entities', {
-      transformResponse: (item) => ({
-        id: item.id,
-        name: item.name.toUpperCase(), // Transform to uppercase
-        description: item.description,
-        created_at: item.created_at
-      })
-    });
-    
-    // Setup mock
-    mockSupabase.from.mockImplementation(function() { return this; });
-    mockSupabase.select.mockImplementation(function() { return this; });
-    mockSupabase.eq.mockImplementation(function() { return this; });
-    mockSupabase.maybeSingle.mockResolvedValue({
-      data: rawData,
-      error: null
-    });
-    
-    // Call API
-    const result = await api.getById('test-123');
-    
-    // Verify transformation worked
-    expect(result.data?.name).toBe('TEST ENTITY'); // Should be uppercase
-    expect(result.data?.description).toBe('A description');
-    expect(result.data).not.toHaveProperty('extra_field'); // Should be filtered out
+
+    // Setup mock response
+    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
+
+    // Call getAll
+    await factory.getAll();
+
+    // Verify custom select was used
+    expect(mockSupabase.select).toHaveBeenCalledWith(customSelect);
   });
 });
