@@ -22,9 +22,25 @@ export function setupMockQueryResponse<T>(response: T | null, error: any = null)
     return this;
   });
   
-  mockSupabase.maybeSingle.mockResolvedValue({
-    data: response,
-    error: error
+  mockSupabase.maybeSingle.mockImplementation(() => {
+    return Promise.resolve({
+      data: response,
+      error: error
+    });
+  });
+  
+  mockSupabase.single.mockImplementation(() => {
+    return Promise.resolve({
+      data: response,
+      error: error
+    });
+  });
+  
+  mockSupabase.then.mockImplementation((callback) => {
+    return Promise.resolve({
+      data: Array.isArray(response) ? response : [response],
+      error: error
+    }).then(callback);
   });
   
   return mockSupabase;
@@ -50,4 +66,55 @@ export function mockErrorResponse(message: string, code = 'ERROR'): ApiResponse<
     error: { message, code },
     status: 'error'
   };
+}
+
+/**
+ * Setup a mock for database mutations (insert, update, delete)
+ */
+export function setupMockMutationResponse<T>(response: T | null, error: any = null) {
+  mockSupabase.from.mockImplementation(function() {
+    return this;
+  });
+  
+  const mockResponseObj = {
+    data: response,
+    error: error
+  };
+  
+  mockSupabase.insert.mockImplementation(function() {
+    return {
+      select: jest.fn().mockResolvedValue(mockResponseObj),
+      single: jest.fn().mockResolvedValue(mockResponseObj),
+      then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+    };
+  });
+  
+  mockSupabase.update.mockImplementation(function() {
+    return {
+      eq: jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue(mockResponseObj),
+        then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+      }),
+      match: jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue(mockResponseObj),
+        then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+      }),
+      in: jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue(mockResponseObj),
+        then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+      }),
+      then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+    };
+  });
+  
+  mockSupabase.delete.mockImplementation(function() {
+    return {
+      eq: jest.fn().mockResolvedValue(mockResponseObj),
+      in: jest.fn().mockResolvedValue(mockResponseObj),
+      match: jest.fn().mockResolvedValue(mockResponseObj),
+      then: jest.fn(cb => Promise.resolve(mockResponseObj).then(cb))
+    };
+  });
+  
+  return mockSupabase;
 }

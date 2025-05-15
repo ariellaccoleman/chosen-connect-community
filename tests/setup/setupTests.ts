@@ -1,42 +1,74 @@
 
-// Add global test setup here
+// Import needed polyfills or setup test environment
 import '@testing-library/jest-dom';
 
-// Define global mocks for browser APIs that aren't available in jsdom
-global.ResizeObserver = jest.fn().mockImplementation(() => ({
-  observe: jest.fn(),
-  unobserve: jest.fn(),
-  disconnect: jest.fn(),
-}));
-
-// Mock window.matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: jest.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: jest.fn(), // Deprecated
-    removeListener: jest.fn(), // Deprecated
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
-  })),
-});
-
-// Add global Jest config
-beforeAll(() => {
-  // Setup global test environment
-  console.error = jest.fn();
-  console.warn = jest.fn();
-});
-
-afterAll(() => {
-  // Cleanup after all tests
-  jest.restoreAllMocks();
-});
-
-// Reset mocks between tests
+// Reset all mocks after each test automatically
 afterEach(() => {
   jest.clearAllMocks();
 });
+
+// Add global console overrides to reduce test noise
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+// Silence specific expected console messages during tests
+console.error = (...args) => {
+  // Allow errors from Jest's expect statements to show
+  if (args[0]?.includes?.('Error: expect(') || 
+      args[0]?.message?.includes?.('expect(')) {
+    originalConsoleError(...args);
+    return;
+  }
+  
+  // Filter out React warnings about act() for testing purposes
+  if (typeof args[0] === 'string' && 
+      (args[0].includes('Warning: The current testing environment is not configured to support act') ||
+       args[0].includes('Warning: An update to') ||
+       args[0].includes('was not wrapped in act'))) {
+    return;
+  }
+  
+  originalConsoleError(...args);
+};
+
+console.warn = (...args) => {
+  // Filter out specific expected warnings
+  if (typeof args[0] === 'string' && 
+      (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
+       args[0].includes('Warning: findDOMNode is deprecated'))) {
+    return;
+  }
+  
+  originalConsoleWarn(...args);
+};
+
+// Restore console methods after all tests
+afterAll(() => {
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+});
+
+// Mock fetch globally
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    json: () => Promise.resolve({}),
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    text: () => Promise.resolve(''),
+    blob: () => Promise.resolve(new Blob()),
+    formData: () => Promise.resolve(new FormData()),
+  })
+) as jest.Mock;
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor(callback: IntersectionObserverCallback) {}
+  disconnect() {}
+  observe() {}
+  takeRecords() { return [] }
+  unobserve() {}
+};
+
+// Set timezone to UTC for consistent date/time testing
+process.env.TZ = 'UTC';
