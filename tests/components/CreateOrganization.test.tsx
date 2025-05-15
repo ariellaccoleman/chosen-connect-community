@@ -159,11 +159,12 @@ describe('CreateOrganization Component', () => {
     
     // Check for loading state
     expect(screen.getByText('Creating...')).toBeInTheDocument();
-    expect(screen.getByRole('button')).toBeDisabled();
+    // Use a more specific query to target the submit button
+    expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
 
   test('handles case when user is not authenticated', async () => {
-    // Mock unauthenticated state
+    // Mock unauthenticated state - ensure component renders even when unauthenticated
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
       loading: false,
@@ -172,12 +173,16 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Fill form and submit
-    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+    // Verify the component renders
+    expect(screen.getByText('Create New Organization')).toBeInTheDocument();
+    
+    // Fill form (using getByRole instead of getByLabelText since we've verified the component renders)
+    fireEvent.change(screen.getByRole('textbox', { name: /Organization Name/i }), {
       target: { value: 'Test Organization' }
     });
     
-    fireEvent.click(screen.getByText('Create Organization'));
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
     // Verify mutation was not called due to missing user
     await waitFor(() => {
