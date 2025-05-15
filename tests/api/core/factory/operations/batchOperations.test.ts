@@ -1,19 +1,9 @@
 
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
 import { createChainableMock, createSuccessResponse } from '../../../../utils/supabaseMockUtils';
-import { apiClient } from '@/api/core/apiClient';
 
 // Setup mock client
 const mockSupabase = createChainableMock();
-
-// Mock the API client
-jest.mock('@/api/core/apiClient', () => ({
-  apiClient: {
-    query: jest.fn().mockImplementation(async (callback) => {
-      return await callback(mockSupabase);
-    })
-  }
-}));
 
 // Test table name
 const TABLE_NAME = 'test_table';
@@ -25,7 +15,6 @@ describe('Batch Operations', () => {
   });
 
   test('should create batch operations object', () => {
-    // Using the correct parameter object format
     const operations = createBatchOperations({
       tableName: TABLE_NAME,
       clientFn: () => mockSupabase
@@ -37,10 +26,8 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch create operation', async () => {
-    // Using the correct parameter object format
     const operations = createBatchOperations({
       tableName: TABLE_NAME,
-      entityName: 'TestEntity',
       clientFn: () => mockSupabase
     });
 
@@ -68,10 +55,8 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch update operation', async () => {
-    // Using the correct parameter object format
     const operations = createBatchOperations({
       tableName: TABLE_NAME,
-      entityName: 'TestEntity',
       clientFn: () => mockSupabase
     });
 
@@ -96,10 +81,8 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch delete operation', async () => {
-    // Using the correct parameter object format
     const operations = createBatchOperations({
       tableName: TABLE_NAME,
-      entityName: 'TestEntity',
       clientFn: () => mockSupabase
     });
 
@@ -122,25 +105,25 @@ describe('Batch Operations', () => {
   });
 
   test('should handle errors in batch operations', async () => {
-    // Using the correct parameter object format
     const operations = createBatchOperations({
       tableName: TABLE_NAME,
-      entityName: 'TestEntity',
       clientFn: () => mockSupabase
     });
 
     // Setup error response
-    const mockQueryFn = jest.spyOn(apiClient, 'query').mockRejectedValueOnce(new Error('Database error'));
+    mockSupabase.from.mockImplementation(() => {
+      throw new Error('Database error');
+    });
 
-    // Attempt batch create and expect to handle the error
-    const result = await operations.batchCreate([{ name: 'Test' }]);
+    // Attempt batch create and expect error
+    let error;
+    try {
+      await operations.batchCreate([{ name: 'Test' }]);
+    } catch (e) {
+      error = e;
+    }
 
-    // Verify error is handled properly
-    expect(result.status).toBe('error');
-    expect(result.error).toBeDefined();
-    expect(result.error.message).toContain('Database error');
-
-    // Restore mock
-    mockQueryFn.mockRestore();
+    expect(error).toBeDefined();
+    expect(error.message).toBe('Database error');
   });
 });

@@ -26,8 +26,7 @@ const config = {
   clearMocks: true,
   resetMocks: false, // We want to control mocks explicitly
   restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
-  testTimeout: 30000,
-  verbose: true  // Added for more detailed output
+  testTimeout: 30000
 };
 
 module.exports = config;
