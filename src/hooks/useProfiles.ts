@@ -8,7 +8,7 @@
 
 export { useCurrentProfile } from './profiles/useProfileHooks';
 export { useUpdateProfile } from './profiles';
-export { useLocations } from './locations';
+export { useLocationList as useLocations } from './locations';
 
 /**
  * @deprecated Use useCurrentProfile from '@/hooks/profiles' instead

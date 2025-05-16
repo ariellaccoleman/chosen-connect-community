@@ -4,7 +4,9 @@
  * Please update imports to use modules from '@/hooks/core/factory' directly.
  */
 
-export * from "./factory";
+// Import directly from the individual files, not from a non-existent './factory'
+export * from "./factory/queryHookFactory";
+export * from "./factory/types";
 
 // Add deprecation console warning in development only
 if (process.env.NODE_ENV === 'development') {
