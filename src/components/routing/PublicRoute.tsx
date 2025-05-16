@@ -11,9 +11,9 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   
-  // Get redirect target from state if available
-  const redirectTo = location.state?.redirectTo || "/dashboard";
-  
+  // Prevent redirection loop by checking if we're being redirected from dashboard
+  const isRedirectFromDashboard = location.state && location.state.from === "/dashboard";
+
   // Show a loading skeleton while checking authentication
   if (loading) {
     return (
@@ -27,14 +27,14 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
     );
   }
 
-  // If authenticated, redirect to the target location or dashboard
-  if (user) {
-    console.log("PublicRoute: User is authenticated, redirecting to", redirectTo);
-    return <Navigate to={redirectTo} replace />;
+  // If authenticated and not being redirected from dashboard, redirect to dashboard
+  if (user && !isRedirectFromDashboard) {
+    console.log("PublicRoute: User is authenticated, redirecting to dashboard");
+    return <Navigate to="/dashboard" replace />;
   }
 
-  // User is not authenticated, show the public content
-  console.log("PublicRoute: User is not authenticated, showing public content");
+  // If not authenticated or already being redirected from dashboard, show the public content
+  console.log("PublicRoute: User is not authenticated or already redirected, showing public content");
   return <>{children}</>;
 };
 
