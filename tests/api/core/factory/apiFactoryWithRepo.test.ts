@@ -212,6 +212,7 @@ describe('API Factory with Repository', () => {
     // Check that extended operations are present
     expect(factory).toHaveProperty('getAll'); // Base operation
     expect(factory).toHaveProperty('getById'); // Base operation
+    expect(factory).toHaveProperty('getByIds'); // Query operation
     expect(factory).toHaveProperty('batchCreate'); // Batch operation
     expect(factory).toHaveProperty('tableName'); // Additional property
   });

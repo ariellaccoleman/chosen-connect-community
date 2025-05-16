@@ -72,7 +72,7 @@ describe('API Factory with Repository Integration', () => {
   });
   
   test('should use repository factory function when provided', () => {
-    // Create mock repository factory
+    // Create mock repository
     const mockRepository = {
       select: jest.fn().mockReturnThis(),
       insert: jest.fn().mockReturnThis(),
