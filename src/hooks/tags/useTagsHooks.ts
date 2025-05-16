@@ -61,10 +61,10 @@ export const useCreateTag = () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast
-      toastHandlers.onSuccess(data);
+      // Show success toast with data and variables
+      toastHandlers.onSuccess(data, variables);
     },
-    onError: (error) => toastHandlers.onError(error)
+    onError: (error, variables) => toastHandlers.onError(error, variables)
   });
 };
 
@@ -85,10 +85,10 @@ export const useFindOrCreateTag = () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast
-      toastHandlers.onSuccess(data);
+      // Show success toast with data and variables
+      toastHandlers.onSuccess(data, variables);
     },
-    onError: (error) => toastHandlers.onError(error)
+    onError: (error, variables) => toastHandlers.onError(error, variables)
   });
 };
 
