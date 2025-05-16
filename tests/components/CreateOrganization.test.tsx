@@ -1,9 +1,8 @@
-
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import CreateOrganization from '@/pages/CreateOrganization';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as hooks from '@/hooks/useOrganizationMutations';
+import * as hooks from '@/hooks/organizations';
 import { BrowserRouter } from 'react-router-dom';
 import * as AuthHook from '@/hooks/useAuth';
 
@@ -24,8 +23,8 @@ jest.mock('@/hooks/useAuth', () => ({
   useAuth: jest.fn()
 }));
 
-jest.mock('@/hooks/useOrganizationMutations', () => ({
-  useCreateOrganization: jest.fn()
+jest.mock('@/hooks/organizations', () => ({
+  useCreateOrganizationWithRelationships: jest.fn()
 }));
 
 // Create a wrapper for the component with necessary providers
@@ -99,7 +98,7 @@ describe('CreateOrganization Component', () => {
     }));
     
     // Mock organization creation hook
-    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+    jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
       isError: false,
@@ -128,7 +127,7 @@ describe('CreateOrganization Component', () => {
     mockMutateAsync.mockResolvedValueOnce('new-org-id');
     
     // Mock organization creation hook
-    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+    jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
       isError: false,
@@ -156,11 +155,9 @@ describe('CreateOrganization Component', () => {
     // Verify mutation was called with correct data
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        data: {
-          name: 'Test Organization',
-          description: 'This is a test organization',
-          website_url: 'https://test.org',
-        },
+        name: 'Test Organization',
+        description: 'This is a test organization',
+        website_url: 'https://test.org',
         userId: 'user-123'
       });
     });
@@ -180,7 +177,7 @@ describe('CreateOrganization Component', () => {
     }));
     
     // Mock organization creation hook
-    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+    jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
       isError: false,
@@ -227,7 +224,7 @@ describe('CreateOrganization Component', () => {
     }));
     
     // Mock pending mutation state
-    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+    jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: true,
       isError: false,
@@ -250,7 +247,7 @@ describe('CreateOrganization Component', () => {
     }));
     
     // Mock organization creation hook
-    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+    jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: async (...args) => {
         // Before the mutation happens, simulate user becoming unauthenticated
         authHookSpy.mockImplementation(() => ({

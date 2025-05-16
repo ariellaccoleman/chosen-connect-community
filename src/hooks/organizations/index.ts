@@ -11,7 +11,8 @@ export {
   useDeleteOrganization,
   useOrganizations,
   useOrganization,
-  useUserOrganizationRelationships
+  useUserOrganizationRelationships,
+  useCreateOrganizationWithRelationships
 } from "./useOrganizationHooks";
 
 // Re-export organization mutation hooks

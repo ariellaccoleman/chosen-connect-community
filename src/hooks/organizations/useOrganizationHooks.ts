@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { organizationApi } from '@/api/organizations/organizationApiFactory';
@@ -7,6 +6,7 @@ import { toast } from '@/components/ui/sonner';
 import { logger } from '@/utils/logger';
 import { ApiResponse } from '@/api/core/errorHandler';
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
+import { organizationCreateApi } from '@/api/organizations/organizationCreateApi';
 
 // Create standard hooks using the factory
 const organizationHooks = createQueryHooks<OrganizationWithLocation, string>(
@@ -97,5 +97,44 @@ export const useUserOrganizationRelationships = (profileId?: string) => {
       return organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
     },
     enabled: !!profileId
+  });
+};
+
+/**
+ * Hook for creating an organization with user relationship
+ * This is a specialized version that handles both org creation and relationship setup
+ */
+export const useCreateOrganizationWithRelationships = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({
+      name, 
+      description, 
+      website_url, 
+      userId
+    }: {
+      name: string;
+      description?: string;
+      website_url?: string;
+      userId: string;
+    }) => {
+      return organizationCreateApi.createOrganization(
+        { name, description, website_url }, 
+        userId
+      );
+    },
+    onSuccess: (response) => {
+      if (response.data) {
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        toast.success("Organization created successfully!");
+      }
+      return response.data?.id;
+    },
+    onError: (error: Error) => {
+      logger.error("Failed to create organization:", error);
+      toast.error("Failed to create organization");
+    }
   });
 };

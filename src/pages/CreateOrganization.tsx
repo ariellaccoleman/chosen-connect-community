@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -11,7 +12,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useCreateOrganization } from "@/hooks/organizations";
+import { useCreateOrganizationWithRelationships } from "@/hooks/organizations";
 import { logger } from "@/utils/logger";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -30,7 +31,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
 const CreateOrganization = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const createOrganization = useCreateOrganization();
+  const createOrganization = useCreateOrganizationWithRelationships();
 
   const form = useForm<OrganizationFormValues>({
     resolver: zodResolver(organizationSchema),
