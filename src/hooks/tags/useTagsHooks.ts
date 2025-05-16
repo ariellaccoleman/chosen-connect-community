@@ -56,7 +56,7 @@ export const useCreateTag = () => {
   
   return useMutation({
     mutationFn: createTag,
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
@@ -64,7 +64,7 @@ export const useCreateTag = () => {
       // Show success toast
       toastHandlers.onSuccess(data);
     },
-    onError: toastHandlers.onError
+    onError: (error, variables) => toastHandlers.onError(error)
   });
 };
 
@@ -80,7 +80,7 @@ export const useFindOrCreateTag = () => {
   
   return useMutation({
     mutationFn: findOrCreateTag,
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
@@ -88,7 +88,7 @@ export const useFindOrCreateTag = () => {
       // Show success toast
       toastHandlers.onSuccess(data);
     },
-    onError: toastHandlers.onError
+    onError: (error, variables) => toastHandlers.onError(error)
   });
 };
 

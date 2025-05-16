@@ -8,10 +8,10 @@ import { useState } from 'react';
  */
 export const useLocations = (initialSearch: string = '') => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
-  const { data, isLoading, error } = useLocationSearch(searchTerm);
+  const { data: searchData, isLoading, error } = useLocationSearch(searchTerm);
 
   return {
-    locations: data?.data || [],
+    locations: searchData?.data || [],
     isLoading,
     error,
     searchTerm,

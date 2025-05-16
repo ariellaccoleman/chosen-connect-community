@@ -91,7 +91,25 @@ export const searchLocations = async (
     if (error) throw error;
     
     // Apply transformResponse to each location
-    const transformedLocations = (data || []).map(locationsApi.transformResponse);
+    const transformResponse = (location: LocationWithDetails) => {
+      // Format the location with a consistent formatted_location field
+      const transformedLocation = { ...location };
+      
+      // Create formatted location string if it doesn't exist
+      if (!transformedLocation.formatted_location) {
+        const city = transformedLocation.city || '';
+        const region = transformedLocation.region || '';
+        const country = transformedLocation.country || '';
+        
+        transformedLocation.formatted_location = [city, region, country]
+          .filter(Boolean)
+          .join(', ');
+      }
+      
+      return transformedLocation;
+    };
+    
+    const transformedLocations = (data || []).map(transformResponse);
     
     return createSuccessResponse(transformedLocations);
   });
