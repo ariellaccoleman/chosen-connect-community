@@ -15,7 +15,7 @@ import {
   CardHeader, 
   CardTitle 
 } from "@/components/ui/card";
-import { useOrganizations, useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
+import { useOrganizations, useUserOrganizationRelationships } from "@/hooks/organizations";
 import { ProfileFormValues } from "./ProfileForm";
 import { useAuth } from "@/hooks/useAuth";
 import OrganizationHeader from "./organization/OrganizationHeader";

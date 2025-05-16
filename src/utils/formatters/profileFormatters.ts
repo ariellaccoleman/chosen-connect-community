@@ -18,10 +18,21 @@ export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
   // Format location if available
   if (profile.location) {
     const location = profile.location as Location;
-    if (!location.formatted_location) {
-      location.formatted_location = [location.city, location.region, location.country]
+    
+    // Create formatted_location if it doesn't exist
+    if (typeof location === 'object') {
+      // Check if the location object has necessary fields
+      const city = location.city || '';
+      const region = location.region || '';
+      const country = location.country || '';
+      
+      // Create a formatted location string
+      const formatted = [city, region, country]
         .filter(Boolean)
         .join(', ');
+      
+      // Add formatted_location to the location object
+      (location as any).formatted_location = formatted;
     }
   }
   

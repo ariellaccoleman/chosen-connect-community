@@ -1,8 +1,9 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
-import { useOrganizations } from "@/hooks/useOrganizationQueries";
+import { useUserOrganizationRelationships } from "@/hooks/organizations";
+import { useOrganizations } from "@/hooks/organizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";

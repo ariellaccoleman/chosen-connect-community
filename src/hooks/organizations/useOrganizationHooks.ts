@@ -35,7 +35,7 @@ export const useDeleteOrganization = organizationHooks.useDelete;
 export const useOrganizations = () => {
   return useQuery<ApiResponse<OrganizationWithLocation[]>, Error>({
     queryKey: ["organizations"],
-    queryFn: organizationApi.getAll,
+    queryFn: () => organizationApi.getAll(),
   });
 };
 

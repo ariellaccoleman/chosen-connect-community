@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -80,11 +79,9 @@ const CreateOrganization = () => {
     
     logger.info("Creating organization", values);
     const result = await createOrganization.mutateAsync({
-      data: {
-        name: values.name,
-        description: values.description,
-        website_url: values.website_url,
-      },
+      name: values.name,
+      description: values.description,
+      website_url: values.website_url,
       userId: currentUser.id
     });
 

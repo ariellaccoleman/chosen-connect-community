@@ -1,5 +1,5 @@
 
-import { Organization, OrganizationWithLocation, LocationWithDetails } from "@/types";
+import { Organization, OrganizationWithLocation, LocationWithDetails, ConnectionType } from "@/types";
 
 /**
  * Format an organization with its location data
@@ -44,4 +44,28 @@ export function formatOrganizationForRequest(
   }
   
   return formattedData;
+}
+
+/**
+ * Format connection type for display
+ */
+export function formatConnectionType(type: ConnectionType): string {
+  switch (type) {
+    case 'current':
+      return 'Current Employee';
+    case 'former':
+      return 'Former Employee';
+    case 'connected_insider':
+      return 'Connected Insider';
+    default:
+      return 'Connected';
+  }
+}
+
+/**
+ * Format admin with details for backward compatibility
+ */
+export function formatAdminWithDetails(data: any): any {
+  // Simple pass-through for now, can be enhanced later
+  return data;
 }

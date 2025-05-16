@@ -6,7 +6,7 @@ import { useFilterTags } from "./useTagQueries";
 import { useTagFilter } from "./useTagFilter";
 import { useEvents } from "./useEvents";
 import { useCommunityProfiles } from "./useCommunityProfiles";
-import { useOrganizations } from "./useOrganizationQueries";
+import { useOrganizations } from "./organizations";
 import { useEntityRegistry } from "./useEntityRegistry";
 
 interface UseEntityFeedOptions {
