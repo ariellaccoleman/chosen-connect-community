@@ -92,7 +92,7 @@ serve(async (req) => {
     
     let testRunId = requestData.test_run_id
     
-    // If no test run ID provided, create a new one
+    // If no test run ID provided, create a new one with counts initialized to 0
     if (!testRunId) {
       const { data: newRun, error: createError } = await supabase
         .from('test_runs')
@@ -117,7 +117,7 @@ serve(async (req) => {
       console.log(`[report-test-results] Created new test run: ${testRunId}`)
     }
 
-    // Handle test results if present
+    // Handle test results if present - just insert them, don't update counts
     if (requestData.test_results?.length) {
       console.log(`[report-test-results] Processing ${requestData.test_results.length} test results`)
       
@@ -135,27 +135,24 @@ serve(async (req) => {
       }
     }
 
-    // Handle test run updates if summary data is present
-    if (testRunId && (
-      requestData.total_tests !== undefined ||
-      requestData.passed_tests !== undefined ||
-      requestData.failed_tests !== undefined ||
-      requestData.skipped_tests !== undefined ||
-      requestData.status !== undefined
-    )) {
-      console.log(`[report-test-results] Updating test run ${testRunId} with summary data`)
+    // Only update test run counts when final summary data is provided
+    if (testRunId && 
+        requestData.total_tests !== undefined &&
+        requestData.passed_tests !== undefined &&
+        requestData.failed_tests !== undefined &&
+        requestData.skipped_tests !== undefined) {
+      console.log(`[report-test-results] Updating test run ${testRunId} with final summary data`)
       
-      const updateData: any = {}
-      if (requestData.total_tests !== undefined) updateData.total_tests = requestData.total_tests
-      if (requestData.passed_tests !== undefined) updateData.passed_tests = requestData.passed_tests
-      if (requestData.failed_tests !== undefined) updateData.failed_tests = requestData.failed_tests
-      if (requestData.skipped_tests !== undefined) updateData.skipped_tests = requestData.skipped_tests
-      if (requestData.duration_ms !== undefined) updateData.duration_ms = requestData.duration_ms
-      if (requestData.status) updateData.status = requestData.status
-
       const { error: updateError } = await supabase
         .from('test_runs')
-        .update(updateData)
+        .update({
+          total_tests: requestData.total_tests,
+          passed_tests: requestData.passed_tests,
+          failed_tests: requestData.failed_tests,
+          skipped_tests: requestData.skipped_tests,
+          duration_ms: requestData.duration_ms || 0,
+          status: requestData.failed_tests > 0 ? 'failure' : 'success'
+        })
         .eq('id', testRunId)
 
       if (updateError) {
