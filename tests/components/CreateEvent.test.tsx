@@ -91,6 +91,6 @@ describe('CreateEvent Component', () => {
     render(<CreateEvent />, { wrapper: Wrapper });
     
     // The component should be wrapped in an ErrorBoundary, but the content should be visible
-    expect(screen.getByText(/container/i)).toBeInTheDocument();
+    expect(screen.getByTestId('create-event-container')).toBeInTheDocument();
   });
 });

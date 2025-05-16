@@ -52,7 +52,7 @@ const CreateEventContent: React.FC = () => {
 
   try {
     return (
-      <div className="container max-w-3xl py-8">
+      <div className="container max-w-3xl py-8" data-testid="create-event-container">
         <EventForm onSuccess={handleSuccess} onError={handleError} />
       </div>
     );

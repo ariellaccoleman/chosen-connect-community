@@ -59,7 +59,7 @@ const AdminTags = () => {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="container mx-auto py-6" data-testid="admin-tags-container">
       <AdminTagsHeader onOpenCreateForm={handleOpenCreateForm} />
       
       <TagForm 
