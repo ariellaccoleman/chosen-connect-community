@@ -23,18 +23,20 @@ const Navbar = () => {
             <NavbarLogo />
           </div>
           
-          <DesktopNav />
-          
-          <div className="flex items-center ml-2">
-            <div className="md:hidden">
-              <button
-                onClick={toggleMenu}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue focus:outline-none"
-                aria-expanded={isMenuOpen}
-              >
-                <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
-                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-              </button>
+          <div className="flex items-center justify-end flex-1">
+            <DesktopNav />
+            
+            <div className="flex items-center ml-2">
+              <div className="md:hidden">
+                <button
+                  onClick={toggleMenu}
+                  className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue focus:outline-none"
+                  aria-expanded={isMenuOpen}
+                >
+                  <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
+                  {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                </button>
+              </div>
             </div>
           </div>
         </div>
