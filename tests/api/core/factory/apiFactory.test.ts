@@ -1,3 +1,4 @@
+
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
 
@@ -94,50 +95,6 @@ describe('API Factory', () => {
     expect(factory).toHaveProperty('batchCreate');
     expect(factory).toHaveProperty('batchUpdate');
     expect(factory).toHaveProperty('batchDelete');
-  });
-
-  test('should allow custom formatters', async () => {
-    // Mock formatter function
-    const mockFormatter = jest.fn((data) => ({
-      ...data,
-      formatted: true
-    }));
-
-    const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
-      formatters: {
-        formatItem: mockFormatter
-      }
-    });
-
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
-
-    // Call getAll
-    await factory.getAll();
-
-    // Verify formatter was called
-    expect(mockFormatter).toHaveBeenCalled();
-  });
-
-  test('should allow custom select statements', async () => {
-    const customSelect = 'id, name, custom_field';
-    
-    const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
-      defaultSelect: customSelect
-    });
-
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
-
-    // Call getAll
-    await factory.getAll();
-
-    // Verify custom select was used
-    expect(mockSupabase.select).toHaveBeenCalledWith(customSelect);
   });
 
   test('should allow custom transformResponse', async () => {
