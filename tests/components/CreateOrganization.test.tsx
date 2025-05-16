@@ -4,14 +4,15 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import CreateOrganization from '@/pages/CreateOrganization';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as hooks from '@/hooks/useOrganizationMutations';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter, useNavigate } from 'react-router-dom';
 import * as AuthHook from '@/hooks/useAuth';
 
 // Mock react-router-dom
 const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockedNavigate
+  useNavigate: () => mockedNavigate,
+  Navigate: jest.fn(({ to }) => `Redirected to ${to}`)
 }));
 
 // Mock the hooks
@@ -46,24 +47,58 @@ describe('CreateOrganization Component', () => {
   
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  test('redirects unauthenticated users to auth page', () => {
+    // Mock unauthenticated state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: null,
+      loading: false,
+      authenticated: false
+    }));
     
-    // Mock useAuth hook
+    render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Check for redirect
+    expect(screen.getByText(/Redirected to \/auth/i)).toBeInTheDocument();
+    // Ensure form is not rendered
+    expect(screen.queryByText('Create New Organization')).not.toBeInTheDocument();
+  });
+
+  test('shows loading state while checking authentication', () => {
+    // Mock loading state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: null,
+      loading: true,
+      authenticated: false
+    }));
+    
+    render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Expect loading spinner (the component doesn't explicitly show "Loading..." text)
+    const spinner = document.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
+    
+    // Ensure form is not rendered during loading
+    expect(screen.queryByText('Create New Organization')).not.toBeInTheDocument();
+  });
+
+  test('renders the create organization form for authenticated users', () => {
+    // Mock authenticated state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
       authenticated: true
     }));
     
-    // Mock useCreateOrganization hook
+    // Mock organization creation hook
     jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
       isError: false,
       isSuccess: false
     } as any));
-  });
-
-  test('renders the create organization form correctly', () => {
+    
     render(<CreateOrganization />, { wrapper: Wrapper });
     
     // Check for form elements
@@ -74,9 +109,24 @@ describe('CreateOrganization Component', () => {
     expect(screen.getByRole('button', { name: /Create Organization/i })).toBeInTheDocument();
   });
 
-  test('handles form submission correctly', async () => {
+  test('handles form submission correctly for authenticated users', async () => {
+    // Mock authenticated state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: mockUser,
+      loading: false,
+      authenticated: true
+    }));
+    
     // Mock successful mutation response
     mockMutateAsync.mockResolvedValueOnce('new-org-id');
+    
+    // Mock organization creation hook
+    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      isError: false,
+      isSuccess: false
+    } as any));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
@@ -115,6 +165,21 @@ describe('CreateOrganization Component', () => {
   });
 
   test('validates form inputs', async () => {
+    // Mock authenticated state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: mockUser,
+      loading: false,
+      authenticated: true
+    }));
+    
+    // Mock organization creation hook
+    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      isError: false,
+      isSuccess: false
+    } as any));
+    
     render(<CreateOrganization />, { wrapper: Wrapper });
     
     // Submit form without required fields
@@ -147,6 +212,13 @@ describe('CreateOrganization Component', () => {
   });
 
   test('shows loading state during submission', async () => {
+    // Mock authenticated state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: mockUser,
+      loading: false,
+      authenticated: true
+    }));
+    
     // Mock pending mutation state
     jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
@@ -160,31 +232,5 @@ describe('CreateOrganization Component', () => {
     // Check for loading state
     expect(screen.getByText('Creating...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
-  });
-
-  test('handles case when user is not authenticated', async () => {
-    // Mock unauthenticated state
-    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
-      user: null,
-      loading: false,
-      authenticated: false
-    }));
-    
-    render(<CreateOrganization />, { wrapper: Wrapper });
-    
-    // Still renders the form in unauthenticated state
-    expect(screen.getByText('Create New Organization')).toBeInTheDocument();
-    
-    // Try to submit the form with valid data
-    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
-      target: { value: 'Test Organization' }
-    });
-    
-    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
-    
-    // Verify mutation was not called due to missing user
-    await waitFor(() => {
-      expect(mockMutateAsync).not.toHaveBeenCalled();
-    });
   });
 });

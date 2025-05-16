@@ -1,11 +1,11 @@
+
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft } from "lucide-react";
 import { z } from "zod";
@@ -13,8 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useCreateOrganization } from "@/hooks/useOrganizationMutations";
-import { ApiResponse } from "@/api/core/errorHandler";
-import { Organization } from "@/types";
+import { logger } from "@/utils/logger";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -26,7 +25,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
 
 const CreateOrganization = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const createOrganization = useCreateOrganization();
 
   const form = useForm<OrganizationFormValues>({
@@ -37,12 +36,39 @@ const CreateOrganization = () => {
       website_url: "",
     },
   });
+  
+  // Log authentication state for debugging
+  logger.info("CreateOrganization page rendering", { 
+    userAuthenticated: !!user, 
+    loading
+  });
+  
+  // If still loading, show loading state
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="container mx-auto py-6 max-w-3xl">
+          <div className="flex items-center justify-center h-24">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-chosen-blue"></div>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+  
+  // If not authenticated, redirect to auth page
+  if (!user) {
+    logger.warn("Unauthenticated user attempted to access CreateOrganization page");
+    return <Navigate to="/auth" state={{ from: '/organizations/create' }} replace />;
+  }
 
   const onSubmit = async (values: OrganizationFormValues) => {
     if (!user) {
+      logger.error("Form submission attempted without authentication");
       return;
     }
     
+    logger.info("Creating organization", values);
     const result = await createOrganization.mutateAsync({
       data: {
         name: values.name,
