@@ -125,18 +125,36 @@ export interface RepositoryQuery<T = any> {
 
 /**
  * Repository Response Interface
- * Standardizes the response format for repository operations
+ * Standardized response format for repository operations
  */
 export interface RepositoryResponse<T> {
   data: T | null;
-  error: Error | null;
+  error: RepositoryError | null;
+  status: 'success' | 'error';
+  
+  /**
+   * Helper method to check if the response was successful
+   */
+  isSuccess(): boolean;
+  
+  /**
+   * Helper method to check if the response had an error
+   */
+  isError(): boolean;
+  
+  /**
+   * Get a formatted error message if there was an error
+   */
+  getErrorMessage(): string;
 }
 
 /**
  * Repository Error Interface
+ * Aligned with ApiError for consistency
  */
 export interface RepositoryError {
   code: string;
   message: string;
   details?: any;
+  original?: any;
 }

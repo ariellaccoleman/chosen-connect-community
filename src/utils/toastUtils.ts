@@ -1,6 +1,7 @@
 
 import { toast } from "@/components/ui/sonner";
 import { logger } from "./logger";
+import { RepositoryError } from '@/api/core/repository/DataRepository';
 
 /**
  * Helper function to handle toast notifications for mutations
@@ -44,7 +45,8 @@ export const createMutationHandlers = (
       }
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "An unknown error occurred";
+      // Extract error message from different error formats
+      const errorMessage = extractErrorMessage(error);
       
       // Log error if enabled
       if (logError) {
@@ -60,6 +62,36 @@ export const createMutationHandlers = (
       }
     }
   };
+};
+
+/**
+ * Helper function to extract error messages from different error types
+ * Works with ApiErrors, RepositoryErrors, or simple Error objects
+ */
+export const extractErrorMessage = (error: any): string => {
+  if (!error) return "An unknown error occurred";
+  
+  // Handle RepositoryError type
+  if (error.code && error.message) {
+    return error.message;
+  }
+
+  // Handle standard Error objects
+  if (error.message) {
+    return error.message;
+  }
+  
+  // Handle string errors
+  if (typeof error === 'string') {
+    return error;
+  }
+  
+  // Handle nested error objects
+  if (error.error?.message) {
+    return error.error.message;
+  }
+  
+  return "An unknown error occurred";
 };
 
 /**
@@ -85,4 +117,35 @@ export const createEntityToasts = (entityName: string, pluralName?: string) => {
     batchUpdateError: (message?: string) => toast.error(message || `Failed to update ${plural}`),
     batchDeleteError: (message?: string) => toast.error(message || `Failed to delete ${plural}`)
   };
+};
+
+/**
+ * Helper function to handle repository response errors and show toasts
+ */
+export const handleRepositoryResponseError = (
+  response: { error: any; status?: string }, 
+  options: { 
+    entityName?: string; 
+    operation?: 'create' | 'update' | 'delete' | 'fetch'; 
+    customMessage?: string 
+  } = {}
+) => {
+  // Skip if no error
+  if (!response.error) return false;
+  
+  const { entityName = "Item", operation = "fetch", customMessage } = options;
+  
+  // Extract error message
+  const errorMessage = extractErrorMessage(response.error);
+  
+  // Build toast message
+  const message = customMessage || `Failed to ${operation} ${entityName}: ${errorMessage}`;
+  
+  // Show toast
+  toast.error(message);
+  
+  // Log error
+  logger.error(`Repository error (${operation} ${entityName}):`, response.error);
+  
+  return true;
 };

@@ -56,13 +56,13 @@ export const useCreateTag = () => {
   
   return useMutation({
     mutationFn: (data: Partial<Tag>) => createTag(data),
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast - adapt to work with both handler signatures
-      toastHandlers.onSuccess(data, undefined);
+      // Show success toast
+      toastHandlers.onSuccess(data, variables);
     },
     onError: (error) => toastHandlers.onError(error)
   });
@@ -80,13 +80,13 @@ export const useFindOrCreateTag = () => {
   
   return useMutation({
     mutationFn: (data: Partial<Tag>) => findOrCreateTag(data),
-    onSuccess: async (data) => {
+    onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast - adapt to work with both handler signatures
-      toastHandlers.onSuccess(data, undefined);
+      // Show success toast
+      toastHandlers.onSuccess(data, variables);
     },
     onError: (error) => toastHandlers.onError(error)
   });

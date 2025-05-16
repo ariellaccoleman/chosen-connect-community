@@ -1,7 +1,67 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { DataRepository, RepositoryQuery, RepositoryResponse } from './DataRepository';
+import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { logger } from '@/utils/logger';
+import { toast } from "@/components/ui/sonner";
+
+/**
+ * Create standardized repository response
+ */
+function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
+  return {
+    data,
+    error: null,
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false,
+    getErrorMessage: () => '',
+  };
+}
+
+/**
+ * Create standardized error response
+ */
+function createErrorResponse<T>(error: any): RepositoryResponse<T> {
+  // Format the error to match our expected structure
+  const repositoryError: RepositoryError = {
+    code: error?.code || 'repository_error',
+    message: error?.message || 'An unknown error occurred',
+    details: error?.details || null,
+    original: error
+  };
+  
+  return {
+    data: null,
+    error: repositoryError,
+    status: 'error',
+    isSuccess: () => false,
+    isError: () => true,
+    getErrorMessage: () => repositoryError.message,
+  };
+}
+
+/**
+ * Handle repository errors consistently
+ */
+function handleRepositoryError(error: any, context: string, showToast = false): RepositoryError {
+  // Log the error with context
+  logger.error(`Repository Error (${context}):`, error);
+  
+  // Show toast if enabled
+  if (showToast && error?.message) {
+    toast.error(`Error: ${error.message}`);
+  }
+  
+  // Return standardized error object
+  const repositoryError: RepositoryError = {
+    code: error?.code || 'unknown_error',
+    message: error?.message || 'An unknown error occurred',
+    details: error?.details || {},
+    original: error
+  };
+  
+  return repositoryError;
+}
 
 /**
  * Supabase implementation of the DataRepository interface
@@ -17,44 +77,65 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    * Create a select query
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
-    const query = supabase
-      .from(this.tableName as any)
-      .select(selectQuery);
-    
-    return new SupabaseQuery<T>(query);
+    try {
+      const query = supabase
+        .from(this.tableName as any)
+        .select(selectQuery);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating select query for ${this.tableName}:`, error);
+      // Return a query that will return an error when executed
+      return new ErrorQuery<T>(error, `select from ${this.tableName}`);
+    }
   }
 
   /**
    * Create an insert query
    */
   insert(data: any): RepositoryQuery<T> {
-    const query = supabase
-      .from(this.tableName as any)
-      .insert(data);
-    
-    return new SupabaseQuery<T>(query);
+    try {
+      const query = supabase
+        .from(this.tableName as any)
+        .insert(data);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating insert query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `insert into ${this.tableName}`);
+    }
   }
 
   /**
    * Create an update query
    */
   update(data: any): RepositoryQuery<T> {
-    const query = supabase
-      .from(this.tableName as any)
-      .update(data);
-    
-    return new SupabaseQuery<T>(query);
+    try {
+      const query = supabase
+        .from(this.tableName as any)
+        .update(data);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating update query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `update ${this.tableName}`);
+    }
   }
 
   /**
    * Create a delete query
    */
   delete(): RepositoryQuery<T> {
-    const query = supabase
-      .from(this.tableName as any)
-      .delete();
-    
-    return new SupabaseQuery<T>(query);
+    try {
+      const query = supabase
+        .from(this.tableName as any)
+        .delete();
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating delete query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `delete from ${this.tableName}`);
+    }
   }
 }
 
@@ -63,66 +144,116 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
  */
 class SupabaseQuery<T> implements RepositoryQuery<T> {
   private query: any;
+  private context: string;
+  private showToasts: boolean;
 
-  constructor(query: any) {
+  constructor(query: any, tableName: string, showToasts = false) {
     this.query = query;
+    this.context = tableName;
+    this.showToasts = showToasts;
   }
 
   eq(column: string, value: any): RepositoryQuery<T> {
-    this.query = this.query.eq(column, value);
-    return this;
+    try {
+      this.query = this.query.eq(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in eq operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.eq(${column})`);
+    }
   }
 
   neq(column: string, value: any): RepositoryQuery<T> {
-    this.query = this.query.neq(column, value);
-    return this;
+    try {
+      this.query = this.query.neq(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in neq operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.neq(${column})`);
+    }
   }
 
   in(column: string, values: any[]): RepositoryQuery<T> {
-    this.query = this.query.in(column, values);
-    return this;
+    try {
+      this.query = this.query.in(column, values);
+      return this;
+    } catch (error) {
+      logger.error(`Error in in operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.in(${column})`);
+    }
   }
 
   ilike(column: string, pattern: string): RepositoryQuery<T> {
-    this.query = this.query.ilike(column, pattern);
-    return this;
+    try {
+      this.query = this.query.ilike(column, pattern);
+      return this;
+    } catch (error) {
+      logger.error(`Error in ilike operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.ilike(${column})`);
+    }
   }
 
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
-    this.query = this.query.order(column, options);
-    return this;
+    try {
+      this.query = this.query.order(column, options);
+      return this;
+    } catch (error) {
+      logger.error(`Error in order operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.order(${column})`);
+    }
   }
 
   limit(count: number): RepositoryQuery<T> {
-    this.query = this.query.limit(count);
-    return this;
+    try {
+      this.query = this.query.limit(count);
+      return this;
+    } catch (error) {
+      logger.error(`Error in limit operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.limit(${count})`);
+    }
   }
 
   range(from: number, to: number): RepositoryQuery<T> {
-    this.query = this.query.range(from, to);
-    return this;
+    try {
+      this.query = this.query.range(from, to);
+      return this;
+    } catch (error) {
+      logger.error(`Error in range operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.range(${from}, ${to})`);
+    }
   }
 
-  // Add this method to satisfy the error about select not existing
   select(select = '*'): RepositoryQuery<T> {
-    this.query = this.query.select(select);
-    return this;
+    try {
+      this.query = this.query.select(select);
+      return this;
+    } catch (error) {
+      logger.error(`Error in select operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.select(${select})`);
+    }
   }
 
   async single(): Promise<RepositoryResponse<T>> {
     try {
       const { data, error } = await this.query.single();
       
-      return {
-        data: data as T || null,
-        error: error
-      };
+      if (error) {
+        const repositoryError = handleRepositoryError(
+          error, 
+          `${this.context}.single()`, 
+          this.showToasts
+        );
+        return createErrorResponse<T>(repositoryError);
+      }
+      
+      return createSuccessResponse<T>(data as T);
     } catch (error) {
-      logger.error('Error executing single query:', error);
-      return {
-        data: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
-      };
+      const repositoryError = handleRepositoryError(
+        error, 
+        `${this.context}.single()`, 
+        this.showToasts
+      );
+      return createErrorResponse<T>(repositoryError);
     }
   }
 
@@ -130,16 +261,23 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     try {
       const { data, error } = await this.query.maybeSingle();
       
-      return {
-        data: data as T || null,
-        error: error
-      };
+      if (error) {
+        const repositoryError = handleRepositoryError(
+          error, 
+          `${this.context}.maybeSingle()`, 
+          this.showToasts
+        );
+        return createErrorResponse<T | null>(repositoryError);
+      }
+      
+      return createSuccessResponse<T | null>(data as T | null);
     } catch (error) {
-      logger.error('Error executing maybeSingle query:', error);
-      return {
-        data: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
-      };
+      const repositoryError = handleRepositoryError(
+        error, 
+        `${this.context}.maybeSingle()`, 
+        this.showToasts
+      );
+      return createErrorResponse<T | null>(repositoryError);
     }
   }
 
@@ -147,17 +285,61 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     try {
       const { data, error } = await this.query;
       
-      return {
-        data: data as T[] || [],
-        error: error
-      };
+      if (error) {
+        const repositoryError = handleRepositoryError(
+          error, 
+          `${this.context}.execute()`, 
+          this.showToasts
+        );
+        return createErrorResponse<T[]>(repositoryError);
+      }
+      
+      return createSuccessResponse<T[]>(data as T[] || []);
     } catch (error) {
-      logger.error('Error executing query:', error);
-      return {
-        data: null,
-        error: error instanceof Error ? error : new Error('Unknown error')
-      };
+      const repositoryError = handleRepositoryError(
+        error, 
+        `${this.context}.execute()`, 
+        this.showToasts
+      );
+      return createErrorResponse<T[]>(repositoryError);
     }
+  }
+}
+
+/**
+ * Error Query class that always returns an error response
+ * Used when an error occurs during query creation
+ */
+class ErrorQuery<T> implements RepositoryQuery<T> {
+  private error: any;
+  private context: string;
+
+  constructor(error: any, context: string) {
+    this.error = error;
+    this.context = context;
+  }
+
+  // All chain methods just return this same error query
+  eq(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  neq(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  in(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
+  ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
+  order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
+  limit(_count: number): RepositoryQuery<T> { return this; }
+  range(_from: number, _to: number): RepositoryQuery<T> { return this; }
+  select(_select?: string): RepositoryQuery<T> { return this; }
+
+  // All execute methods return the error
+  async single(): Promise<RepositoryResponse<T>> {
+    return createErrorResponse<T>(handleRepositoryError(this.error, this.context));
+  }
+
+  async maybeSingle(): Promise<RepositoryResponse<T | null>> {
+    return createErrorResponse<T | null>(handleRepositoryError(this.error, this.context));
+  }
+
+  async execute(): Promise<RepositoryResponse<T[]>> {
+    return createErrorResponse<T[]>(handleRepositoryError(this.error, this.context));
   }
 }
 
@@ -165,5 +347,12 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
  * Create a Supabase repository for a specific table
  */
 export function createSupabaseRepository<T>(tableName: string): DataRepository<T> {
+  return new SupabaseRepository<T>(tableName);
+}
+
+/**
+ * Create a Supabase repository with toast notifications enabled
+ */
+export function createSupabaseRepositoryWithToasts<T>(tableName: string): DataRepository<T> {
   return new SupabaseRepository<T>(tableName);
 }
