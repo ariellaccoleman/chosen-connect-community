@@ -39,6 +39,11 @@ class TestReporter {
           },
           body: JSON.stringify({
             status: 'in_progress',
+            total_tests: 0,
+            passed_tests: 0,
+            failed_tests: 0,
+            skipped_tests: 0,
+            duration_ms: 0,
             git_commit: process.env.GITHUB_SHA || null,
             git_branch: process.env.GITHUB_REF_NAME || null
           })
