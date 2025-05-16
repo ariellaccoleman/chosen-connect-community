@@ -10,7 +10,9 @@ class TestReporter {
       skipped: 0,
       total: 0,
       duration: 0,
-      testResults: []
+      testResults: [],
+      // Track which tests we've already reported to prevent double counting
+      reportedTests: new Set()
     };
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
@@ -112,12 +114,6 @@ class TestReporter {
       const testStatus = result.status === 'passed' ? 'passed' : 
                         result.status === 'failed' ? 'failed' : 'skipped';
       
-      // Update summary counts
-      this.results.total++;
-      if (testStatus === 'passed') this.results.passed++;
-      else if (testStatus === 'failed') this.results.failed++;
-      else this.results.skipped++;
-      
       // Handle different test result formats for the title
       // Some test frameworks provide title as an array, others as a string
       let testName = '';
@@ -130,6 +126,24 @@ class TestReporter {
       } else {
         testName = `Test #${this.results.total}`;
       }
+      
+      // Create a unique identifier for this test to avoid duplicates
+      const testId = `${testSuiteName}:${testName}`;
+      
+      // Skip if we've already reported this test
+      if (this.results.reportedTests.has(testId)) {
+        console.log(`Skipping duplicate test: ${testName}`);
+        continue;
+      }
+      
+      // Mark this test as reported
+      this.results.reportedTests.add(testId);
+      
+      // Update summary counts
+      this.results.total++;
+      if (testStatus === 'passed') this.results.passed++;
+      else if (testStatus === 'failed') this.results.failed++;
+      else this.results.skipped++;
       
       console.log(`- Test: ${testName}, Status: ${testStatus}`);
       

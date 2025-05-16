@@ -54,7 +54,7 @@ const DesktopNav = () => {
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/admin")}>
+                  <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     <span>Admin Panel</span>
                   </DropdownMenuItem>

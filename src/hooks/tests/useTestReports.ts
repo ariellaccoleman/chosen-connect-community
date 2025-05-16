@@ -30,6 +30,8 @@ export const useTestRunDetails = (testRunId: string | undefined) => {
     queryKey: ['test-run', testRunId],
     queryFn: () => testRunId ? getTestRunById(testRunId) : Promise.resolve(null),
     enabled: !!testRunId,
+    // Ensure we don't cache old data that could cause double-counting
+    staleTime: 0,
   });
 };
 
@@ -41,6 +43,8 @@ export const useTestResults = (testRunId: string | undefined) => {
     queryKey: ['test-results', testRunId],
     queryFn: () => testRunId ? getTestResultsByRunId(testRunId) : Promise.resolve([]),
     enabled: !!testRunId,
+    // Ensure we don't cache old data that could cause double-counting
+    staleTime: 0, 
   });
 };
 

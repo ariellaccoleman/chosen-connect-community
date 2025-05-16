@@ -40,10 +40,99 @@ import {
   ArrowLeft,
   AlertCircle,
   AlertTriangle,
-  Terminal
+  Terminal,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from "sonner";
+
+// Collapsible test result row component
+const TestResultRow = ({ result }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  const hasError = result.status === 'failed' && (result.error_message || result.stack_trace || result.console_output);
+  
+  return (
+    <>
+      <TableRow 
+        className={
+          result.status === 'failed' ? 'bg-red-50 hover:bg-red-100' : ''
+        }
+      >
+        <TableCell>
+          {result.status === 'passed' ? (
+            <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Passed</Badge>
+          ) : result.status === 'failed' ? (
+            <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Failed</Badge>
+          ) : (
+            <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Skipped</Badge>
+          )}
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center">
+            {hasError && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-0 mr-2 h-5 w-5" 
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                {isExpanded ? (
+                  <ChevronDown className="h-4 w-4" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+            )}
+            {result.test_name}
+          </div>
+        </TableCell>
+        <TableCell className="text-right">
+          {(result.duration_ms / 1000).toFixed(2)}s
+        </TableCell>
+      </TableRow>
+      
+      {isExpanded && hasError && (
+        <TableRow className="bg-red-50">
+          <TableCell colSpan={3} className="p-4">
+            <div className="space-y-4">
+              {result.error_message && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 text-red-600">Error Message</h4>
+                  <div className="bg-red-50 p-3 rounded border border-red-200 text-red-800 font-mono text-sm whitespace-pre-wrap">
+                    {result.error_message}
+                  </div>
+                </div>
+              )}
+              
+              {result.stack_trace && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2">Stack Trace</h4>
+                  <div className="bg-gray-50 p-3 rounded border border-gray-200 font-mono text-sm overflow-x-auto whitespace-pre">
+                    {result.stack_trace}
+                  </div>
+                </div>
+              )}
+              
+              {result.console_output && (
+                <div>
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    <Terminal className="h-4 w-4 mr-1" />
+                    Console Output
+                  </h4>
+                  <div className="bg-gray-900 text-gray-100 p-3 rounded font-mono text-sm overflow-x-auto whitespace-pre">
+                    {result.console_output}
+                  </div>
+                </div>
+              )}
+            </div>
+          </TableCell>
+        </TableRow>
+      )}
+    </>
+  );
+};
 
 const AdminTestRunDetail = () => {
   const { testRunId } = useParams<{ testRunId: string }>();
@@ -88,19 +177,6 @@ const AdminTestRunDetail = () => {
         return testResults;
     }
   }, [testResults, activeTab]);
-
-  const renderStatusBadge = (status: string) => {
-    switch (status) {
-      case 'passed':
-        return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Passed</Badge>;
-      case 'failed':
-        return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Failed</Badge>;
-      case 'skipped':
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Skipped</Badge>;
-      default:
-        return null;
-    }
-  };
 
   const renderStatusIcon = (status: string) => {
     switch (status) {
@@ -255,18 +331,7 @@ const AdminTestRunDetail = () => {
                               </TableHeader>
                               <TableBody>
                                 {results.map((result) => (
-                                  <TableRow 
-                                    key={result.id}
-                                    className={
-                                      result.status === 'failed' ? 'bg-red-50 hover:bg-red-100' : ''
-                                    }
-                                  >
-                                    <TableCell>{renderStatusBadge(result.status)}</TableCell>
-                                    <TableCell>{result.test_name}</TableCell>
-                                    <TableCell className="text-right">
-                                      {(result.duration_ms / 1000).toFixed(2)}s
-                                    </TableCell>
-                                  </TableRow>
+                                  <TestResultRow key={result.id} result={result} />
                                 ))}
                               </TableBody>
                             </Table>
@@ -284,66 +349,7 @@ const AdminTestRunDetail = () => {
             </Tabs>
           </Card>
           
-          {filteredResults.filter(r => r.status === 'failed').length > 0 && (
-            <Card>
-              <div className="p-4 border-b">
-                <h2 className="text-xl font-semibold flex items-center">
-                  <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                  Failed Tests Details
-                </h2>
-              </div>
-              
-              <div className="p-4">
-                <Accordion type="multiple" className="w-full">
-                  {filteredResults
-                    .filter(r => r.status === 'failed')
-                    .map((result) => (
-                      <AccordionItem key={result.id} value={result.id}>
-                        <AccordionTrigger className="px-4">
-                          <div className="flex items-center text-left">
-                            <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
-                            <span className="font-medium">
-                              {result.test_suite} - {result.test_name}
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4 space-y-4">
-                          {result.error_message && (
-                            <div>
-                              <h4 className="text-sm font-medium mb-2 text-red-600">Error Message</h4>
-                              <div className="bg-red-50 p-3 rounded border border-red-200 text-red-800 font-mono text-sm whitespace-pre-wrap">
-                                {result.error_message}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {result.stack_trace && (
-                            <div>
-                              <h4 className="text-sm font-medium mb-2">Stack Trace</h4>
-                              <div className="bg-gray-50 p-3 rounded border border-gray-200 font-mono text-sm overflow-x-auto whitespace-pre">
-                                {result.stack_trace}
-                              </div>
-                            </div>
-                          )}
-                          
-                          {result.console_output && (
-                            <div>
-                              <h4 className="text-sm font-medium mb-2 flex items-center">
-                                <Terminal className="h-4 w-4 mr-1" />
-                                Console Output
-                              </h4>
-                              <div className="bg-gray-900 text-gray-100 p-3 rounded font-mono text-sm overflow-x-auto whitespace-pre">
-                                {result.console_output}
-                              </div>
-                            </div>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                </Accordion>
-              </div>
-            </Card>
-          )}
+          {/* We no longer need the Failed Tests Details section since each row is now expandable */}
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-12">

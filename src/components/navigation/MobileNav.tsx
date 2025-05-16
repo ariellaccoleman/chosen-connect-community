@@ -39,7 +39,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           </Link>
           {isAdmin && (
             <Link 
-              to="/admin" 
+              to="/admin/dashboard" 
               className="text-gray-700 hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
               onClick={onClose}
             >

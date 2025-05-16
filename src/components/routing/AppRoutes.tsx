@@ -64,6 +64,7 @@ const AppRoutes = () => {
       
       {/* Admin Routes */}
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
       <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
