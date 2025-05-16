@@ -83,13 +83,30 @@ serve(async (req) => {
     })
   }
 
-  // Parse the URL to determine which action to take
-  const url = new URL(req.url)
-  const action = url.pathname.split('/').pop()
-
   try {
+    // Parse the URL to determine which action to take
+    const url = new URL(req.url)
+    const pathname = url.pathname || ''
+    const pathParts = pathname.split('/')
+    const action = pathParts && pathParts.length > 0 ? pathParts[pathParts.length - 1] : ''
+    
+    console.log(`[report-test-results] Parsed action from URL: ${action}`)
+    
     // Parse the request body
-    const requestData = await req.json()
+    let requestData
+    try {
+      requestData = await req.json()
+    } catch (error) {
+      console.error('[report-test-results] Error parsing request body:', error)
+      return new Response(JSON.stringify({ 
+        error: 'Bad Request', 
+        message: 'Failed to parse request body as JSON',
+        details: error.message
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
     
     if (action === 'create-run') {
       // Create a new test run

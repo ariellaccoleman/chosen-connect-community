@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { Tables } from '@/integrations/supabase/types';
+import { apiClient } from '@/api/core/apiClient';
 
 type TestRun = Tables<'test_runs'>;
 type TestResult = Tables<'test_results'>;
@@ -16,13 +17,15 @@ export const createTestRun = async (): Promise<string | null> => {
     const gitBranch = process.env.GITHUB_REF_NAME || null;
     
     // Call the create-run endpoint
-    const { data, error } = await supabase.functions.invoke('report-test-results/create-run', {
-      method: 'POST',
-      body: {
-        git_commit: gitCommit,
-        git_branch: gitBranch,
-      }
-    });
+    const { data, error } = await apiClient.functionQuery((functions) => 
+      functions.invoke('report-test-results/create-run', {
+        method: 'POST',
+        body: {
+          git_commit: gitCommit,
+          git_branch: gitBranch,
+        }
+      })
+    );
     
     if (error) {
       logger.error('Error creating test run:', error);
@@ -51,19 +54,21 @@ export const saveTestResult = async (
 ): Promise<boolean> => {
   try {
     // Call the record-result endpoint
-    const { error } = await supabase.functions.invoke('report-test-results/record-result', {
-      method: 'POST',
-      body: {
-        test_run_id: testRunId,
-        test_suite: testSuite,
-        test_name: testName,
-        status,
-        duration_ms: durationMs,
-        error_message: errorMessage || null,
-        stack_trace: stackTrace || null,
-        console_output: consoleOutput || null,
-      }
-    });
+    const { error } = await apiClient.functionQuery((functions) => 
+      functions.invoke('report-test-results/record-result', {
+        method: 'POST',
+        body: {
+          test_run_id: testRunId,
+          test_suite: testSuite,
+          test_name: testName,
+          status,
+          duration_ms: durationMs,
+          error_message: errorMessage || null,
+          stack_trace: stackTrace || null,
+          console_output: consoleOutput || null,
+        }
+      })
+    );
     
     if (error) {
       logger.error('Error saving test result:', error);
@@ -93,18 +98,20 @@ export const updateTestRunStatus = async (
     const status = failedTests > 0 ? 'failure' : 'success';
     
     // Call the update-run endpoint
-    const { error } = await supabase.functions.invoke('report-test-results/update-run', {
-      method: 'POST',
-      body: {
-        test_run_id: testRunId,
-        total_tests: totalTests,
-        passed_tests: passedTests,
-        failed_tests: failedTests,
-        skipped_tests: skippedTests,
-        duration_ms: durationMs,
-        status
-      }
-    });
+    const { error } = await apiClient.functionQuery((functions) => 
+      functions.invoke('report-test-results/update-run', {
+        method: 'POST',
+        body: {
+          test_run_id: testRunId,
+          total_tests: totalTests,
+          passed_tests: passedTests,
+          failed_tests: failedTests,
+          skipped_tests: skippedTests,
+          duration_ms: durationMs,
+          status
+        }
+      })
+    );
     
     if (error) {
       logger.error('Error updating test run status:', error);

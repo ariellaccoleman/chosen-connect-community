@@ -146,7 +146,7 @@ class TestReporter {
         : null;
       
       try {
-        // Submit individual test result via the new endpoint
+        // Submit individual test result via the record-result endpoint
         const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
           method: 'POST',
           headers: {
@@ -193,7 +193,7 @@ class TestReporter {
     const status = this.results.failed > 0 ? 'failure' : 'success';
     
     try {
-      // Update test run with final results via the new endpoint
+      // Update test run with final results via the update-run endpoint
       console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`);
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`, {
         method: 'POST',
