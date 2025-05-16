@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.1'
 
@@ -15,17 +14,20 @@ const corsHeaders = {
 }
 
 interface TestRunRequest {
-  total_tests: number
-  passed_tests: number
-  failed_tests: number
-  skipped_tests: number
-  duration_ms: number
+  test_run_id?: string
+  total_tests?: number
+  passed_tests?: number
+  failed_tests?: number
+  skipped_tests?: number
+  duration_ms?: number
   git_commit?: string
   git_branch?: string
-  test_results: TestResultRequest[]
+  test_results?: TestResultRequest[]
+  status?: string
 }
 
 interface TestResultRequest {
+  test_run_id?: string
   test_suite: string
   test_name: string
   status: 'passed' | 'failed' | 'skipped'
@@ -33,7 +35,6 @@ interface TestResultRequest {
   error_message?: string
   stack_trace?: string
   console_output?: string
-  test_run_id?: string
 }
 
 serve(async (req) => {
@@ -86,200 +87,79 @@ serve(async (req) => {
   }
 
   try {
-    // Parse the request body
     const requestData: TestRunRequest = await req.json()
-    console.log(`[report-test-results] Processing request with ${requestData.test_results.length} test results`)
+    console.log(`[report-test-results] Processing request`)
     
-    // If we have a test_run_id in the first test result, this is an update to an existing test run
-    const existingTestRunId = requestData.test_results.length > 0 ? 
-      requestData.test_results[0]?.test_run_id : null;
+    let testRunId = requestData.test_run_id
     
-    let testRunId: string;
-    
-    if (existingTestRunId) {
-      // Update the existing test run
-      testRunId = existingTestRunId;
-      console.log(`[report-test-results] Checking for existing test run: ${testRunId}`)
-      
-      const { data: currentRun, error: fetchError } = await supabase
+    // If no test run ID provided, create a new one
+    if (!testRunId) {
+      const { data: newRun, error: createError } = await supabase
         .from('test_runs')
-        .select('total_tests, passed_tests, failed_tests, skipped_tests')
-        .eq('id', testRunId)
-        .maybeSingle();
-      
-      if (fetchError) {
-        console.error('[report-test-results] Error fetching current test run:', fetchError);
-        
-        // FIX: Create a new run with the specified ID instead of failing
-        console.log('[report-test-results] Creating new test run with the provided ID due to fetch error');
-        const { error: insertError } = await supabase
-          .from('test_runs')
-          .insert({
-            id: testRunId,
-            total_tests: requestData.total_tests,
-            passed_tests: requestData.passed_tests,
-            failed_tests: requestData.failed_tests,
-            skipped_tests: requestData.skipped_tests,
-            duration_ms: requestData.duration_ms,
-            git_commit: requestData.git_commit,
-            git_branch: requestData.git_branch,
-            status: requestData.failed_tests > 0 ? 'failure' : 'success',
-          });
-
-        if (insertError) {
-          console.error('[report-test-results] Error creating new test run with specified ID:', insertError);
-          return new Response(JSON.stringify({ error: 'Failed to create test run', details: insertError }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        console.log(`[report-test-results] Successfully created test run with specified ID: ${testRunId}`);
-      } else if (!currentRun) {
-        // If no current run was found with that ID, create a new one with that ID
-        console.log('[report-test-results] No existing test run found, creating new one with provided ID');
-        const { error: createError } = await supabase
-          .from('test_runs')
-          .insert({
-            id: testRunId, // Use the provided ID
-            total_tests: requestData.total_tests,
-            passed_tests: requestData.passed_tests,
-            failed_tests: requestData.failed_tests,
-            skipped_tests: requestData.skipped_tests,
-            duration_ms: requestData.duration_ms,
-            git_commit: requestData.git_commit,
-            git_branch: requestData.git_branch,
-            status: requestData.failed_tests > 0 ? 'failure' : 'success',
-          });
-
-        if (createError) {
-          console.error('[report-test-results] Error creating test run with provided ID:', createError);
-          return new Response(JSON.stringify({ error: 'Failed to create test run', details: createError }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        console.log(`[report-test-results] New test run created with provided ID: ${testRunId}`);
-      } else {
-        // Update the existing test run with new counts (add to existing)
-        console.log(`[report-test-results] Updating existing test run: ${testRunId}`);
-        
-        const newTotalTests = (currentRun.total_tests || 0) + requestData.total_tests;
-        const newPassedTests = (currentRun.passed_tests || 0) + requestData.passed_tests;
-        const newFailedTests = (currentRun.failed_tests || 0) + requestData.failed_tests;
-        const newSkippedTests = (currentRun.skipped_tests || 0) + requestData.skipped_tests;
-        
-        console.log(`[report-test-results] Updated counts: ${newPassedTests} passed, ${newFailedTests} failed, ${newSkippedTests} skipped, total: ${newTotalTests}`);
-        
-        const { error: updateError } = await supabase
-          .from('test_runs')
-          .update({
-            total_tests: newTotalTests,
-            passed_tests: newPassedTests,
-            failed_tests: newFailedTests,
-            skipped_tests: newSkippedTests,
-            duration_ms: requestData.duration_ms > 0 ? requestData.duration_ms : undefined,
-            status: newFailedTests > 0 ? 'failure' : 'success',
-          })
-          .eq('id', testRunId);
-        
-        if (updateError) {
-          console.error('[report-test-results] Error updating test run:', updateError);
-          return new Response(JSON.stringify({ error: 'Failed to update test run', details: updateError }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-      }
-    } else {
-      // Create a new test run
-      console.log('[report-test-results] Creating new test run');
-      
-      // FIX: Use upsert instead of insert to handle race conditions
-      const { data: testRunData, error: testRunError } = await supabase
-        .from('test_runs')
-        .upsert({
-          total_tests: requestData.total_tests,
-          passed_tests: requestData.passed_tests,
-          failed_tests: requestData.failed_tests,
-          skipped_tests: requestData.skipped_tests,
-          duration_ms: requestData.duration_ms,
+        .insert({
+          status: 'in_progress',
+          total_tests: 0,
+          passed_tests: 0,
+          failed_tests: 0,
+          skipped_tests: 0,
+          duration_ms: 0,
           git_commit: requestData.git_commit,
           git_branch: requestData.git_branch,
-          status: requestData.failed_tests > 0 ? 'failure' : 'success',
-        }, { onConflict: 'id' })
+        })
         .select('id')
-        .single();
+        .single()
 
-      if (testRunError) {
-        console.error('[report-test-results] Error creating test run:', testRunError);
-        
-        // FIX: Generate a new UUID and try again if there was an error
-        const newId = crypto.randomUUID();
-        console.log(`[report-test-results] Retrying with new UUID: ${newId}`);
-        
-        const { data: retryData, error: retryError } = await supabase
-          .from('test_runs')
-          .insert({
-            id: newId,
-            total_tests: requestData.total_tests,
-            passed_tests: requestData.passed_tests,
-            failed_tests: requestData.failed_tests,
-            skipped_tests: requestData.skipped_tests,
-            duration_ms: requestData.duration_ms,
-            git_commit: requestData.git_commit,
-            git_branch: requestData.git_branch,
-            status: requestData.failed_tests > 0 ? 'failure' : 'success',
-          })
-          .select('id')
-          .single();
-          
-        if (retryError) {
-          console.error('[report-test-results] Error creating test run on retry:', retryError);
-          return new Response(JSON.stringify({ error: 'Failed to create test run', details: retryError }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-        
-        testRunId = retryData.id;
-        console.log(`[report-test-results] Successfully created test run on retry with ID: ${testRunId}`);
-      } else {
-        testRunId = testRunData.id;
-        console.log(`[report-test-results] New test run created with ID: ${testRunId}`);
+      if (createError) {
+        throw new Error(`Failed to create test run: ${createError.message}`)
+      }
+      
+      testRunId = newRun.id
+      console.log(`[report-test-results] Created new test run: ${testRunId}`)
+    }
+
+    // Handle test results if present
+    if (requestData.test_results?.length) {
+      console.log(`[report-test-results] Processing ${requestData.test_results.length} test results`)
+      
+      const testResults = requestData.test_results.map(result => ({
+        ...result,
+        test_run_id: testRunId
+      }))
+
+      const { error: resultsError } = await supabase
+        .from('test_results')
+        .insert(testResults)
+
+      if (resultsError) {
+        throw new Error(`Failed to insert test results: ${resultsError.message}`)
       }
     }
 
-    // Process test results
-    if (requestData.test_results && requestData.test_results.length > 0) {
-      const testResults = requestData.test_results.map(result => ({
-        test_run_id: testRunId,
-        test_suite: result.test_suite,
-        test_name: result.test_name,
-        status: result.status,
-        duration_ms: result.duration_ms,
-        error_message: result.error_message || null,
-        stack_trace: result.stack_trace || null,
-        console_output: result.console_output || null,
-      }));
+    // Handle test run updates if summary data is present
+    if (testRunId && (
+      requestData.total_tests !== undefined ||
+      requestData.passed_tests !== undefined ||
+      requestData.failed_tests !== undefined ||
+      requestData.skipped_tests !== undefined ||
+      requestData.status !== undefined
+    )) {
+      console.log(`[report-test-results] Updating test run ${testRunId} with summary data`)
+      
+      const updateData: any = {}
+      if (requestData.total_tests !== undefined) updateData.total_tests = requestData.total_tests
+      if (requestData.passed_tests !== undefined) updateData.passed_tests = requestData.passed_tests
+      if (requestData.failed_tests !== undefined) updateData.failed_tests = requestData.failed_tests
+      if (requestData.skipped_tests !== undefined) updateData.skipped_tests = requestData.skipped_tests
+      if (requestData.duration_ms !== undefined) updateData.duration_ms = requestData.duration_ms
+      if (requestData.status) updateData.status = requestData.status
 
-      console.log(`[report-test-results] Processing ${testResults.length} test results for run ${testRunId}`);
+      const { error: updateError } = await supabase
+        .from('test_runs')
+        .update(updateData)
+        .eq('id', testRunId)
 
-      // Insert test results in batches if there are many
-      const batchSize = 20;
-      for (let i = 0; i < testResults.length; i += batchSize) {
-        const batch = testResults.slice(i, i + batchSize);
-        const { error: resultsError } = await supabase
-          .from('test_results')
-          .insert(batch);
-
-        if (resultsError) {
-          console.error('[report-test-results] Error inserting test results batch:', resultsError);
-          // Continue with the next batch, don't exit completely
-        } else {
-          console.log(`[report-test-results] Successfully inserted batch of ${batch.length} test results`);
-        }
+      if (updateError) {
+        throw new Error(`Failed to update test run: ${updateError.message}`)
       }
     }
 
@@ -289,12 +169,12 @@ serve(async (req) => {
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    })
   } catch (error) {
-    console.error('[report-test-results] Error processing request:', error);
-    return new Response(JSON.stringify({ error: 'Internal server error', details: error.message }), {
+    console.error('[report-test-results] Error:', error)
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    })
   }
 })
