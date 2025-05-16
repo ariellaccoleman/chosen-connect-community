@@ -5,10 +5,10 @@ This document outlines the plan for migrating the codebase from a monolithic str
 
 ## Current Status
 
-Phase 3 of the migration is complete. The codebase now has:
+Phase 4 of the migration is in progress. The codebase now has:
 
 1. New modular structure fully in place
-2. All legacy files properly marked with deprecation notices
+2. Legacy files properly marked with deprecation notices
 3. Runtime console warnings for deprecated imports
 4. Clean redirection from legacy files to their modular counterparts
 5. Streamlined factory pattern implementation
@@ -33,11 +33,12 @@ Phase 3 of the migration is complete. The codebase now has:
 - [x] Improved documentation of module structure
 - [x] Standardized deprecation warning messages
 
-## Phase 4: Removal (Next Major Version)
+## Phase 4: Removal (In Progress)
 
-- [ ] Remove all deprecated re-export files
-- [ ] Update documentation to reflect the new structure only
-- [ ] Complete any necessary refactoring of remaining code
+- [ ] Remove remaining ambiguous exports
+- [ ] Fix import path inconsistencies
+- [ ] Update remaining code to use only the modular imports
+- [ ] Prepare for removal of deprecated files in next major version
 
 ## Guidelines for New Code
 
@@ -101,3 +102,4 @@ src/
 3. **Enhanced Developer Experience**: Direct imports make dependencies clear
 4. **Reduced Bundle Size**: Tree-shaking works better with direct imports
 5. **Easier Testing**: Isolated modules are easier to test
+

@@ -18,3 +18,4 @@ export {
   useTagEntityType,
   useTagBasicCrud
 };
+

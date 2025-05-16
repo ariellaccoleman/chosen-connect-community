@@ -5,12 +5,13 @@ export {
   useOrganizationAdminsByOrg,
   useUserAdminRequests,
   useIsOrganizationAdmin,
-  usePendingOrganizationAdmins,  // Add the missing export
-  useOrganizationRole           // Add the missing export
-} from './useOrganizationAdminQueries';
+  usePendingOrganizationAdmins,
+  useOrganizationRole
+} from './organizations';
 
 export {
   useCreateAdminRequest,
   useUpdateAdminRequest,
   useDeleteAdminRequest
-} from './useOrganizationAdminMutations';
+} from './organizations';
+

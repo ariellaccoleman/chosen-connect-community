@@ -13,10 +13,11 @@ export const useOrganizationQueries = () => {
   } = require('./organizations');
   
   // For backward compatibility
-  const useFilterTags = require('./useTagQueries').useFilterTags;
+  const { useFilterTags } = require('./tags');
   
   return {
     useOrganizations: useOrganizations,
     useFilterTags,
   };
 };
+

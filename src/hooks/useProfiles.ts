@@ -18,3 +18,4 @@ import { useCurrentProfile as getCurrentProfile } from './profiles/useProfileHoo
 export const useProfiles = (userId: string | undefined, authUser?: any) => {
   return getCurrentProfile(userId, authUser);
 };
+
