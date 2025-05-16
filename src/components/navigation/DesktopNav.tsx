@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, ShieldCheck } from "lucide-react";
@@ -54,7 +53,7 @@ const DesktopNav = () => {
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate("/admin/dashboard")}>
+                  <DropdownMenuItem onClick={() => navigate("/admin")}>
                     <ShieldCheck className="mr-2 h-4 w-4" />
                     <span>Admin Panel</span>
                   </DropdownMenuItem>

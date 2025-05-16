@@ -24,16 +24,16 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to auth page
+  // If not authenticated, redirect to auth page with return path
   if (!user) {
     console.log("AdminRoute: User is not authenticated, redirecting to auth");
-    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/auth" replace state={{ redirectTo: location.pathname }} />;
   }
 
   // If not admin, redirect to dashboard
   if (!isAdmin) {
     console.log("AdminRoute: User is not an admin, redirecting to dashboard");
-    return <Navigate to="/dashboard" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // If authenticated and admin, show the protected content

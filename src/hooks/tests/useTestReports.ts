@@ -19,6 +19,7 @@ export const useTestRuns = () => {
   return useQuery({
     queryKey: ['test-runs'],
     queryFn: getAllTestRuns,
+    staleTime: 0, // Ensure we don't cache data that could cause double-counting
   });
 };
 
@@ -30,8 +31,7 @@ export const useTestRunDetails = (testRunId: string | undefined) => {
     queryKey: ['test-run', testRunId],
     queryFn: () => testRunId ? getTestRunById(testRunId) : Promise.resolve(null),
     enabled: !!testRunId,
-    // Ensure we don't cache old data that could cause double-counting
-    staleTime: 0,
+    staleTime: 0, // Ensure we don't cache old data that could cause double-counting
   });
 };
 
@@ -43,8 +43,7 @@ export const useTestResults = (testRunId: string | undefined) => {
     queryKey: ['test-results', testRunId],
     queryFn: () => testRunId ? getTestResultsByRunId(testRunId) : Promise.resolve([]),
     enabled: !!testRunId,
-    // Ensure we don't cache old data that could cause double-counting
-    staleTime: 0, 
+    staleTime: 0, // Ensure we don't cache old data that could cause double-counting
   });
 };
 
@@ -55,6 +54,7 @@ export const useRecentFailedTests = (limit = 20) => {
   return useQuery({
     queryKey: ['failed-tests', limit],
     queryFn: () => getRecentFailedTests(limit),
+    staleTime: 0, // Ensure we don't cache data to prevent double-counting
   });
 };
 

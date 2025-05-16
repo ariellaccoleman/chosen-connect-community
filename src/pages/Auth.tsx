@@ -1,6 +1,5 @@
-
 import { useState, useEffect } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 
@@ -16,6 +15,7 @@ const Auth = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   
   // Check for password reset, email confirmation, or signup tab parameters
@@ -29,15 +29,23 @@ const Auth = () => {
     }
   }, [searchParams]);
 
-  // Add debug logs
+  // Add debug logs for redirect state
   console.log("Auth page - Auth state:", { 
     user, 
     loading, 
     authMode,
-    redirectionDebug: "Fixed redirection in Auth page" 
+    redirectState: location.state,
+    pathname: location.pathname 
   });
 
-  // We'll let PublicRoute handle the redirection to avoid loops
+  // Handle authenticated user redirection here
+  useEffect(() => {
+    if (user && !loading) {
+      const redirectTo = location.state?.redirectTo || "/dashboard";
+      console.log("Auth page: User is authenticated, redirecting to", redirectTo);
+      navigate(redirectTo, { replace: true });
+    }
+  }, [user, loading, navigate, location.state]);
 
   const handleTabChange = (value: string) => {
     setAuthMode(value as AuthMode);
@@ -87,11 +95,18 @@ const Auth = () => {
     }
   };
   
-  return loading ? (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
-    </div>
-  ) : renderAuthContent();
+  // Only show loading state if we're checking auth
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
+      </div>
+    );
+  }
+
+  // If user is already authenticated, we'll let the useEffect handle redirect
+  // Otherwise show the auth content
+  return !user ? renderAuthContent() : null;
 };
 
 export default Auth;
