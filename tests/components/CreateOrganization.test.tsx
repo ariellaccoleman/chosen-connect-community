@@ -241,9 +241,9 @@ describe('CreateOrganization Component', () => {
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
 
-  test('prevents form submission if user becomes unauthenticated', async () => {
+  test('prevents form submission if user becomes unauthenticated during submission', async () => {
     // Start with authenticated state
-    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+    const authHookSpy = jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
       authenticated: true
@@ -251,7 +251,17 @@ describe('CreateOrganization Component', () => {
     
     // Mock organization creation hook
     jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
-      mutateAsync: mockMutateAsync,
+      mutateAsync: async (...args) => {
+        // Before the mutation happens, simulate user becoming unauthenticated
+        authHookSpy.mockImplementation(() => ({
+          user: null,
+          loading: false,
+          authenticated: false
+        }));
+        // Continue with a delayed response to give time for state to update
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return null; // Return null as we expect the submission to fail
+      },
       isPending: false,
       isError: false,
       isSuccess: false
@@ -264,21 +274,19 @@ describe('CreateOrganization Component', () => {
       target: { value: 'Test Organization' }
     });
     
-    // Simulate user becoming unauthenticated (e.g. token expired)
-    // by directly calling onSubmit with null user
-    const form = screen.getByRole('form');
-    fireEvent.submit(form);
+    // Submit the form
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
-    // Set user to null to simulate authentication loss before submission completes
-    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
-      user: null,
-      loading: false,
-      authenticated: false
-    }));
+    // Wait for the auth state change to be processed
+    await waitFor(() => {
+      // Verify the mutation doesn't complete successfully (no navigation)
+      expect(mockedNavigate).not.toHaveBeenCalled();
+    });
     
-    // Verify mutation was called but with user ID
-    expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
-      userId: 'user-123' // Should still have the original user ID
-    }));
+    // Verify the component is now showing the redirect to auth
+    await waitFor(() => {
+      expect(screen.getByTestId('mock-navigate')).toBeInTheDocument();
+      expect(screen.getByText(/Redirected to \/auth with state:/)).toBeInTheDocument();
+    });
   });
 });

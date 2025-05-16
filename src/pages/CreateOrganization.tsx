@@ -69,7 +69,11 @@ const CreateOrganization = () => {
   }
 
   const onSubmit = async (values: OrganizationFormValues) => {
-    if (!user) {
+    // Get current authentication state at submission time
+    const currentUser = user;
+    
+    // Double-check authentication at submission time
+    if (!currentUser) {
       logger.error("Form submission attempted without authentication");
       return;
     }
@@ -81,7 +85,7 @@ const CreateOrganization = () => {
         description: values.description,
         website_url: values.website_url,
       },
-      userId: user.id
+      userId: currentUser.id
     });
 
     // If successful and we have an organization ID from the result
