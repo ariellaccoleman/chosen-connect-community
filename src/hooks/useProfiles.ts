@@ -1,13 +1,18 @@
 
-// This file now re-exports all profile-related hooks from their respective files
-// for backwards compatibility
+/**
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update your imports to use the modular structure:
+ * import { useCurrentProfile } from '@/hooks/profiles';
+ * import { useUpdateProfile } from '@/hooks/profiles';
+ */
 
 export { useCurrentProfile } from './profiles/useProfileHooks';
 export { useUpdateProfile } from './profiles';
 export { useLocations } from './useLocations';
 
-// Define and export useProfiles for backward compatibility
-// This is needed because it's being exported but not defined in useProfileQueries anymore
+/**
+ * @deprecated Use useCurrentProfile from '@/hooks/profiles' instead
+ */
 import { useCurrentProfile as getCurrentProfile } from './profiles/useProfileHooks';
 
 export const useProfiles = (userId: string | undefined, authUser?: any) => {

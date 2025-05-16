@@ -1,4 +1,9 @@
 
+/**
+ * Tags API module - provides functionality for working with tags and tag assignments
+ * @module api/tags
+ */
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { Tag } from '@/types';
 
@@ -9,11 +14,10 @@ export * from './getTagsApi';
 export * from './tagCrudApi';
 export * from './tagEntityTypesApi';
 export * from './cacheApi';
-export * from './organizationTagsApi';
-export * from './tagsApi'; // Add this export to include all the operations from tagsApi
+export * from './tagsApi';
 
 /**
- * Create API operations for tags
+ * Factory-generated API operations for tags
  */
 export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>, 'tags'>(
   {

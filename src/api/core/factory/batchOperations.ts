@@ -1,10 +1,14 @@
 
+/**
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update imports to use modules from '@/api/core/factory/operations/batchOperations' directly.
+ */
+
 import { createBatchOperations as createBatchOps } from "./operations/batchOperations";
 import { TableNames } from "./types";
 
 /**
  * Creates standardized batch operations for a specific entity type
- * This is a wrapper around the implementation in operations/batchOperations.ts
  * @deprecated Use the version from operations/batchOperations directly
  */
 export function createBatchOperations<
@@ -25,6 +29,14 @@ export function createBatchOperations<
     repository?: any; // Allow repository to be passed through
   } = {}
 ) {
+  // Add deprecation console warning in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(
+      'Deprecated import: createBatchOperations is deprecated. ' +
+      'Please use createBatchOperations from @/api/core/factory/operations/batchOperations directly.'
+    );
+  }
+  
   return createBatchOps<T, TId, TCreate, TUpdate, Table>(
     entityName,
     tableName,
