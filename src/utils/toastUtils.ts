@@ -1,7 +1,8 @@
 
 import { toast } from "@/components/ui/sonner";
 import { logger } from "./logger";
-import { RepositoryError } from '@/api/core/repository/DataRepository';
+import { extractErrorMessage } from "./errorUtils";
+import { isRepositoryError } from "./errorUtils";
 
 /**
  * Helper function to handle toast notifications for mutations
@@ -45,7 +46,7 @@ export const createMutationHandlers = (
       }
     },
     onError: (error: any) => {
-      // Extract error message from different error formats
+      // Extract error message 
       const errorMessage = extractErrorMessage(error);
       
       // Log error if enabled
@@ -62,36 +63,6 @@ export const createMutationHandlers = (
       }
     }
   };
-};
-
-/**
- * Helper function to extract error messages from different error types
- * Works with ApiErrors, RepositoryErrors, or simple Error objects
- */
-export const extractErrorMessage = (error: any): string => {
-  if (!error) return "An unknown error occurred";
-  
-  // Handle RepositoryError type
-  if (error.code && error.message) {
-    return error.message;
-  }
-
-  // Handle standard Error objects
-  if (error.message) {
-    return error.message;
-  }
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return error;
-  }
-  
-  // Handle nested error objects
-  if (error.error?.message) {
-    return error.error.message;
-  }
-  
-  return "An unknown error occurred";
 };
 
 /**

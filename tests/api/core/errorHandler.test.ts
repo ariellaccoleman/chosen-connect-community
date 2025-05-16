@@ -7,6 +7,7 @@ import {
   ApiError
 } from '@/api/core/errorHandler';
 import { sonnerToast as toast } from '@/hooks/use-toast';
+import { extractErrorMessage } from '@/utils/errorUtils';
 
 // Mock the toast function
 jest.mock('@/hooks/use-toast', () => ({
@@ -105,5 +106,13 @@ describe('API Error Handler', () => {
     showErrorToast(error);
     
     expect(toast.error).toHaveBeenCalledWith('An error occurred');
+  });
+
+  test('extractErrorMessage handles various error formats', () => {
+    expect(extractErrorMessage({ message: 'Test error' })).toBe('Test error');
+    expect(extractErrorMessage('String error')).toBe('String error');
+    expect(extractErrorMessage({ error: { message: 'Nested error' } })).toBe('Nested error');
+    expect(extractErrorMessage(null)).toBe('Unknown error occurred');
+    expect(extractErrorMessage(undefined)).toBe('Unknown error occurred');
   });
 });

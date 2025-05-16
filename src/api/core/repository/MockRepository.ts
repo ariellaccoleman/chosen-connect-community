@@ -1,42 +1,5 @@
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
-
-/**
- * Create standardized repository success response
- */
-function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
-  return {
-    data,
-    error: null,
-    status: 'success',
-    isSuccess: () => true,
-    isError: () => false,
-    getErrorMessage: () => '',
-  };
-}
-
-/**
- * Create standardized repository error response
- */
-function createErrorResponse<T>(error: any): RepositoryResponse<T> {
-  // Convert standard Error to RepositoryError if needed
-  const repositoryError: RepositoryError = error.code 
-    ? error as RepositoryError 
-    : {
-        code: 'mock_repository_error',
-        message: error.message || 'Unknown error in mock repository',
-        details: error.details || {},
-        original: error
-      };
-  
-  return {
-    data: null,
-    error: repositoryError,
-    status: 'error',
-    isSuccess: () => false,
-    isError: () => true,
-    getErrorMessage: () => repositoryError.message,
-  };
-}
+import { createSuccessResponse, createErrorResponse } from './repositoryUtils';
 
 /**
  * Mock implementation of the DataRepository interface for testing

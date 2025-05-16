@@ -2,6 +2,7 @@
 import { logger } from './logger';
 import { sonnerToast as toast } from '@/hooks/use-toast';
 import { RepositoryError } from '@/api/core/repository/DataRepository';
+import { formatRepositoryError } from '@/api/core/repository/repositoryUtils';
 
 /**
  * Standard error handler that logs errors and optionally shows a toast notification
@@ -34,31 +35,9 @@ export const handleError = (
 export const extractErrorMessage = (error: any): string => {
   if (!error) return 'Unknown error occurred';
   
-  // Handle repository errors
-  if (error.code && error.message) {
-    return error.message;
-  }
-  
-  // Handle standard Error objects
-  if (error.message) {
-    return error.message;
-  }
-  
-  // Handle string errors
-  if (typeof error === 'string') {
-    return error;
-  }
-  
-  // Handle nested error objects
-  if (error.error?.message) {
-    return error.error.message;
-  }
-  
-  if (error.error_description) {
-    return error.error_description;
-  }
-  
-  return 'An unexpected error occurred';
+  // Use repository error formatter if possible
+  const repoError = formatRepositoryError(error);
+  return repoError.message;
 };
 
 /**

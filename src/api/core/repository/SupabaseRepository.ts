@@ -1,67 +1,8 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { logger } from '@/utils/logger';
 import { toast } from "@/components/ui/sonner";
-
-/**
- * Create standardized repository response
- */
-function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
-  return {
-    data,
-    error: null,
-    status: 'success',
-    isSuccess: () => true,
-    isError: () => false,
-    getErrorMessage: () => '',
-  };
-}
-
-/**
- * Create standardized error response
- */
-function createErrorResponse<T>(error: any): RepositoryResponse<T> {
-  // Format the error to match our expected structure
-  const repositoryError: RepositoryError = {
-    code: error?.code || 'repository_error',
-    message: error?.message || 'An unknown error occurred',
-    details: error?.details || null,
-    original: error
-  };
-  
-  return {
-    data: null,
-    error: repositoryError,
-    status: 'error',
-    isSuccess: () => false,
-    isError: () => true,
-    getErrorMessage: () => repositoryError.message,
-  };
-}
-
-/**
- * Handle repository errors consistently
- */
-function handleRepositoryError(error: any, context: string, showToast = false): RepositoryError {
-  // Log the error with context
-  logger.error(`Repository Error (${context}):`, error);
-  
-  // Show toast if enabled
-  if (showToast && error?.message) {
-    toast.error(`Error: ${error.message}`);
-  }
-  
-  // Return standardized error object
-  const repositoryError: RepositoryError = {
-    code: error?.code || 'unknown_error',
-    message: error?.message || 'An unknown error occurred',
-    details: error?.details || {},
-    original: error
-  };
-  
-  return repositoryError;
-}
+import { createSuccessResponse, createErrorResponse, handleRepositoryError } from './repositoryUtils';
 
 /**
  * Supabase implementation of the DataRepository interface
@@ -238,22 +179,18 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
       const { data, error } = await this.query.single();
       
       if (error) {
-        const repositoryError = handleRepositoryError(
+        return createErrorResponse<T>(handleRepositoryError(
           error, 
-          `${this.context}.single()`, 
-          this.showToasts
-        );
-        return createErrorResponse<T>(repositoryError);
+          `${this.context}.single()`
+        ));
       }
       
       return createSuccessResponse<T>(data as T);
     } catch (error) {
-      const repositoryError = handleRepositoryError(
+      return createErrorResponse<T>(handleRepositoryError(
         error, 
-        `${this.context}.single()`, 
-        this.showToasts
-      );
-      return createErrorResponse<T>(repositoryError);
+        `${this.context}.single()`
+      ));
     }
   }
 
@@ -262,22 +199,18 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
       const { data, error } = await this.query.maybeSingle();
       
       if (error) {
-        const repositoryError = handleRepositoryError(
+        return createErrorResponse<T | null>(handleRepositoryError(
           error, 
-          `${this.context}.maybeSingle()`, 
-          this.showToasts
-        );
-        return createErrorResponse<T | null>(repositoryError);
+          `${this.context}.maybeSingle()`
+        ));
       }
       
       return createSuccessResponse<T | null>(data as T | null);
     } catch (error) {
-      const repositoryError = handleRepositoryError(
+      return createErrorResponse<T | null>(handleRepositoryError(
         error, 
-        `${this.context}.maybeSingle()`, 
-        this.showToasts
-      );
-      return createErrorResponse<T | null>(repositoryError);
+        `${this.context}.maybeSingle()`
+      ));
     }
   }
 
@@ -286,22 +219,18 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
       const { data, error } = await this.query;
       
       if (error) {
-        const repositoryError = handleRepositoryError(
+        return createErrorResponse<T[]>(handleRepositoryError(
           error, 
-          `${this.context}.execute()`, 
-          this.showToasts
-        );
-        return createErrorResponse<T[]>(repositoryError);
+          `${this.context}.execute()`
+        ));
       }
       
       return createSuccessResponse<T[]>(data as T[] || []);
     } catch (error) {
-      const repositoryError = handleRepositoryError(
+      return createErrorResponse<T[]>(handleRepositoryError(
         error, 
-        `${this.context}.execute()`, 
-        this.showToasts
-      );
-      return createErrorResponse<T[]>(repositoryError);
+        `${this.context}.execute()`
+      ));
     }
   }
 }
