@@ -1,6 +1,7 @@
 
 import React, { useEffect } from "react";
-import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";
+import { useEntityTags } from "@/hooks/tags"; // Updated import
+import { useTagAssignmentMutations } from "@/hooks/tag"; // Updated import
 import TagList from "./TagList";
 import { Skeleton } from "@/components/ui/skeleton";
 import TagSelector from "./TagSelector";

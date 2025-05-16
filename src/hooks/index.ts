@@ -19,6 +19,6 @@ export * from './tests';
  * - import { useCurrentProfile } from '@/hooks/profiles'
  * - import { useTags } from '@/hooks/tags'
  */
-export { useLocations } from './useLocations';
-export { useProfiles } from './useProfiles';
+export { useLocations } from './locations';
+export { useProfiles } from './profiles';
 export { useTags } from './tags';

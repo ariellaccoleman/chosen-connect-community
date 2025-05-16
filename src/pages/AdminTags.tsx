@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
-import { useSelectionTags as useTags, useTagMutations } from "@/hooks/useTags";
+import { useSelectionTags, useCreateTag } from "@/hooks/tags"; // Updated import
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Import the new components
@@ -14,8 +14,8 @@ import TagsTable from "@/components/admin/tags/TagsTable";
 
 const AdminTags = () => {
   const queryClient = useQueryClient();
-  const { data: tagsResponse, isLoading } = useTags();
-  const { createTag: createTagMutation, isCreating } = useTagMutations();
+  const { data: tagsResponse, isLoading } = useSelectionTags();
+  const createTagMutation = useCreateTag();
   const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
@@ -27,7 +27,7 @@ const AdminTags = () => {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      await createTagMutation({
+      await createTagMutation.mutateAsync({
         name: values.name,
         description: values.description,
         type: values.type
@@ -66,7 +66,7 @@ const AdminTags = () => {
         isOpen={isCreateFormOpen}
         onClose={handleCloseCreateForm}
         onSubmit={handleCreateTag}
-        isSubmitting={isCreating}
+        isSubmitting={createTagMutation.isPending}
       />
 
       <TagsTable tags={tags} isLoading={isLoading} />
