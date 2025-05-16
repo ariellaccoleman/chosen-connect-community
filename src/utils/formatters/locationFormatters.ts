@@ -20,7 +20,7 @@ export const formatLocationWithDetails = (locationData: any): LocationWithDetail
     region: locationData.region || '',
     country: locationData.country || '',
     full_name: locationData.full_name || '',
-    created_at: locationData.created_at,
+    // Remove created_at as it's not part of LocationWithDetails
     updated_at: locationData.updated_at,
     formatted_location: formatLocation({
       city: locationData.city || '',

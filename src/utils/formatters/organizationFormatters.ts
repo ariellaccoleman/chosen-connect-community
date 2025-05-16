@@ -1,5 +1,5 @@
 
-import { OrganizationWithLocation, ProfileOrganizationRelationshipType } from "@/types";
+import { OrganizationWithLocation } from "@/types";
 
 /**
  * Format organization data for display
@@ -28,7 +28,7 @@ export function formatOrganizationWithLocation(data: any): OrganizationWithLocat
 /**
  * Format connection type for display
  */
-export function formatConnectionType(type: ProfileOrganizationRelationshipType | null | undefined): string {
+export function formatConnectionType(type: "current" | "former" | "connected_insider" | null | undefined): string {
   switch (type) {
     case 'current':
       return 'Current';
