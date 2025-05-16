@@ -20,7 +20,7 @@ export const formatLocationWithDetails = (locationData: any): LocationWithDetail
     region: locationData.region || '',
     country: locationData.country || '',
     full_name: locationData.full_name || '',
-    // Remove created_at as it's not part of LocationWithDetails
+    // Updated_at is now correctly included in the LocationWithDetails type
     updated_at: locationData.updated_at,
     formatted_location: formatLocation({
       city: locationData.city || '',
