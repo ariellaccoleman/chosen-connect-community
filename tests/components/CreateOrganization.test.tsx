@@ -71,7 +71,7 @@ describe('CreateOrganization Component', () => {
     expect(screen.getByLabelText(/Organization Name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Website URL/i)).toBeInTheDocument();
-    expect(screen.getByText('Create Organization')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Create Organization/i })).toBeInTheDocument();
   });
 
   test('handles form submission correctly', async () => {
@@ -94,7 +94,7 @@ describe('CreateOrganization Component', () => {
     });
     
     // Submit the form
-    fireEvent.click(screen.getByText('Create Organization'));
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
     // Verify mutation was called with correct data
     await waitFor(() => {
@@ -118,7 +118,7 @@ describe('CreateOrganization Component', () => {
     render(<CreateOrganization />, { wrapper: Wrapper });
     
     // Submit form without required fields
-    fireEvent.click(screen.getByText('Create Organization'));
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
     // Check for validation messages
     await waitFor(() => {
@@ -135,7 +135,7 @@ describe('CreateOrganization Component', () => {
     });
     
     // Submit form again
-    fireEvent.click(screen.getByText('Create Organization'));
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
     // Check for URL validation message
     await waitFor(() => {
@@ -159,12 +159,11 @@ describe('CreateOrganization Component', () => {
     
     // Check for loading state
     expect(screen.getByText('Creating...')).toBeInTheDocument();
-    // Use a more specific query to target the submit button
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
 
   test('handles case when user is not authenticated', async () => {
-    // Mock unauthenticated state - create a component but don't submit
+    // Mock unauthenticated state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
       loading: false,
@@ -173,12 +172,15 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Just verify form is rendered without trying to access elements that won't exist
-    expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
+    // Still renders the form in unauthenticated state
+    expect(screen.getByText('Create New Organization')).toBeInTheDocument();
     
-    // Try to submit the form (if it exists)
-    const submitButton = screen.getByRole('button', { name: /Create Organization/i });
-    fireEvent.click(submitButton);
+    // Try to submit the form with valid data
+    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+      target: { value: 'Test Organization' }
+    });
+    
+    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
     
     // Verify mutation was not called due to missing user
     await waitFor(() => {

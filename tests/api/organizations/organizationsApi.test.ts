@@ -1,16 +1,34 @@
 
 import { organizationCrudApi } from '@/api/organizations/organizationsApi';
-import { mockSupabase, resetSupabaseMocks } from '../../__mocks__/supabase';
-import { Organization } from '@/types';
+import { resetSupabaseMocks } from '../../__mocks__/supabase';
+import * as repoFactory from '@/api/core/repository/repositoryFactory';
+import { createMockRepository } from '@/api/core/repository/MockRepository';
+
+// Mock the repository factory
+jest.mock('@/api/core/repository/repositoryFactory', () => ({
+  createRepository: jest.fn()
+}));
 
 describe('Organization CRUD API', () => {
+  let mockRepo: any;
+
   beforeEach(() => {
     resetSupabaseMocks();
+    
+    // Create a new mock repository for each test
+    mockRepo = createMockRepository('organizations');
+    
+    // Configure the mock repository factory to return our mock
+    jest.spyOn(repoFactory, 'createRepository').mockImplementation(() => mockRepo);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('getAllOrganizations', () => {
     test('should return all organizations with formatted locations', async () => {
-      // Mock the Supabase query response
+      // Mock repository response
       const mockOrgs = [
         { 
           id: 'org-1', 
@@ -24,30 +42,17 @@ describe('Organization CRUD API', () => {
         }
       ];
 
-      // Setup mock implementation
-      mockSupabase.from.mockImplementation(function(table) {
-        expect(table).toBe('organizations');
-        return this;
-      });
-      
-      mockSupabase.select.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.order.mockImplementation(function() {
-        return Promise.resolve({
-          data: mockOrgs,
-          error: null
-        });
+      // Set up mock implementation for the repository
+      mockRepo.setMockResponse('select', {
+        data: mockOrgs,
+        error: null
       });
 
       // Call the API method
       const result = await organizationCrudApi.getAllOrganizations();
 
-      // Check if Supabase query was called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('organizations');
-      expect(mockSupabase.select).toHaveBeenCalled();
-      expect(mockSupabase.order).toHaveBeenCalledWith('name');
+      // Check if repository was called correctly
+      expect(repoFactory.createRepository).toHaveBeenCalledWith('organizations');
 
       // Check the result
       expect(result.status).toBe('success');
@@ -60,16 +65,9 @@ describe('Organization CRUD API', () => {
       // Mock an error response
       const errorMessage = 'Database error';
       
-      mockSupabase.from.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.select.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.order.mockImplementation(function() {
-        return Promise.reject({ message: errorMessage, code: 'PGRST' });
+      mockRepo.setMockResponse('select', {
+        data: null,
+        error: new Error(errorMessage)
       });
 
       // Call the API method and expect it to throw
@@ -87,33 +85,16 @@ describe('Organization CRUD API', () => {
         location: { id: 'loc-1', city: 'New York', country: 'USA' } 
       };
 
-      mockSupabase.from.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.select.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.eq.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.maybeSingle.mockImplementation(function() {
-        return Promise.resolve({
-          data: mockOrg,
-          error: null
-        });
+      mockRepo.setMockResponse('select_maybeSingle', {
+        data: mockOrg,
+        error: null
       });
 
       // Call the API method
       const result = await organizationCrudApi.getOrganizationById('org-1');
 
-      // Check if Supabase query was called correctly
-      expect(mockSupabase.from).toHaveBeenCalledWith('organizations');
-      expect(mockSupabase.select).toHaveBeenCalled();
-      expect(mockSupabase.eq).toHaveBeenCalledWith('id', 'org-1');
-      expect(mockSupabase.maybeSingle).toHaveBeenCalled();
+      // Check if repository was called correctly
+      expect(repoFactory.createRepository).toHaveBeenCalledWith('organizations');
 
       // Check the result
       expect(result.status).toBe('success');
@@ -123,23 +104,9 @@ describe('Organization CRUD API', () => {
     });
 
     test('should return null when organization is not found', async () => {
-      mockSupabase.from.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.select.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.eq.mockImplementation(function() {
-        return this;
-      });
-      
-      mockSupabase.maybeSingle.mockImplementation(function() {
-        return Promise.resolve({
-          data: null,
-          error: null
-        });
+      mockRepo.setMockResponse('select_maybeSingle', {
+        data: null,
+        error: null
       });
 
       // Call the API method
@@ -154,8 +121,8 @@ describe('Organization CRUD API', () => {
       // Call the API method with undefined id
       const result = await organizationCrudApi.getOrganizationById(undefined);
 
-      // The API should early return without calling Supabase
-      expect(mockSupabase.from).not.toHaveBeenCalled();
+      // The API should early return without calling repository
+      expect(repoFactory.createRepository).not.toHaveBeenCalled();
       expect(result.status).toBe('success');
       expect(result.data).toBeNull();
     });

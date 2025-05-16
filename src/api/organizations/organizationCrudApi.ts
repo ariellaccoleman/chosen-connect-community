@@ -1,9 +1,9 @@
 
 import { Organization, OrganizationWithLocation } from "@/types";
-import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 import { formatLocationWithDetails } from "@/utils/formatters/locationFormatters";
 import { logger } from "@/utils/logger";
+import { createRepository } from "../core/repository/repositoryFactory";
 
 /**
  * API module for basic organization operations (get, getById)
@@ -15,14 +15,16 @@ export const organizationCrudApi = {
   async getAllOrganizations(): Promise<ApiResponse<OrganizationWithLocation[]>> {
     logger.info("API call: getAllOrganizations");
     
-    return apiClient.query(async (client) => {
-      const { data, error } = await client
-        .from('organizations')
+    try {
+      const repository = createRepository<Organization>('organizations');
+      
+      const { data, error } = await repository
         .select(`
           *,
           location:locations(*)
         `)
-        .order('name');
+        .order('name', { ascending: true })
+        .execute();
       
       if (error) {
         logger.error("Error fetching all organizations:", error);
@@ -42,7 +44,10 @@ export const organizationCrudApi = {
       }) as OrganizationWithLocation[];
       
       return createSuccessResponse(formattedOrganizations);
-    });
+    } catch (error) {
+      logger.error("Error in getAllOrganizations:", error);
+      throw error;
+    }
   },
   
   /**
@@ -56,12 +61,13 @@ export const organizationCrudApi = {
       return createSuccessResponse(null);
     }
     
-    return apiClient.query(async (client) => {
+    try {
+      const repository = createRepository<Organization>('organizations');
+      
       // Log the exact query we're about to make
       logger.info(`Executing query to fetch organization with ID: "${id}"`);
       
-      const { data, error } = await client
-        .from('organizations')
+      const { data, error } = await repository
         .select(`
           *,
           location:locations(*)
@@ -90,6 +96,9 @@ export const organizationCrudApi = {
         logger.warn(`No organization found with ID "${id}"`);
         return createSuccessResponse(null);
       }
-    });
+    } catch (error) {
+      logger.error(`Error in getOrganizationById for ID ${id}:`, error);
+      throw error;
+    }
   }
 };
