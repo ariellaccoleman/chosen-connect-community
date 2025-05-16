@@ -1,0 +1,4 @@
+Add test suites failure detection to the testing framework
+Move remaining entities over to api factory and entity interface
+fix broken tag things
+fix incorrect color of failed row on dark theme test result page
