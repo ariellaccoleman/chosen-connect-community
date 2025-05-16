@@ -1,5 +1,42 @@
+import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 
-import { DataRepository, RepositoryQuery, RepositoryResponse } from './DataRepository';
+/**
+ * Create standardized repository success response
+ */
+function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
+  return {
+    data,
+    error: null,
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false,
+    getErrorMessage: () => '',
+  };
+}
+
+/**
+ * Create standardized repository error response
+ */
+function createErrorResponse<T>(error: any): RepositoryResponse<T> {
+  // Convert standard Error to RepositoryError if needed
+  const repositoryError: RepositoryError = error.code 
+    ? error as RepositoryError 
+    : {
+        code: 'mock_repository_error',
+        message: error.message || 'Unknown error in mock repository',
+        details: error.details || {},
+        original: error
+      };
+  
+  return {
+    data: null,
+    error: repositoryError,
+    status: 'error',
+    isSuccess: () => false,
+    isError: () => true,
+    getErrorMessage: () => repositoryError.message,
+  };
+}
 
 /**
  * Mock implementation of the DataRepository interface for testing
@@ -221,10 +258,10 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
     // Otherwise, process based on operation
     if (this.operation === 'insert') {
-      return {
-        data: { id: `mock-id-${Date.now()}`, ...this.operationData } as unknown as T,
-        error: null
-      };
+      return createSuccessResponse({ 
+        id: `mock-id-${Date.now()}`, 
+        ...this.operationData 
+      } as unknown as T);
     }
 
     if (this.operation === 'update') {
@@ -233,7 +270,12 @@ class MockQuery<T> implements RepositoryQuery<T> {
       const filtered = this.applyFilters(items);
       
       if (filtered.length === 0) {
-        return { data: null, error: new Error('Item not found') };
+        const error = {
+          code: 'not_found',
+          message: 'Item not found',
+          details: { tableName: this.tableName }
+        };
+        return createErrorResponse(error);
       }
 
       // Update the first matching item
@@ -245,7 +287,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
         items[index] = updatedItem;
       }
 
-      return { data: updatedItem as unknown as T, error: null };
+      return createSuccessResponse(updatedItem as unknown as T);
     }
 
     // For select operation
@@ -253,10 +295,15 @@ class MockQuery<T> implements RepositoryQuery<T> {
     const filtered = this.applyFilters(items);
     
     if (filtered.length === 0) {
-      return { data: null, error: new Error('No data found') };
+      const error = {
+        code: 'not_found',
+        message: 'No data found',
+        details: { tableName: this.tableName }
+      };
+      return createErrorResponse(error);
     }
 
-    return { data: filtered[0] as unknown as T, error: null };
+    return createSuccessResponse(filtered[0] as unknown as T);
   }
 
   async maybeSingle(): Promise<RepositoryResponse<T | null>> {
@@ -271,10 +318,10 @@ class MockQuery<T> implements RepositoryQuery<T> {
     const filtered = this.applyFilters(items);
     
     if (filtered.length === 0) {
-      return { data: null, error: null };
+      return createSuccessResponse(null);
     }
 
-    return { data: filtered[0] as unknown as T, error: null };
+    return createSuccessResponse(filtered[0] as unknown as T);
   }
 
   async execute(): Promise<RepositoryResponse<T[]>> {
@@ -303,7 +350,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
       );
       
       this.mockData[this.tableName] = remaining;
-      return { data: [], error: null };
+      return createSuccessResponse([] as unknown as T[]);
     }
     
     if (this.operation === 'update' && this.inConditions.length > 0) {
@@ -324,7 +371,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
         }
       }
       
-      return { data: itemsToUpdate as unknown as T[], error: null };
+      return createSuccessResponse(itemsToUpdate as unknown as T[]);
     }
 
     // For select operation
@@ -339,7 +386,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
     // Apply pagination
     result = this.applyPagination(result);
     
-    return { data: result as unknown as T[], error: null };
+    return createSuccessResponse(result as unknown as T[]);
   }
 
   private applyFilters(items: any[]): any[] {
