@@ -5,6 +5,7 @@
 
 import { ApiResponse } from '@/api/core/types';
 import { createSuccessResponse } from '@/api/core/errorHandler';
+import { MockRepository } from '@/api/core/repository/MockRepository';
 
 /**
  * Creates a chainable mock Supabase client that makes testing easier
@@ -64,9 +65,15 @@ export function createErrorResponse(message: string, code: string = 'ERROR'): { 
 }
 
 /**
- * Tests batch operations with consistent testing API
+ * Creates batch operations for testing with a consistent interface
  */
-export function testCreateBatchOperations<T>(entityName: string, tableName: string, mockClient: any): void {
+export function testCreateBatchOperations<T>(config: { 
+  tableName: string, 
+  clientFn: () => any 
+}) {
+  const { tableName, clientFn } = config;
+  const mockClient = clientFn();
+  
   // Return mock data for testing batch operations
   const mockData = [
     { id: 'batch-1', name: 'Batch Item 1' },
@@ -86,4 +93,91 @@ export function testCreateBatchOperations<T>(entityName: string, tableName: stri
     }
     return mockClient;
   });
+  
+  // Return the operations object
+  return {
+    batchCreate: jest.fn().mockResolvedValue({
+      status: 'success',
+      data: mockData
+    }),
+    batchUpdate: jest.fn().mockResolvedValue({
+      status: 'success',
+      data: true
+    }),
+    batchDelete: jest.fn().mockResolvedValue({
+      status: 'success',
+      data: true
+    })
+  };
+}
+
+/**
+ * Creates mock batch operations using the repository pattern
+ */
+export function createMockBatchOperations<T>(
+  entityName: string,
+  tableName: string,
+  options: {
+    transformResponse?: (item: any) => T;
+    transformRequest?: (item: any) => Record<string, any>;
+    mockData?: any[];
+    errorOn?: string;
+  } = {}
+) {
+  // Create a mock repository
+  const mockRepo = new MockRepository<T>(tableName, options.mockData || []);
+  
+  // Setup error if specified
+  if (options.errorOn) {
+    mockRepo.setMockResponse(options.errorOn, {
+      data: null,
+      error: new Error(`Mock error for ${options.errorOn} operation`)
+    });
+  }
+  
+  // Create the batch operations with the repository
+  return {
+    mockRepo,
+    operations: {
+      batchCreate: jest.fn().mockImplementation(async (items: any[]) => {
+        if (options.errorOn === 'batchCreate') {
+          throw new Error(`Mock error for batchCreate operation`);
+        }
+        
+        const transformedItems = options.transformRequest 
+          ? items.map(options.transformRequest)
+          : items;
+          
+        const result = await mockRepo.insert(transformedItems as any).select().execute();
+        
+        if (result.error) {
+          throw result.error;
+        }
+        
+        const transformedData = options.transformResponse && result.data
+          ? result.data.map(options.transformResponse)
+          : result.data;
+          
+        return createSuccessResponse(transformedData);
+      }),
+      
+      batchUpdate: jest.fn().mockImplementation(async (items: any[]) => {
+        if (options.errorOn === 'batchUpdate') {
+          throw new Error(`Mock error for batchUpdate operation`);
+        }
+        
+        // For simplicity in tests, we'll just return success
+        return createSuccessResponse(true);
+      }),
+      
+      batchDelete: jest.fn().mockImplementation(async (ids: string[]) => {
+        if (options.errorOn === 'batchDelete') {
+          throw new Error(`Mock error for batchDelete operation`);
+        }
+        
+        // For simplicity in tests, we'll just return success
+        return createSuccessResponse(true);
+      })
+    }
+  };
 }

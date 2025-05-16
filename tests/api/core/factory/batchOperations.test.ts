@@ -1,6 +1,7 @@
 
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
 import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
+import { MockRepository } from '@/api/core/repository/MockRepository';
 
 // Setup mock client
 const mockSupabase = createChainableMock();
@@ -15,12 +16,12 @@ describe('Batch Operations', () => {
   });
 
   test('should create batch operations object', () => {
-    // Create operations with the existing API signature
+    // Create operations with the repository pattern
     const operations = createBatchOperations(
       'Test Entity',
-      TABLE_NAME as any, // Type assertion to handle TableNames type
-      { 
-        repository: { from: () => mockSupabase }
+      TABLE_NAME as any,
+      {
+        repository: new MockRepository(TABLE_NAME)
       }
     );
 
@@ -32,7 +33,7 @@ describe('Batch Operations', () => {
   test('should perform batch create operation', async () => {
     const operations = createBatchOperations(
       'Test Entity',
-      TABLE_NAME as any, // Type assertion to handle TableNames type
+      TABLE_NAME as any, 
       { 
         repository: { from: () => mockSupabase }
       }
@@ -64,7 +65,7 @@ describe('Batch Operations', () => {
   test('should perform batch update operation', async () => {
     const operations = createBatchOperations(
       'Test Entity',
-      TABLE_NAME as any, // Type assertion to handle TableNames type
+      TABLE_NAME as any, 
       { 
         repository: { from: () => mockSupabase }
       }
@@ -93,7 +94,7 @@ describe('Batch Operations', () => {
   test('should perform batch delete operation', async () => {
     const operations = createBatchOperations(
       'Test Entity',
-      TABLE_NAME as any, // Type assertion to handle TableNames type
+      TABLE_NAME as any, 
       { 
         repository: { from: () => mockSupabase }
       }
@@ -120,7 +121,7 @@ describe('Batch Operations', () => {
   test('should handle errors in batch operations', async () => {
     const operations = createBatchOperations(
       'Test Entity',
-      TABLE_NAME as any, // Type assertion to handle TableNames type
+      TABLE_NAME as any, 
       { 
         repository: { from: () => mockSupabase }
       }
@@ -141,5 +142,26 @@ describe('Batch Operations', () => {
 
     expect(error).toBeDefined();
     expect(error.message).toBe('Database error');
+  });
+
+  test('should handle repository pattern', async () => {
+    // Create a mock repository
+    const mockRepo = new MockRepository(TABLE_NAME, [
+      { id: 'existing-1', name: 'Existing Item 1' }
+    ]);
+    
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any,
+      { repository: mockRepo }
+    );
+    
+    // Test batch create with repository
+    const newItems = [{ name: 'New Item 1' }];
+    const createResult = await operations.batchCreate(newItems);
+    
+    // Verify repository was used
+    expect(mockRepo.getLastOperation()).toBe('insert');
+    expect(createResult.status).toBe('success');
   });
 });
