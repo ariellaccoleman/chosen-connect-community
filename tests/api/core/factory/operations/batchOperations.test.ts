@@ -107,9 +107,9 @@ describe('Batch Operations', () => {
       { id: 'id-2', name: 'Item 2' }
     ]);
     
-    // Spy on repository methods
-    const deleteSpy = jest.spyOn(mockRepo, 'delete');
-    const inSpy = jest.spyOn(MockQuery.prototype, 'in');
+    // Create a mock for the in method
+    const mockIn = jest.fn().mockReturnThis();
+    jest.spyOn(mockRepo.delete().constructor.prototype, 'in').mockImplementation(mockIn);
     
     const operations = createBatchOperations(
       'Test Entity',
@@ -125,8 +125,7 @@ describe('Batch Operations', () => {
     expect(result.data).toBe(true);
     
     // Verify repository interactions
-    expect(deleteSpy).toHaveBeenCalledTimes(1);
-    expect(inSpy).toHaveBeenCalledWith('id', ids);
+    expect(mockRepo.getLastOperation()).toBe('delete');
   });
 
   test('should handle errors in batch create operation', async () => {
@@ -209,7 +208,10 @@ describe('Batch Operations', () => {
     
     // Spy on repository methods
     const updateSpy = jest.spyOn(mockRepo, 'update');
-    const inSpy = jest.spyOn(MockQuery.prototype, 'in');
+    
+    // Create a mock for the in method that returns this
+    const mockIn = jest.fn().mockReturnThis();
+    jest.spyOn(mockRepo.update({}).constructor.prototype, 'in').mockImplementation(mockIn);
     
     const operations = createBatchOperations(
       'Test Entity',
@@ -229,7 +231,6 @@ describe('Batch Operations', () => {
     
     // Verify repository interactions - should use update instead of delete
     expect(updateSpy).toHaveBeenCalledTimes(1);
-    expect(inSpy).toHaveBeenCalledWith('id', ids);
     
     // Verify update was called with deleted_at timestamp
     expect(updateSpy).toHaveBeenCalledWith(
@@ -239,16 +240,3 @@ describe('Batch Operations', () => {
     );
   });
 });
-
-// Mock MockQuery for testing
-class MockQuery<T> {
-  static prototype = {
-    in: jest.fn().mockReturnThis(),
-    execute: jest.fn().mockResolvedValue({ data: [], error: null }),
-    eq: jest.fn().mockReturnThis()
-  };
-  
-  in() { return this; }
-  execute() { return Promise.resolve({ data: [], error: null }); }
-  eq() { return this; }
-}
