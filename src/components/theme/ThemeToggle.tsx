@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
+// This component is now only used in standalone contexts, not in the navbar
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   

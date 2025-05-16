@@ -1,22 +1,29 @@
 
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, ShieldCheck } from "lucide-react";
+import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useProfiles";
 import UserAvatar from "./UserAvatar";
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
 
 const DesktopNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
+  const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";
 
@@ -51,6 +58,33 @@ const DesktopNav = () => {
                 <span>Edit Profile</span>
               </DropdownMenuItem>
               
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger>
+                  <div className="flex items-center">
+                    {theme === "dark" && <Moon className="mr-2 h-4 w-4" />}
+                    {theme === "light" && <Sun className="mr-2 h-4 w-4" />}
+                    {theme === "system" && <SunMoon className="mr-2 h-4 w-4" />}
+                    <span>Theme</span>
+                  </div>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent>
+                  <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}>
+                    <DropdownMenuRadioItem value="light">
+                      <Sun className="mr-2 h-4 w-4" />
+                      <span>Light</span>
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="dark">
+                      <Moon className="mr-2 h-4 w-4" />
+                      <span>Dark</span>
+                    </DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value="system">
+                      <SunMoon className="mr-2 h-4 w-4" />
+                      <span>System</span>
+                    </DropdownMenuRadioItem>
+                  </DropdownMenuRadioGroup>
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
+              
               {isAdmin && (
                 <>
                   <DropdownMenuSeparator />
@@ -82,6 +116,36 @@ const DesktopNav = () => {
       </div>
       
       <div className="hidden md:flex items-center space-x-4 mr-4">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 rounded-full"
+            >
+              {theme === "dark" && <Moon className="h-4 w-4" />}
+              {theme === "light" && <Sun className="h-4 w-4" />}
+              {theme === "system" && <SunMoon className="h-4 w-4" />}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup value={theme} onValueChange={(value) => setTheme(value as "light" | "dark" | "system")}>
+              <DropdownMenuRadioItem value="light">
+                <Sun className="mr-2 h-4 w-4" />
+                <span>Light</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark">
+                <Moon className="mr-2 h-4 w-4" />
+                <span>Dark</span>
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system">
+                <SunMoon className="mr-2 h-4 w-4" />
+                <span>System</span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        
         <Button 
           variant="outline" 
           className="border-chosen-blue text-chosen-blue hover:bg-chosen-blue hover:text-white dark:border-chosen-blue/80 dark:text-chosen-blue/80 dark:hover:bg-chosen-blue/80 dark:hover:text-white"

@@ -5,7 +5,6 @@ import { useToggle } from "@/hooks/useToggle";
 import NavbarLogo from "./navigation/NavbarLogo";
 import DesktopNav from "./navigation/DesktopNav";
 import MobileNav from "./navigation/MobileNav";
-import { ThemeToggle } from "./theme/ThemeToggle";
 
 const Navbar = () => {
   const [isMenuOpen, toggleMenu, setMenuOpen] = useToggle(false);
@@ -26,9 +25,7 @@ const Navbar = () => {
           
           <DesktopNav />
           
-          <div className="flex items-center space-x-2 ml-2">
-            <ThemeToggle />
-            
+          <div className="flex items-center ml-2">
             <div className="md:hidden">
               <button
                 onClick={toggleMenu}

@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useProfiles";
 import UserAvatar from "./UserAvatar";
+import { useTheme } from "@/contexts/ThemeContext";
+import { Sun, Moon, SunMoon } from "lucide-react";
 
 interface MobileNavProps {
   isOpen: boolean;
@@ -14,8 +16,15 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { data: profile } = useCurrentProfile(user?.id);
+  const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";
+  
+  const themeOptions = [
+    { value: "light", label: "Light", icon: <Sun className="h-4 w-4 mr-2" /> },
+    { value: "dark", label: "Dark", icon: <Moon className="h-4 w-4 mr-2" /> },
+    { value: "system", label: "System", icon: <SunMoon className="h-4 w-4 mr-2" /> }
+  ];
 
   if (!isOpen) return null;
 
@@ -37,6 +46,25 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           >
             Edit Profile
           </Link>
+          
+          <div className="px-3 py-2">
+            <p className="text-gray-700 dark:text-gray-200 font-medium mb-2">Theme</p>
+            <div className="flex space-x-2">
+              {themeOptions.map((option) => (
+                <Button
+                  key={option.value}
+                  variant={theme === option.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setTheme(option.value as "light" | "dark" | "system")}
+                  className="flex items-center"
+                >
+                  {option.icon}
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+          
           {isAdmin && (
             <Link 
               to="/admin" 
@@ -91,6 +119,24 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   return (
     <div className="md:hidden bg-white dark:bg-sidebar shadow-lg">
       <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+        <div className="px-3 py-2">
+          <p className="text-gray-700 dark:text-gray-200 font-medium mb-2">Theme</p>
+          <div className="flex space-x-2">
+            {themeOptions.map((option) => (
+              <Button
+                key={option.value}
+                variant={theme === option.value ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTheme(option.value as "light" | "dark" | "system")}
+                className="flex items-center"
+              >
+                {option.icon}
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        </div>
+        
         <Link 
           to="/" 
           className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
