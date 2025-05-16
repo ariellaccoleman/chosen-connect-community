@@ -24,6 +24,7 @@ interface TestRunRequest {
   git_branch?: string
   test_results?: TestResultRequest[]
   status?: string
+  create_test_run?: boolean
 }
 
 interface TestResultRequest {
@@ -92,8 +93,9 @@ serve(async (req) => {
     
     let testRunId = requestData.test_run_id
     
-    // If no test run ID provided, create a new one with counts initialized to 0
-    if (!testRunId) {
+    // Handle test run creation - this should only happen when explicitly requested
+    if (requestData.create_test_run === true) {
+      // Creating a new test run - this should be called once at the start of testing
       const { data: newRun, error: createError } = await supabase
         .from('test_runs')
         .insert({
@@ -115,6 +117,25 @@ serve(async (req) => {
       
       testRunId = newRun.id
       console.log(`[report-test-results] Created new test run: ${testRunId}`)
+      
+      return new Response(JSON.stringify({ 
+        message: 'Test run created successfully',
+        test_run_id: testRunId 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // For all other operations, test_run_id is required
+    if (!testRunId) {
+      return new Response(JSON.stringify({ 
+        error: 'Bad Request',
+        message: 'test_run_id is required for reporting test results and updates'
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Handle test results if present - just insert them, don't update counts
@@ -136,8 +157,7 @@ serve(async (req) => {
     }
 
     // Only update test run counts when final summary data is provided
-    if (testRunId && 
-        requestData.total_tests !== undefined &&
+    if (requestData.total_tests !== undefined &&
         requestData.passed_tests !== undefined &&
         requestData.failed_tests !== undefined &&
         requestData.skipped_tests !== undefined) {

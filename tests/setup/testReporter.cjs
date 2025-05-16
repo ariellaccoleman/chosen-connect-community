@@ -38,6 +38,7 @@ class TestReporter {
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
           body: JSON.stringify({
+            create_test_run: true,
             status: 'in_progress',
             total_tests: 0,
             passed_tests: 0,
