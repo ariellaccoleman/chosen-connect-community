@@ -1,5 +1,5 @@
 
-import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/organizations";
+import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/useOrganizationAdmins";
 import { Card } from "@/components/ui/card";
 import AdminsHeader from "./AdminsHeader";
 import AdminsCardContent from "./AdminsCardContent";

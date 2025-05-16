@@ -14,7 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 import { Check, ExternalLink, Trash } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { useUpdateAdminRequest } from "@/hooks/organizations"; // Updated import
+import { useUpdateAdminRequest } from "@/hooks/useOrganizationAdmins";
 import { useState } from "react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";

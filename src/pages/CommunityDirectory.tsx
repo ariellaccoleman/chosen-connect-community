@@ -1,13 +1,13 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfiles } from "@/hooks/profiles"; // Updated import
-import { useCommunityProfiles } from "@/hooks/profiles"; // Updated import
+import { useProfiles } from "@/hooks/useProfiles";
+import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
 import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTagFilter } from "@/hooks/tags"; // Updated import
+import { useTagFilter } from "@/hooks/useTagFilter";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
 

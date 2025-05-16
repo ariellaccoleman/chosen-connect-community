@@ -1,24 +1,16 @@
 
 /**
- * Tag type constants
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update your imports to use the modular structure:
+ * import { ... } from '@/utils/tags';
  */
-export const TAG_TYPES = {
-  PERSON: "person",
-  ORGANIZATION: "organization",
-  EVENT: "event",
-  GENERAL: "general",
-} as const;
 
-/**
- * Tag type utility functions and constants
- */
-export const TAG_TYPE_LABELS = {
-  [TAG_TYPES.PERSON]: "Person",
-  [TAG_TYPES.ORGANIZATION]: "Organization",
-  [TAG_TYPES.EVENT]: "Event",
-  [TAG_TYPES.GENERAL]: "General",
-};
+export * from './tags';
 
-export const getTagTypeLabel = (type: string): string => {
-  return TAG_TYPE_LABELS[type as keyof typeof TAG_TYPE_LABELS] || "Unknown";
-};
+// Add deprecation console warning in development only
+if (process.env.NODE_ENV === 'development') {
+  console.warn(
+    'Deprecated import: Please update your imports to use modules from @/utils/tags directly ' +
+    'instead of @/utils/tagUtils which will be removed in a future release.'
+  );
+}

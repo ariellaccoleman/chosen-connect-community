@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Edit, Briefcase, Eye, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { useIsOrganizationAdmin } from "@/hooks/organizations"; // Updated import
+import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
 import { useAuth } from "@/hooks/useAuth";
 
 interface OrganizationCardProps {

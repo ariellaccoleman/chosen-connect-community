@@ -4,7 +4,7 @@ import {
   usePendingOrganizationAdmins,
   useUpdateAdminRequest, 
   useDeleteAdminRequest
-} from "@/hooks/organizations"; // Updated import
+} from "@/hooks/useOrganizationAdmins";
 import { OrganizationAdminWithDetails } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";

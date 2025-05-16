@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/use-toast";
-import { useIsOrganizationAdmin } from "@/hooks/organizations"; // Updated import
-import { useOrganization } from "@/hooks/organizations"; // Updated import
+import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
+import { useOrganization } from "@/hooks/useOrganizationQueries";
 import { logger } from "@/utils/logger";
 import Layout from "@/components/layout/Layout";
 import {
