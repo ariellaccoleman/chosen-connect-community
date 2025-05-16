@@ -33,11 +33,16 @@ export const organizationCrudApi = {
       
       logger.info(`Successfully fetched ${data?.length || 0} organizations`);
       
+      // Handle the nested location data that comes from the join
       const formattedOrganizations = (data || []).map(org => {
-        if (org.location) {
+        // TypeScript doesn't know about the 'location' field as it's not in the Organization type
+        // We need to use type assertion to access it
+        const orgWithLocation = org as any;
+        
+        if (orgWithLocation.location) {
           return {
             ...org,
-            location: formatLocationWithDetails(org.location)
+            location: formatLocationWithDetails(orgWithLocation.location)
           };
         }
         return org;
@@ -86,9 +91,12 @@ export const organizationCrudApi = {
           id: data.id 
         });
         
+        // Type assertion to handle the nested location data
+        const orgWithLocation = data as any;
+        
         const formattedOrg = {
           ...data,
-          location: data.location ? formatLocationWithDetails(data.location) : undefined
+          location: orgWithLocation.location ? formatLocationWithDetails(orgWithLocation.location) : undefined
         } as OrganizationWithLocation;
         
         return createSuccessResponse(formattedOrg);
