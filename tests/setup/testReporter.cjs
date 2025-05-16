@@ -123,6 +123,7 @@ class TestReporter {
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
           body: JSON.stringify({
+            test_run_id: this.testRunId,
             test_results: [{
               test_run_id: this.testRunId,
               test_suite: testSuiteName,
