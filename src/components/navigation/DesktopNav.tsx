@@ -24,10 +24,10 @@ const DesktopNav = () => {
     return (
       <>
         <div className="hidden md:flex items-center space-x-8">
-          <Link to="/organizations" className="text-gray-700 hover:text-chosen-blue font-medium">Organizations</Link>
-          <Link to="/events" className="text-gray-700 hover:text-chosen-blue font-medium">Events</Link>
-          <Link to="/directory" className="text-gray-700 hover:text-chosen-blue font-medium">Community Directory</Link>
-          <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
+          <Link to="/organizations" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Organizations</Link>
+          <Link to="/events" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Events</Link>
+          <Link to="/directory" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Directory</Link>
+          <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
         </div>
         
         <div className="hidden md:flex items-center mr-4">
@@ -41,7 +41,7 @@ const DesktopNav = () => {
               <div className="flex items-center justify-start p-2">
                 <div className="flex flex-col space-y-0.5">
                   <p className="text-sm font-medium">{profile?.full_name || user.email}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                 </div>
               </div>
               <DropdownMenuSeparator />
@@ -76,21 +76,21 @@ const DesktopNav = () => {
   return (
     <>
       <div className="hidden md:flex items-center space-x-8">
-        <Link to="/" className="text-gray-700 hover:text-chosen-blue font-medium">Home</Link>
-        <Link to="/about" className="text-gray-700 hover:text-chosen-blue font-medium">About</Link>
-        <Link to="/community-guide" className="text-gray-700 hover:text-chosen-blue font-medium">Community Guide</Link>
+        <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Home</Link>
+        <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">About</Link>
+        <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
       </div>
       
       <div className="hidden md:flex items-center space-x-4 mr-4">
         <Button 
           variant="outline" 
-          className="border-chosen-blue text-chosen-blue hover:bg-chosen-blue hover:text-white"
+          className="border-chosen-blue text-chosen-blue hover:bg-chosen-blue hover:text-white dark:border-chosen-blue/80 dark:text-chosen-blue/80 dark:hover:bg-chosen-blue/80 dark:hover:text-white"
           onClick={() => navigate("/auth")}
         >
           Log In
         </Button>
         <Button 
-          className="bg-chosen-blue text-white hover:bg-chosen-navy"
+          className="bg-chosen-blue text-white hover:bg-chosen-navy dark:bg-chosen-blue/90 dark:hover:bg-chosen-navy/90"
           onClick={() => navigate("/auth?tab=signup")}
         >
           Sign Up

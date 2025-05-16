@@ -93,24 +93,24 @@
   }
 
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans transition-colors duration-200;
   }
 }
 
 @layer components {
   .hero-gradient {
-    @apply bg-gradient-to-br from-chosen-blue via-chosen-navy to-chosen-navy;
+    @apply bg-gradient-to-br from-chosen-blue via-chosen-navy to-chosen-navy dark:from-chosen-blue/80 dark:via-chosen-navy/80 dark:to-chosen-navy/90;
   }
   
   .gold-gradient {
-    @apply bg-gradient-to-r from-chosen-gold to-amber-300;
+    @apply bg-gradient-to-r from-chosen-gold to-amber-300 dark:from-chosen-gold/90 dark:to-amber-300/90;
   }
   
   .btn-primary {
-    @apply bg-chosen-blue text-chosen-white hover:bg-chosen-navy transition-colors duration-300 rounded-md px-6 py-2 font-medium;
+    @apply bg-chosen-blue text-chosen-white hover:bg-chosen-navy dark:bg-chosen-blue/90 dark:hover:bg-chosen-navy/90 transition-colors duration-300 rounded-md px-6 py-2 font-medium;
   }
   
   .btn-secondary {
-    @apply bg-chosen-gold text-chosen-navy hover:bg-amber-400 transition-colors duration-300 rounded-md px-6 py-2 font-medium;
+    @apply bg-chosen-gold text-chosen-navy hover:bg-amber-400 dark:bg-chosen-gold/90 dark:hover:bg-amber-400/90 transition-colors duration-300 rounded-md px-6 py-2 font-medium;
   }
 }

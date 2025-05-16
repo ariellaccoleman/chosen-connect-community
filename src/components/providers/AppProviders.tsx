@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { LayoutProvider } from "@/contexts/LayoutContext";
 import { DebugProvider } from "@/contexts/DebugContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -37,19 +38,21 @@ const queryClient = new QueryClient({
 const AppProviders = ({ children }: AppProvidersProps) => {
   return (
     <DebugProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AuthProvider>
-            <LayoutProvider>
-              <TooltipProvider>
-                {children}
-                <Toaster />
-                <Sonner />
-              </TooltipProvider>
-            </LayoutProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            <AuthProvider>
+              <LayoutProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                  <Sonner />
+                </TooltipProvider>
+              </LayoutProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </QueryClientProvider>
+      </ThemeProvider>
     </DebugProvider>
   );
 };

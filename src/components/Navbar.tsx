@@ -5,6 +5,7 @@ import { useToggle } from "@/hooks/useToggle";
 import NavbarLogo from "./navigation/NavbarLogo";
 import DesktopNav from "./navigation/DesktopNav";
 import MobileNav from "./navigation/MobileNav";
+import { ThemeToggle } from "./theme/ThemeToggle";
 
 const Navbar = () => {
   const [isMenuOpen, toggleMenu, setMenuOpen] = useToggle(false);
@@ -16,7 +17,7 @@ const Navbar = () => {
   }
 
   return (
-    <nav className="bg-white shadow-sm fixed w-full z-50">
+    <nav className="bg-white dark:bg-sidebar shadow-sm fixed w-full z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -25,15 +26,19 @@ const Navbar = () => {
           
           <DesktopNav />
           
-          <div className="md:hidden flex items-center">
-            <button
-              onClick={toggleMenu}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 hover:text-chosen-blue focus:outline-none"
-              aria-expanded={isMenuOpen}
-            >
-              <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
-              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+          <div className="flex items-center space-x-2 ml-2">
+            <ThemeToggle />
+            
+            <div className="md:hidden">
+              <button
+                onClick={toggleMenu}
+                className="inline-flex items-center justify-center p-2 rounded-md text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue focus:outline-none"
+                aria-expanded={isMenuOpen}
+              >
+                <span className="sr-only">{isMenuOpen ? 'Close menu' : 'Open menu'}</span>
+                {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              </button>
+            </div>
           </div>
         </div>
       </div>
