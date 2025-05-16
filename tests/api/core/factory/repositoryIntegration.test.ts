@@ -131,13 +131,17 @@ describe('API Factory with Repository Integration', () => {
     }));
     
     // Create factory with transformResponse
-    createApiFactory({
+    const factory = createApiFactory({
       tableName: 'test_table',
       transformResponse
     });
     
-    // Verify repository was created
-    expect(createRepository).toHaveBeenCalledWith('test_table');
+    // Call method to test transform
+    const result = await factory.getById('test-id');
+    
+    // Verify transform was applied to the result
+    expect(result.status).toBe('success');
+    expect(transformResponse).toHaveBeenCalled();
   });
   
   test('should use custom defaultSelect option with repository', async () => {
@@ -165,5 +169,32 @@ describe('API Factory with Repository Integration', () => {
     
     // Verify custom select was used
     expect(mockRepository.select).toHaveBeenCalledWith('id, name, custom_field');
+  });
+  
+  test('should support repository type option', () => {
+    // Create factory specifying mock repository type
+    const factory = createApiFactory({
+      tableName: 'test_table',
+      repository: { type: 'mock' }
+    });
+    
+    // Verify createRepository was called with the correct type
+    expect(createRepository).toHaveBeenCalledWith('test_table', 'mock', undefined);
+    
+    // Clear mocks for next test
+    jest.clearAllMocks();
+    
+    // Create factory with initial data for mock repository
+    const initialData = [{ id: '1', name: 'Test' }];
+    createApiFactory({
+      tableName: 'test_table',
+      repository: { 
+        type: 'mock',
+        initialData
+      }
+    });
+    
+    // Verify createRepository was called with initial data
+    expect(createRepository).toHaveBeenCalledWith('test_table', 'mock', initialData);
   });
 });

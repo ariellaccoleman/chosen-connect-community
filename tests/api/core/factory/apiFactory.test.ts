@@ -1,24 +1,17 @@
 
 import { createApiFactory } from '@/api/core/factory/apiFactory';
-import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
-
-// Setup mock client
-const mockSupabase = createChainableMock();
-
-// Test table name
-const TABLE_NAME = 'test_table';
+import { DataRepository } from '@/api/core/repository/DataRepository';
+import { MockRepository } from '@/api/core/repository/MockRepository';
 
 describe('API Factory', () => {
   beforeEach(() => {
-    mockSupabase.reset();
     jest.clearAllMocks();
   });
 
   test('should create a factory with base operations', () => {
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      // Using a mock function to enable testing the provided client
-      clientFn: () => mockSupabase
+      tableName: 'test_table',
+      repository: { type: 'mock' }
     });
 
     // Check basic structure
@@ -32,8 +25,8 @@ describe('API Factory', () => {
 
   test('should create a factory with extended query operations', () => {
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
+      tableName: 'test_table',
+      repository: { type: 'mock' },
       useQueryOperations: true
     });
 
@@ -48,8 +41,8 @@ describe('API Factory', () => {
 
   test('should create a factory with extended mutation operations', () => {
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
+      tableName: 'test_table',
+      repository: { type: 'mock' },
       useMutationOperations: true
     });
 
@@ -65,8 +58,8 @@ describe('API Factory', () => {
 
   test('should create a factory with extended batch operations', () => {
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
+      tableName: 'test_table',
+      repository: { type: 'mock' },
       useBatchOperations: true
     });
 
@@ -78,8 +71,8 @@ describe('API Factory', () => {
 
   test('should enable all operations when requested', () => {
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
+      tableName: 'test_table',
+      repository: { type: 'mock' },
       useQueryOperations: true,
       useMutationOperations: true,
       useBatchOperations: true
@@ -104,20 +97,23 @@ describe('API Factory', () => {
       formatted: true
     }));
 
+    // Create a MockRepository instance with a test entity
+    const testEntity = { id: 'test-1', name: 'Test Item' };
+    const mockRepository = new MockRepository<any>('test_table', [testEntity]);
+    
+    // Create the factory with the repository and transform
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
-      clientFn: () => mockSupabase,
+      tableName: 'test_table',
+      repository: mockRepository,
       transformResponse: mockTransformResponse
     });
 
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
-
     // Call getAll
-    await factory.getAll();
+    const result = await factory.getAll();
 
     // Verify transformer was called
     expect(mockTransformResponse).toHaveBeenCalled();
+    expect(result.data[0].formatted).toBe(true);
   });
 
   test('should pass defaultSelect to repository', async () => {
@@ -133,10 +129,10 @@ describe('API Factory', () => {
       execute: jest.fn().mockResolvedValue({ data: [], error: null }),
       single: jest.fn().mockResolvedValue({ data: {}, error: null }),
       maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
-    };
+    } as unknown as DataRepository<any>;
     
     const factory = createApiFactory<any>({
-      tableName: TABLE_NAME,
+      tableName: 'test_table',
       repository: mockRepository,
       defaultSelect: customSelect
     });

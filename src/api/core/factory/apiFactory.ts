@@ -5,7 +5,22 @@ import { createBatchOperations } from "./operations/batchOperations";
 import { ApiFactoryOptions, TableNames } from "./types";
 import { createQueryOperations } from "./operations/queryOperations";
 import { createMutationOperations } from "./operations/mutationOperations";
-import { createRepository, DataRepository } from "../repository/repositoryFactory";
+import { createRepository, DataRepository, RepositoryType } from "../repository/repositoryFactory";
+
+/**
+ * Repository configuration
+ */
+export interface RepositoryConfig<T = any> {
+  /**
+   * Repository type (supabase, mock)
+   */
+  type: RepositoryType;
+  
+  /**
+   * Initial data for mock repository
+   */
+  initialData?: T[];
+}
 
 /**
  * Enhanced API Factory options with repository support
@@ -27,9 +42,9 @@ export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'reposit
   useBatchOperations?: boolean;
   
   /**
-   * Repository instance or factory function
+   * Repository instance, factory function or configuration
    */
-  repository?: DataRepository<T> | (() => DataRepository<T>);
+  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
 }
 
 /**
@@ -55,7 +70,7 @@ export function createApiFactory<
 }: {
   tableName: Table;
   entityName?: string;
-  repository?: DataRepository<T> | (() => DataRepository<T>);
+  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
   useQueryOperations?: boolean;
   useMutationOperations?: boolean;
   useBatchOperations?: boolean;
@@ -65,10 +80,28 @@ export function createApiFactory<
     throw new Error('tableName is required to create API operations');
   }
   
-  // Use provided repository or create one
-  const dataRepository = typeof repository === 'function'
-    ? repository()
-    : repository || createRepository<T>(tableName as string);
+  // Get repository based on provided options
+  let dataRepository: DataRepository<T>;
+  
+  if (repository) {
+    if (typeof repository === 'function') {
+      dataRepository = repository();
+    } else if ('select' in repository && typeof repository.select === 'function') {
+      // It's a repository instance
+      dataRepository = repository as DataRepository<T>;
+    } else {
+      // It's a repository config
+      const repoConfig = repository as RepositoryConfig<T>;
+      dataRepository = createRepository<T>(
+        tableName as string, 
+        repoConfig.type,
+        repoConfig.initialData
+      );
+    }
+  } else {
+    // Create default repository
+    dataRepository = createRepository<T>(tableName as string);
+  }
   
   // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
