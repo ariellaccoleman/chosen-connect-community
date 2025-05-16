@@ -1,4 +1,3 @@
-
 /**
  * Utilities for mocking Supabase client in tests
  */
@@ -135,7 +134,6 @@ export function createMockBatchOperations<T>(
     });
   }
   
-  // Create the batch operations with the repository
   return {
     mockRepo,
     operations: {
@@ -166,7 +164,28 @@ export function createMockBatchOperations<T>(
           throw new Error(`Mock error for batchUpdate operation`);
         }
         
-        // For simplicity in tests, we'll just return success
+        // Process each update independently in repository
+        for (const item of items) {
+          const { id, ...updateData } = item;
+          const transformedData = options.transformRequest 
+            ? options.transformRequest(updateData)
+            : updateData;
+          
+          const update = {
+            id,
+            ...transformedData
+          };
+          
+          const result = await mockRepo
+            .update(update)
+            .eq('id', id)
+            .execute();
+            
+          if (result.error) {
+            throw result.error;
+          }
+        }
+        
         return createSuccessResponse(true);
       }),
       
@@ -175,7 +194,15 @@ export function createMockBatchOperations<T>(
           throw new Error(`Mock error for batchDelete operation`);
         }
         
-        // For simplicity in tests, we'll just return success
+        const result = await mockRepo
+          .delete()
+          .in('id', ids)
+          .execute();
+          
+        if (result.error) {
+          throw result.error;
+        }
+        
         return createSuccessResponse(true);
       })
     }

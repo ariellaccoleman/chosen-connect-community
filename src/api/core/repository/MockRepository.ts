@@ -59,11 +59,18 @@ export class MockRepository<T = any> implements DataRepository<T> {
     
     // Auto-update mock data if no specific mock response is set
     if (!this.mockResponses[this.lastOperation]) {
-      const newItem = { 
-        id: `mock-id-${Date.now()}`,
-        ...data
-      };
-      this.mockData[this.tableName] = [...(this.mockData[this.tableName] || []), newItem];
+      // Handle both single items and arrays
+      const dataArray = Array.isArray(data) ? data : [data];
+      
+      const newItems = dataArray.map(item => ({
+        id: `mock-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        ...item
+      }));
+      
+      this.mockData[this.tableName] = [
+        ...(this.mockData[this.tableName] || []),
+        ...newItems
+      ];
     }
     
     return new MockQuery<T>(

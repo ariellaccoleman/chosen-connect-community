@@ -54,13 +54,12 @@ export function createBatchOperations<
     try {
       logger.debug(`Batch creating ${entityName}:`, items);
       
-      const transformedItems = items.map(transformRequest);
+      // Transform each item individually
+      const transformedItems = items.map(item => transformRequest(item));
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const insertQuery = repository.insert(transformedItems as any[]);
-        // Fixed: Make sure to build the query correctly
-        const { data, error } = await insertQuery
+        const { data, error } = await repository.insert(transformedItems as any[])
           .select(defaultSelect)
           .execute();
         
@@ -100,16 +99,34 @@ export function createBatchOperations<
     try {
       logger.debug(`Batch updating ${entityName}:`, items);
       
-      // Use api client for this regardless of repository
-      return await apiClient.query(async (client) => {
-        const updates = items.map(item => {
-          const { id, ...updateData } = item;
-          return {
-            [idField]: id, // Use idField directly
-            ...transformRequest(updateData as any)
-          };
-        });
+      // Prepare updates by transforming each item and separating ID
+      const updates = items.map(item => {
+        const { id, ...updateData } = item;
+        return {
+          [idField]: id,
+          ...transformRequest(updateData as any)
+        };
+      });
+      
+      // Use repository if provided
+      if (repository) {
+        // Since we can't update multiple items at once with repository,
+        // we'll do it one by one and collect results
+        for (const update of updates) {
+          const id = update[idField];
+          const { error } = await repository
+            .update(update)
+            .eq(idField, id)
+            .execute();
+          
+          if (error) throw error;
+        }
         
+        return createSuccessResponse(true);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         const { error } = await client
           .from(tableName)
           .upsert(updates as any[]);
@@ -133,10 +150,35 @@ export function createBatchOperations<
     try {
       logger.debug(`Batch deleting ${entityName} with IDs:`, ids);
       
+      // Use repository if provided
+      if (repository) {
+        if (softDelete) {
+          // For soft delete, update all records with deleted_at
+          const updateData = { deleted_at: new Date().toISOString() } as any;
+          
+          const { error } = await repository
+            .update(updateData)
+            .in(idField, ids as any[])
+            .execute();
+          
+          if (error) throw error;
+        } else {
+          // Hard delete
+          const { error } = await repository
+            .delete()
+            .in(idField, ids as any[])
+            .execute();
+          
+          if (error) throw error;
+        }
+        
+        return createSuccessResponse(true);
+      }
+      
+      // Legacy implementation using apiClient
       if (softDelete) {
         // For soft delete, update all records with deleted_at
         return await apiClient.query(async (client) => {
-          // Use type assertion to resolve TypeScript error
           const updateData = { deleted_at: new Date().toISOString() } as any;
           
           const { error } = await client

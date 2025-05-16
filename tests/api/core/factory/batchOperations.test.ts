@@ -1,6 +1,5 @@
 
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
-import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
 import { MockRepository } from '@/api/core/repository/MockRepository';
 
 // Test table name
@@ -61,6 +60,9 @@ describe('Batch Operations', () => {
     ];
     const mockRepo = new MockRepository(TABLE_NAME, initialData);
     
+    // Spy on repository update method
+    const updateSpy = jest.spyOn(mockRepo, 'update');
+    
     const operations = createBatchOperations(
       'Test Entity',
       TABLE_NAME as any, 
@@ -80,6 +82,9 @@ describe('Batch Operations', () => {
     // Check result
     expect(result.status).toBe('success');
     expect(result.data).toBe(true);
+    
+    // Verify repository update was called for each item
+    expect(updateSpy).toHaveBeenCalledTimes(2);
   });
 
   test('should perform batch delete operation', async () => {
@@ -89,6 +94,9 @@ describe('Batch Operations', () => {
       { id: 'id-2', name: 'Item 2' }
     ];
     const mockRepo = new MockRepository(TABLE_NAME, initialData);
+    
+    // Spy on repository delete method
+    const deleteSpy = jest.spyOn(mockRepo, 'delete');
     
     const operations = createBatchOperations(
       'Test Entity',
@@ -106,6 +114,9 @@ describe('Batch Operations', () => {
     // Check result
     expect(result.status).toBe('success');
     expect(result.data).toBe(true);
+    
+    // Verify repository delete was called
+    expect(deleteSpy).toHaveBeenCalledTimes(1);
   });
 
   test('should handle errors in batch operations', async () => {
@@ -131,27 +142,6 @@ describe('Batch Operations', () => {
     expect(result.status).toBe('error');
     expect(result.error).toBeDefined();
     expect(result.error?.message).toBe('Database error');
-  });
-
-  test('should handle repository pattern', async () => {
-    // Create a mock repository
-    const mockRepo = new MockRepository(TABLE_NAME, [
-      { id: 'existing-1', name: 'Existing Item 1' }
-    ]);
-    
-    const operations = createBatchOperations(
-      'Test Entity',
-      TABLE_NAME as any,
-      { repository: mockRepo }
-    );
-    
-    // Test batch create with repository
-    const newItems = [{ name: 'New Item 1' }];
-    const createResult = await operations.batchCreate(newItems);
-    
-    // Verify repository was used
-    expect(mockRepo.getLastOperation()).toBe('insert');
-    expect(createResult.status).toBe('success');
   });
 
   test('should apply transformations for batch operations', async () => {
@@ -188,9 +178,15 @@ describe('Batch Operations', () => {
     // Call batchCreate
     await operations.batchCreate(items);
 
-    // Verify transformations were applied
+    // Verify transformations were applied to each item
     expect(transformRequest).toHaveBeenCalledTimes(2);
     expect(transformRequest).toHaveBeenCalledWith(items[0]);
     expect(transformRequest).toHaveBeenCalledWith(items[1]);
+    
+    // Verify the transformed data was passed to the repository
+    expect(mockRepo.getLastData()).toEqual([
+      { name: 'Item 1', transformed: true },
+      { name: 'Item 2', transformed: true }
+    ]);
   });
 });
