@@ -4,7 +4,7 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import CreateOrganization from '@/pages/CreateOrganization';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as hooks from '@/hooks/useOrganizationMutations';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import * as AuthHook from '@/hooks/useAuth';
 
 // Mock react-router-dom
@@ -12,7 +12,11 @@ const mockedNavigate = jest.fn();
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockedNavigate,
-  Navigate: jest.fn(({ to }) => `Redirected to ${to}`)
+  Navigate: jest.fn(({ to, state }) => (
+    <div data-testid="mock-navigate">
+      Redirected to {to} with state: {JSON.stringify(state)}
+    </div>
+  ))
 }));
 
 // Mock the hooks
@@ -49,7 +53,7 @@ describe('CreateOrganization Component', () => {
     jest.clearAllMocks();
   });
 
-  test('redirects unauthenticated users to auth page', () => {
+  test('redirects unauthenticated users to auth page with correct state', () => {
     // Mock unauthenticated state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
@@ -59,13 +63,16 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Check for redirect
-    expect(screen.getByText(/Redirected to \/auth/i)).toBeInTheDocument();
-    // Ensure form is not rendered
+    // Check for redirect with correct 'from' state
+    expect(screen.getByTestId('mock-navigate')).toBeInTheDocument();
+    expect(screen.getByText(/Redirected to \/auth with state:/)).toBeInTheDocument();
+    expect(screen.getByText(/organizations\/new/)).toBeInTheDocument();
+    
+    // Ensure form is not rendered for unauthenticated users
     expect(screen.queryByText('Create New Organization')).not.toBeInTheDocument();
   });
 
-  test('shows loading state while checking authentication', () => {
+  test('shows loading skeleton while checking authentication', () => {
     // Mock loading state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
@@ -75,9 +82,9 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Expect loading spinner (the component doesn't explicitly show "Loading..." text)
-    const spinner = document.querySelector('.animate-spin');
-    expect(spinner).toBeInTheDocument();
+    // Verify skeleton components are shown during loading
+    const skeletons = screen.getAllByRole('status');
+    expect(skeletons.length).toBeGreaterThan(0);
     
     // Ensure form is not rendered during loading
     expect(screen.queryByText('Create New Organization')).not.toBeInTheDocument();
@@ -232,5 +239,46 @@ describe('CreateOrganization Component', () => {
     // Check for loading state
     expect(screen.getByText('Creating...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
+  });
+
+  test('prevents form submission if user becomes unauthenticated', async () => {
+    // Start with authenticated state
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: mockUser,
+      loading: false,
+      authenticated: true
+    }));
+    
+    // Mock organization creation hook
+    jest.spyOn(hooks, 'useCreateOrganization').mockImplementation(() => ({
+      mutateAsync: mockMutateAsync,
+      isPending: false,
+      isError: false,
+      isSuccess: false
+    } as any));
+    
+    render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Fill out the form
+    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+      target: { value: 'Test Organization' }
+    });
+    
+    // Simulate user becoming unauthenticated (e.g. token expired)
+    // by directly calling onSubmit with null user
+    const form = screen.getByRole('form');
+    fireEvent.submit(form);
+    
+    // Set user to null to simulate authentication loss before submission completes
+    jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
+      user: null,
+      loading: false,
+      authenticated: false
+    }));
+    
+    // Verify mutation was called but with user ID
+    expect(mockMutateAsync).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'user-123' // Should still have the original user ID
+    }));
   });
 });

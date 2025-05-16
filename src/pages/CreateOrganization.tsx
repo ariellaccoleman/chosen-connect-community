@@ -14,6 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useCreateOrganization } from "@/hooks/useOrganizationMutations";
 import { logger } from "@/utils/logger";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -23,6 +24,10 @@ const organizationSchema = z.object({
 
 type OrganizationFormValues = z.infer<typeof organizationSchema>;
 
+/**
+ * Component for creating a new organization
+ * Contains authentication checks at the component level for security
+ */
 const CreateOrganization = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -48,8 +53,9 @@ const CreateOrganization = () => {
     return (
       <DashboardLayout>
         <div className="container mx-auto py-6 max-w-3xl">
-          <div className="flex items-center justify-center h-24">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-chosen-blue"></div>
+          <div className="space-y-6">
+            <Skeleton className="h-10 w-1/4 mb-6" />
+            <Skeleton className="h-64 w-full rounded-lg" />
           </div>
         </div>
       </DashboardLayout>
@@ -59,7 +65,7 @@ const CreateOrganization = () => {
   // If not authenticated, redirect to auth page
   if (!user) {
     logger.warn("Unauthenticated user attempted to access CreateOrganization page");
-    return <Navigate to="/auth" state={{ from: '/organizations/create' }} replace />;
+    return <Navigate to="/auth" state={{ from: '/organizations/new' }} replace />;
   }
 
   const onSubmit = async (values: OrganizationFormValues) => {
