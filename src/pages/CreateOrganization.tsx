@@ -12,7 +12,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useCreateOrganization } from "@/hooks/useOrganizationMutations";
+import { useCreateOrganization } from "@/hooks/organizations";
 import { logger } from "@/utils/logger";
 import { Skeleton } from "@/components/ui/skeleton";
 

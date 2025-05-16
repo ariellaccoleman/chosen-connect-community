@@ -1,66 +1,48 @@
 
-import { Profile, ProfileWithDetails } from "@/types";
-import { formatLocationWithDetails } from "./locationFormatters";
+import { ProfileWithDetails, Location } from "@/types";
+import { User } from "@supabase/supabase-js";
 
 /**
- * Creates a full name from first and last name
+ * Format a profile with additional details like full name and formatted location
  */
-export const formatFullName = (firstName: string | null | undefined, lastName: string | null | undefined): string => {
-  const first = firstName || '';
-  const last = lastName || '';
-  return [first, last].filter(Boolean).join(' ') || 'Anonymous User';
-};
-
-/**
- * Formats profile data with additional computed fields
- */
-export const formatProfileWithDetails = (profileData: any): ProfileWithDetails => {
-  if (!profileData) {
-    // Return a minimal valid profile if no data
-    return {
-      id: '',
-      email: '',
-      first_name: '',
-      last_name: '',
-      avatar_url: null,
-      headline: null,
-      bio: null,
-      linkedin_url: null,
-      twitter_url: null,
-      website_url: null,
-      location_id: null,
-      full_name: 'Unknown User'
-    };
+export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
+  if (!data) return null;
+  
+  const profile = data as ProfileWithDetails;
+  
+  // Format full name
+  profile.full_name = [profile.first_name, profile.last_name]
+    .filter(Boolean)
+    .join(' ');
+  
+  // Format location if available
+  if (profile.location) {
+    const location = profile.location as Location;
+    if (!location.formatted_location) {
+      location.formatted_location = [location.city, location.region, location.country]
+        .filter(Boolean)
+        .join(', ');
+    }
   }
-
-  // Extract base profile data
-  const profile: ProfileWithDetails = {
-    id: profileData.id,
-    email: profileData.email,
-    first_name: profileData.first_name || '',
-    last_name: profileData.last_name || '',
-    avatar_url: profileData.avatar_url,
-    headline: profileData.headline,
-    bio: profileData.bio,
-    linkedin_url: profileData.linkedin_url,
-    twitter_url: profileData.twitter_url,
-    website_url: profileData.website_url,
-    // Include role if it exists
-    ...(profileData.role && { role: profileData.role }),
-    location_id: profileData.location_id,
-    company: profileData.company,
-    created_at: profileData.created_at,
-    updated_at: profileData.updated_at,
-    is_approved: profileData.is_approved,
-    membership_tier: profileData.membership_tier,
-    // Add computed full name
-    full_name: formatFullName(profileData.first_name, profileData.last_name)
-  };
-
-  // Add formatted location if it exists
-  if (profileData.location) {
-    profile.location = formatLocationWithDetails(profileData.location);
-  }
-
+  
   return profile;
-};
+}
+
+/**
+ * Enhance a profile with user authentication data
+ */
+export function enhanceProfileWithAuthData(
+  profile: ProfileWithDetails | null, 
+  authUser?: User | null
+): ProfileWithDetails | null {
+  if (!profile) return null;
+  
+  const enhancedProfile = { ...profile };
+  
+  // Add role from auth user metadata if available
+  if (authUser && authUser.user_metadata?.role) {
+    enhancedProfile.role = authUser.user_metadata.role as "admin" | "member";
+  }
+  
+  return enhancedProfile;
+}

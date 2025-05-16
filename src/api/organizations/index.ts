@@ -2,10 +2,16 @@
 /**
  * Re-export all organization API modules
  */
-export { organizationCrudApi } from "./organizationsApi";
+export { organizationApi } from "./organizationApiFactory";
+export {
+  getAllOrganizations,
+  getOrganizationById,
+  getOrganizationsByIds,
+  createOrganization,
+  updateOrganization,
+  deleteOrganization
+} from "./organizationApiFactory";
 export { organizationRelationshipsApi } from "./relationshipsApi";
 
-// Direct exports for more granular imports if needed
-export { organizationCrudApi as orgGetApi } from "./organizationCrudApi";
-export { organizationUpdateApi } from "./organizationUpdateApi";
-export { organizationCreateApi } from "./organizationCreateApi";
+// Legacy exports for backward compatibility
+export { organizationCrudApi } from "./organizationsApi";

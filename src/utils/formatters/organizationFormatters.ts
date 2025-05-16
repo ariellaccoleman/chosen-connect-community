@@ -1,59 +1,47 @@
 
-import { ProfileOrganizationRelationshipWithDetails, OrganizationAdminWithDetails } from "@/types";
-import { formatLocationWithDetails } from "./locationFormatters";
+import { Organization, OrganizationWithLocation, LocationWithDetails } from "@/types";
 
 /**
- * Format organization relationships to include properly formatted location data
+ * Format an organization with its location data
  */
-export const formatOrganizationRelationships = (
-  relationships: any[]
-): ProfileOrganizationRelationshipWithDetails[] => {
-  return relationships.map(relationship => {
-    if (relationship.organization && relationship.organization.location) {
-      return {
-        ...relationship,
-        organization: {
-          ...relationship.organization,
-          location: formatLocationWithDetails(relationship.organization.location)
-        }
-      };
+export function formatOrganizationWithLocation(data: any): OrganizationWithLocation {
+  if (!data) return data;
+  
+  const organization: OrganizationWithLocation = { ...data };
+  
+  // Format location if available
+  if (organization.location) {
+    const location = organization.location as LocationWithDetails;
+    
+    // Add formatted location string if not already present
+    if (!location.formatted_location) {
+      location.formatted_location = [location.city, location.region, location.country]
+        .filter(Boolean)
+        .join(', ');
     }
-    return relationship;
-  }) as ProfileOrganizationRelationshipWithDetails[];
-};
-
-/**
- * Format connection type for display
- */
-export const formatConnectionType = (connectionType: string | null | undefined): string => {
-  if (!connectionType) return 'Connected';
-  
-  switch (connectionType) {
-    case 'current':
-      return 'Current Employee';
-    case 'former':
-      return 'Former Employee';
-    case 'connected_insider':
-      return 'Connected Insider';
-    default:
-      return connectionType.charAt(0).toUpperCase() + connectionType.slice(1).replace('_', ' ');
+    
+    organization.location = location;
   }
-};
+  
+  return organization;
+}
 
 /**
- * Format admin details including profile data
+ * Format organization data for API requests
  */
-export const formatAdminWithDetails = (admin: any): OrganizationAdminWithDetails => {
-  // Process organization with location data if it exists
-  const organization = admin.organization ? {
-    ...admin.organization,
-    location: admin.organization.location ? 
-      formatLocationWithDetails(admin.organization.location) : 
-      undefined
-  } : undefined;
+export function formatOrganizationForRequest(
+  organization: Partial<Organization>
+): Record<string, any> {
+  const formattedData = { ...organization };
   
-  return {
-    ...admin,
-    organization
-  } as OrganizationAdminWithDetails;
-};
+  // Remove properties that aren't stored in the database
+  delete (formattedData as any).location;
+  delete (formattedData as any).tags;
+  
+  // Ensure updated_at is set
+  if (!formattedData.updated_at) {
+    formattedData.updated_at = new Date().toISOString();
+  }
+  
+  return formattedData;
+}
