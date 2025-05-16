@@ -27,10 +27,11 @@ const DesktopNav = () => {
   
   const isAdmin = user?.user_metadata?.role === "admin";
 
+  // Only render navigation links without user menu
   const NavigationLinks = () => {
     if (user) {
       return (
-        <div className="hidden md:flex items-center space-x-8">
+        <div className="flex items-center space-x-8">
           <Link to="/organizations" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Organizations</Link>
           <Link to="/events" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Events</Link>
           <Link to="/directory" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Directory</Link>
@@ -40,7 +41,7 @@ const DesktopNav = () => {
     }
     
     return (
-      <div className="hidden md:flex items-center space-x-8">
+      <div className="flex items-center space-x-8">
         <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Home</Link>
         <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">About</Link>
         <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
@@ -48,10 +49,11 @@ const DesktopNav = () => {
     );
   };
 
+  // User menu rendered separately for proper positioning
   const UserMenu = () => {
     if (user) {
       return (
-        <div className="hidden md:flex items-center ml-4">
+        <div className="hidden md:flex items-center">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative rounded-full p-0 h-10 w-10 flex items-center justify-center">
@@ -121,7 +123,7 @@ const DesktopNav = () => {
     }
 
     return (
-      <div className="hidden md:flex items-center space-x-4 ml-4">
+      <div className="hidden md:flex items-center space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -169,12 +171,8 @@ const DesktopNav = () => {
     );
   };
 
-  return (
-    <>
-      <NavigationLinks />
-      <UserMenu />
-    </>
-  );
+  // Return only the navigation links - user menu is rendered separately in the Navbar
+  return <NavigationLinks />;
 };
 
 export default DesktopNav;
