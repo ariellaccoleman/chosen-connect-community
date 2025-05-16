@@ -7,6 +7,7 @@ type Theme = 'light' | 'dark' | 'system';
 interface ThemeContextType {
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  isDarkMode: boolean; // Add this to expose the dark mode state directly
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -38,8 +39,10 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
       
       if (isDark) {
         document.documentElement.classList.add('dark');
+        document.documentElement.classList.remove('light');
       } else {
         document.documentElement.classList.remove('dark');
+        document.documentElement.classList.add('light');
       }
     };
     
@@ -68,6 +71,7 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
   const value = {
     theme,
     setTheme,
+    isDarkMode,
   };
   
   return (

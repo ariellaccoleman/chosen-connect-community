@@ -95,6 +95,29 @@
   body {
     @apply bg-background text-foreground font-sans transition-colors duration-200;
   }
+  
+  /* Better dark mode transitions */
+  html {
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Ensure cards have proper contrast in dark mode */
+  .dark .card,
+  .dark .bg-white {
+    @apply bg-gray-800 text-gray-100;
+  }
+  
+  /* Improve alert contrast in dark mode */
+  .dark .bg-blue-50 {
+    @apply bg-blue-900/30 text-blue-100;
+  }
+  
+  /* Improve form input contrast */
+  .dark input,
+  .dark textarea,
+  .dark select {
+    @apply bg-gray-700 border-gray-600;
+  }
 }
 
 @layer components {
@@ -112,5 +135,22 @@
   
   .btn-secondary {
     @apply bg-chosen-gold text-chosen-navy hover:bg-amber-400 dark:bg-chosen-gold/90 dark:hover:bg-amber-400/90 transition-colors duration-300 rounded-md px-6 py-2 font-medium;
+  }
+  
+  /* Updated alert styles for better dark mode contrast */
+  .alert-info {
+    @apply bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-900/30 dark:border-blue-800 dark:text-blue-100;
+  }
+  
+  .alert-success {
+    @apply bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-100;
+  }
+  
+  .alert-warning {
+    @apply bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-900/30 dark:border-yellow-800 dark:text-yellow-100;
+  }
+  
+  .alert-error {
+    @apply bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-100;
   }
 }
