@@ -11,8 +11,11 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading } = useAuth();
   const location = useLocation();
   
-  // Prevent redirection loop by checking if we're being redirected from auth
-  const isRedirectFromAuth = location.state && location.state.from === "/auth";
+  console.log("ProtectedRoute:", { 
+    user: !!user, 
+    loading, 
+    pathname: location.pathname
+  });
 
   // Show a loading skeleton while checking authentication
   if (loading) {
@@ -27,14 +30,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // If not authenticated and not being redirected from auth, redirect to auth
-  if (!user && !isRedirectFromAuth) {
+  // If not authenticated, redirect to auth with the current location
+  if (!user) {
     console.log("ProtectedRoute: User is not authenticated, redirecting to auth");
-    return <Navigate to="/auth" replace />;
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  // If authenticated or already being redirected from auth, show the protected content
-  console.log("ProtectedRoute: User is authenticated or already redirected, showing protected content");
+  // If authenticated, show the protected content
+  console.log("ProtectedRoute: User is authenticated, showing protected content");
   return <>{children}</>;
 };
 

@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useSearchParams, useLocation } from "react-router-dom";
+import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 
@@ -16,7 +16,19 @@ const Auth = () => {
   const { user, loading } = useAuth();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+  
+  // Get the intended destination from location state
+  const from = location.state?.from || "/dashboard";
+  
+  // If user is already authenticated, redirect to the intended destination
+  useEffect(() => {
+    if (user && !loading) {
+      console.log("Auth page: User is authenticated, redirecting to", from);
+      navigate(from, { replace: true });
+    }
+  }, [user, loading, navigate, from]);
   
   // Check for password reset, email confirmation, or signup tab parameters
   useEffect(() => {
@@ -30,14 +42,13 @@ const Auth = () => {
   }, [searchParams]);
 
   // Add debug logs
-  console.log("Auth page - Auth state:", { 
-    user, 
+  console.log("Auth page:", { 
+    user: !!user, 
     loading, 
     authMode,
-    redirectionDebug: "Fixed redirection in Auth page" 
+    from,
+    pathname: location.pathname
   });
-
-  // We'll let PublicRoute handle the redirection to avoid loops
 
   const handleTabChange = (value: string) => {
     setAuthMode(value as AuthMode);
@@ -50,6 +61,15 @@ const Auth = () => {
   const handleBackToLogin = () => {
     setAuthMode("login");
   };
+
+  // If still loading or user is authenticated (redirect is handled by useEffect)
+  if (loading || user) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
+      </div>
+    );
+  }
 
   // Render different components based on the authentication mode
   const renderAuthContent = () => {
@@ -87,11 +107,7 @@ const Auth = () => {
     }
   };
   
-  return loading ? (
-    <div className="flex items-center justify-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
-    </div>
-  ) : renderAuthContent();
+  return renderAuthContent();
 };
 
 export default Auth;

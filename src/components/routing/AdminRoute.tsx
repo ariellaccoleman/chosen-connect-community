@@ -11,6 +11,13 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading, isAdmin } = useAuth();
   const location = useLocation();
 
+  console.log("AdminRoute:", { 
+    user: !!user, 
+    isAdmin, 
+    loading, 
+    pathname: location.pathname 
+  });
+
   // Show a loading skeleton while checking authentication
   if (loading) {
     return (
@@ -27,13 +34,13 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   // If not authenticated, redirect to auth page
   if (!user) {
     console.log("AdminRoute: User is not authenticated, redirecting to auth");
-    return <Navigate to="/auth" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
   // If not admin, redirect to dashboard
   if (!isAdmin) {
     console.log("AdminRoute: User is not an admin, redirecting to dashboard");
-    return <Navigate to="/dashboard" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/dashboard" replace />;
   }
 
   // If authenticated and admin, show the protected content
