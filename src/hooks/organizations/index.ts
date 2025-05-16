@@ -21,3 +21,16 @@ export {
   useUpdateOrganizationRelationship,
   useDeleteOrganizationRelationship
 } from "../useOrganizationMutations";
+
+// Re-export organization admin hooks
+export {
+  useOrganizationAdmins,
+  useOrganizationAdminsByOrg,
+  useUserAdminRequests,
+  useIsOrganizationAdmin,
+  usePendingOrganizationAdmins,
+  useOrganizationRole,
+  useCreateAdminRequest,
+  useUpdateAdminRequest,
+  useDeleteAdminRequest
+} from "./useOrganizationAdminHooks";
