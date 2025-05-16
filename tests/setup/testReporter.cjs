@@ -21,6 +21,7 @@ class TestReporter {
   async onRunStart() {
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     
+    // Validation of required environment variables
     if (!process.env.SUPABASE_URL) {
       console.error('SUPABASE_URL is not set. Cannot create test run.');
       return;
@@ -31,8 +32,9 @@ class TestReporter {
       return;
     }
     
-    if (!this.testRunId) {
-      try {
+    try {
+      // Initial test run creation - but only if we don't already have a test run ID
+      if (!this.testRunId) {
         console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
         
         // Create a new test run in Supabase
@@ -57,22 +59,27 @@ class TestReporter {
         
         console.log(`Response status: ${response.status}`);
         
-        if (response.ok) {
-          const data = await response.json();
-          this.testRunId = data.test_run_id;
-          process.env.TEST_RUN_ID = this.testRunId;
-          console.log(`Created test run with ID: ${this.testRunId}`);
-        } else {
-          const errorText = await response.text();
-          console.error('Failed to create test run via edge function:', errorText);
+        const responseText = await response.text();
+        
+        try {
+          // Try to parse as JSON
+          const data = JSON.parse(responseText);
+          
+          if (response.ok) {
+            this.testRunId = data.test_run_id;
+            process.env.TEST_RUN_ID = this.testRunId;
+            console.log(`Created test run with ID: ${this.testRunId}`);
+          } else {
+            console.error('Failed to create test run via edge function:', data);
+          }
+        } catch (parseError) {
+          console.error('Failed to parse response as JSON:', responseText);
         }
-      } catch (error) {
-        console.error('Error creating test run:', error);
+      } else {
+        console.log(`Using existing test run ID: ${this.testRunId}`);
       }
-      
-      if (!this.testRunId) {
-        console.error('Failed to create test run. Tests will not be properly reported.');
-      }
+    } catch (error) {
+      console.error('Error in onRunStart:', error);
     }
   }
 
@@ -81,6 +88,16 @@ class TestReporter {
     
     if (!this.testRunId) {
       console.error('No testRunId available. Cannot report test results.');
+      return;
+    }
+    
+    if (!process.env.SUPABASE_URL) {
+      console.error('SUPABASE_URL is not set. Cannot report test results.');
+      return;
+    }
+    
+    if (!process.env.TEST_REPORTING_API_KEY) {
+      console.error('TEST_REPORTING_API_KEY is not set. Cannot report test results.');
       return;
     }
     
@@ -122,7 +139,7 @@ class TestReporter {
         ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
         : null;
       
-      // Collect result details
+      // Collect result details - ensure the test run ID is correctly set
       const testResult = {
         test_run_id: this.testRunId,
         test_suite: testSuiteName,
@@ -159,20 +176,21 @@ class TestReporter {
         });
         
         if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`Failed to save test result for ${testName}: ${errorText}`);
+          const responseText = await response.text();
+          console.error(`Failed to save test result for ${testName}: ${responseText}`);
           console.error('Response status:', response.status);
           
           // Try to parse the error message
           try {
-            const errorJson = JSON.parse(errorText);
+            const errorJson = JSON.parse(responseText);
             console.error('Error details:', JSON.stringify(errorJson, null, 2));
           } catch (e) {
             // If not JSON, just log the raw text
-            console.error('Error response:', errorText);
+            console.error('Error response:', responseText);
           }
         } else {
-          console.log(`Successfully reported test result for ${testName}`);
+          const responseData = await response.json();
+          console.log(`Successfully reported test result for ${testName}. Response:`, JSON.stringify(responseData));
         }
       } catch (error) {
         console.error(`Error saving test result for ${testName}:`, error);
@@ -184,50 +202,52 @@ class TestReporter {
   }
 
   async onRunComplete(contexts, results) {
+    if (!this.testRunId) {
+      console.error('No testRunId available. Cannot update test run summary.');
+      return;
+    }
+    
     console.log(`Test run complete. Updating test run ${this.testRunId} with summary results.`);
     console.log(`Summary: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped`);
     
-    if (this.testRunId) {
-      try {
-        // Update test run with final results using the edge function
-        console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
-          },
-          body: JSON.stringify({
-            test_results: [{
-              test_run_id: this.testRunId,
-              test_suite: 'Summary',
-              test_name: 'Final Results',
-              status: this.results.failed > 0 ? 'failed' : 'passed',
-              duration_ms: this.results.duration,
-            }],
-            total_tests: this.results.total,
-            passed_tests: this.results.passed,
-            failed_tests: this.results.failed,
-            skipped_tests: this.results.skipped,
+    try {
+      // Update test run with final results using the edge function
+      console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
+      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.TEST_REPORTING_API_KEY
+        },
+        body: JSON.stringify({
+          test_results: [{
+            test_run_id: this.testRunId,
+            test_suite: 'Summary',
+            test_name: 'Final Results',
+            status: this.results.failed > 0 ? 'failed' : 'passed',
             duration_ms: this.results.duration,
-            git_commit: process.env.GITHUB_SHA || null,
-            git_branch: process.env.GITHUB_REF_NAME || null
-          })
-        });
-        
-        if (response.ok) {
-          console.log(`Test run updated successfully: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped`);
-          console.log(`View full results at ${process.env.APP_URL || ''}/admin/tests/${this.testRunId}`);
-        } else {
-          const errorText = await response.text();
-          console.error('Failed to update test run via edge function:', errorText);
-          console.error('Response status:', response.status);
-        }
-      } catch (error) {
-        console.error('Error updating test run:', error);
+          }],
+          total_tests: this.results.total,
+          passed_tests: this.results.passed,
+          failed_tests: this.results.failed,
+          skipped_tests: this.results.skipped,
+          duration_ms: this.results.duration,
+          git_commit: process.env.GITHUB_SHA || null,
+          git_branch: process.env.GITHUB_REF_NAME || null
+        })
+      });
+      
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log(`Test run updated successfully. Response:`, JSON.stringify(responseData));
+        console.log(`View full results at ${process.env.APP_URL || ''}/admin/tests/${this.testRunId}`);
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to update test run via edge function:', errorText);
+        console.error('Response status:', response.status);
       }
-    } else {
-      console.error('No testRunId available. Cannot update test run summary.');
+    } catch (error) {
+      console.error('Error updating test run:', error);
     }
   }
 }

@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
@@ -69,6 +70,7 @@ for (const dep of additionalDeps) {
 
 // Generate a test run ID
 const testRunId = process.env.TEST_RUN_ID || uuidv4();
+console.log('Generated Test Run ID:', testRunId); // Added for debugging
 process.env.TEST_RUN_ID = testRunId;
 process.env.SUPABASE_URL = SUPABASE_URL;
 process.env.SUPABASE_KEY = SUPABASE_KEY;
@@ -91,7 +93,7 @@ console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
 console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
 console.log('===================================================');
 
-// Create a test to verify if API keys are set correctly
+// Create a test to verify if API keys are set correctly and report to the API
 const verifyEnvTestPath = './tests/setup/verify-env.test.ts';
 const setupDir = './tests/setup';
 
@@ -106,6 +108,16 @@ describe('Test environment', () => {
     expect(process.env.TEST_REPORTING_API_KEY).toBeDefined();
     expect(process.env.TEST_RUN_ID).toBeDefined();
     console.log('All required environment variables are set');
+    console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
+    console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+  });
+  
+  test('Test API is working', async () => {
+    // Explicitly print variables
+    console.log('TEST_RUN_ID from environment:', process.env.TEST_RUN_ID);
+    
+    // We'll verify this test appears in results to confirm API is working
+    expect(true).toBe(true);
   });
 });
 `);
