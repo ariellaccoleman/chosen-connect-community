@@ -70,5 +70,13 @@ global.IntersectionObserver = class IntersectionObserver {
   unobserve() {}
 };
 
+// Mock ResizeObserver - needed for Radix UI components
+global.ResizeObserver = class ResizeObserver {
+  constructor(callback: ResizeObserverCallback) {}
+  disconnect() {}
+  observe() {}
+  unobserve() {}
+};
+
 // Set timezone to UTC for consistent date/time testing
 process.env.TZ = 'UTC';
