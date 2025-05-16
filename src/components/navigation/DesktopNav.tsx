@@ -27,17 +27,31 @@ const DesktopNav = () => {
   
   const isAdmin = user?.user_metadata?.role === "admin";
 
-  if (user) {
-    return (
-      <>
-        <div className="hidden md:flex items-center space-x-8 mr-4">
+  const NavigationLinks = () => {
+    if (user) {
+      return (
+        <div className="hidden md:flex items-center space-x-8">
           <Link to="/organizations" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Organizations</Link>
           <Link to="/events" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Events</Link>
           <Link to="/directory" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Directory</Link>
           <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
         </div>
-        
-        <div className="hidden md:flex items-center">
+      );
+    }
+    
+    return (
+      <div className="hidden md:flex items-center space-x-8">
+        <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Home</Link>
+        <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">About</Link>
+        <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
+      </div>
+    );
+  };
+
+  const UserMenu = () => {
+    if (user) {
+      return (
+        <div className="hidden md:flex items-center ml-4">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative rounded-full p-0 h-10 w-10 flex items-center justify-center">
@@ -103,19 +117,11 @@ const DesktopNav = () => {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </>
-    );
-  }
+      );
+    }
 
-  return (
-    <>
-      <div className="hidden md:flex items-center space-x-8 mr-4">
-        <Link to="/" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Home</Link>
-        <Link to="/about" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">About</Link>
-        <Link to="/community-guide" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community Guide</Link>
-      </div>
-      
-      <div className="hidden md:flex items-center space-x-4">
+    return (
+      <div className="hidden md:flex items-center space-x-4 ml-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button 
@@ -160,6 +166,13 @@ const DesktopNav = () => {
           Sign Up
         </Button>
       </div>
+    );
+  };
+
+  return (
+    <>
+      <NavigationLinks />
+      <UserMenu />
     </>
   );
 };
