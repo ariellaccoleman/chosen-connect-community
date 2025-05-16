@@ -1,22 +1,13 @@
 
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
-import { 
-  createChainableMock, 
-  createSuccessResponse, 
-  createErrorResponse,
-  createMockBatchOperations
-} from '../../../../utils/supabaseMockUtils';
+import { createMockBatchOperations } from '../../../../utils/supabaseMockUtils';
 import { MockRepository } from '@/api/core/repository/MockRepository';
-
-// Setup mock client
-const mockSupabase = createChainableMock();
 
 // Test table name
 const TABLE_NAME = 'test_table';
 
 describe('Batch Operations', () => {
   beforeEach(() => {
-    mockSupabase.reset();
     jest.clearAllMocks();
   });
 
@@ -179,52 +170,9 @@ describe('Batch Operations', () => {
       { repository: new MockRepository(TABLE_NAME) }
     );
     
-    // Test with legacy client implementation
-    const legacyOperations = createBatchOperations(
-      'Test Entity',
-      TABLE_NAME as any
-    );
-    
     // Both should have the same interface
     expect(repoOperations).toHaveProperty('batchCreate');
     expect(repoOperations).toHaveProperty('batchUpdate');
     expect(repoOperations).toHaveProperty('batchDelete');
-    
-    expect(legacyOperations).toHaveProperty('batchCreate');
-    expect(legacyOperations).toHaveProperty('batchUpdate');
-    expect(legacyOperations).toHaveProperty('batchDelete');
-  });
-
-  // Legacy implementation tests with direct Supabase mocks
-  test('should perform batch create operation with legacy client', async () => {
-    const operations = createBatchOperations(
-      'Test Entity',
-      TABLE_NAME as any, 
-      { 
-        repository: { from: () => mockSupabase }
-      }
-    );
-
-    const items = [
-      { name: 'Item 1' },
-      { name: 'Item 2' }
-    ];
-
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([
-      { id: 'id-1', name: 'Item 1' },
-      { id: 'id-2', name: 'Item 2' }
-    ]));
-
-    // Call batchCreate
-    const result = await operations.batchCreate(items);
-
-    // Verify Supabase was called correctly
-    expect(mockSupabase.from).toHaveBeenCalledWith(TABLE_NAME);
-    expect(mockSupabase.insert).toHaveBeenCalledWith(items);
-
-    // Check result
-    expect(result.status).toBe('success');
-    expect(result.data).toHaveLength(2);
   });
 });

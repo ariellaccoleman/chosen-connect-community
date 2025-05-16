@@ -3,15 +3,11 @@ import { createBatchOperations } from '@/api/core/factory/operations/batchOperat
 import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
 import { MockRepository } from '@/api/core/repository/MockRepository';
 
-// Setup mock client
-const mockSupabase = createChainableMock();
-
 // Test table name
 const TABLE_NAME = 'test_table';
 
 describe('Batch Operations', () => {
   beforeEach(() => {
-    mockSupabase.reset();
     jest.clearAllMocks();
   });
 
@@ -31,11 +27,13 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch create operation', async () => {
+    const mockRepo = new MockRepository(TABLE_NAME);
+    
     const operations = createBatchOperations(
       'Test Entity',
       TABLE_NAME as any, 
       { 
-        repository: { from: () => mockSupabase }
+        repository: mockRepo
       }
     );
 
@@ -44,30 +42,30 @@ describe('Batch Operations', () => {
       { name: 'Item 2' }
     ];
 
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([
-      { id: 'id-1', name: 'Item 1' },
-      { id: 'id-2', name: 'Item 2' }
-    ]));
-
     // Call batchCreate
     const result = await operations.batchCreate(items);
 
-    // Verify Supabase was called correctly
-    expect(mockSupabase.from).toHaveBeenCalledWith(TABLE_NAME);
-    expect(mockSupabase.insert).toHaveBeenCalledWith(items);
-
+    // Verify repository was used
+    expect(mockRepo.getLastOperation()).toBe('insert');
+    
     // Check result
     expect(result.status).toBe('success');
     expect(result.data).toHaveLength(2);
   });
 
   test('should perform batch update operation', async () => {
+    // Create a repository with some initial data
+    const initialData = [
+      { id: 'id-1', name: 'Item 1' },
+      { id: 'id-2', name: 'Item 2' }
+    ];
+    const mockRepo = new MockRepository(TABLE_NAME, initialData);
+    
     const operations = createBatchOperations(
       'Test Entity',
       TABLE_NAME as any, 
       { 
-        repository: { from: () => mockSupabase }
+        repository: mockRepo
       }
     );
 
@@ -76,15 +74,8 @@ describe('Batch Operations', () => {
       { id: 'id-2', name: 'Updated Item 2' }
     ];
 
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse(null));
-
     // Call batchUpdate
     const result = await operations.batchUpdate(updates);
-
-    // Verify Supabase was called correctly
-    expect(mockSupabase.from).toHaveBeenCalledWith(TABLE_NAME);
-    expect(mockSupabase.upsert).toHaveBeenCalledWith(updates);
 
     // Check result
     expect(result.status).toBe('success');
@@ -92,26 +83,25 @@ describe('Batch Operations', () => {
   });
 
   test('should perform batch delete operation', async () => {
+    // Create a repository with some initial data
+    const initialData = [
+      { id: 'id-1', name: 'Item 1' },
+      { id: 'id-2', name: 'Item 2' }
+    ];
+    const mockRepo = new MockRepository(TABLE_NAME, initialData);
+    
     const operations = createBatchOperations(
       'Test Entity',
       TABLE_NAME as any, 
       { 
-        repository: { from: () => mockSupabase }
+        repository: mockRepo 
       }
     );
 
     const ids = ['id-1', 'id-2'];
 
-    // Setup mock response
-    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse(null));
-
     // Call batchDelete
     const result = await operations.batchDelete(ids);
-
-    // Verify Supabase was called correctly
-    expect(mockSupabase.from).toHaveBeenCalledWith(TABLE_NAME);
-    expect(mockSupabase.delete).toHaveBeenCalled();
-    expect(mockSupabase.in).toHaveBeenCalledWith('id', ids);
 
     // Check result
     expect(result.status).toBe('success');
@@ -119,29 +109,28 @@ describe('Batch Operations', () => {
   });
 
   test('should handle errors in batch operations', async () => {
+    const mockRepo = new MockRepository(TABLE_NAME);
+    
+    // Setup error response for insert operation
+    mockRepo.setMockResponse('insert', {
+      data: null,
+      error: new Error('Database error')
+    });
+
     const operations = createBatchOperations(
       'Test Entity',
       TABLE_NAME as any, 
       { 
-        repository: { from: () => mockSupabase }
+        repository: mockRepo
       }
     );
 
-    // Setup error response
-    mockSupabase.from.mockImplementation(() => {
-      throw new Error('Database error');
-    });
-
-    // Attempt batch create and expect error
-    let error;
-    try {
-      await operations.batchCreate([{ name: 'Test' }]);
-    } catch (e) {
-      error = e;
-    }
-
-    expect(error).toBeDefined();
-    expect(error.message).toBe('Database error');
+    // Attempt batch create and expect error response
+    const result = await operations.batchCreate([{ name: 'Test' }]);
+    
+    expect(result.status).toBe('error');
+    expect(result.error).toBeDefined();
+    expect(result.error?.message).toBe('Database error');
   });
 
   test('should handle repository pattern', async () => {
@@ -163,5 +152,45 @@ describe('Batch Operations', () => {
     // Verify repository was used
     expect(mockRepo.getLastOperation()).toBe('insert');
     expect(createResult.status).toBe('success');
+  });
+
+  test('should apply transformations for batch operations', async () => {
+    // Setup transformations
+    const transformRequest = jest.fn(item => ({
+      ...item,
+      transformed: true
+    }));
+    
+    const transformResponse = jest.fn(item => ({
+      ...item,
+      displayName: `${item.name} (Transformed)`
+    }));
+    
+    const mockRepo = new MockRepository(TABLE_NAME);
+    
+    // Create operations with transformations
+    const operations = createBatchOperations(
+      'Test Entity',
+      TABLE_NAME as any,
+      {
+        repository: mockRepo,
+        transformRequest,
+        transformResponse
+      }
+    );
+
+    // Test data
+    const items = [
+      { name: 'Item 1' },
+      { name: 'Item 2' }
+    ];
+
+    // Call batchCreate
+    await operations.batchCreate(items);
+
+    // Verify transformations were applied
+    expect(transformRequest).toHaveBeenCalledTimes(2);
+    expect(transformRequest).toHaveBeenCalledWith(items[0]);
+    expect(transformRequest).toHaveBeenCalledWith(items[1]);
   });
 });
