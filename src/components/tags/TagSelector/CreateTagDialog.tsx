@@ -1,6 +1,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 import { 
   Dialog, 
   DialogContent, 
@@ -13,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tag, findOrCreateTag } from "@/utils/tags";
 import { EntityType } from "@/types/entityTypes";
+import { toast } from "sonner";
 
 interface CreateTagDialogProps {
   isOpen: boolean;
@@ -35,11 +37,19 @@ const CreateTagDialog = ({
   const [description, setDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user || !name.trim()) {
+    if (!user) {
+      toast.error("You must be logged in to create tags");
+      onClose();
+      navigate("/auth", { state: { from: window.location.pathname } });
+      return;
+    }
+    
+    if (!name.trim()) {
       return;
     }
     
@@ -59,6 +69,7 @@ const CreateTagDialog = ({
       }
     } catch (error) {
       console.error("Error creating tag:", error);
+      toast.error(`Failed to create tag: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setIsCreating(false);
     }

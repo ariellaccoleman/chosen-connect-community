@@ -3,6 +3,8 @@ import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { 
   Form, 
   FormField, 
@@ -14,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import FormActions from "@/components/common/form/FormActions";
+import { toast } from "sonner";
 
 export const tagFormSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -40,12 +43,20 @@ const TagForm = ({
   onCancel,
   isAdmin = false,
 }: TagFormProps) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const form = useForm<TagFormValues>({
     resolver: zodResolver(tagFormSchema),
     defaultValues: initialValues,
   });
 
   const handleSubmit = async (values: TagFormValues) => {
+    if (!user) {
+      toast.error("You must be logged in to create tags");
+      navigate("/auth", { state: { from: window.location.pathname } });
+      return;
+    }
+    
     await onSubmit(values);
   };
 

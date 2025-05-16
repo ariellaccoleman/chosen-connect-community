@@ -1,11 +1,13 @@
 
 import React from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import EntityTagManager from "@/components/tags/EntityTagManager";
 import { EntityType } from "@/types/entityTypes";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface EventTagsManagerProps {
   eventId: string;
@@ -13,6 +15,7 @@ interface EventTagsManagerProps {
 
 const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
 
   // Log component mounting for debugging
   React.useEffect(() => {
@@ -27,6 +30,22 @@ const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
     toast.error(`Error adding tag: ${error.message}`);
     logger.error("Error in event tag management:", error);
   };
+
+  // If still loading, show loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-1/3 mb-6" />
+        <Skeleton className="h-40 w-full rounded-lg" />
+      </div>
+    );
+  }
+  
+  // If not authenticated, redirect to auth page
+  if (!user) {
+    logger.warn("Unauthenticated user attempted to access EventTagsManager");
+    return <Navigate to="/auth" state={{ from: `/events/${eventId}/tags` }} replace />;
+  }
 
   return (
     <div className="space-y-6">

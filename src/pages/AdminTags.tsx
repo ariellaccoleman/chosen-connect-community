@@ -5,6 +5,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 import { useSelectionTags as useTags, useTagMutations } from "@/hooks/useTags";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Import the new components
 import AdminTagsHeader from "@/components/admin/tags/AdminTagsHeader";
@@ -15,7 +16,7 @@ const AdminTags = () => {
   const queryClient = useQueryClient();
   const { data: tagsResponse, isLoading } = useTags();
   const { createTag: createTagMutation, isCreating } = useTagMutations();
-  const { isAdmin } = useAuth();
+  const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
   // Extract the actual tags array from the API response
@@ -40,6 +41,19 @@ const AdminTags = () => {
     }
   };
 
+  // If still loading, show loading state
+  if (loading) {
+    return (
+      <div className="container mx-auto py-6">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-1/3 mb-6" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
+  // If not admin, redirect to dashboard
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
   }

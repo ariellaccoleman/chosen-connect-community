@@ -6,6 +6,7 @@ import { Navigate, useNavigate } from "react-router-dom";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const CreateEventContent: React.FC = () => {
   const { user, loading } = useAuth();
@@ -18,13 +19,23 @@ const CreateEventContent: React.FC = () => {
     hasFormError: !!formError
   });
   
+  // If still loading, show loading state
   if (loading) {
-    return <div className="container py-8">Loading...</div>;
+    return (
+      <div className="container py-8">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-1/4 mb-6" />
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-48 w-full rounded-lg" />
+        </div>
+      </div>
+    );
   }
   
+  // If not authenticated, redirect to auth page
   if (!user) {
-    logger.info("User not authenticated, redirecting to auth page");
-    return <Navigate to="/auth" replace />;
+    logger.warn("Unauthenticated user attempted to access CreateEvent page");
+    return <Navigate to="/auth" state={{ from: '/events/new' }} replace />;
   }
 
   const handleSuccess = () => {
