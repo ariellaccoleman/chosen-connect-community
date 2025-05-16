@@ -107,9 +107,8 @@ describe('Batch Operations', () => {
       { id: 'id-2', name: 'Item 2' }
     ]);
     
-    // Create a mock for the in method
-    const mockIn = jest.fn().mockReturnThis();
-    jest.spyOn(mockRepo.delete().constructor.prototype, 'in').mockImplementation(mockIn);
+    // Create a spy on the delete and in methods
+    const deleteSpy = jest.spyOn(mockRepo, 'delete');
     
     const operations = createBatchOperations(
       'Test Entity',
@@ -125,6 +124,7 @@ describe('Batch Operations', () => {
     expect(result.data).toBe(true);
     
     // Verify repository interactions
+    expect(deleteSpy).toHaveBeenCalled();
     expect(mockRepo.getLastOperation()).toBe('delete');
   });
 
@@ -208,10 +208,6 @@ describe('Batch Operations', () => {
     
     // Spy on repository methods
     const updateSpy = jest.spyOn(mockRepo, 'update');
-    
-    // Create a mock for the in method that returns this
-    const mockIn = jest.fn().mockReturnThis();
-    jest.spyOn(mockRepo.update({}).constructor.prototype, 'in').mockImplementation(mockIn);
     
     const operations = createBatchOperations(
       'Test Entity',

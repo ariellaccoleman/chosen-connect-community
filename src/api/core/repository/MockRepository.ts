@@ -10,6 +10,8 @@ export class MockRepository<T = any> implements DataRepository<T> {
   private mockResponses: Record<string, any> = {};
   private lastOperation: string | null = null;
   private lastData: any = null;
+  private filters: any[] = [];
+  private inConditions: { column: string; values: any[] }[] = [];
   
   constructor(tableName: string, initialData: T[] = []) {
     this.tableName = tableName;
@@ -36,17 +38,28 @@ export class MockRepository<T = any> implements DataRepository<T> {
   getLastData(): any {
     return this.lastData;
   }
+  
+  /**
+   * Reset filters and conditions
+   */
+  private resetFilters(): void {
+    this.filters = [];
+    this.inConditions = [];
+  }
 
   /**
    * Create a select query
    */
   select(_selectQuery = '*'): RepositoryQuery<T> {
     this.lastOperation = 'select';
+    this.resetFilters();
     return new MockQuery<T>(
       this.tableName,
       this.mockData,
       this.mockResponses,
-      this.lastOperation
+      this.lastOperation,
+      this.filters,
+      this.inConditions
     );
   }
 
@@ -56,6 +69,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   insert(data: any): RepositoryQuery<T> {
     this.lastOperation = 'insert';
     this.lastData = data;
+    this.resetFilters();
     
     // Auto-update mock data if no specific mock response is set
     if (!this.mockResponses[this.lastOperation]) {
@@ -78,6 +92,8 @@ export class MockRepository<T = any> implements DataRepository<T> {
       this.mockData,
       this.mockResponses,
       this.lastOperation,
+      this.filters,
+      this.inConditions,
       this.lastData
     );
   }
@@ -88,11 +104,14 @@ export class MockRepository<T = any> implements DataRepository<T> {
   update(data: any): RepositoryQuery<T> {
     this.lastOperation = 'update';
     this.lastData = data;
+    this.resetFilters();
     return new MockQuery<T>(
       this.tableName,
       this.mockData,
       this.mockResponses,
       this.lastOperation,
+      this.filters,
+      this.inConditions,
       this.lastData
     );
   }
@@ -102,11 +121,14 @@ export class MockRepository<T = any> implements DataRepository<T> {
    */
   delete(): RepositoryQuery<T> {
     this.lastOperation = 'delete';
+    this.resetFilters();
     return new MockQuery<T>(
       this.tableName,
       this.mockData,
       this.mockResponses,
-      this.lastOperation
+      this.lastOperation,
+      this.filters,
+      this.inConditions
     );
   }
 }
@@ -120,7 +142,8 @@ class MockQuery<T> implements RepositoryQuery<T> {
   private mockResponses: Record<string, any>;
   private operation: string;
   private operationData: any;
-  private filters: Array<(item: any) => boolean> = [];
+  private filters: Array<(item: any) => boolean>;
+  private inConditions: { column: string; values: any[] }[];
   private sortConfig: { column: string; ascending: boolean } | null = null;
   private limitValue: number | null = null;
   private rangeValues: [number, number] | null = null;
@@ -131,12 +154,16 @@ class MockQuery<T> implements RepositoryQuery<T> {
     mockData: Record<string, any[]>,
     mockResponses: Record<string, any>,
     operation: string,
+    filters: Array<(item: any) => boolean> = [],
+    inConditions: { column: string; values: any[] }[] = [],
     operationData?: any
   ) {
     this.tableName = tableName;
     this.mockData = mockData;
     this.mockResponses = mockResponses;
     this.operation = operation;
+    this.filters = [...filters]; // Create a copy to avoid modifying shared array
+    this.inConditions = [...inConditions]; // Create a copy to avoid modifying shared array
     this.operationData = operationData;
   }
 
@@ -151,6 +178,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
   }
 
   in(column: string, values: any[]): RepositoryQuery<T> {
+    this.inConditions.push({ column, values });
     this.filters.push(item => values.includes(item[column]));
     return this;
   }
@@ -259,12 +287,44 @@ class MockQuery<T> implements RepositoryQuery<T> {
     if (this.operation === 'delete') {
       const items = this.mockData[this.tableName] || [];
       const filtered = this.applyFilters(items);
+      
+      // Use 'in' condition for batch delete if present
+      let itemsToDelete = filtered;
+      if (this.inConditions.length > 0) {
+        const inCondition = this.inConditions[0]; // Use first in condition
+        itemsToDelete = items.filter(item => 
+          inCondition.values.includes(item[inCondition.column])
+        );
+      }
+      
+      // Remove the deleted items from the mock data
       const remaining = items.filter(item => 
-        !filtered.some(f => f.id === item.id)
+        !itemsToDelete.some(f => f.id === item.id)
       );
       
       this.mockData[this.tableName] = remaining;
       return { data: [], error: null };
+    }
+    
+    if (this.operation === 'update' && this.inConditions.length > 0) {
+      // Handle batch update with 'in' condition
+      const items = this.mockData[this.tableName] || [];
+      const inCondition = this.inConditions[0]; // Use first in condition
+      
+      // Find items to update
+      const itemsToUpdate = items.filter(item => 
+        inCondition.values.includes(item[inCondition.column])
+      );
+      
+      // Apply update to each item
+      for (const item of itemsToUpdate) {
+        const index = items.findIndex(i => i.id === item.id);
+        if (index !== -1) {
+          items[index] = { ...item, ...this.operationData };
+        }
+      }
+      
+      return { data: itemsToUpdate as unknown as T[], error: null };
     }
 
     // For select operation
@@ -283,13 +343,29 @@ class MockQuery<T> implements RepositoryQuery<T> {
   }
 
   private applyFilters(items: any[]): any[] {
-    if (this.filters.length === 0) {
+    if (this.filters.length === 0 && this.inConditions.length === 0) {
       return [...items];
     }
     
-    return items.filter(item => 
-      this.filters.every(filter => filter(item))
-    );
+    let result = [...items];
+    
+    // Apply normal filters
+    if (this.filters.length > 0) {
+      result = result.filter(item => 
+        this.filters.every(filter => filter(item))
+      );
+    }
+    
+    // Apply 'in' conditions
+    if (this.inConditions.length > 0) {
+      for (const condition of this.inConditions) {
+        result = result.filter(item => 
+          condition.values.includes(item[condition.column])
+        );
+      }
+    }
+    
+    return result;
   }
 
   private applySort(items: any[]): any[] {
