@@ -2,7 +2,7 @@
 import { logger } from './logger';
 import { sonnerToast as toast } from '@/hooks/use-toast';
 import { RepositoryError } from '@/api/core/repository/DataRepository';
-import { formatRepositoryError } from '@/api/core/repository/repositoryUtils';
+import { formatRepositoryError as formatRepoError } from '@/api/core/repository/repositoryUtils';
 
 /**
  * Standard error handler that logs errors and optionally shows a toast notification
@@ -36,7 +36,7 @@ export const extractErrorMessage = (error: any): string => {
   if (!error) return 'Unknown error occurred';
   
   // Use repository error formatter if possible
-  const repoError = formatRepositoryError(error);
+  const repoError = formatRepoError(error);
   return repoError.message;
 };
 
@@ -56,6 +56,7 @@ export const isRepositoryError = (response: any): boolean => {
 
 /**
  * Format Repository error for display or logging
+ * @deprecated Use formatRepoError from repositoryUtils.ts instead
  */
 export const formatRepositoryError = (error: RepositoryError | null): string => {
   if (!error) return 'Unknown error';
