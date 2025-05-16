@@ -7,7 +7,6 @@ export {
   useProfileById,
   useProfilesByIds,
   useCreateProfile,
-  useUpdateProfileFactory,
   useUpdateProfile,
   useDeleteProfile,
   useCurrentProfile

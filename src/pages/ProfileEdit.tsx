@@ -43,8 +43,8 @@ const ProfileEdit = () => {
       };
       
       await updateProfile.mutateAsync({
-        profileId: user.id,
-        profileData: profileData
+        id: user.id,
+        data: profileData
       });
       
       navigate("/dashboard");
