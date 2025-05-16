@@ -1,6 +1,6 @@
 
 /**
- * @deprecated This module is maintained for backward compatibility only.
+ * @deprecated This file is maintained for backward compatibility only.
  * Please update your imports to use:
  * import { useLocationSearch } from '@/hooks/locations';
  */

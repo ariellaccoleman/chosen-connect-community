@@ -20,7 +20,7 @@ export * from './organizations';
  * - import { authApi } from '@/api/auth'
  * - import { eventsApi } from '@/api/events'
  * - import { locationsApi } from '@/api/locations'
- * - import { organizationCrudApi } from '@/api/organizations'
+ * - import { organizationApi } from '@/api/organizations'
  */
 export { authApi } from './authApi';
 export { eventsApi } from './eventsApi';

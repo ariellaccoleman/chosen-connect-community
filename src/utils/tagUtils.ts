@@ -1,10 +1,11 @@
 
 /**
- * Re-export all tag functionality from the tags directory
- * @deprecated Use imports from '@/utils/tags' directly
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update your imports to use the modular structure:
+ * import { ... } from '@/utils/tags';
  */
 
-export * from './tags/index';
+export * from './tags';
 
 // Add deprecation console warning in development only
 if (process.env.NODE_ENV === 'development') {

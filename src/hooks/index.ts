@@ -16,7 +16,7 @@ export * from './tests';
  * @deprecated Legacy hook exports maintained for backward compatibility.
  * Please update imports to use the modular structure directly:
  * - import { useLocations } from '@/hooks/locations'
- * - import { useProfiles } from '@/hooks/profiles'
+ * - import { useCurrentProfile } from '@/hooks/profiles'
  * - import { useTags } from '@/hooks/tags'
  */
 export { useLocations } from './useLocations';

@@ -1,9 +1,16 @@
 
+/**
+ * API Factory Module
+ * 
+ * This module provides the core factory pattern implementation for creating
+ * standardized API operations for entities.
+ */
+
+// Export the main factory function and configuration types
 export * from './apiFactory';
 export * from './baseOperations';
 export * from './types';
-export * from './operations';
 
-// Do not re-export batchOperations directly since it's already included in operations
-// This removes the naming conflict
+// Export all operations
+export * from './operations';
 
