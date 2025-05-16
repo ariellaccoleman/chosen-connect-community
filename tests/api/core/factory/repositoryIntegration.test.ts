@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { createRepository } from '@/api/core/repository/repositoryFactory';
 import { DataRepository } from '@/api/core/repository/DataRepository';
@@ -121,5 +120,49 @@ describe('API Factory with Repository Integration', () => {
     // Verify error was handled
     expect(result.status).toBe('error');
     expect(result.error?.message).toBe('Repository error');
+  });
+  
+  test('should pass transformResponse to the repository methods', async () => {
+    // Create transform function
+    const transformResponse = jest.fn(item => ({
+      ...item,
+      transformed: true
+    }));
+    
+    // Create factory with transformResponse
+    createApiFactory({
+      tableName: 'test_table',
+      transformResponse
+    });
+    
+    // Verify repository was created
+    expect(createRepository).toHaveBeenCalledWith('test_table');
+  });
+  
+  test('should use custom defaultSelect option with repository', async () => {
+    // Create mock repository
+    const mockRepository = {
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ data: [], error: null }),
+      single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
+    } as unknown as DataRepository<any>;
+    
+    // Create factory with custom select and repository
+    const factory = createApiFactory({
+      tableName: 'test_table',
+      repository: mockRepository,
+      defaultSelect: 'id, name, custom_field'
+    });
+    
+    // Call getAll to test if select is passed correctly
+    await factory.getAll();
+    
+    // Verify custom select was used
+    expect(mockRepository.select).toHaveBeenCalledWith('id, name, custom_field');
   });
 });

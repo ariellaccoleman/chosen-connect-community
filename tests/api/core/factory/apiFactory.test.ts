@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { createChainableMock, createSuccessResponse } from '../../../utils/supabaseMockUtils';
 
@@ -139,5 +138,56 @@ describe('API Factory', () => {
 
     // Verify custom select was used
     expect(mockSupabase.select).toHaveBeenCalledWith(customSelect);
+  });
+
+  test('should allow custom transformResponse', async () => {
+    // Mock transform function that adds a formatted property
+    const mockTransformResponse = jest.fn((data) => ({
+      ...data,
+      formatted: true
+    }));
+
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      clientFn: () => mockSupabase,
+      transformResponse: mockTransformResponse
+    });
+
+    // Setup mock response
+    mockSupabase.mockResponseFor(TABLE_NAME, createSuccessResponse([{ id: 'test-1', name: 'Test Item' }]));
+
+    // Call getAll
+    await factory.getAll();
+
+    // Verify transformer was called
+    expect(mockTransformResponse).toHaveBeenCalled();
+  });
+
+  test('should pass defaultSelect to repository', async () => {
+    const customSelect = 'id, name, custom_field';
+    
+    // Create a mock repository to verify select statement
+    const mockRepository = {
+      select: jest.fn().mockReturnThis(),
+      insert: jest.fn().mockReturnThis(),
+      update: jest.fn().mockReturnThis(),
+      delete: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ data: [], error: null }),
+      single: jest.fn().mockResolvedValue({ data: {}, error: null }),
+      maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
+    };
+    
+    const factory = createApiFactory<any>({
+      tableName: TABLE_NAME,
+      repository: mockRepository,
+      defaultSelect: customSelect
+    });
+
+    // Call getAll
+    await factory.getAll();
+
+    // Verify custom select was passed to the repository
+    expect(mockRepository.select).toHaveBeenCalledWith(customSelect);
   });
 });
