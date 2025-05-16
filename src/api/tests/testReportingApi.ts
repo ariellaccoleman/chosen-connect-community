@@ -78,6 +78,7 @@ export const saveTestResult = async (
 
 /**
  * Update test run with final results
+ * This is called once at the end of the test run with the final counts
  */
 export const updateTestRunStatus = async (
   testRunId: string,
