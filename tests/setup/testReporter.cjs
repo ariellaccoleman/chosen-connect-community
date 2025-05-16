@@ -23,45 +23,71 @@ class TestReporter {
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     
     if (!process.env.SUPABASE_URL || !process.env.TEST_REPORTING_API_KEY) {
-      console.error('Missing required environment variables. Cannot create test run.');
+      console.error('Missing required environment variables:');
+      console.error(`- SUPABASE_URL: ${process.env.SUPABASE_URL ? '[SET]' : '[NOT SET]'}`);
+      console.error(`- TEST_REPORTING_API_KEY: ${process.env.TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
       return;
     }
     
     try {
       if (!this.testRunId) {
-        console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
+        const url = `${process.env.SUPABASE_URL}/functions/v1/report-test-results`;
+        console.log(`Creating new test run via ${url}`);
         
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
+        const requestBody = {
+          create_test_run: true,
+          status: 'in_progress',
+          total_tests: 0,
+          passed_tests: 0,
+          failed_tests: 0,
+          skipped_tests: 0,
+          duration_ms: 0,
+          git_commit: process.env.GITHUB_SHA || null,
+          git_branch: process.env.GITHUB_REF_NAME || null
+        };
+        
+        console.log('Request body:', JSON.stringify(requestBody, null, 2));
+        
+        const response = await fetch(url, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
-          body: JSON.stringify({
-            create_test_run: true,
-            status: 'in_progress',
-            total_tests: 0,
-            passed_tests: 0,
-            failed_tests: 0,
-            skipped_tests: 0,
-            duration_ms: 0,
-            git_commit: process.env.GITHUB_SHA || null,
-            git_branch: process.env.GITHUB_REF_NAME || null
-          })
+          body: JSON.stringify(requestBody)
         });
         
+        const responseText = await response.text();
+        console.log(`Response status: ${response.status}`);
+        console.log('Response headers:', JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2));
+        console.log('Response body:', responseText);
+        
         if (response.ok) {
-          const data = await response.json();
-          this.testRunId = data.test_run_id;
-          process.env.TEST_RUN_ID = this.testRunId;
-          console.log(`Created test run with ID: ${this.testRunId}`);
+          try {
+            const data = JSON.parse(responseText);
+            if (!data.test_run_id) {
+              console.error('Response missing test_run_id:', data);
+              return;
+            }
+            this.testRunId = data.test_run_id;
+            process.env.TEST_RUN_ID = this.testRunId;
+            console.log(`Created test run with ID: ${this.testRunId}`);
+          } catch (parseError) {
+            console.error('Failed to parse response JSON:', parseError);
+            console.error('Raw response:', responseText);
+          }
         } else {
-          const errorText = await response.text();
-          console.error('Failed to create test run:', errorText);
+          console.error('Failed to create test run:');
+          console.error(`Status: ${response.status}`);
+          console.error('Response:', responseText);
         }
       }
     } catch (error) {
-      console.error('Error in onRunStart:', error);
+      console.error('Error in onRunStart:');
+      console.error(error);
+      if (error.response) {
+        console.error('Response:', await error.response.text());
+      }
     }
   }
 

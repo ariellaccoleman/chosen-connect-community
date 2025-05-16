@@ -89,12 +89,13 @@ serve(async (req) => {
 
   try {
     const requestData: TestRunRequest = await req.json()
-    console.log(`[report-test-results] Processing request`)
+    console.log(`[report-test-results] Processing request with data:`, JSON.stringify(requestData, null, 2))
     
     let testRunId = requestData.test_run_id
     
     // Handle test run creation - this should only happen when explicitly requested
     if (requestData.create_test_run === true) {
+      console.log('[report-test-results] Creating new test run...')
       // Creating a new test run - this should be called once at the start of testing
       const { data: newRun, error: createError } = await supabase
         .from('test_runs')
@@ -112,11 +113,12 @@ serve(async (req) => {
         .single()
 
       if (createError) {
+        console.error('[report-test-results] Failed to create test run:', createError)
         throw new Error(`Failed to create test run: ${createError.message}`)
       }
       
       testRunId = newRun.id
-      console.log(`[report-test-results] Created new test run: ${testRunId}`)
+      console.log(`[report-test-results] Successfully created test run: ${testRunId}`)
       
       return new Response(JSON.stringify({ 
         message: 'Test run created successfully',
@@ -129,6 +131,7 @@ serve(async (req) => {
 
     // For all other operations, test_run_id is required
     if (!testRunId) {
+      console.error('[report-test-results] Missing test_run_id in request')
       return new Response(JSON.stringify({ 
         error: 'Bad Request',
         message: 'test_run_id is required for reporting test results and updates'
@@ -140,7 +143,7 @@ serve(async (req) => {
 
     // Handle test results if present - just insert them, don't update counts
     if (requestData.test_results?.length) {
-      console.log(`[report-test-results] Processing ${requestData.test_results.length} test results`)
+      console.log(`[report-test-results] Processing ${requestData.test_results.length} test results for run ${testRunId}`)
       
       const testResults = requestData.test_results.map(result => ({
         ...result,
@@ -152,8 +155,10 @@ serve(async (req) => {
         .insert(testResults)
 
       if (resultsError) {
+        console.error('[report-test-results] Failed to insert test results:', resultsError)
         throw new Error(`Failed to insert test results: ${resultsError.message}`)
       }
+      console.log('[report-test-results] Successfully inserted test results')
     }
 
     // Only update test run counts when final summary data is provided
@@ -161,7 +166,12 @@ serve(async (req) => {
         requestData.passed_tests !== undefined &&
         requestData.failed_tests !== undefined &&
         requestData.skipped_tests !== undefined) {
-      console.log(`[report-test-results] Updating test run ${testRunId} with final summary data`)
+      console.log(`[report-test-results] Updating test run ${testRunId} with summary:`, {
+        total: requestData.total_tests,
+        passed: requestData.passed_tests,
+        failed: requestData.failed_tests,
+        skipped: requestData.skipped_tests
+      })
       
       const { error: updateError } = await supabase
         .from('test_runs')
@@ -176,8 +186,10 @@ serve(async (req) => {
         .eq('id', testRunId)
 
       if (updateError) {
+        console.error('[report-test-results] Failed to update test run:', updateError)
         throw new Error(`Failed to update test run: ${updateError.message}`)
       }
+      console.log('[report-test-results] Successfully updated test run summary')
     }
 
     return new Response(JSON.stringify({ 
