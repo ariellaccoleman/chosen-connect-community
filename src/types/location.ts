@@ -1,21 +1,20 @@
 
 export interface Location {
   id: string;
-  city: string;
-  region: string;
-  country: string;
-  full_name?: string;
-  created_at?: string;
-  updated_at?: string;
-  latitude?: number;
-  longitude?: number;
-  geoname_id?: number;
-  admin_code1?: string;
-  admin_code2?: string;
-  admin_name2?: string;
-  timezone?: string;
+  city?: string | null;
+  region?: string | null;
+  country?: string | null;
+  full_name?: string | null;
+  timezone?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  geoname_id?: number | null;
+  formatted_location?: string; // Add this line to include formatted_location
 }
 
 export interface LocationWithDetails extends Location {
-  formatted_location: string;
+  full_region_path?: string | null;
+  admin_code1?: string | null;
+  admin_code2?: string | null;
+  admin_name2?: string | null;
 }

@@ -21,7 +21,7 @@ export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
     
     // Create formatted_location if it doesn't exist
     if (typeof location === 'object') {
-      // Check if the location object has necessary fields
+      // Format location components
       const city = location.city || '';
       const region = location.region || '';
       const country = location.country || '';
@@ -32,7 +32,7 @@ export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
         .join(', ');
       
       // Add formatted_location to the location object
-      (location as any).formatted_location = formatted;
+      (profile.location as any).formatted_location = formatted;
     }
   }
   

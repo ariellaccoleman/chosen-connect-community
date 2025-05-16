@@ -3,7 +3,7 @@
 // for backwards compatibility
 
 export { useCurrentProfile } from './useProfileQueries';
-export { useUpdateProfile } from './useProfileMutations';
+export { useUpdateProfile } from './profiles';
 export { useLocations } from './useLocations';
 
 // Define and export useProfiles for backward compatibility

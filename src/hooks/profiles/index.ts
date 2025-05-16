@@ -8,7 +8,7 @@ export {
   useProfilesByIds,
   useCreateProfile,
   useUpdateProfileFactory,
+  useUpdateProfile,
   useDeleteProfile,
-  useCurrentProfile,
-  useUpdateProfile
+  useCurrentProfile
 } from "./useProfileHooks";

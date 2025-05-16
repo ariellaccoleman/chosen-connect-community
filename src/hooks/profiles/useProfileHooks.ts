@@ -105,7 +105,7 @@ export const useUpdateProfile = () => {
         if (data) {
           // Invalidate both profile queries to ensure they're refreshed
           queryClient.invalidateQueries({ queryKey: ['profile', variables.profileId] });
-          queryClient.invalidateQueries({ queryKey: ['profiles', variables.profileId] });
+          queryClient.invalidateQueries({ queryKey: ['profiles'] });
           
           // Also invalidate community profiles query
           queryClient.invalidateQueries({ queryKey: ['community-profiles'] });

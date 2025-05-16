@@ -1,71 +1,60 @@
 
-import { Organization, OrganizationWithLocation, LocationWithDetails, ConnectionType } from "@/types";
+import { OrganizationWithLocation, ProfileOrganizationRelationshipType } from "@/types";
 
 /**
- * Format an organization with its location data
+ * Format organization data for display
  */
-export function formatOrganizationWithLocation(data: any): OrganizationWithLocation {
-  if (!data) return data;
+export function formatOrganizationWithLocation(data: any): OrganizationWithLocation | null {
+  if (!data) return null;
   
-  const organization: OrganizationWithLocation = { ...data };
+  const organization = data as OrganizationWithLocation;
   
-  // Format location if available
+  // Ensure we have location data formatted
   if (organization.location) {
-    const location = organization.location as LocationWithDetails;
+    // Format location if it's already present
+    const city = organization.location.city || '';
+    const region = organization.location.region || '';
+    const country = organization.location.country || '';
     
-    // Add formatted location string if not already present
-    if (!location.formatted_location) {
-      location.formatted_location = [location.city, location.region, location.country]
-        .filter(Boolean)
-        .join(', ');
-    }
-    
-    organization.location = location;
+    // Add formatted location string
+    (organization.location as any).formatted_location = [city, region, country]
+      .filter(Boolean)
+      .join(', ');
   }
   
   return organization;
 }
 
 /**
- * Format organization data for API requests
- */
-export function formatOrganizationForRequest(
-  organization: Partial<Organization>
-): Record<string, any> {
-  const formattedData = { ...organization };
-  
-  // Remove properties that aren't stored in the database
-  delete (formattedData as any).location;
-  delete (formattedData as any).tags;
-  
-  // Ensure updated_at is set
-  if (!formattedData.updated_at) {
-    formattedData.updated_at = new Date().toISOString();
-  }
-  
-  return formattedData;
-}
-
-/**
  * Format connection type for display
  */
-export function formatConnectionType(type: ConnectionType): string {
+export function formatConnectionType(type: ProfileOrganizationRelationshipType | null | undefined): string {
   switch (type) {
     case 'current':
-      return 'Current Employee';
+      return 'Current';
     case 'former':
-      return 'Former Employee';
+      return 'Former';
     case 'connected_insider':
       return 'Connected Insider';
     default:
-      return 'Connected';
+      return 'Unknown';
   }
 }
 
 /**
- * Format admin with details for backward compatibility
+ * Format admin details for display
  */
 export function formatAdminWithDetails(data: any): any {
-  // Simple pass-through for now, can be enhanced later
-  return data;
+  if (!data) return null;
+  
+  const admin = { ...data };
+  
+  // Format the profile name if available
+  if (admin.profile) {
+    admin.profile.full_name = [admin.profile.first_name, admin.profile.last_name]
+      .filter(Boolean)
+      .join(' ');
+  }
+  
+  return admin;
 }
