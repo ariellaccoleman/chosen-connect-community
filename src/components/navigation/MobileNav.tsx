@@ -1,8 +1,7 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile } from "@/hooks/useProfiles";
+import { useCurrentProfile } from "@/hooks/profiles";
 import UserAvatar from "./UserAvatar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Sun, Moon, SunMoon } from "lucide-react";
@@ -15,10 +14,11 @@ interface MobileNavProps {
 const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile(user?.id);
   const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";
+  const profile = profileData?.data;
   
   const themeOptions = [
     { value: "light", label: "Light", icon: <Sun className="h-4 w-4 mr-2" /> },
@@ -74,6 +74,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
               Admin Panel
             </Link>
           )}
+          
           <Link 
             to="/organizations" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"

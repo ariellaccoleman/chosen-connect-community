@@ -4,14 +4,7 @@ import { profileApi } from '@/api/profiles/profileApiFactory';
 import { ProfileWithDetails } from '@/types';
 
 // Create standard CRUD hooks for profiles using the factory
-const {
-  useList: useProfileList,
-  useById: useProfileById,
-  useByIds: useProfilesByIds,
-  useCreate: useCreateProfile,
-  useUpdateFactory: useUpdateProfileFactory,
-  useDelete: useDeleteProfile
-} = createQueryHooks<ProfileWithDetails>(
+const hookFactory = createQueryHooks<ProfileWithDetails>(
   { 
     name: 'profile',
     pluralName: 'profiles',
@@ -21,8 +14,17 @@ const {
   profileApi
 );
 
+// Extract all the hooks from the factory
+const useProfileList = hookFactory.useList;
+const useProfileById = hookFactory.useById;
+const useProfilesByIds = hookFactory.useByIds;
+const useCreateProfile = hookFactory.useCreate;
+const useDeleteProfile = hookFactory.useDelete;
+const createUpdateProfileHook = hookFactory.createUpdateHook;
+
 // Create standard update profile hook
-const useUpdateProfile = useUpdateProfileFactory();
+const useUpdateProfile = createUpdateProfileHook();
+const useUpdateProfileFactory = createUpdateProfileHook;
 
 /**
  * Hook to access the current user's profile

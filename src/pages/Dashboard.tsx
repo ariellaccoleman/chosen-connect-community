@@ -4,15 +4,17 @@ import { useAuth } from "@/hooks/useAuth";
 import ProfileSummaryCard from "@/components/dashboard/ProfileSummaryCard";
 import OrganizationSection from "@/components/dashboard/OrganizationSection";
 import EventSection from "@/components/dashboard/EventSection";
-import { useCurrentProfile } from "@/hooks/useProfileQueries";
+import { useCurrentProfile } from "@/hooks/profiles";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
 import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
 
 const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile(user?.id);
   const { data: relationships = [], isLoading: isLoadingOrgs } = usePublicProfileOrganizations(user?.id);
   const { data: tagAssignments = [], isLoading: isLoadingTags } = usePublicProfileTags(user?.id);
+  
+  const profile = profileData?.data;
   
   // If the profile is loaded, add the isAdmin flag and tags to it
   const profileWithAdminStatus = profile ? {

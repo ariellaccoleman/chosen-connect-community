@@ -64,7 +64,7 @@ export const useCreateTag = () => {
       // Show success toast
       toastHandlers.onSuccess(data);
     },
-    onError: (error, variables) => toastHandlers.onError(error)
+    onError: (error) => toastHandlers.onError(error)
   });
 };
 
@@ -88,7 +88,7 @@ export const useFindOrCreateTag = () => {
       // Show success toast
       toastHandlers.onSuccess(data);
     },
-    onError: (error, variables) => toastHandlers.onError(error)
+    onError: (error) => toastHandlers.onError(error)
   });
 };
 

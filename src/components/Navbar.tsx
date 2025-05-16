@@ -1,14 +1,13 @@
-
-import { Menu, X } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useToggle } from "@/hooks/useToggle";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu, X } from "lucide-react";
 import NavbarLogo from "./navigation/NavbarLogo";
 import DesktopNav from "./navigation/DesktopNav";
 import MobileNav from "./navigation/MobileNav";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile } from "@/hooks/useProfiles";
+import { useCurrentProfile } from "@/hooks/profiles";
 import UserAvatar from "./navigation/UserAvatar";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useNavigate } from "react-router-dom";
@@ -30,10 +29,11 @@ const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { data: profile } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile(user?.id);
   const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";
+  const profile = profileData?.data;
 
   // Close mobile menu on screen resize
   if (!isMobile && isMenuOpen) {

@@ -2,7 +2,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile, useUpdateProfile } from "@/hooks/useProfiles";
+import { useCurrentProfile } from "@/hooks/profiles";
+import { useUpdateProfile } from "@/hooks/profiles";
 import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
@@ -11,9 +12,10 @@ import { formatProfileUrls } from "@/utils/formatters/urlFormatters";
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { user, loading, isAdmin } = useAuth();
-  const { data: profile, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
+  const { data: profileData, isLoading: isLoadingProfile } = useCurrentProfile(user?.id);
   const updateProfile = useUpdateProfile();
   const addOrganizationRelationship = useAddOrganizationRelationship();
+  const profile = profileData?.data;
 
   useEffect(() => {
     if (!loading && !user) {
