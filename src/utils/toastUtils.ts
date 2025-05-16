@@ -26,7 +26,7 @@ export const createMutationHandlers = (
   } = options;
 
   return {
-    onSuccess: (data: any, variables: any) => {
+    onSuccess: (data: any, variables?: any) => {
       // Log success if enabled
       if (logSuccess && successMessage) {
         logger.info(`Success: ${successMessage}`, { data });

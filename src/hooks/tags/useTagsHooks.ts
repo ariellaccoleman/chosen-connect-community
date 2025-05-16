@@ -61,8 +61,8 @@ export const useCreateTag = () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast
-      toastHandlers.onSuccess(data);
+      // Show success toast - adapt to work with both handler signatures
+      toastHandlers.onSuccess(data, undefined);
     },
     onError: (error) => toastHandlers.onError(error)
   });
@@ -85,8 +85,8 @@ export const useFindOrCreateTag = () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });
       await invalidateTagCache();
       
-      // Show success toast
-      toastHandlers.onSuccess(data);
+      // Show success toast - adapt to work with both handler signatures
+      toastHandlers.onSuccess(data, undefined);
     },
     onError: (error) => toastHandlers.onError(error)
   });

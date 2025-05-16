@@ -1,7 +1,6 @@
 
-
 // Re-export all profile queries from the new module for backwards compatibility
-export { useCurrentProfile } from "./profiles";
+export { useCurrentProfile } from "./profiles/useProfileHooks";
 
 /**
  * Enhanced hook to access the current user's profile with proper data unwrapping
