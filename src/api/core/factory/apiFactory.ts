@@ -60,15 +60,21 @@ export function createApiFactory<
   useMutationOperations?: boolean;
   useBatchOperations?: boolean;
 } & ApiFactoryOptions<T>): ApiOperations<T, TId, TCreate, TUpdate> {
+  // Validate tableName is defined
+  if (!tableName) {
+    throw new Error('tableName is required to create API operations');
+  }
+  
   // Use provided repository or create one
   const dataRepository = typeof repository === 'function'
     ? repository()
     : repository || createRepository<T>(tableName as string);
   
-  // Use entityName or generate from tableName
+  // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
-    tableName.replace(/_/g, ' ')
-      .replace(/^\w/, c => c.toUpperCase());
+    (typeof tableName === 'string' ? 
+      tableName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
+      'Entity');
   
   // Base operations are always included
   const baseOps = createBaseOperations<T, TId, TCreate, TUpdate, Table>(
@@ -116,7 +122,7 @@ export function createApiFactory<
         repository: dataRepository
       }
     );
-    Object.assign(result, { ...mutationOps });
+    Object.assign(result, mutationOps);
   }
   
   // Add batch operations if requested

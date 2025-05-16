@@ -1,4 +1,6 @@
 
+#!/usr/bin/env node
+
 class TestReporter {
   constructor(globalConfig, options) {
     this._globalConfig = globalConfig;
@@ -103,7 +105,13 @@ class TestReporter {
     const testSuiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
     
     // Process each test and send individually
-    for (const result of testResults) {
+    for (const result of testResults || []) {
+      // Skip if result is undefined
+      if (!result) {
+        console.warn('Skipping undefined test result');
+        continue;
+      }
+      
       const testStatus = result.status === 'passed' ? 'passed' : 
                         result.status === 'failed' ? 'failed' : 'skipped';
       

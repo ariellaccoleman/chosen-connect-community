@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 // **DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE**
 // *DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE*
@@ -71,6 +72,9 @@ for (const dep of additionalDeps) {
     }
   }
 }
+
+// Make HTTP requests work in Node.js
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
 // Generate a test run ID or use the existing one
 async function createTestRun() {
