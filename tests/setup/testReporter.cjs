@@ -39,7 +39,7 @@ class TestReporter {
       if (!this.testRunId) {
         console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
         
-        // Create a new test run in Supabase
+        // Create a new test run in Supabase - don't send any test counts initially
         const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',
           headers: {
@@ -50,6 +50,7 @@ class TestReporter {
             status: 'in_progress',
             git_commit: process.env.GITHUB_SHA || null,
             git_branch: process.env.GITHUB_REF_NAME || null,
+            // Initialize with zeros - final update will come at the end
             total_tests: 0,
             passed_tests: 0,
             failed_tests: 0,
@@ -111,12 +112,6 @@ class TestReporter {
     
     // Collect all test results for this file first, then send as a single batch
     const batchResults = [];
-    const batchCounts = {
-      total: 0,
-      passed: 0,
-      failed: 0,
-      skipped: 0
-    };
     
     // Process each test
     for (const result of testResults) {
@@ -148,15 +143,11 @@ class TestReporter {
       // Mark this test as reported
       this.results.reportedTests.add(testId);
       
-      // Update summary counts
+      // Update summary counts - these will be reported in onRunComplete
       this.results.total++;
       if (testStatus === 'passed') this.results.passed++;
       else if (testStatus === 'failed') this.results.failed++;
       else this.results.skipped++;
-      
-      // Update batch counts
-      batchCounts.total++;
-      batchCounts[testStatus]++;
       
       console.log(`- Test: ${testName}, Status: ${testStatus}`);
       
@@ -187,7 +178,8 @@ class TestReporter {
       try {
         console.log(`Sending ${batchResults.length} test results to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
         
-        // Use the edge function to save test results
+        // Use the edge function to save test results - but DO NOT update counts here
+        // The counts will be updated only in onRunComplete
         const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',
           headers: {
@@ -244,6 +236,7 @@ class TestReporter {
     
     try {
       // Update test run with final results using the edge function
+      // This is the single source of truth for the test counts
       console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
           method: 'POST',

@@ -19,6 +19,7 @@ export const useTestRuns = () => {
   return useQuery({
     queryKey: ['test-runs'],
     queryFn: getAllTestRuns,
+    staleTime: 30000, // Data considered fresh for 30 seconds
   });
 };
 
@@ -30,8 +31,9 @@ export const useTestRunDetails = (testRunId: string | undefined) => {
     queryKey: ['test-run', testRunId],
     queryFn: () => testRunId ? getTestRunById(testRunId) : Promise.resolve(null),
     enabled: !!testRunId,
-    // Ensure we don't cache old data that could cause double-counting
-    staleTime: 0,
+    // Ensure we don't cache old test run data for too long
+    staleTime: 30000,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -43,8 +45,9 @@ export const useTestResults = (testRunId: string | undefined) => {
     queryKey: ['test-results', testRunId],
     queryFn: () => testRunId ? getTestResultsByRunId(testRunId) : Promise.resolve([]),
     enabled: !!testRunId,
-    // Ensure we don't cache old data that could cause double-counting
-    staleTime: 0, 
+    // Ensure we don't cache old test results for too long
+    staleTime: 30000, 
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -55,6 +58,7 @@ export const useRecentFailedTests = (limit = 20) => {
   return useQuery({
     queryKey: ['failed-tests', limit],
     queryFn: () => getRecentFailedTests(limit),
+    staleTime: 60000, // Consider failed tests fresh for 1 minute
   });
 };
 
