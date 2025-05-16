@@ -15,32 +15,16 @@ const hookFactory = createQueryHooks<ProfileWithDetails>(
 );
 
 // Extract all the hooks from the factory
-const useProfileList = hookFactory.useList;
-const useProfileById = hookFactory.useById;
-const useProfilesByIds = hookFactory.useByIds;
-const useCreateProfile = hookFactory.useCreate;
-const useDeleteProfile = hookFactory.useDelete;
-const createUpdateProfileHook = hookFactory.createUpdateHook;
-
-// Create standard update profile hook
-const useUpdateProfile = createUpdateProfileHook();
-const useUpdateProfileFactory = createUpdateProfileHook;
+export const useProfileList = hookFactory.useList;
+export const useProfileById = hookFactory.useById;
+export const useProfilesByIds = hookFactory.useByIds;
+export const useCreateProfile = hookFactory.useCreate;
+export const useDeleteProfile = hookFactory.useDelete;
+export const useUpdateProfile = hookFactory.useUpdate;
 
 /**
  * Hook to access the current user's profile
  */
-const useCurrentProfile = (userId?: string, authUser?: any) => {
+export const useCurrentProfile = (userId?: string, authUser?: any) => {
   return useProfileById(userId || authUser?.id);
-};
-
-// Export all hooks
-export {
-  useProfileList,
-  useProfileById,
-  useProfilesByIds,
-  useCreateProfile,
-  useUpdateProfileFactory,
-  useUpdateProfile,
-  useDeleteProfile,
-  useCurrentProfile
 };

@@ -55,7 +55,7 @@ export const useCreateTag = () => {
   });
   
   return useMutation({
-    mutationFn: createTag,
+    mutationFn: (data) => createTag(data),
     onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
@@ -79,7 +79,7 @@ export const useFindOrCreateTag = () => {
   });
   
   return useMutation({
-    mutationFn: findOrCreateTag,
+    mutationFn: (data) => findOrCreateTag(data),
     onSuccess: async (data, variables) => {
       // Invalidate queries
       queryClient.invalidateQueries({ queryKey: ['tags'] });
