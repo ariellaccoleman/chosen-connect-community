@@ -15,22 +15,21 @@ export const createTestRun = async (): Promise<string | null> => {
     const gitCommit = process.env.GITHUB_SHA || null;
     const gitBranch = process.env.GITHUB_REF_NAME || null;
     
-    const { data, error } = await supabase
-      .from('test_runs')
-      .insert({
-        status: 'in_progress',
+    // Call the create-run endpoint
+    const { data, error } = await supabase.functions.invoke('report-test-results/create-run', {
+      method: 'POST',
+      body: {
         git_commit: gitCommit,
         git_branch: gitBranch,
-      })
-      .select('id')
-      .single();
+      }
+    });
     
     if (error) {
       logger.error('Error creating test run:', error);
       return null;
     }
     
-    return data.id;
+    return data.test_run_id;
   } catch (error) {
     logger.error('Exception creating test run:', error);
     return null;
@@ -51,9 +50,10 @@ export const saveTestResult = async (
   consoleOutput?: string
 ): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from('test_results')
-      .insert({
+    // Call the record-result endpoint
+    const { error } = await supabase.functions.invoke('report-test-results/record-result', {
+      method: 'POST',
+      body: {
         test_run_id: testRunId,
         test_suite: testSuite,
         test_name: testName,
@@ -62,7 +62,8 @@ export const saveTestResult = async (
         error_message: errorMessage || null,
         stack_trace: stackTrace || null,
         console_output: consoleOutput || null,
-      });
+      }
+    });
     
     if (error) {
       logger.error('Error saving test result:', error);
@@ -91,17 +92,19 @@ export const updateTestRunStatus = async (
   try {
     const status = failedTests > 0 ? 'failure' : 'success';
     
-    const { error } = await supabase
-      .from('test_runs')
-      .update({
+    // Call the update-run endpoint
+    const { error } = await supabase.functions.invoke('report-test-results/update-run', {
+      method: 'POST',
+      body: {
+        test_run_id: testRunId,
         total_tests: totalTests,
         passed_tests: passedTests,
         failed_tests: failedTests,
         skipped_tests: skippedTests,
         duration_ms: durationMs,
-        status,
-      })
-      .eq('id', testRunId);
+        status
+      }
+    });
     
     if (error) {
       logger.error('Error updating test run status:', error);
@@ -146,7 +149,7 @@ export const getTestRunById = async (testRunId: string): Promise<TestRun | null>
       .from('test_runs')
       .select('*')
       .eq('id', testRunId)
-      .single();
+      .maybeSingle();
     
     if (error) {
       logger.error('Error fetching test run:', error);

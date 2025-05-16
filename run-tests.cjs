@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 const { execSync } = require('child_process');
@@ -67,81 +68,122 @@ for (const dep of additionalDeps) {
   }
 }
 
-// Generate a test run ID
-const testRunId = process.env.TEST_RUN_ID || uuidv4();
-console.log('Generated Test Run ID:', testRunId); // Added for debugging
-process.env.TEST_RUN_ID = testRunId;
-process.env.SUPABASE_URL = SUPABASE_URL;
-process.env.SUPABASE_KEY = SUPABASE_KEY;
-process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
-
-// Make sure SERVICE_ROLE_KEY is available for the edge function
-if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. This may cause issues with the test reporting edge function.');
-}
-
-// Log environment variables for debugging
-console.log('================= Test Environment =================');
-console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
-console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
-console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
-console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
-console.log(`- TEST_RUN_ID: ${testRunId}`);
-console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
-console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
-console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
-console.log('===================================================');
-
-// Create a test to verify if API keys are set correctly and report to the API
-const verifyEnvTestPath = './tests/setup/verify-env.test.ts';
-const setupDir = './tests/setup';
-
-if (!existsSync(setupDir)) {
-  fs.mkdirSync(setupDir, { recursive: true });
-}
-
-fs.writeFileSync(verifyEnvTestPath, `
-describe('Test environment', () => {
-  test('Verify required environment variables are set', () => {
-    expect(process.env.SUPABASE_URL).toBeDefined();
-    expect(process.env.TEST_REPORTING_API_KEY).toBeDefined();
-    expect(process.env.TEST_RUN_ID).toBeDefined();
-    console.log('All required environment variables are set');
-    console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
-    console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
-  });
+// Generate a test run ID or use the existing one
+async function createTestRun() {
+  if (process.env.TEST_RUN_ID) {
+    console.log(`Using existing Test Run ID: ${process.env.TEST_RUN_ID}`);
+    return process.env.TEST_RUN_ID;
+  }
   
-  test('Test API is working', async () => {
-    // Explicitly print variables
-    console.log('TEST_RUN_ID from environment:', process.env.TEST_RUN_ID);
+  // Create a test run via the API
+  try {
+    console.log(`Creating new test run via ${SUPABASE_URL}/functions/v1/report-test-results/create-run`);
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/report-test-results/create-run`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': TEST_REPORTING_API_KEY
+      },
+      body: JSON.stringify({
+        git_commit: process.env.GITHUB_SHA || null,
+        git_branch: process.env.GITHUB_REF_NAME || null,
+      })
+    });
     
-    // We'll verify this test appears in results to confirm API is working
-    expect(true).toBe(true);
-  });
-});
-`);
-
-// Run tests with custom reporter
-const testPathPattern = process.argv[2] || '';
-try {
-  console.log(`Running tests${testPathPattern ? ` matching pattern: ${testPathPattern}` : ''}...`);
-  console.log(`Test run ID: ${testRunId}`);
-  
-  // Add verbose flag for more detailed test output
-  execSync(
-    `npx jest ${testPathPattern} --verbose --reporters=default --reporters=${TEST_REPORTER_PATH}`,
-    { 
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        TEST_RUN_ID: testRunId,
-        SUPABASE_URL: SUPABASE_URL,
-        SUPABASE_KEY: SUPABASE_KEY,
-        TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY
-      }
+    if (!response.ok) {
+      console.error(`Failed to create test run. Status: ${response.status}`);
+      const body = await response.text();
+      console.error(`Error: ${body}`);
+      return uuidv4(); // Fallback to using a local UUID
     }
-  );
-} catch (error) {
-  console.error('Tests failed with error code:', error.status);
-  process.exit(1);
+    
+    const data = await response.json();
+    console.log(`Created test run with ID: ${data.test_run_id}`);
+    return data.test_run_id;
+  } catch (error) {
+    console.error('Error creating test run:', error);
+    return uuidv4(); // Fallback to using a local UUID
+  }
 }
+
+// Make this an async function to use await
+(async () => {
+  // Create or get the test run ID
+  const testRunId = await createTestRun();
+  console.log('Test Run ID:', testRunId);
+  process.env.TEST_RUN_ID = testRunId;
+  process.env.SUPABASE_URL = SUPABASE_URL;
+  process.env.SUPABASE_KEY = SUPABASE_KEY;
+  process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
+
+  // Make sure SERVICE_ROLE_KEY is available for the edge function
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. This may cause issues with the test reporting edge function.');
+  }
+
+  // Log environment variables for debugging
+  console.log('================= Test Environment =================');
+  console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
+  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- TEST_RUN_ID: ${testRunId}`);
+  console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
+  console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
+  console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
+  console.log('===================================================');
+
+  // Create a test to verify if API keys are set correctly and report to the API
+  const verifyEnvTestPath = './tests/setup/verify-env.test.ts';
+  const setupDir = './tests/setup';
+
+  if (!existsSync(setupDir)) {
+    fs.mkdirSync(setupDir, { recursive: true });
+  }
+
+  fs.writeFileSync(verifyEnvTestPath, `
+  describe('Test environment', () => {
+    test('Verify required environment variables are set', () => {
+      expect(process.env.SUPABASE_URL).toBeDefined();
+      expect(process.env.TEST_REPORTING_API_KEY).toBeDefined();
+      expect(process.env.TEST_RUN_ID).toBeDefined();
+      console.log('All required environment variables are set');
+      console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
+      console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+    });
+    
+    test('Test API is working', async () => {
+      // Explicitly print variables
+      console.log('TEST_RUN_ID from environment:', process.env.TEST_RUN_ID);
+      
+      // We'll verify this test appears in results to confirm API is working
+      expect(true).toBe(true);
+    });
+  });
+  `);
+
+  // Run tests with custom reporter
+  const testPathPattern = process.argv[2] || '';
+  try {
+    console.log(`Running tests${testPathPattern ? ` matching pattern: ${testPathPattern}` : ''}...`);
+    console.log(`Test run ID: ${testRunId}`);
+    
+    // Add verbose flag for more detailed test output
+    execSync(
+      `npx jest ${testPathPattern} --verbose --reporters=default --reporters=${TEST_REPORTER_PATH}`,
+      { 
+        stdio: 'inherit',
+        env: {
+          ...process.env,
+          TEST_RUN_ID: testRunId,
+          SUPABASE_URL: SUPABASE_URL,
+          SUPABASE_KEY: SUPABASE_KEY,
+          TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY
+        }
+      }
+    );
+  } catch (error) {
+    console.error('Tests failed with error code:', error.status);
+    process.exit(1);
+  }
+})();

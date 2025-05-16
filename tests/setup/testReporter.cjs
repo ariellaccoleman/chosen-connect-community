@@ -35,28 +35,20 @@ class TestReporter {
     }
     
     try {
-      // Initial test run creation - but only if we don't already have a test run ID
+      // Create a new test run only if we don't already have a test run ID
       if (!this.testRunId) {
-        console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
+        console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results/create-run`);
         
-        // Create a new test run in Supabase - don't send any test counts initially
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
+        // Create a new test run in Supabase
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/create-run`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
           body: JSON.stringify({
-            status: 'in_progress',
             git_commit: process.env.GITHUB_SHA || null,
             git_branch: process.env.GITHUB_REF_NAME || null,
-            // Initialize with zeros - final update will come at the end
-            total_tests: 0,
-            passed_tests: 0,
-            failed_tests: 0,
-            skipped_tests: 0,
-            duration_ms: 0,
-            test_results: []
           })
         });
         
@@ -110,16 +102,12 @@ class TestReporter {
     const testSuitePath = testFilePath.split('/');
     const testSuiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
     
-    // Collect all test results for this file first, then send as a single batch
-    const batchResults = [];
-    
-    // Process each test
+    // Process each test and send individually
     for (const result of testResults) {
       const testStatus = result.status === 'passed' ? 'passed' : 
                         result.status === 'failed' ? 'failed' : 'skipped';
       
       // Handle different test result formats for the title
-      // Some test frameworks provide title as an array, others as a string
       let testName = '';
       if (Array.isArray(result.title)) {
         testName = result.title.join(' > ');
@@ -131,7 +119,7 @@ class TestReporter {
         testName = `Test #${this.results.total}`;
       }
       
-      // Create a unique identifier for this test to avoid duplicates
+      // Create a unique identifier for this test
       const testId = `${testSuiteName}:${testName}`;
       
       // Skip if we've already reported this test
@@ -157,67 +145,34 @@ class TestReporter {
         ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
         : null;
       
-      // Collect result details - ensure the test run ID is correctly set
-      const testResult = {
-        test_run_id: this.testRunId,
-        test_suite: testSuiteName,
-        test_name: testName,
-        status: testStatus,
-        duration_ms: result.duration || 0,
-        error_message: failureMessages.length > 0 ? failureMessages[0] : null,
-        stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
-        console_output: consoleOutput
-      };
-      
-      // Add to batch
-      batchResults.push(testResult);
-    }
-    
-    // Only send the request if we have results to report
-    if (batchResults.length > 0) {
       try {
-        console.log(`Sending ${batchResults.length} test results to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
-        
-        // Use the edge function to save test results - but DO NOT update counts here
-        // The counts will be updated only in onRunComplete
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
+        // Submit individual test result via the new endpoint
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'x-api-key': process.env.TEST_REPORTING_API_KEY
           },
           body: JSON.stringify({
-            test_results: batchResults,
-            // Don't update the total count here, just report the individual test results
-            // The final count update will happen in onRunComplete
-            total_tests: 0,
-            passed_tests: 0,
-            failed_tests: 0,
-            skipped_tests: 0,
-            duration_ms: 0,
-            git_commit: process.env.GITHUB_SHA || null,
-            git_branch: process.env.GITHUB_REF_NAME || null
+            test_run_id: this.testRunId,
+            test_suite: testSuiteName,
+            test_name: testName,
+            status: testStatus,
+            duration_ms: result.duration || 0,
+            error_message: failureMessages.length > 0 ? failureMessages[0] : null,
+            stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
+            console_output: consoleOutput
           })
         });
-        
+
         if (!response.ok) {
           const responseText = await response.text();
-          console.error(`Failed to save test results: ${responseText}`);
-          console.error('Response status:', response.status);
-          
-          // Try to parse the error message
-          try {
-            const errorJson = JSON.parse(responseText);
-            console.error('Error details:', JSON.stringify(errorJson, null, 2));
-          } catch (e) {
-            // If not JSON, just log the raw text
-            console.error('Error response:', responseText);
-          }
+          console.error(`Failed to save test result: ${responseText}`);
         } else {
-          console.log(`Successfully reported ${batchResults.length} test results`);
+          console.log(`Successfully reported test result: ${testName}`);
         }
       } catch (error) {
-        console.error(`Error saving test results:`, error);
+        console.error(`Error saving test result for ${testName}:`, error);
       }
     }
     
@@ -232,32 +187,30 @@ class TestReporter {
     }
     
     console.log(`Test run complete. Updating test run ${this.testRunId} with final summary results.`);
-    console.log(`Final counts: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped`);
+    console.log(`Final counts: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped, total: ${this.results.total}`);
+    
+    // Determine final status
+    const status = this.results.failed > 0 ? 'failure' : 'success';
     
     try {
-      // Update test run with final results using the edge function
-      // This is the single source of truth for the test counts
-      console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results`);
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
-          },
-          body: JSON.stringify({
-            // Don't include test results in the final update, just the counts
-            test_results: [],
-            // Include the FINAL counts - this is the single source of truth
-            total_tests: this.results.total,
-            passed_tests: this.results.passed,
-            failed_tests: this.results.failed,
-            skipped_tests: this.results.skipped,
-            duration_ms: this.results.duration,
-            status: this.results.failed > 0 ? 'failure' : 'success',
-            git_commit: process.env.GITHUB_SHA || null,
-            git_branch: process.env.GITHUB_REF_NAME || null
-          })
-        });
+      // Update test run with final results via the new endpoint
+      console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`);
+      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.TEST_REPORTING_API_KEY
+        },
+        body: JSON.stringify({
+          test_run_id: this.testRunId,
+          total_tests: this.results.total,
+          passed_tests: this.results.passed,
+          failed_tests: this.results.failed,
+          skipped_tests: this.results.skipped,
+          duration_ms: this.results.duration,
+          status: status
+        })
+      });
       
       if (response.ok) {
         const responseData = await response.json();
