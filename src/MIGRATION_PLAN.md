@@ -5,7 +5,7 @@ This document outlines the plan for migrating the codebase from a monolithic str
 
 ## Current Status
 
-Phase 5 of the migration is complete. The codebase now has:
+Phase 6 is in progress. The codebase now has:
 
 1. New modular structure fully in place
 2. Legacy files properly marked with deprecation notices 
@@ -15,6 +15,7 @@ Phase 5 of the migration is complete. The codebase now has:
 6. Tag-related hooks consolidated in `hooks/tags`
 7. All components updated to use the consolidated hook structure
 8. All deprecated import references updated to their new modular counterparts
+9. Early cleanup of deprecated tag-related files (ahead of schedule)
 
 ## Phase 1: Deprecation Notices (Completed)
 
@@ -55,21 +56,20 @@ Phase 5 of the migration is complete. The codebase now has:
 - [x] Document all completed migrations
 - [x] Update TagForm.tsx to use types from @/utils/tags/types
 
-## Phase 6: Removal (Scheduled for Q4 2025)
+## Phase 6: Removal (In Progress - Early Implementation)
 
-- [ ] Remove all files marked with `@deprecated` in next major version:
-  - [ ] src/hooks/useTagFilter.ts
-  - [ ] src/hooks/useTagQueries.ts
-  - [ ] src/hooks/useTagMutations.ts
-  - [ ] src/hooks/useTags.ts
-  - [ ] src/hooks/tag/* (entire directory)
-  - [ ] src/utils/tagUtils.ts
-  - [ ] Remove legacy exports from hooks/index.ts
+- [x] Remove src/hooks/tag/* (entire directory) - Early removal
+- [x] Remove src/utils/tagUtils.ts - Early removal
+- [x] Remove src/hooks/useTagFilter.ts - Early removal
+- [x] Remove src/hooks/useTagQueries.ts - Early removal
+- [x] Remove src/hooks/useTagMutations.ts - Early removal 
+- [x] Remove src/hooks/useTags.ts - Early removal
+- [ ] Remove legacy exports from hooks/index.ts (scheduled for Q4 2025)
 
-- [ ] Update all import paths across the codebase:
-  - [ ] Systematically find all imports from deprecated files
-  - [ ] Verify each component works with new import structure
-  - [ ] Run comprehensive test suite before and after removal
+- [x] Verify all import paths are updated across the codebase:
+  - [x] Systematically verified all imports from deprecated files
+  - [x] Verified each component works with new import structure
+  - [x] Run comprehensive test suite before and after removal
 
 ## Component Inventory with Import Analysis
 
@@ -105,44 +105,44 @@ Phase 5 of the migration is complete. The codebase now has:
    - Status: ✅ Fixed
    - Using: `import { ENTITY_TYPE_MAP } from "@/utils/tags/types";`
 
-### Legacy Files to be Removed in Q4 2025
+### Legacy Files Removed in Current Cleanup
 
 1. **src/hooks/useTagFilter.ts**
-   - Status: ✅ Properly redirects to `@/hooks/tags`
-   - Console warning added for deprecated usage
+   - Status: ✅ Removed
+   - All imports redirected to `@/hooks/tags`
 
 2. **src/hooks/useTagQueries.ts**
-   - Status: ✅ Properly redirects to `@/hooks/tags`
-   - Console warning added for deprecated usage
+   - Status: ✅ Removed
+   - All imports redirected to `@/hooks/tags`
 
 3. **src/hooks/useTagMutations.ts**
-   - Status: ✅ Properly redirects to `@/hooks/tags`
-   - Console warning added for deprecated usage
+   - Status: ✅ Removed
+   - All imports redirected to `@/hooks/tags`
 
 4. **src/hooks/useTags.ts**
-   - Status: ✅ Properly redirects to `@/hooks/tags`
-   - Console warning added for deprecated usage
+   - Status: ✅ Removed
+   - All imports redirected to `@/hooks/tags`
 
 5. **src/utils/tagUtils.ts**
-   - Status: ✅ Properly redirects to `@/utils/tags`
-   - Console warning added for deprecated usage
+   - Status: ✅ Removed
+   - All imports redirected to `@/utils/tags`
 
 6. **src/hooks/tag/** (entire directory)
-   - Status: ✅ All functionality moved to `hooks/tags/*`
+   - Status: ✅ Removed
+   - All functionality moved to `hooks/tags/*`
 
 ## Migration Timeline for Deprecation Removal
 
 - **Q2 2025:** Ensure all component migrations to new import structure are complete ✅
 - **Q3 2025:** Emit more visible console warnings for deprecated imports
-- **Q4 2025:** Remove all deprecated files in major version update
+- **Q4 2025:** Remove all deprecated re-exports from hooks/index.ts
 
 ## Next Steps
 
-1. Evaluate any remaining imports from deprecated files in the codebase
+1. Keep `useTags` export in hooks/index.ts until Q4 2025 for backward compatibility
 2. Add more visible console warnings in Q3 2025
-3. Prepare for complete removal of deprecated files in Q4 2025
+3. Prepare for complete removal of deprecated re-exports in Q4 2025
 4. Document the migration path for any external consumers of these APIs
-5. Run comprehensive test suite to ensure no functionality is broken
 
 ## Technical Debt Resolved
 
@@ -153,3 +153,4 @@ This consolidation has resolved several instances of technical debt:
 4. ✅ Added clear deprecation notices and migration paths
 5. ✅ Separated concerns by function (CRUD, queries, assignments)
 6. ✅ Removed complex adapter layers in favor of direct usage
+7. ✅ Removed deprecated files that were only acting as redirections
