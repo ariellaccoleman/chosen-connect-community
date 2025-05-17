@@ -4,8 +4,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
-import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Fix the imports to use the correct path and hook names
+import { useSelectionTags } from "@/hooks/useTagQueries";
+import { useTagCrudMutations } from "@/hooks/tag";
 
 // Import the new components
 import AdminTagsHeader from "@/components/admin/tags/AdminTagsHeader";
@@ -20,6 +23,7 @@ const AdminTags = () => {
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
   // Extract the actual tags array from the API response
+  // Fix the data access to properly handle the response structure
   const tags = tagsResponse?.data || [];
 
   const handleOpenCreateForm = () => setIsCreateFormOpen(true);
