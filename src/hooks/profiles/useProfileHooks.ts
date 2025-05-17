@@ -22,9 +22,4 @@ export const useCreateProfile = hookFactory.useCreate;
 export const useDeleteProfile = hookFactory.useDelete;
 export const useUpdateProfile = hookFactory.useUpdate;
 
-/**
- * Hook to access the current user's profile
- */
-export const useCurrentProfile = (userId?: string, authUser?: any) => {
-  return useProfileById(userId || authUser?.id);
-};
+// Removed useCurrentProfile export as it's now in its own file
