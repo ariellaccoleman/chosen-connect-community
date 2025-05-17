@@ -108,9 +108,9 @@ export function createQueryOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                selectQuery = selectQuery.in(key as string, value as any[]);
+                selectQuery = selectQuery.in(key, value);
               } else {
-                selectQuery = selectQuery.eq(key as string, value as any);
+                selectQuery = selectQuery.eq(key, value);
               }
             }
           });
@@ -118,7 +118,7 @@ export function createQueryOperations<
         
         // Apply search if provided
         if (params?.search) {
-          selectQuery = selectQuery.ilike('name' as string, `%${params.search}%`);
+          selectQuery = selectQuery.ilike('name', `%${params.search}%`);
         }
         
         // Apply pagination
@@ -128,17 +128,18 @@ export function createQueryOperations<
         }
         
         // Apply sorting
-        const sortField = params?.sortBy ? params.sortBy as string : typedDefaultOrderBy;
+        const sortField = params?.sortBy || typedDefaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
-        selectQuery = selectQuery.order(sortField, { ascending: sortOrder === 'asc' });
+        const ascending = sortOrder === 'asc';
         
+        selectQuery = selectQuery.order(sortField, { ascending });
+        
+        // Execute the query
         const { data, error } = await selectQuery;
-        
         if (error) throw error;
         
         // Transform response data
         const transformedData = data ? data.map(transformResponse) : [];
-        
         return createSuccessResponse(transformedData);
       });
     } catch (error) {
@@ -160,10 +161,13 @@ export function createQueryOperations<
           .select(defaultSelect)
           .eq(typedIdField, id as any)
           .maybeSingle();
-        
+          
         if (result.error) throw result.error;
         
-        return createSuccessResponse(result.data ? transformResponse(result.data) : null);
+        // Return null if no entity is found
+        if (!result.data) return createSuccessResponse(null);
+        
+        return createSuccessResponse(transformResponse(result.data));
       }
       
       // Legacy implementation using apiClient
@@ -173,25 +177,30 @@ export function createQueryOperations<
           .select(defaultSelect)
           .eq(typedIdField, id as any)
           .maybeSingle();
-        
+          
         if (error) throw error;
         
-        return createSuccessResponse(data ? transformResponse(data) : null);
+        // Return null if no entity is found
+        if (!data) return createSuccessResponse(null);
+        
+        return createSuccessResponse(transformResponse(data));
       });
     } catch (error) {
-      logger.error(`Error fetching ${entityName} by ID:`, error);
+      logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
     }
   };
 
   /**
-   * Get multiple entities by their IDs
+   * Get multiple entities by IDs
    */
   const getByIds = async (ids: TId[]): Promise<ApiResponse<T[]>> => {
     try {
-      if (!ids.length) return createSuccessResponse([]);
+      logger.debug(`Fetching ${entityName} with IDs: ${ids.join(', ')}`);
       
-      logger.debug(`Fetching ${entityName} with IDs:`, ids);
+      if (ids.length === 0) {
+        return createSuccessResponse([]);
+      }
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
@@ -199,7 +208,7 @@ export function createQueryOperations<
           .select(defaultSelect)
           .in(typedIdField, ids as any[])
           .execute();
-        
+          
         if (result.error) throw result.error;
         
         const transformedData = result.data ? result.data.map(transformResponse) : [];
@@ -213,7 +222,7 @@ export function createQueryOperations<
           .from(tableName)
           .select(defaultSelect)
           .in(typedIdField, ids as any[]);
-        
+          
         if (error) throw error;
         
         const transformedData = data ? data.map(transformResponse) : [];

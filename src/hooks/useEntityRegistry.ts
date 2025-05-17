@@ -1,83 +1,90 @@
 
-import { entityRegistry } from "../registry";
+import { useCallback, useMemo } from "react";
+import { 
+  Entity,
+  profileToEntity,
+  organizationToEntity, 
+  eventToEntity
+} from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { Entity } from "@/types/entity";
-import { EntityTypeDefinition } from "@/types/entityRegistry";
-import { ReactNode } from "react";
+import { ProfileWithDetails } from "@/types/profile";
+import { OrganizationWithLocation } from "@/types/organization";
+import { EventWithDetails } from "@/types/event";
 
+/**
+ * Hook for working with different entity types in a consistent way
+ */
 export function useEntityRegistry() {
-  // Get a registered entity type
-  const getEntityTypeDefinition = (type: EntityType): EntityTypeDefinition | undefined => {
-    return entityRegistry.get(type);
-  };
-  
-  // Get the detail URL for an entity
-  const getEntityUrl = (entity: Entity): string => {
-    const definition = entityRegistry.get(entity.entityType);
-    if (!definition) return "#";
-    return definition.behavior.getDetailUrl(entity.id);
-  };
-  
-  // Get the icon for an entity type
-  const getEntityIcon = (entityType: EntityType): ReactNode | null => {
-    const definition = entityRegistry.get(entityType);
-    if (!definition) return null;
-    return definition.behavior.getIcon();
-  };
-  
-  // Get a label for an entity type
-  const getEntityTypeLabel = (entityType: EntityType): string => {
-    const definition = entityRegistry.get(entityType);
-    if (!definition) return entityType;
-    return definition.behavior.getTypeLabel();
-  };
-  
-  // Get singular form of entity type name
-  const getEntityTypeSingular = (entityType: EntityType): string => {
-    const definition = entityRegistry.get(entityType);
-    if (!definition) return entityType;
-    return definition.behavior.getSingularName();
-  };
-  
-  // Get plural form of entity type name
-  const getEntityTypePlural = (entityType: EntityType): string => {
-    const definition = entityRegistry.get(entityType);
-    if (!definition) return `${entityType}s`;
-    return definition.behavior.getPluralName();
-  };
-  
-  // Get fallback text for avatar
-  const getEntityAvatarFallback = (entity: Entity): string => {
-    const definition = entityRegistry.get(entity.entityType);
-    if (!definition) {
-      // Default fallback if no definition exists
-      if (!entity.name) return "?";
-      return entity.name.substring(0, 2).toUpperCase();
+  /**
+   * Convert any supported entity to the generic Entity interface
+   */
+  const toEntity = useCallback((entity: any, entityType: EntityType): Entity | null => {
+    if (!entity) return null;
+    
+    switch (entityType) {
+      case EntityType.PERSON:
+        return profileToEntity(entity as ProfileWithDetails);
+      case EntityType.ORGANIZATION:
+        return organizationToEntity(entity as OrganizationWithLocation);
+      case EntityType.EVENT:
+        return eventToEntity(entity as EventWithDetails);
+      default:
+        console.warn(`Unsupported entity type: ${entityType}`);
+        return null;
     }
-    return definition.behavior.getFallbackInitials(entity);
-  };
+  }, []);
   
-  // Convert an entity of any type to the generic Entity interface
-  const toEntity = (source: any, entityType: EntityType): Entity | null => {
-    const definition = entityRegistry.get(entityType);
-    if (!definition || !definition.converter.toEntity) return null;
-    try {
-      return definition.converter.toEntity(source);
-    } catch (error) {
-      console.error(`Error converting ${entityType} to Entity:`, error);
-      return null;
+  /**
+   * Get the label for an entity type
+   */
+  const getEntityTypeLabel = useCallback((type: EntityType): string => {
+    switch (type) {
+      case EntityType.PERSON:
+        return "Person";
+      case EntityType.ORGANIZATION:
+        return "Organization";
+      case EntityType.EVENT:
+        return "Event";
+      default:
+        return "Unknown";
     }
-  };
+  }, []);
+  
+  /**
+   * Get the plural form of an entity type label
+   */
+  const getEntityTypePlural = useCallback((type: EntityType): string => {
+    switch (type) {
+      case EntityType.PERSON:
+        return "People";
+      case EntityType.ORGANIZATION:
+        return "Organizations";
+      case EntityType.EVENT:
+        return "Events";
+      default:
+        return "Items";
+    }
+  }, []);
+
+  /**
+   * Check if an entity is of a specific type
+   */
+  const isEntityType = useCallback((entity: Entity, type: EntityType): boolean => {
+    return entity.entityType === type;
+  }, []);
+  
+  /**
+   * Filter entities by type
+   */
+  const filterEntitiesByType = useCallback((entities: Entity[], type: EntityType): Entity[] => {
+    return entities.filter(entity => entity.entityType === type);
+  }, []);
   
   return {
-    getEntityTypeDefinition,
-    getEntityUrl,
-    getEntityIcon,
-    getEntityTypeLabel,
-    getEntityTypeSingular,
-    getEntityTypePlural,
-    getEntityAvatarFallback,
     toEntity,
-    getAllEntityTypes: () => entityRegistry.getAll(),
+    getEntityTypeLabel,
+    getEntityTypePlural,
+    isEntityType,
+    filterEntitiesByType
   };
 }

@@ -1,199 +1,80 @@
 
-import { createRepository } from "./repositoryFactory";
-import { createStandardOperations } from "./standardOperations";
-import { createEnhancedRepository } from "./enhancedRepositoryFactory";
-import { Organization, OrganizationWithLocation } from "@/types";
-import { formatOrganizationWithLocation } from "@/utils/formatters/organizationFormatters";
-import { ApiResponse, ApiError } from "../errorHandler";
+import { createRepository, DataRepository } from "./repositoryFactory";
+import { createStandardOperations, StandardRepositoryOperations } from "./standardOperations";
+import { EntityType } from "@/types/entityTypes";
+import { ApiResponse } from "../types";
 
 /**
- * Example of how to create and use a basic repository
+ * Example of creating typed repositories for entity types
  */
-export function createBasicOrganizationRepository() {
-  // Create a basic repository for the organizations table
-  const repository = createRepository<Organization>("organizations");
+export function createEntityRepository<T>(
+  entityType: EntityType, 
+  tableName: string,
+  mockData?: T[]
+): DataRepository<T> {
+  // Use mock repository in test environments
+  if (process.env.NODE_ENV === 'test') {
+    return createRepository<T>(tableName, 'mock', mockData);
+  }
   
-  return {
-    /**
-     * Get an organization by ID
-     */
-    async getById(id: string): Promise<ApiResponse<Organization | null>> {
-      try {
-        const result = await repository.getById(id);
-        return {
-          data: result,
-          status: "success",
-          error: null
-        };
-      } catch (error) {
-        return {
-          data: null,
-          status: "error",
-          error: { 
-            message: "Failed to retrieve organization"
-          } as ApiError
-        };
-      }
-    },
-    
-    /**
-     * Get all organizations
-     */
-    async getAll(): Promise<ApiResponse<Organization[]>> {
-      try {
-        const results = await repository.getAll();
-        return {
-          data: results,
-          status: "success",
-          error: null
-        };
-      } catch (error) {
-        return {
-          data: [],
-          status: "error",
-          error: { 
-            message: "Failed to retrieve organizations"
-          } as ApiError
-        };
-      }
-    }
-  };
+  // Use Supabase repository in other environments
+  return createRepository<T>(tableName);
 }
 
 /**
- * Example of using standard repository operations
+ * Example of using standard operations with entity repository
  */
-export function createStandardOrganizationRepository() {
-  const repository = createRepository<Organization>("organizations");
-  const operations = createStandardOperations<Organization>(repository, "Organization");
-  
-  return {
-    ...operations,
-    
-    /**
-     * Get organizations by location
-     */
-    async getByLocation(locationId: string): Promise<ApiResponse<Organization[]>> {
-      try {
-        const result = await repository
-          .select()
-          .eq("location_id", locationId)
-          .execute();
-          
-        if (result.error) throw result.error;
-        
-        return {
-          data: result.data || [],
-          status: "success",
-          error: null
-        };
-      } catch (error) {
-        return {
-          data: [],
-          status: "error",
-          error: { 
-            message: "Failed to retrieve organizations by location"
-          } as ApiError
-        };
-      }
-    }
-  };
+export function createEntityOperations<T>(
+  entityType: EntityType,
+  tableName: string,
+  mockData?: T[]
+): StandardRepositoryOperations<T> {
+  const repository = createEntityRepository<T>(entityType, tableName, mockData);
+  const entityName = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+  return createStandardOperations<T>(repository, entityName);
 }
 
 /**
- * Example of using the enhanced repository with transformations
+ * Example of abstracting entity-specific operations
  */
-export function createEnhancedOrganizationRepository() {
-  const repository = createEnhancedRepository<OrganizationWithLocation>(
-    "organizations",
-    "supabase",
-    undefined,
-    {
-      defaultSelect: "*, location:locations(*)",
-      transformResponse: formatOrganizationWithLocation,
-      transformRequest: (data: Partial<OrganizationWithLocation>) => {
-        // Clean up data for insert/update
-        const cleanedData: Record<string, any> = { ...data };
-        
-        // Remove nested objects that should not be sent to the database
-        delete cleanedData.location;
-        delete cleanedData.tags;
-        
-        // Ensure updated_at is set for updates
-        if (!cleanedData.updated_at) {
-          cleanedData.updated_at = new Date().toISOString();
-        }
-        
-        return cleanedData;
-      },
-      enableLogging: true
-    }
-  );
+export class EntityOperations<T> {
+  private operations: StandardRepositoryOperations<T>;
   
-  const operations = createStandardOperations<OrganizationWithLocation>(
-    repository, 
-    "Organization"
-  );
+  constructor(
+    private entityType: EntityType,
+    tableName: string,
+    mockData?: T[]
+  ) {
+    const repository = createEntityRepository<T>(entityType, tableName, mockData);
+    const entityName = entityType.charAt(0).toUpperCase() + entityType.slice(1);
+    this.operations = createStandardOperations<T>(repository, entityName);
+  }
   
-  return {
-    ...operations,
-    
-    /**
-     * Get verified organizations
-     */
-    async getVerifiedOrganizations(): Promise<ApiResponse<OrganizationWithLocation[]>> {
-      try {
-        const result = await repository
-          .select()
-          .eq("is_verified", true)
-          .order("name")
-          .execute();
-          
-        if (result.error) throw result.error;
-        
-        return {
-          data: result.data || [],
-          status: "success",
-          error: null
-        };
-      } catch (error) {
-        return {
-          data: [],
-          status: "error", 
-          error: { 
-            message: "Failed to retrieve verified organizations" 
-          } as ApiError
-        };
-      }
-    },
-    
-    /**
-     * Search organizations by name
-     */
-    async searchByName(query: string): Promise<ApiResponse<OrganizationWithLocation[]>> {
-      try {
-        const result = await repository
-          .select()
-          .ilike("name", `%${query}%`)
-          .order("name")
-          .execute();
-          
-        if (result.error) throw result.error;
-        
-        return {
-          data: result.data || [],
-          status: "success",
-          error: null
-        };
-      } catch (error) {
-        return {
-          data: [],
-          status: "error",
-          error: { 
-            message: "Failed to search organizations" 
-          } as ApiError
-        };
-      }
-    }
-  };
+  async getAll(): Promise<ApiResponse<T[]>> {
+    return this.operations.getAll();
+  }
+  
+  async getById(id: string): Promise<ApiResponse<T | null>> {
+    return this.operations.getById(id);
+  }
+  
+  async create(data: Partial<T>): Promise<ApiResponse<T>> {
+    return this.operations.create(data);
+  }
+  
+  async update(id: string, data: Partial<T>): Promise<ApiResponse<T>> {
+    return this.operations.update(id, data);
+  }
+  
+  async delete(id: string): Promise<ApiResponse<boolean>> {
+    return this.operations.delete(id);
+  }
+  
+  async search(term: string, field = 'name'): Promise<ApiResponse<T[]>> {
+    return this.operations.search(field, term);
+  }
+  
+  getEntityType(): EntityType {
+    return this.entityType;
+  }
 }
