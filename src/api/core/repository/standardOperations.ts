@@ -178,9 +178,9 @@ export class StandardRepositoryOperations<T, TId = string> {
    */
   async count(column: string, value: any): Promise<number> {
     try {
-      // Fix here: maybeSingle() doesn't accept arguments
+      // Fixed: select() should use the correct syntax for the repository implementation
       const result = await this.repository
-        .select("id", { count: true })
+        .select("id")
         .eq(column, value)
         .execute();
         
