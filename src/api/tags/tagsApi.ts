@@ -15,9 +15,9 @@ export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>,
       name: data.name,
       description: data.description,
       type: data.type,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      createdBy: data.created_by
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      created_by: data.created_by
     }),
     transformRequest: (data) => {
       const transformed: Record<string, any> = {};
