@@ -59,9 +59,7 @@ describe('Organization Mutation Hooks', () => {
       });
 
       // Execute the mutation
-      result.current.mutate({ 
-        data: { name: 'Test Org', description: 'Test Description' }
-      });
+      result.current.mutate({ name: 'Test Org', description: 'Test Description' });
 
       // Wait for the mutation to complete
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -86,9 +84,7 @@ describe('Organization Mutation Hooks', () => {
       });
 
       // Execute the mutation
-      result.current.mutate({ 
-        data: { name: 'Test Org' }
-      });
+      result.current.mutate({ name: 'Test Org' });
 
       // Wait for the mutation to complete
       await waitFor(() => expect(result.current.isError).toBe(true));
@@ -159,7 +155,7 @@ describe('Organization Mutation Hooks', () => {
       // Wait for the mutation to complete
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify API was called with updated_at included
+      // Verify API was called correctly
       expect(mockUpdateOrg).toHaveBeenCalledWith(
         'org-1',
         expect.objectContaining({
@@ -168,6 +164,9 @@ describe('Organization Mutation Hooks', () => {
           updated_at: expect.any(String) // Check that updated_at is included
         })
       );
+
+      // Verify toast was shown
+      expect(toast.success).toHaveBeenCalledWith("Organization updated successfully!");
     });
   });
 });

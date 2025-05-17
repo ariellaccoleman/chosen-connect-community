@@ -1,70 +1,81 @@
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi";
-import { ProfileOrganizationRelationship } from "@/types";
-import { toast } from "@/components/ui/sonner";
-import { logger } from "@/utils/logger";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
+import { ProfileOrganizationRelationship } from '@/types';
+import { toast } from '@/components/ui/sonner';
+import { logger } from '@/utils/logger';
 
 /**
- * Hook to add an organization relationship
+ * Hook for adding a relationship between a profile and organization
  */
 export const useAddOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (relationship: Partial<ProfileOrganizationRelationship>) => 
-      organizationRelationshipsApi.addOrganizationRelationship(relationship),
-    onSuccess: (_, variables) => {
-      logger.info("Successfully added organization relationship", variables);
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships", variables.profile_id] });
-      toast.success("Successfully added organization connection");
+    mutationFn: (data: {
+      profile_id: string;
+      organization_id: string;
+      connection_type: string;
+      department?: string | null;
+      notes?: string | null;
+    }) => {
+      return organizationRelationshipsApi.addOrganizationRelationship(data);
     },
-    onError: (error) => {
-      logger.error("Failed to add organization relationship:", error);
-      toast.error("Failed to add organization connection");
+    onSuccess: () => {
+      toast.success("Successfully added organization connection");
+      queryClient.invalidateQueries({ queryKey: ['organization-relationships'] });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to add organization connection:', error);
+      toast.error("Failed to add organization connection. Please try again.");
     }
   });
 };
 
 /**
- * Hook to update an organization relationship
+ * Hook for updating a relationship
  */
 export const useUpdateOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ProfileOrganizationRelationship> }) => 
-      organizationRelationshipsApi.updateOrganizationRelationship(id, data),
-    onSuccess: (_, variables) => {
-      logger.info("Successfully updated organization relationship", variables);
-      // Since we don't know the profile_id here, invalidate all relationship queries
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
-      toast.success("Successfully updated organization connection");
+    mutationFn: ({
+      id,
+      data
+    }: {
+      id: string;
+      data: Partial<ProfileOrganizationRelationship>;
+    }) => {
+      return organizationRelationshipsApi.updateOrganizationRelationship(id, data);
     },
-    onError: (error) => {
-      logger.error("Failed to update organization relationship:", error);
-      toast.error("Failed to update organization connection");
+    onSuccess: () => {
+      toast.success("Successfully updated organization connection");
+      queryClient.invalidateQueries({ queryKey: ['organization-relationships'] });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to update organization connection:', error);
+      toast.error("Failed to update organization connection. Please try again.");
     }
   });
 };
 
 /**
- * Hook to delete an organization relationship
+ * Hook for deleting a relationship
  */
 export const useDeleteOrganizationRelationship = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => organizationRelationshipsApi.deleteOrganizationRelationship(id),
-    onSuccess: () => {
-      logger.info("Successfully deleted organization relationship");
-      // Since we don't know the profile_id here, invalidate all relationship queries
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
-      toast.success("Organization connection removed successfully");
+    mutationFn: (id: string) => {
+      return organizationRelationshipsApi.deleteOrganizationRelationship(id);
     },
-    onError: (error) => {
-      logger.error("Failed to delete organization relationship:", error);
-      toast.error("Failed to remove organization connection");
+    onSuccess: () => {
+      toast.success("Successfully removed organization connection");
+      queryClient.invalidateQueries({ queryKey: ['organization-relationships'] });
+    },
+    onError: (error: Error) => {
+      logger.error('Failed to delete organization connection:', error);
+      toast.error("Failed to delete organization connection. Please try again.");
     }
   });
 };
