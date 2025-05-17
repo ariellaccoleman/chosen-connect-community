@@ -9,7 +9,6 @@ export function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
   return {
     data,
     error: null,
-    status: 'success',
     isSuccess: () => true,
     isError: () => false,
     getErrorMessage: () => '',
@@ -26,7 +25,6 @@ export function createErrorResponse<T>(error: any): RepositoryResponse<T> {
   return {
     data: null,
     error: repositoryError,
-    status: 'error',
     isSuccess: () => false,
     isError: () => true,
     getErrorMessage: () => repositoryError.message,
