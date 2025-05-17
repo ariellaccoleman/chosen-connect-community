@@ -1,4 +1,3 @@
-
 import { logger } from "@/utils/logger";
 import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -225,7 +224,7 @@ export function createQueryOperations<
           
         if (error) throw error;
         
-        const transformedData = data ? data.map(transformResponse) : [];
+        const transformedData = data ? data.map(item => transformResponse(item as any)) : [];
         
         return createSuccessResponse(transformedData);
       });

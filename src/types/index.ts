@@ -50,5 +50,5 @@ export interface Tag {
   type: string | null;
   created_at: string;
   updated_at: string;
-  created_by: string | null; // Required to match utils/tags/types Tag
+  created_by: string | null;
 }
