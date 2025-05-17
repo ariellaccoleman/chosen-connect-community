@@ -1,4 +1,5 @@
 
+
 # Modular Structure Migration Plan
 
 This document outlines the plan for migrating the codebase from a monolithic structure to a more modular organization.
@@ -48,6 +49,9 @@ Phase 4 in progress! The codebase now has:
 **Goal**: Standardize all hook imports to use the modular structure.
 
 **Tasks**:
+- [x] Fix errors in legacy hook compatibility layers
+- [x] Update relationship mutations to use proper API functions
+- [x] Fix type errors in RepositoryQuery interfaces
 - [ ] Update components using legacy hooks like `useOrganizationAdmins.ts`
 - [ ] Ensure all imports use the modular structure (e.g., from `@/hooks/organizations`)
 - [ ] Remove remaining legacy hook files after updates
@@ -75,3 +79,4 @@ Phase 4 in progress! The codebase now has:
 - Better testability of data access code
 - Improved error handling for API calls
 - Clearer separation of concerns
+

@@ -48,7 +48,8 @@ export function createBatchOperations<
         // Transform items if needed
         const requestData = items.map((item) => transformRequest(item as unknown as Record<string, any>));
         
-        const result = await repository.insert(requestData).select(select);
+        // Execute the query and wait for the result
+        const result = await repository.insert(requestData).select(select).execute();
         
         if (result.error) throw result.error;
         
@@ -85,7 +86,8 @@ export function createBatchOperations<
           const result = await repository
             .update(requestData)
             .eq(idField, id)
-            .select(select);
+            .select(select)
+            .execute();
           
           if (result.error) throw result.error;
           
@@ -113,12 +115,13 @@ export function createBatchOperations<
         if (softDelete) {
           const result = await repository
             .update({ deleted_at: new Date() })
-            .in(idField, ids);
+            .in(idField, ids)
+            .execute();
             
           if (result.error) throw result.error;
         } else {
           // Otherwise, perform a hard delete
-          const result = await repository.delete().in(idField, ids);
+          const result = await repository.delete().in(idField, ids).execute();
           
           if (result.error) throw result.error;
         }

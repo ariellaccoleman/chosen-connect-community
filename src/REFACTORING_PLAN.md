@@ -1,4 +1,5 @@
 
+
 # Codebase Refactoring Plan
 
 This document outlines the plan for refactoring the codebase to reduce surface area, increase reusability, and improve maintainability.
@@ -60,7 +61,10 @@ This document outlines the plan for refactoring the codebase to reduce surface a
 **Goal**: Standardize all hook imports to use the modular structure.
 
 **Tasks**:
-- [ ] Update components using legacy hooks like `useOrganizationAdmins.ts`
+- [x] Fix type errors in organization mutation hooks 
+- [x] Add missing relationship hooks export in organization hooks module
+- [x] Update backward compatibility layers for organization hooks
+- [ ] Update remaining components using legacy hooks like `useOrganizationAdmins.ts`
 - [ ] Ensure all imports use the modular structure (e.g., from `@/hooks/organizations`)
 - [ ] Remove remaining legacy hook files after updates
 - [ ] Update test files to use the new import patterns
@@ -87,3 +91,4 @@ This document outlines the plan for refactoring the codebase to reduce surface a
 - Better testability of data access code
 - Improved error handling for API calls
 - Clearer separation of concerns
+

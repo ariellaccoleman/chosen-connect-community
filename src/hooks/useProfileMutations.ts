@@ -5,6 +5,9 @@ import { Profile } from '@/types';
 import { toast } from 'sonner';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
+// Import the MembershipTier type
+type MembershipTier = "free" | "community" | "pro" | "partner";
+
 export const useUpdateProfile = () => {
   const queryClient = useQueryClient();
   

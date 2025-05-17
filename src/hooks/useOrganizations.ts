@@ -9,7 +9,7 @@ import {
   useOrganizations as useOrgsQuery,
   useUserOrganizationRelationships as useRelationships,
   useOrganization as useOrganizationQuery
-} from "./useOrganizationQueries";
+} from "./organizations";
 
 /**
  * @deprecated Use useOrganizations from '@/hooks/organizations' directly
@@ -26,9 +26,12 @@ export const useUserOrganizationRelationships = useRelationships;
  */
 export const useOrganization = useOrganizationQuery;
 
+// Re-export mutation hooks for backward compatibility
 export {
+  useCreateOrganization,
+  useUpdateOrganization,
+  useDeleteOrganization,
   useAddOrganizationRelationship,
   useUpdateOrganizationRelationship,
-  useDeleteOrganizationRelationship,
-  useUpdateOrganization
+  useDeleteOrganizationRelationship
 } from './useOrganizationMutations';
