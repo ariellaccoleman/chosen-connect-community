@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { profilesApi } from '@/api/profilesApi';
+import { profileApi } from '@/api/profiles';
 import { ProfileWithDetails } from '@/types';
 import { showErrorToast } from '@/api/core/errorHandler';
 
@@ -11,7 +11,7 @@ export const usePublicProfile = (profileId: string | undefined) => {
     queryFn: async (): Promise<ProfileWithDetails | null> => {
       if (!profileId) return null;
       
-      const response = await profilesApi.getProfileById(profileId);
+      const response = await profileApi.getById(profileId);
       
       if (response.error) {
         showErrorToast(response.error);

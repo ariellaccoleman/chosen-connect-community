@@ -1,33 +1,45 @@
 
-import { useState, useCallback } from "react";
-import { toast } from "sonner";
-import { extractErrorMessage } from "@/utils/errorUtils";
-import { logger } from "@/utils/logger";
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
+import { ApiError } from '@/api/core/errorHandler';
 
 /**
- * Hook for handling form errors in a standardized way
+ * Hook for managing form error states and displaying error toasts
  */
 export const useFormError = () => {
   const [error, setError] = useState<string | null>(null);
 
-  const handleError = useCallback((error: unknown) => {
-    const errorMessage = extractErrorMessage(error);
-    
-    // Log for debugging
-    logger.error("Form error:", error);
-    
-    // Set the error state 
-    setError(errorMessage);
-    
-    // Show toast notification
-    toast.error(errorMessage);
-    
-    return errorMessage;
-  }, []);
+  /**
+   * Handle an error by setting it in state and showing a toast
+   * @param err - The error to handle
+   * @returns The error message
+   */
+  const handleError = (err: unknown): string => {
+    let message: string;
 
-  const clearError = useCallback(() => {
-    setError(null);
-  }, []);
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === 'object' && err !== null && 'message' in err) {
+      // This handles ApiError type or any object with a message property
+      message = (err as ApiError).message;
+    } else if (typeof err === 'string') {
+      message = err;
+    } else {
+      message = 'An unknown error occurred';
+    }
+
+    logger.error('Form error:', message, err);
+    setError(message);
+    toast.error(message);
+    
+    return message;
+  };
+
+  /**
+   * Clear the current error
+   */
+  const clearError = () => setError(null);
 
   return {
     error,

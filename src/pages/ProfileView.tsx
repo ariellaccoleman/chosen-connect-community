@@ -10,7 +10,7 @@ import PublicProfileOrganizations from "@/components/profile/PublicProfileOrgani
 import PublicProfileTags from "@/components/profile/PublicProfileTags";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 
 const ProfileView = () => {
   const { profileId } = useParams<{ profileId: string }>();

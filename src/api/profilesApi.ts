@@ -6,14 +6,17 @@ import { formatProfileWithDetails } from "@/utils/formatters/profileFormatters";
 
 /**
  * API module for profile-related operations
+ * @deprecated Please use the factory-based API from '@/api/profiles' instead
  */
 export const profilesApi = {
   /**
    * Get profile data by user ID
    * @param userId The user ID
    * @returns The profile data or error
+   * @deprecated Use profileApi.getById from '@/api/profiles' instead
    */
   async getProfileById(userId: string): Promise<ApiResponse<ProfileWithDetails | null>> {
+    console.warn("Deprecated: Use profileApi.getById from '@/api/profiles' instead");
     return apiClient.query(async (client) => {
       const { data, error } = await client
         .from('profiles')
@@ -33,6 +36,7 @@ export const profilesApi = {
   
   /**
    * Get all community profiles with optional filters
+   * @deprecated Use specialized community profile hooks from '@/hooks/profiles/useCommunityProfiles' instead
    */
   async getCommunityProfiles(params: {
     search?: string;
@@ -41,6 +45,7 @@ export const profilesApi = {
     isApproved?: boolean;
     tagId?: string | null;
   }): Promise<ApiResponse<ProfileWithDetails[]>> {
+    console.warn("Deprecated: Use specialized community profile hooks from '@/hooks/profiles/useCommunityProfiles' instead");
     return apiClient.query(async (client) => {
       // Base query
       let query = client
@@ -100,11 +105,13 @@ export const profilesApi = {
   
   /**
    * Update a profile
+   * @deprecated Use profileApi.update from '@/api/profiles' instead
    */
   async updateProfile(
     profileId: string, 
     profileData: Partial<ProfileWithDetails>
   ): Promise<ApiResponse<ProfileWithDetails | null>> {
+    console.warn("Deprecated: Use profileApi.update from '@/api/profiles' instead");
     return apiClient.query(async (client) => {
       // Filter out non-profile fields that may come from form data
       const cleanedProfileData = { ...profileData };
