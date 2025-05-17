@@ -99,8 +99,8 @@ export function createEnhancedRepository<T>(
     const originalGetById = repository.getById.bind(repository);
     const originalGetAll = repository.getAll.bind(repository);
     
-    repository.select = function(...args: any[]) {
-      const query = originalSelect(...args);
+    repository.select = function(select?: string) {
+      const query = originalSelect(select);
       const originalExecute = query.execute.bind(query);
       
       query.execute = async function() {
@@ -134,12 +134,12 @@ export function createEnhancedRepository<T>(
     const originalInsert = repository.insert.bind(repository);
     const originalUpdate = repository.update.bind(repository);
     
-    repository.insert = async function(data: Record<string, any>) {
+    repository.insert = function(data: Record<string, any>) {
       const transformedData = options.transformRequest(data);
       return originalInsert(transformedData);
     };
     
-    repository.update = async function(id: string | number, data: Record<string, any>) {
+    repository.update = function(id: string | number, data: Record<string, any>) {
       const transformedData = options.transformRequest(data);
       return originalUpdate(id, transformedData);
     };

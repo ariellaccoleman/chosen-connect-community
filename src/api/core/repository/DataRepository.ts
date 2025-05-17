@@ -10,6 +10,19 @@ export interface DataRepository<T = any> {
   tableName: string;
 
   /**
+   * Get a record by ID
+   * @param id ID of the record to retrieve
+   * @returns Promise with the record or null if not found
+   */
+  getById(id: string | number): Promise<T | null>;
+
+  /**
+   * Get all records
+   * @returns Promise with an array of records
+   */
+  getAll(): Promise<T[]>;
+
+  /**
    * Select records from the database
    * @param select Fields to select
    * @returns Query builder that can be further chained
@@ -19,22 +32,30 @@ export interface DataRepository<T = any> {
   /**
    * Insert data into the database
    * @param data Data to insert
-   * @returns Query builder that can be further chained
+   * @returns Promise with the inserted record
    */
-  insert(data: any): RepositoryQuery<T>;
+  insert(data: Record<string, any>): Promise<T>;
 
   /**
    * Update data in the database
+   * @param id ID of the record to update
    * @param data Data to update
-   * @returns Query builder that can be further chained
+   * @returns Promise with the updated record
    */
-  update(data: any): RepositoryQuery<T>;
+  update(id: string | number, data: Record<string, any>): Promise<T>;
 
   /**
-   * Delete data from the database
-   * @returns Query builder that can be further chained
+   * Delete a record from the database
+   * @param id ID of the record to delete
+   * @returns Promise indicating success
    */
-  delete(): RepositoryQuery<T>;
+  delete(id: string | number): Promise<void>;
+
+  /**
+   * Set repository options
+   * @param options Repository configuration options
+   */
+  setOptions?(options: Record<string, any>): void;
 }
 
 /**
@@ -100,27 +121,28 @@ export interface RepositoryQuery<T = any> {
   /**
    * Select specific fields
    * @param select Fields to select
+   * @param options Additional options like count
    * @returns The query builder for chaining
    */
-  select(select?: string): RepositoryQuery<T>;
+  select(select?: string, options?: { count?: boolean }): RepositoryQuery<T>;
   
   /**
    * Get a single result
    * @returns Promise with the result
    */
-  single(): Promise<RepositoryResponse<T>>;
+  single(): Promise<T>;
   
   /**
    * Get a single result or null if not found
    * @returns Promise with the result or null
    */
-  maybeSingle(): Promise<RepositoryResponse<T | null>>;
+  maybeSingle(): Promise<T | null>;
   
   /**
    * Execute the query and get results
    * @returns Promise with the results
    */
-  execute(): Promise<RepositoryResponse<T[]>>;
+  execute(): Promise<T[]>;
 }
 
 /**
@@ -131,6 +153,7 @@ export interface RepositoryResponse<T> {
   data: T | null;
   error: RepositoryError | null;
   status: 'success' | 'error';
+  count?: number;
   
   /**
    * Helper method to check if the response was successful

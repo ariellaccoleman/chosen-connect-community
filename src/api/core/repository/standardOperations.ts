@@ -1,7 +1,6 @@
-
 import { DataRepository } from "./DataRepository";
 import { logger } from "@/utils/logger";
-import { ApiResponse } from "../errorHandler";
+import { ApiResponse, ApiError } from "../errorHandler";
 
 /**
  * Standard operations that can be applied to any repository
@@ -28,7 +27,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: null,
         status: "error",
-        error: `Failed to retrieve ${this.entityName.toLowerCase()}`
+        error: { 
+          message: `Failed to retrieve ${this.entityName.toLowerCase()}` 
+        } as ApiError
       };
     }
   }
@@ -49,7 +50,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: [],
         status: "error",
-        error: `Failed to retrieve ${this.entityName.toLowerCase()} list`
+        error: { 
+          message: `Failed to retrieve ${this.entityName.toLowerCase()} list` 
+        } as ApiError
       };
     }
   }
@@ -74,7 +77,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: [],
         status: "error",
-        error: `Failed to retrieve ${this.entityName.toLowerCase()} items`
+        error: { 
+          message: `Failed to retrieve ${this.entityName.toLowerCase()} items` 
+        } as ApiError
       };
     }
   }
@@ -95,7 +100,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: null as any,
         status: "error",
-        error: `Failed to create ${this.entityName.toLowerCase()}`
+        error: { 
+          message: `Failed to create ${this.entityName.toLowerCase()}` 
+        } as ApiError
       };
     }
   }
@@ -120,7 +127,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: null as any,
         status: "error",
-        error: `Failed to update ${this.entityName.toLowerCase()}`
+        error: { 
+          message: `Failed to update ${this.entityName.toLowerCase()}` 
+        } as ApiError
       };
     }
   }
@@ -141,7 +150,9 @@ export class StandardRepositoryOperations<T, TId = string> {
       return {
         data: false,
         status: "error",
-        error: `Failed to delete ${this.entityName.toLowerCase()}`
+        error: { 
+          message: `Failed to delete ${this.entityName.toLowerCase()}` 
+        } as ApiError
       };
     }
   }
@@ -154,8 +165,7 @@ export class StandardRepositoryOperations<T, TId = string> {
       const result = await this.repository
         .select("id")
         .eq("id", id as string | number)
-        .maybeSingle()
-        .execute();
+        .maybeSingle();
       
       return result !== null;
     } catch (error) {
@@ -169,12 +179,18 @@ export class StandardRepositoryOperations<T, TId = string> {
    */
   async count(column: string, value: any): Promise<number> {
     try {
-      const { count } = await this.repository
+      const result = await this.repository
         .select("id", { count: true })
         .eq(column, value)
         .execute();
       
-      return count || 0;
+      // If the repository implementation supports count, use it
+      if (result && typeof result === 'object' && 'count' in result) {
+        return (result as any).count || 0;
+      }
+      
+      // Otherwise, count the results manually
+      return Array.isArray(result) ? result.length : 0;
     } catch (error) {
       logger.error(`Error counting ${this.entityName}s:`, error);
       return 0;

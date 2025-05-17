@@ -4,7 +4,7 @@ import { createStandardOperations } from "./standardOperations";
 import { createEnhancedRepository } from "./enhancedRepositoryFactory";
 import { Organization, OrganizationWithLocation } from "@/types";
 import { formatOrganizationWithLocation } from "@/utils/formatters/organizationFormatters";
-import { ApiResponse } from "../errorHandler";
+import { ApiResponse, ApiError } from "../errorHandler";
 
 /**
  * Example of how to create and use a basic repository
@@ -29,7 +29,9 @@ export function createBasicOrganizationRepository() {
         return {
           data: null,
           status: "error",
-          error: "Failed to retrieve organization"
+          error: { 
+            message: "Failed to retrieve organization"
+          } as ApiError
         };
       }
     },
@@ -49,7 +51,9 @@ export function createBasicOrganizationRepository() {
         return {
           data: [],
           status: "error",
-          error: "Failed to retrieve organizations"
+          error: { 
+            message: "Failed to retrieve organizations"
+          } as ApiError
         };
       }
     }
@@ -85,7 +89,9 @@ export function createStandardOrganizationRepository() {
         return {
           data: [],
           status: "error",
-          error: "Failed to retrieve organizations by location"
+          error: { 
+            message: "Failed to retrieve organizations by location"
+          } as ApiError
         };
       }
     }
@@ -150,7 +156,9 @@ export function createEnhancedOrganizationRepository() {
         return {
           data: [],
           status: "error", 
-          error: "Failed to retrieve verified organizations"
+          error: { 
+            message: "Failed to retrieve verified organizations" 
+          } as ApiError
         };
       }
     },
@@ -175,7 +183,9 @@ export function createEnhancedOrganizationRepository() {
         return {
           data: [],
           status: "error",
-          error: "Failed to search organizations"
+          error: { 
+            message: "Failed to search organizations" 
+          } as ApiError
         };
       }
     }
