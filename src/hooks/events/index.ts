@@ -9,5 +9,8 @@ export * from './useEventHooks';
 // Export additional specialized hooks
 export * from './useEventTags';
 
+// Export event mutation hooks
+export * from './useEventMutations';
+
 // Legacy compatibility exports
 export { useEvents, useEventById } from './useEventHooks';

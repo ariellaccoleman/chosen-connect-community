@@ -16,10 +16,10 @@ export * from './organizations';
 
 // Export individual APIs for direct access
 export { authApi } from './authApi';
-export { eventsApi } from './events'; // Updated path
 export { locationsApi } from './locationsApi';
 
 // Note: We've removed deprecated re-exports.
 // Please use the modular imports directly from their respective modules:
 // - import { organizationCrudApi } from '@/api/organizations'
 // - import { organizationRelationshipsApi } from '@/api/organizations'
+// - import { eventsApi } from '@/api/events'

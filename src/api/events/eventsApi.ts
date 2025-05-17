@@ -82,16 +82,6 @@ export const eventsApi = createApiFactory<EventWithDetails, string, CreateEventI
   }
 );
 
-// Export individual operations for direct usage
-export const {
-  getAll,
-  getById,
-  getByIds,
-  create,
-  update,
-  delete: deleteEvent
-} = eventsApi;
-
 // Additional event-specific API functions that extend the standard CRUD operations
 export const extendedEventsApi = {
   ...eventsApi,

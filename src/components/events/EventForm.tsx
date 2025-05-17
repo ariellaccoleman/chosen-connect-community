@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useEventMutations } from "@/hooks/useEventMutations";
+import { useEventMutations } from "@/hooks/events/useEventMutations";
 import { useNavigate } from "react-router-dom";
 import { CreateEventInput, EventWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
