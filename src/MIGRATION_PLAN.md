@@ -40,73 +40,109 @@ Phase 4 of the migration is in progress. The codebase now has:
 - [ ] Update remaining code to use only the modular imports
 - [ ] Prepare for removal of deprecated files in next major version
 
-## Detailed Inventory of Components Using Deprecated Imports
+## Detailed Inventory of Components Still Using Deprecated Imports
 
 ### Pages
 
 1. **src/pages/AdminTags.tsx**
-   - Currently using: `import { useSelectionTags as useTags, useTagMutations } from "@/hooks/useTags";`
-   - Should migrate to: `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
+   - Currently using: `import { useSelectionTags } from "@/hooks/useTagQueries";`
+   - Should migrate to: `import { useSelectionTags } from "@/hooks/tags";`
+   - Currently using: `import { useTagCrudMutations } from "@/hooks/tag";`
+   - Should migrate to: `import { useTagCrudMutations } from "@/hooks/tags";` (consolidate to one module)
 
 2. **src/pages/CommunityDirectory.tsx**
-   - Currently using: `import { useProfiles } from "@/hooks/useProfiles";`
-   - Should migrate to: `import { useCurrentProfile } from "@/hooks/profiles";`
-   - Also using: `import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";`
-   - Should migrate to: `import { useCommunityProfiles } from "@/hooks/profiles";` (needs to be created)
+   - Currently using: `import { useCurrentProfile } from "@/hooks/profiles";`
+   - This is the correct path, but implementation might need review
+   - Currently using: `import { useCommunityProfiles } from "@/hooks/profiles";`
+   - This is the correct path, but implementation needs parameter fixes
 
 3. **src/pages/ProfileEdit.tsx**
-   - Currently using: `import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";`
-   - Should migrate to: `import { useAddOrganizationRelationship } from "@/hooks/organizations";`
+   - Currently using: `import { useCurrentProfile, useUpdateProfile } from "@/hooks/profiles";`
+   - This is the correct path
+   - Currently using: `import { useAddOrganizationRelationship } from "@/hooks/organizations";`
+   - This is the correct path, migration complete
 
 4. **src/pages/OrganizationEdit.tsx**
-   - Currently using: `import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";`
-   - Should migrate to: `import { useIsOrganizationAdmin } from "@/hooks/organizations";`
-   - Currently using: `import { useOrganization } from "@/hooks/useOrganizationQueries";`
-   - Should migrate to: `import { useOrganization } from "@/hooks/organizations";`
+   - Currently using: `import { useIsOrganizationAdmin, useOrganization } from "@/hooks/organizations";`
+   - This is the correct path, migration complete
 
 ### Components
 
 1. **src/components/organizations/edit/OrganizationEditForm.tsx**
-   - Currently using: `import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";`
-   - Should migrate to: `import { useUpdateOrganization } from "@/hooks/organizations";`
+   - Currently using: `import { useUpdateOrganization } from "@/hooks/organizations";`
+   - This is the correct path, migration complete
 
 2. **src/components/organizations/OrganizationAdmins.tsx**
-   - Currently using: `import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/useOrganizationAdmins";`
-   - Should migrate to: `import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/organizations";`
+   - Currently using: `import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/organizations";`
+   - This is the correct path, migration complete
 
 3. **src/components/profile/form/LocationSelector.tsx**
-   - Currently using: `import { useLocations } from "@/hooks/useLocations";`
-   - Should migrate to: `import { useLocationSearch } from "@/hooks/locations";`
-   - Currently using: `import { useLocationById } from "@/hooks/useLocationById";`
-   - Should migrate to: `import { useLocationById } from "@/hooks/locations";`
+   - Currently using: `import { useLocationSearch, useLocationById } from "@/hooks/locations";`
+   - This is the correct path, migration complete
 
-4. **src/components/profile/ProfileOrganizationLinks.tsx**
-   - Currently using: `import { useOrganizations, useUserOrganizationRelationships } from "@/hooks/organizations";`
-   - Already using the new modular imports, but implementation might need updating
+### Re-export Files That Should Be Updated or Removed
 
-5. **src/hooks/index.ts** (Re-export file)
-   - Currently using ambiguous exports that should be resolved to direct imports from modules
+1. **src/hooks/index.ts**
+   - Contains ambiguous exports that should be removed
+   - Should use direct imports from specific modules
 
-6. **src/hooks/tags/index.ts**
-   - Has incorrect export referencing `useTagCrudMutations` which should be fixed
+2. **src/hooks/useTagMutations.ts**
+   - Re-exporting from `./tag`
+   - Should be removed after all imports are updated
 
-### Circular Dependencies
+3. **src/hooks/useTags.ts**
+   - Re-exporting from `./tags` and `./tag`
+   - Should be removed after all imports are updated
 
-1. **src/hooks/useOrganizationMutations.ts**
-   - Has circular imports between organization hooks that need to be resolved
+4. **src/hooks/useOrganizationQueries.ts**
+   - Re-exporting from `./organizations`
+   - Should be removed after all imports are updated
 
-### Missing Implementations
+5. **src/hooks/useOrganizationAdmins.ts**
+   - Re-exporting from `./organizations`
+   - Should be removed after all imports are updated
 
-1. **useCommunityProfiles hook**
-   - Should be created in `/hooks/profiles` module and exported correctly
+6. **src/hooks/useProfiles.ts**
+   - Re-exporting from `./profiles`
+   - Should be removed after all imports are updated
+
+7. **src/hooks/useLocations.ts**
+   - Re-exporting from `./locations`
+   - Should be removed after all imports are updated
+
+8. **src/hooks/useCommunityProfiles.ts**
+   - Re-exporting from `./profiles/useCommunityProfiles`
+   - Should be reviewed for correct implementation
+
+9. **src/hooks/tag/index.ts**
+   - Has inconsistency between its exports and imports in other files
+   - Exports should be consolidated with `src/hooks/tags/index.ts`
+
+10. **src/utils/tagUtils.ts**
+    - Re-exporting from `./tags`
+    - Should be removed after all imports are updated
+
+## Hooks Consolidation Strategy
+
+The primary issue is the split between `hooks/tag` and `hooks/tags` directories:
+
+1. **Current State:**
+   - `hooks/tag/` contains mutation hooks for tags
+   - `hooks/tags/` contains query hooks for tags
+   
+2. **Consolidation Plan:**
+   - Move all tag-related hooks to `hooks/tags/`
+   - Update `hooks/tags/index.ts` to re-export everything
+   - Update imports in all components to use `@/hooks/tags`
+   - Mark `hooks/tag/` as deprecated with redirection to `hooks/tags`
 
 ## Migration Priority Order
 
-1. Fix circular dependencies in hooks
-2. Create missing hook implementations
-3. Fix re-export files
-4. Update page component imports
-5. Update regular component imports
+1. Fix the inconsistent import in AdminTags.tsx
+2. Consolidate tag and tags directories
+3. Remove ambiguous exports from hooks/index.ts
+4. Update imports in all remaining components
+5. Clean up legacy re-export files
 
 ## Guidelines for New Code
 
