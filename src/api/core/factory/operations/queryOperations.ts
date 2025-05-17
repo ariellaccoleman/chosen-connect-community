@@ -4,7 +4,7 @@ import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
 import { ApiResponse } from "../../types";
 import { TableNames } from "../types";
-import { DataRepository } from "../../repository/repositoryFactory";
+import { DataRepository } from "../../repository/DataRepository";
 
 /**
  * Options for creating query operations
@@ -87,12 +87,12 @@ export function createQueryOperations<
         query = query.order(sortField, { ascending: sortOrder === 'asc' });
         
         // Execute the query
-        const { data, error } = await query.execute();
+        const result = await query.execute();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
         // Transform response data
-        const transformedData = data ? data.map(transformResponse) : [];
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
         
         return createSuccessResponse(transformedData);
       }
@@ -156,14 +156,14 @@ export function createQueryOperations<
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const { data, error } = await repository
+        const result = await repository
           .select(defaultSelect)
           .eq(typedIdField, id as any)
           .maybeSingle();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
-        return createSuccessResponse(data ? transformResponse(data) : null);
+        return createSuccessResponse(result.data ? transformResponse(result.data) : null);
       }
       
       // Legacy implementation using apiClient
@@ -195,14 +195,14 @@ export function createQueryOperations<
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const { data, error } = await repository
+        const result = await repository
           .select(defaultSelect)
           .in(typedIdField, ids as any[])
           .execute();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
-        const transformedData = data ? data.map(transformResponse) : [];
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
         
         return createSuccessResponse(transformedData);
       }

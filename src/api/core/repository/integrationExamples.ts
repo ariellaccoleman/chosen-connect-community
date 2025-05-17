@@ -75,13 +75,15 @@ export function createStandardOrganizationRepository() {
      */
     async getByLocation(locationId: string): Promise<ApiResponse<Organization[]>> {
       try {
-        const results = await repository
+        const result = await repository
           .select()
           .eq("location_id", locationId)
           .execute();
           
+        if (result.error) throw result.error;
+        
         return {
-          data: results || [],
+          data: result.data || [],
           status: "success",
           error: null
         };
@@ -141,14 +143,16 @@ export function createEnhancedOrganizationRepository() {
      */
     async getVerifiedOrganizations(): Promise<ApiResponse<OrganizationWithLocation[]>> {
       try {
-        const results = await repository
+        const result = await repository
           .select()
           .eq("is_verified", true)
           .order("name")
           .execute();
           
+        if (result.error) throw result.error;
+        
         return {
-          data: results || [],
+          data: result.data || [],
           status: "success",
           error: null
         };
@@ -168,14 +172,16 @@ export function createEnhancedOrganizationRepository() {
      */
     async searchByName(query: string): Promise<ApiResponse<OrganizationWithLocation[]>> {
       try {
-        const results = await repository
+        const result = await repository
           .select()
           .ilike("name", `%${query}%`)
           .order("name")
           .execute();
           
+        if (result.error) throw result.error;
+        
         return {
-          data: results || [],
+          data: result.data || [],
           status: "success",
           error: null
         };

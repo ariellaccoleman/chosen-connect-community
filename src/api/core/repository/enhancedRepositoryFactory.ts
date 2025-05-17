@@ -93,57 +93,5 @@ export function createEnhancedRepository<T>(
     });
   }
   
-  // Add response transformation if provided
-  if (options.transformResponse) {
-    const originalSelect = repository.select.bind(repository);
-    const originalGetById = repository.getById.bind(repository);
-    const originalGetAll = repository.getAll.bind(repository);
-    
-    repository.select = function(select?: string) {
-      const query = originalSelect(select);
-      const originalExecute = query.execute.bind(query);
-      
-      query.execute = async function() {
-        const result = await originalExecute();
-        
-        if (Array.isArray(result)) {
-          return result.map(options.transformResponse!);
-        } else if (result && typeof result === "object") {
-          return options.transformResponse!(result);
-        }
-        
-        return result;
-      };
-      
-      return query;
-    };
-    
-    repository.getById = async function(id: string | number) {
-      const result = await originalGetById(id);
-      return result ? options.transformResponse(result) : null;
-    };
-    
-    repository.getAll = async function() {
-      const results = await originalGetAll();
-      return results.map(options.transformResponse!);
-    };
-  }
-  
-  // Add request transformation if provided
-  if (options.transformRequest) {
-    const originalInsert = repository.insert.bind(repository);
-    const originalUpdate = repository.update.bind(repository);
-    
-    repository.insert = function(data: Record<string, any>) {
-      const transformedData = options.transformRequest(data);
-      return originalInsert(transformedData);
-    };
-    
-    repository.update = function(id: string | number, data: Record<string, any>) {
-      const transformedData = options.transformRequest(data);
-      return originalUpdate(id, transformedData);
-    };
-  }
-  
   return repository;
 }

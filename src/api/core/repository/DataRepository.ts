@@ -32,24 +32,22 @@ export interface DataRepository<T = any> {
   /**
    * Insert data into the database
    * @param data Data to insert
-   * @returns Promise with the inserted record
+   * @returns Query builder for insert operation
    */
-  insert(data: Record<string, any>): Promise<T>;
+  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T>;
 
   /**
    * Update data in the database
-   * @param id ID of the record to update
    * @param data Data to update
-   * @returns Promise with the updated record
+   * @returns Query builder for update operation
    */
-  update(id: string | number, data: Record<string, any>): Promise<T>;
+  update(data: Record<string, any>): RepositoryQuery<T>;
 
   /**
-   * Delete a record from the database
-   * @param id ID of the record to delete
-   * @returns Promise indicating success
+   * Delete records from the database
+   * @returns Query builder for delete operation
    */
-  delete(id: string | number): Promise<void>;
+  delete(): RepositoryQuery<T>;
 
   /**
    * Set repository options
@@ -128,21 +126,21 @@ export interface RepositoryQuery<T = any> {
   
   /**
    * Get a single result
-   * @returns Promise with the result
+   * @returns Promise with the repository response
    */
-  single(): Promise<T>;
+  single(): Promise<RepositoryResponse<T>>;
   
   /**
    * Get a single result or null if not found
-   * @returns Promise with the result or null
+   * @returns Promise with the repository response
    */
-  maybeSingle(): Promise<T | null>;
+  maybeSingle(): Promise<RepositoryResponse<T | null>>;
   
   /**
    * Execute the query and get results
-   * @returns Promise with the results
+   * @returns Promise with the repository response
    */
-  execute(): Promise<T[]>;
+  execute(): Promise<RepositoryResponse<T[]>>;
 }
 
 /**
@@ -152,8 +150,6 @@ export interface RepositoryQuery<T = any> {
 export interface RepositoryResponse<T> {
   data: T | null;
   error: RepositoryError | null;
-  status: 'success' | 'error';
-  count?: number;
   
   /**
    * Helper method to check if the response was successful

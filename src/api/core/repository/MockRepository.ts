@@ -12,6 +12,12 @@ export class MockRepository<T = any> implements DataRepository<T> {
   private lastData: any = null;
   private filters: any[] = [];
   private inConditions: { column: string; values: any[] }[] = [];
+  private options: Record<string, any> = {
+    idField: 'id',
+    defaultSelect: '*',
+    softDelete: false,
+    deletedAtColumn: 'deleted_at'
+  };
   
   constructor(tableName: string, initialData: T[] = []) {
     this.tableName = tableName;
@@ -40,11 +46,34 @@ export class MockRepository<T = any> implements DataRepository<T> {
   }
   
   /**
+   * Set repository options
+   */
+  setOptions(options: Record<string, any>): void {
+    this.options = { ...this.options, ...options };
+  }
+  
+  /**
    * Reset filters and conditions
    */
   private resetFilters(): void {
     this.filters = [];
     this.inConditions = [];
+  }
+
+  /**
+   * Get a record by ID
+   */
+  async getById(id: string | number): Promise<T | null> {
+    const result = await this.select().eq(this.options.idField, id).maybeSingle();
+    return result.data as T | null;
+  }
+
+  /**
+   * Get all records
+   */
+  async getAll(): Promise<T[]> {
+    const result = await this.select().execute();
+    return result.data as T[];
   }
 
   /**
@@ -66,7 +95,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   /**
    * Create an insert query
    */
-  insert(data: any): RepositoryQuery<T> {
+  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     this.lastOperation = 'insert';
     this.lastData = data;
     this.resetFilters();
@@ -77,7 +106,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
       const dataArray = Array.isArray(data) ? data : [data];
       
       const newItems = dataArray.map(item => ({
-        id: `mock-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        [this.options.idField]: `mock-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
         ...item
       }));
       
@@ -101,7 +130,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   /**
    * Create an update query
    */
-  update(data: any): RepositoryQuery<T> {
+  update(data: Record<string, any>): RepositoryQuery<T> {
     this.lastOperation = 'update';
     this.lastData = data;
     this.resetFilters();
@@ -221,7 +250,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
     // Otherwise, process based on operation
     if (this.operation === 'insert') {
-      return createSuccessResponse({ 
+      return createSuccessResponse<T>({ 
         id: `mock-id-${Date.now()}`, 
         ...this.operationData 
       } as unknown as T);
@@ -250,7 +279,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
         items[index] = updatedItem;
       }
 
-      return createSuccessResponse(updatedItem as unknown as T);
+      return createSuccessResponse<T>(updatedItem as unknown as T);
     }
 
     // For select operation
@@ -266,7 +295,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
       return createErrorResponse(error);
     }
 
-    return createSuccessResponse(filtered[0] as unknown as T);
+    return createSuccessResponse<T>(filtered[0] as unknown as T);
   }
 
   async maybeSingle(): Promise<RepositoryResponse<T | null>> {
@@ -281,10 +310,10 @@ class MockQuery<T> implements RepositoryQuery<T> {
     const filtered = this.applyFilters(items);
     
     if (filtered.length === 0) {
-      return createSuccessResponse(null);
+      return createSuccessResponse<T | null>(null);
     }
 
-    return createSuccessResponse(filtered[0] as unknown as T);
+    return createSuccessResponse<T | null>(filtered[0] as unknown as T);
   }
 
   async execute(): Promise<RepositoryResponse<T[]>> {
@@ -313,7 +342,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
       );
       
       this.mockData[this.tableName] = remaining;
-      return createSuccessResponse([] as unknown as T[]);
+      return createSuccessResponse<T[]>([] as unknown as T[]);
     }
     
     if (this.operation === 'update' && this.inConditions.length > 0) {
@@ -334,7 +363,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
         }
       }
       
-      return createSuccessResponse(itemsToUpdate as unknown as T[]);
+      return createSuccessResponse<T[]>(itemsToUpdate as unknown as T[]);
     }
 
     // For select operation
@@ -349,7 +378,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
     // Apply pagination
     result = this.applyPagination(result);
     
-    return createSuccessResponse(result as unknown as T[]);
+    return createSuccessResponse<T[]>(result as unknown as T[]);
   }
 
   private applyFilters(items: any[]): any[] {

@@ -1,5 +1,5 @@
 import { TableNames, ApiFactoryOptions } from "../types";
-import { DataRepository } from "../../repository/DataRepository";
+import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
 import { ApiResponse, createSuccessResponse, createErrorResponse } from "../../errorHandler";
 
@@ -85,7 +85,7 @@ export function createBatchOperations<
           // Execute the update
           const result = await repository
             .update(requestData)
-            .eq(idField, id)
+            .eq(idField, id as any)
             .select(select)
             .execute();
           
@@ -114,14 +114,17 @@ export function createBatchOperations<
         // If softDelete is enabled, update the deleted_at field
         if (softDelete) {
           const result = await repository
-            .update({ deleted_at: new Date() })
-            .in(idField, ids)
+            .update({ deleted_at: new Date().toISOString() })
+            .in(idField, ids as any[])
             .execute();
             
           if (result.error) throw result.error;
         } else {
           // Otherwise, perform a hard delete
-          const result = await repository.delete().in(idField, ids).execute();
+          const result = await repository
+            .delete()
+            .in(idField, ids as any[])
+            .execute();
           
           if (result.error) throw result.error;
         }

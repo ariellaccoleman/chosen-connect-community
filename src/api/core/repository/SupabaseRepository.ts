@@ -1,7 +1,7 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { logger } from '@/utils/logger';
-import { toast } from "@/components/ui/sonner";
 import { createSuccessResponse, createErrorResponse, handleRepositoryError } from './repositoryUtils';
 
 /**
@@ -9,9 +9,43 @@ import { createSuccessResponse, createErrorResponse, handleRepositoryError } fro
  */
 export class SupabaseRepository<T = any> implements DataRepository<T> {
   tableName: string;
+  private supabaseClient: any;
+  private options: Record<string, any> = {
+    idField: 'id',
+    defaultSelect: '*',
+    softDelete: false,
+    deletedAtColumn: 'deleted_at'
+  };
 
-  constructor(tableName: string) {
+  constructor(tableName: string, client?: any) {
     this.tableName = tableName;
+    this.supabaseClient = client || supabase;
+  }
+
+  /**
+   * Set repository options
+   */
+  setOptions(options: Record<string, any>): void {
+    this.options = { ...this.options, ...options };
+  }
+
+  /**
+   * Get a record by ID
+   */
+  async getById(id: string | number): Promise<T | null> {
+    const result = await this.select()
+      .eq(this.options.idField, id)
+      .maybeSingle();
+    
+    return result.data as T | null;
+  }
+
+  /**
+   * Get all records
+   */
+  async getAll(): Promise<T[]> {
+    const result = await this.select().execute();
+    return result.data as T[];
   }
 
   /**
@@ -19,7 +53,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
     try {
-      const query = supabase
+      const query = this.supabaseClient
         .from(this.tableName as any)
         .select(selectQuery);
       
@@ -34,9 +68,9 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
   /**
    * Create an insert query
    */
-  insert(data: any): RepositoryQuery<T> {
+  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     try {
-      const query = supabase
+      const query = this.supabaseClient
         .from(this.tableName as any)
         .insert(data);
       
@@ -50,9 +84,9 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
   /**
    * Create an update query
    */
-  update(data: any): RepositoryQuery<T> {
+  update(data: Record<string, any>): RepositoryQuery<T> {
     try {
-      const query = supabase
+      const query = this.supabaseClient
         .from(this.tableName as any)
         .update(data);
       
@@ -68,7 +102,7 @@ export class SupabaseRepository<T = any> implements DataRepository<T> {
    */
   delete(): RepositoryQuery<T> {
     try {
-      const query = supabase
+      const query = this.supabaseClient
         .from(this.tableName as any)
         .delete();
       
@@ -275,13 +309,6 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
 /**
  * Create a Supabase repository for a specific table
  */
-export function createSupabaseRepository<T>(tableName: string): DataRepository<T> {
-  return new SupabaseRepository<T>(tableName);
-}
-
-/**
- * Create a Supabase repository with toast notifications enabled
- */
-export function createSupabaseRepositoryWithToasts<T>(tableName: string): DataRepository<T> {
-  return new SupabaseRepository<T>(tableName);
+export function createSupabaseRepository<T>(tableName: string, client?: any): DataRepository<T> {
+  return new SupabaseRepository<T>(tableName, client);
 }

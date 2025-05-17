@@ -4,7 +4,7 @@ import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
 import { ApiResponse } from "../../types";
 import { TableNames } from "../types";
-import { DataRepository } from "../../repository/repositoryFactory";
+import { DataRepository } from "../../repository/DataRepository";
 
 /**
  * Options for creating mutation operations
@@ -55,17 +55,18 @@ export function createMutationOperations<
     try {
       logger.debug(`Creating new ${entityName}:`, data);
       
-      const transformedData = transformRequest(data);
+      const transformedData = transformRequest(data as any);
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const { data: createdData, error } = await repository
-          .insert(transformedData as any)
+        const result = await repository
+          .insert(transformedData)
+          .select(defaultSelect)
           .single();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
-        return createSuccessResponse(transformResponse(createdData));
+        return createSuccessResponse(transformResponse(result.data));
       }
       
       // Legacy implementation using apiClient
@@ -93,18 +94,19 @@ export function createMutationOperations<
     try {
       logger.debug(`Updating ${entityName} with ID: ${String(id)}`, data);
       
-      const transformedData = transformRequest(data);
+      const transformedData = transformRequest(data as any);
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        const { data: updatedData, error } = await repository
-          .update(transformedData as any)
+        const result = await repository
+          .update(transformedData)
           .eq(typedIdField, id as any)
+          .select(defaultSelect)
           .single();
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
-        return createSuccessResponse(transformResponse(updatedData));
+        return createSuccessResponse(transformResponse(result.data));
       }
       
       // Legacy implementation using apiClient
@@ -135,7 +137,7 @@ export function createMutationOperations<
       
       // Use repository if provided, otherwise use apiClient
       if (repository) {
-        let error = null;
+        let result;
         
         if (softDelete) {
           // Soft delete - update deleted_at field
@@ -144,23 +146,19 @@ export function createMutationOperations<
             deleted_at: new Date().toISOString()
           };
           
-          const result = await repository
+          result = await repository
             .update(updateData)
             .eq(typedIdField, id as any)
             .execute();
-          
-          error = result.error;
         } else {
           // Hard delete
-          const result = await repository
+          result = await repository
             .delete()
             .eq(typedIdField, id as any)
             .execute();
-          
-          error = result.error;
         }
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
         return createSuccessResponse(true);
       }
