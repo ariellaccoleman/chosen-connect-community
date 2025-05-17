@@ -1,4 +1,3 @@
-
 import { DataRepository, RepositoryResponse } from "./DataRepository";
 import { logger } from "@/utils/logger";
 import { ApiResponse, ApiError, createSuccessResponse, createErrorResponse } from "../errorHandler";
@@ -179,6 +178,7 @@ export class StandardRepositoryOperations<T, TId = string> {
    */
   async count(column: string, value: any): Promise<number> {
     try {
+      // Fix here: maybeSingle() doesn't accept arguments
       const result = await this.repository
         .select("id", { count: true })
         .eq(column, value)
