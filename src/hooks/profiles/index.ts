@@ -1,8 +1,9 @@
 
 /**
- * Profiles hooks module
+ * Profile-related hooks module
  */
-export * from './useProfileHooks';
-// Export useCurrentProfile from its own file instead of from useProfileHooks
-export * from './useCommunityProfiles';
-export * from './useCurrentProfile';
+
+// Export all hook functions from their respective files
+export * from "./useProfileHooks";
+export { useCurrentProfile } from "./useCurrentProfile";
+export * from "./useCommunityProfiles";
