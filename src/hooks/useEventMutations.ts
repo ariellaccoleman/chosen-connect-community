@@ -24,7 +24,7 @@ export const useEventMutations = () => {
       // Use extended API to create event with tags if provided
       const result = tagIds && tagIds.length > 0
         ? await extendedEventsApi.createEventWithTags(event, hostId, tagIds)
-        : await extendedEventsApi.create({ ...event, host_id: hostId });
+        : await extendedEventsApi.create({ ...event, host_id: hostId } as any);
       
       if (result.error) throw result.error;
       return result.data;
