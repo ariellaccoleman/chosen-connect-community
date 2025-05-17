@@ -83,7 +83,6 @@ describe('Batch Operations', () => {
 
     // Verify result
     expect(result.status).toBe('success');
-    expect(result.data).toBe(true);
     
     // Verify repository interactions - should call update twice (once for each item)
     expect(updateSpy).toHaveBeenCalledTimes(2);

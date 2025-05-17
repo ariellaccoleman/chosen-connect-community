@@ -8,11 +8,11 @@ import {
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as organizationApi from '@/api/organizations/organizationApiFactory';
 import * as relationshipsApi from '@/api/organizations/relationshipsApi';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import React from 'react';
 
 // Mock the toast module
-jest.mock('@/components/ui/sonner', () => ({
+jest.mock('sonner', () => ({
   toast: {
     success: jest.fn(),
     error: jest.fn()
