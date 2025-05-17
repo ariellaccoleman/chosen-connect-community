@@ -15,13 +15,6 @@ export {
   useCreateOrganizationWithRelationships
 } from "./useOrganizationHooks";
 
-// Re-export organization mutation hooks
-export {
-  useAddOrganizationRelationship,
-  useUpdateOrganizationRelationship,
-  useDeleteOrganizationRelationship
-} from "../useOrganizationMutations";
-
 // Re-export organization admin hooks
 export {
   useOrganizationAdmins,
@@ -34,3 +27,11 @@ export {
   useUpdateAdminRequest,
   useDeleteAdminRequest
 } from "./useOrganizationAdminHooks";
+
+// Re-export organization relationship mutation hooks
+export {
+  useAddOrganizationRelationship,
+  useUpdateOrganizationRelationship,
+  useDeleteOrganizationRelationship
+} from "./useOrganizationRelationshipHooks";
+

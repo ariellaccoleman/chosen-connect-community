@@ -1,13 +1,7 @@
 
 /**
- * Re-export all profile related hooks
+ * Profiles hooks module
  */
-export {
-  useProfileList,
-  useProfileById,
-  useProfilesByIds,
-  useCreateProfile,
-  useUpdateProfile,
-  useDeleteProfile,
-  useCurrentProfile
-} from "./useProfileHooks";
+export * from './useProfileHooks';
+export * from './useCommunityProfiles';
+

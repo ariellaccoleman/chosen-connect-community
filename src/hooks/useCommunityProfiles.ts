@@ -1,28 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { profilesApi } from '@/api/profilesApi';
-import { ProfileWithDetails } from '@/types';
 
-interface CommunityProfilesParams {
-  search?: string;
-  limit?: number;
-  excludeId?: string;
-  isApproved?: boolean;
-  tagId?: string | null;
-}
+import { useCommunityProfiles as useModularCommunityProfiles } from './profiles/useCommunityProfiles';
 
-export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
-  const queryKey = ['profiles', 'community', params];
-  
-  return useQuery({
-    queryKey,
-    queryFn: async () => {
-      const response = await profilesApi.getCommunityProfiles(params);
-      
-      if (response.error) {
-        throw response.error;
-      }
-      
-      return response.data;
-    }
-  });
-};
+/**
+ * @deprecated This file is maintained for backward compatibility.
+ * Please update your imports to use the modular structure:
+ * import { useCommunityProfiles } from '@/hooks/profiles';
+ */
+export const useCommunityProfiles = useModularCommunityProfiles;

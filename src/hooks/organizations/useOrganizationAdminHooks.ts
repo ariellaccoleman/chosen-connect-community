@@ -4,10 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { OrganizationAdminWithDetails } from '@/types';
 import { formatAdminWithDetails } from '@/utils/adminFormatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { OrganizationAdmin } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
-
-// Valid organization admin roles
-const VALID_ROLES = ['owner', 'admin', 'editor'];
 
 // Fetch all organization admin requests (for site admins)
 export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved' | 'all' } = {}) => {
@@ -190,6 +188,9 @@ export const useUserAdminRequests = (userId: string | undefined) => {
   });
 };
 
+// Valid organization admin roles
+const VALID_ROLES = ['owner', 'admin', 'editor'];
+
 // Create a new organization admin request
 export const useCreateAdminRequest = () => {
   const queryClient = useQueryClient();
@@ -246,7 +247,7 @@ export const useUpdateAdminRequest = () => {
       updates 
     }: { 
       requestId: string, 
-      updates: Partial<OrganizationAdminWithDetails> 
+      updates: Partial<OrganizationAdmin> 
     }) => {
       // Validate role if it's being updated
       if (updates.role && !VALID_ROLES.includes(updates.role)) {

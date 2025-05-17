@@ -7,9 +7,5 @@ export { useTagEntityType } from './useTagEntityType';
 export { useTagBasicCrud } from './useTagBasicCrud';
 export { useTagCreation } from './useTagCreation';
 
-// Re-export for backward compatibility
-import { useTagCrudMutations } from './useTagCrudMutations';
-import { useTagAssignmentMutations } from './useTagAssignmentMutations';
-
-// Combined hook for backward compatibility
-export const useTagMutations = useTagCrudMutations;
+// Re-export for backward compatibility with modified names to avoid conflicts
+export { useTagCrudMutations as useTagMutations } from './useTagCrudMutations';
