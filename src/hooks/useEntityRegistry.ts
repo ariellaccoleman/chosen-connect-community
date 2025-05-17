@@ -10,6 +10,7 @@ import { EntityType } from "@/types/entityTypes";
 import { ProfileWithDetails } from "@/types/profile";
 import { OrganizationWithLocation } from "@/types/organization";
 import { EventWithDetails } from "@/types/event";
+import { Calendar, Users, Building2 } from "lucide-react";
 
 /**
  * Hook for working with different entity types in a consistent way
@@ -80,11 +81,54 @@ export function useEntityRegistry() {
     return entities.filter(entity => entity.entityType === type);
   }, []);
   
+  /**
+   * Get the URL for an entity
+   */
+  const getEntityUrl = useCallback((entity: Entity): string => {
+    switch (entity.entityType) {
+      case EntityType.PERSON:
+        return `/profile/${entity.id}`;
+      case EntityType.ORGANIZATION:
+        return `/organizations/${entity.id}`;
+      case EntityType.EVENT:
+        return `/events/${entity.id}`;
+      default:
+        return "/";
+    }
+  }, []);
+  
+  /**
+   * Get the icon for an entity type
+   */
+  const getEntityIcon = useCallback((type: EntityType) => {
+    switch (type) {
+      case EntityType.PERSON:
+        return <Users className="h-3 w-3" />;
+      case EntityType.ORGANIZATION:
+        return <Building2 className="h-3 w-3" />;
+      case EntityType.EVENT:
+        return <Calendar className="h-3 w-3" />;
+      default:
+        return null;
+    }
+  }, []);
+  
+  /**
+   * Get the avatar fallback for an entity
+   */
+  const getEntityAvatarFallback = useCallback((entity: Entity): string => {
+    if (!entity.name) return "?";
+    return entity.name.substring(0, 2).toUpperCase();
+  }, []);
+  
   return {
     toEntity,
     getEntityTypeLabel,
     getEntityTypePlural,
     isEntityType,
-    filterEntitiesByType
+    filterEntitiesByType,
+    getEntityUrl,
+    getEntityIcon,
+    getEntityAvatarFallback
   };
 }

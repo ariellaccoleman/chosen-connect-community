@@ -2,7 +2,7 @@
 /**
  * Export all tag-related hooks
  */
-// Import and re-export hooks from the consolidated tag hooks module
+// Export all hooks from the consolidated tag hooks module
 export * from './useTagHooks';
 
 // For backward compatibility

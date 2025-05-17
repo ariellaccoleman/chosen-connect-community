@@ -5,7 +5,7 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { apiClient } from "@/api/core/apiClient";
-import { useTagAssignmentMutations } from "@/hooks/tags";
+import { useTagAssignmentMutations } from "@/hooks/tags/useTagHooks";
 
 /**
  * Hook to fetch tags for a specific event

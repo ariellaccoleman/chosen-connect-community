@@ -41,16 +41,14 @@ export interface TagAssignmentWithDetails {
 
 /**
  * Tag type definition
+ * Aligned with utils/tags/types.ts Tag definition
  */
 export interface Tag {
   id: string;
   name: string;
   description: string | null;
   type: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-  created_at?: string;
-  updated_at?: string;
-  createdBy?: string | null;
-  created_by?: string | null;
+  created_at: string;
+  updated_at: string;
+  created_by: string | null; // Required to match utils/tags/types Tag
 }

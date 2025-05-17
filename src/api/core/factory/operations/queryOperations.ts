@@ -62,9 +62,9 @@ export function createQueryOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                query = query.in(key as string, value as any[]);
+                query = query.in(key, value as any[]);
               } else {
-                query = query.eq(key as string, value as any);
+                query = query.eq(key, value as any);
               }
             }
           });
@@ -72,7 +72,7 @@ export function createQueryOperations<
         
         // Apply search if provided
         if (params?.search) {
-          query = query.ilike('name' as string, `%${params.search}%`);
+          query = query.ilike('name', `%${params.search}%`);
         }
         
         // Apply pagination
@@ -82,7 +82,7 @@ export function createQueryOperations<
         }
         
         // Apply sorting
-        const sortField = params?.sortBy ? params.sortBy as string : typedDefaultOrderBy;
+        const sortField = params?.sortBy ? params.sortBy : typedDefaultOrderBy;
         const sortOrder = params?.sortDirection || 'desc';
         query = query.order(sortField, { ascending: sortOrder === 'asc' });
         
@@ -108,9 +108,9 @@ export function createQueryOperations<
           Object.entries(params.filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
-                selectQuery = selectQuery.in(key, value);
+                selectQuery = selectQuery.in(key, value as any);
               } else {
-                selectQuery = selectQuery.eq(key, value);
+                selectQuery = selectQuery.eq(key, value as any);
               }
             }
           });
