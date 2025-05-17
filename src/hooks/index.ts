@@ -1,4 +1,3 @@
-
 /**
  * Re-export hooks from their modular locations
  * @file Main hooks entry point providing easy access to all hooks
@@ -11,6 +10,10 @@ export * from './locations';
 export * from './tags';
 export * from './events';
 export * from './tests';
+
+// Entity-related hooks
+export * from "./useEntityRegistry";
+export * from "./useEntityFeed";
 
 /**
  * Note: All legacy exports have been removed.
