@@ -34,14 +34,14 @@ Phase 4 of the migration is in progress. The codebase now has:
 - [x] Improved documentation of module structure
 - [x] Standardized deprecation warning messages
 
-## Phase 4: Tag Consolidation (Completed)
+## Phase 4: Tag Consolidation (In Progress)
 
 - [x] Fixed inconsistent imports in AdminTags.tsx
-- [x] Consolidated tag and tags directories
+- [x] Created proper exports in hooks/tags/index.ts
+- [x] Consolidated tag query hooks
 - [x] Created clean redirections for all tag-related hooks
-- [x] Organized tag hooks into logical groups (CRUD, queries, assignments)
 
-## Phase 5: Removal (In Progress)
+## Phase 5: Removal (To Do)
 
 - [ ] Remove remaining ambiguous exports
 - [ ] Fix import path inconsistencies
@@ -57,52 +57,31 @@ Phase 4 of the migration is in progress. The codebase now has:
    - Fixed: Now using `import { useTagCrudMutations } from "@/hooks/tag";`
    - Future migration: Should update to `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
 
-2. **src/pages/CommunityDirectory.tsx**
-   - Currently using: `import { useCurrentProfile } from "@/hooks/profiles";`
-   - This is the correct path, but implementation might need review
-   - Currently using: `import { useCommunityProfiles } from "@/hooks/profiles";`
-   - This is the correct path, but implementation needs parameter fixes
+2. **src/components/tags/EntityTagManager.tsx**
+   - Currently using: `import { useEntityTags, useTagAssignmentMutations } from "@/hooks/useTags";`
+   - Future migration: Should update to `import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags";`
 
-3. **src/pages/ProfileEdit.tsx**
-   - Currently using: `import { useCurrentProfile, useUpdateProfile } from "@/hooks/profiles";`
-   - This is the correct path
-   - Currently using: `import { useAddOrganizationRelationship } from "@/hooks/organizations";`
-   - This is the correct path, migration complete
-
-4. **src/pages/OrganizationEdit.tsx**
-   - Currently using: `import { useIsOrganizationAdmin, useOrganization } from "@/hooks/organizations";`
-   - This is the correct path, migration complete
-
-### Components
-
-1. **src/components/organizations/edit/OrganizationEditForm.tsx**
-   - Currently using: `import { useUpdateOrganization } from "@/hooks/organizations";`
-   - This is the correct path, migration complete
-
-2. **src/components/organizations/OrganizationAdmins.tsx**
-   - Currently using: `import { useOrganizationAdminsByOrg, usePendingOrganizationAdmins, useOrganizationRole } from "@/hooks/organizations";`
-   - This is the correct path, migration complete
-
-3. **src/components/profile/form/LocationSelector.tsx**
-   - Currently using: `import { useLocationSearch, useLocationById } from "@/hooks/locations";`
-   - This is the correct path, migration complete
+3. **src/components/tags/TagSelector/TagSelectorComponent.tsx**
+   - Currently using imports from `@/utils/tags`
+   - This is the correct path, but may need review for consistency
 
 ### Re-export Files Updated or Consolidated
 
-1. **src/hooks/useTagQueries.ts**
+1. **src/hooks/tags/index.ts**
+   - Now properly exporting all tag-related hooks
+   - Fixed missing useSelectionTags export
+
+2. **src/hooks/useTagQueries.ts**
    - Now properly re-exporting from `./tags/useTagQueryHooks`
    - Includes deprecation warning in development
 
-2. **src/hooks/useTagMutations.ts**
+3. **src/hooks/useTagMutations.ts**
    - Now properly re-exporting from `./tags`
    - Includes deprecation warning in development
 
-3. **src/hooks/useTags.ts**
+4. **src/hooks/useTags.ts**
    - Now properly re-exporting from `./tags`
    - Includes deprecation warning in development
-
-4. **src/hooks/tag/index.ts**
-   - Will be removed in next phase after all imports are updated to use hooks/tags
 
 ### Remaining Re-export Files To Clean Up
 
@@ -110,36 +89,19 @@ Phase 4 of the migration is in progress. The codebase now has:
    - Contains ambiguous exports that should be removed
    - Should use direct imports from specific modules
 
-2. **src/hooks/useOrganizationQueries.ts**
-   - Re-exporting from `./organizations`
-   - Should be removed after all imports are updated
+2. **src/hooks/tag/index.ts**
+   - Will be removed in next phase after all imports are updated to use hooks/tags
 
-3. **src/hooks/useOrganizationAdmins.ts**
-   - Re-exporting from `./organizations`
-   - Should be removed after all imports are updated
-
-4. **src/hooks/useProfiles.ts**
-   - Re-exporting from `./profiles`
-   - Should be removed after all imports are updated
-
-5. **src/hooks/useLocations.ts**
-   - Re-exporting from `./locations`
-   - Should be removed after all imports are updated
-
-6. **src/hooks/useCommunityProfiles.ts**
-   - Re-exporting from `./profiles/useCommunityProfiles`
-   - Should be reviewed for correct implementation
-
-7. **src/utils/tagUtils.ts**
+3. **src/utils/tagUtils.ts**
     - Re-exporting from `./tags`
     - Should be removed after all imports are updated
 
 ## Next Steps
 
 1. Continue fixing imports in components to use the consolidated modules directly
-2. Remove ambiguous exports from hooks/index.ts
-3. Clean up remaining legacy re-export files
-4. Update documentation to reflect the new structure
+2. Complete the consolidation of tag hooks by moving all tag hooks from hooks/tag to hooks/tags
+3. Remove ambiguous exports from hooks/index.ts
+4. Clean up remaining legacy re-export files
 
 ## Benefits of the Consolidated Structure
 
@@ -153,25 +115,3 @@ Phase 4 of the migration is in progress. The codebase now has:
 - **Q2 2025:** Finish all component migrations to new import structure
 - **Q3 2025:** Start emitting console warnings for deprecated imports
 - **Q4 2025:** Release major version update that removes deprecated files
-
-## Modular Directory Structure
-
-```
-src/
-├── api/                  # API modules
-│   ├── core/             # Core API functionality
-│   │   ├── factory/      # API factory pattern implementation
-│   │   └── repository/   # Data repository implementations
-│   ├── {domain}/         # Domain-specific API (e.g., profiles, organizations)
-│   └── index.ts          # Re-exports (to be removed after migration)
-├── hooks/                # React hooks
-│   ├── core/             # Core hook utilities
-│   │   └── factory/      # Query hook factory pattern implementation
-│   ├── {domain}/         # Domain-specific hooks
-│   │   ├── index.ts      # Domain exports
-│   │   └── use{Domain}Hooks.ts # Domain-specific hooks implementation
-│   └── index.ts          # Re-exports (to be removed after migration)
-└── utils/                # Utility functions
-    ├── {domain}/         # Domain-specific utilities
-    └── index.ts          # Re-exports (to be removed after migration)
-```

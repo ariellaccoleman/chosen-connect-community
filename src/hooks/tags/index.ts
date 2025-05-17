@@ -1,3 +1,4 @@
+
 /**
  * Export all tag-related hooks
  */
@@ -17,12 +18,12 @@ export {
 // For backward compatibility, keep the old hook name
 export { useTagCrudMutations as useTagMutations } from '../tag';
 
-// Re-export tag query hooks from useTagQueries for consolidation
+// Re-export tag query hooks from useTagQueryHooks for consolidation
 export { 
   useFilterTags, 
   useSelectionTags, 
   useEntityTags 
-} from '../useTagQueries';
+} from './useTagQueryHooks';
 
 // For backward compatibility
-export const useTags = useSelectionTags;
+export { useSelectionTags as useTags };
