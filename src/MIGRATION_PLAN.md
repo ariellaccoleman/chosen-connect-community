@@ -12,6 +12,7 @@ Phase 4 of the migration is in progress. The codebase now has:
 3. Runtime console warnings for deprecated imports
 4. Clean redirection from legacy files to their modular counterparts
 5. Streamlined factory pattern implementation
+6. Tag-related hooks consolidated in `hooks/tags`
 
 ## Phase 1: Deprecation Notices (Completed)
 
@@ -33,22 +34,28 @@ Phase 4 of the migration is in progress. The codebase now has:
 - [x] Improved documentation of module structure
 - [x] Standardized deprecation warning messages
 
-## Phase 4: Removal (In Progress)
+## Phase 4: Tag Consolidation (Completed)
+
+- [x] Fixed inconsistent imports in AdminTags.tsx
+- [x] Consolidated tag and tags directories
+- [x] Created clean redirections for all tag-related hooks
+- [x] Organized tag hooks into logical groups (CRUD, queries, assignments)
+
+## Phase 5: Removal (In Progress)
 
 - [ ] Remove remaining ambiguous exports
 - [ ] Fix import path inconsistencies
 - [ ] Update remaining code to use only the modular imports
 - [ ] Prepare for removal of deprecated files in next major version
 
-## Detailed Inventory of Components Still Using Deprecated Imports
+## Updated Inventory of Components After Tag Consolidation
 
 ### Pages
 
 1. **src/pages/AdminTags.tsx**
-   - Currently using: `import { useSelectionTags } from "@/hooks/useTagQueries";`
-   - Should migrate to: `import { useSelectionTags } from "@/hooks/tags";`
-   - Currently using: `import { useTagCrudMutations } from "@/hooks/tag";`
-   - Should migrate to: `import { useTagCrudMutations } from "@/hooks/tags";` (consolidate to one module)
+   - Fixed: Now using `import { useSelectionTags } from "@/hooks/useTagQueries";`
+   - Fixed: Now using `import { useTagCrudMutations } from "@/hooks/tag";`
+   - Future migration: Should update to `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
 
 2. **src/pages/CommunityDirectory.tsx**
    - Currently using: `import { useCurrentProfile } from "@/hooks/profiles";`
@@ -80,104 +87,66 @@ Phase 4 of the migration is in progress. The codebase now has:
    - Currently using: `import { useLocationSearch, useLocationById } from "@/hooks/locations";`
    - This is the correct path, migration complete
 
-### Re-export Files That Should Be Updated or Removed
+### Re-export Files Updated or Consolidated
+
+1. **src/hooks/useTagQueries.ts**
+   - Now properly re-exporting from `./tags/useTagQueryHooks`
+   - Includes deprecation warning in development
+
+2. **src/hooks/useTagMutations.ts**
+   - Now properly re-exporting from `./tags`
+   - Includes deprecation warning in development
+
+3. **src/hooks/useTags.ts**
+   - Now properly re-exporting from `./tags`
+   - Includes deprecation warning in development
+
+4. **src/hooks/tag/index.ts**
+   - Will be removed in next phase after all imports are updated to use hooks/tags
+
+### Remaining Re-export Files To Clean Up
 
 1. **src/hooks/index.ts**
    - Contains ambiguous exports that should be removed
    - Should use direct imports from specific modules
 
-2. **src/hooks/useTagMutations.ts**
-   - Re-exporting from `./tag`
-   - Should be removed after all imports are updated
-
-3. **src/hooks/useTags.ts**
-   - Re-exporting from `./tags` and `./tag`
-   - Should be removed after all imports are updated
-
-4. **src/hooks/useOrganizationQueries.ts**
+2. **src/hooks/useOrganizationQueries.ts**
    - Re-exporting from `./organizations`
    - Should be removed after all imports are updated
 
-5. **src/hooks/useOrganizationAdmins.ts**
+3. **src/hooks/useOrganizationAdmins.ts**
    - Re-exporting from `./organizations`
    - Should be removed after all imports are updated
 
-6. **src/hooks/useProfiles.ts**
+4. **src/hooks/useProfiles.ts**
    - Re-exporting from `./profiles`
    - Should be removed after all imports are updated
 
-7. **src/hooks/useLocations.ts**
+5. **src/hooks/useLocations.ts**
    - Re-exporting from `./locations`
    - Should be removed after all imports are updated
 
-8. **src/hooks/useCommunityProfiles.ts**
+6. **src/hooks/useCommunityProfiles.ts**
    - Re-exporting from `./profiles/useCommunityProfiles`
    - Should be reviewed for correct implementation
 
-9. **src/hooks/tag/index.ts**
-   - Has inconsistency between its exports and imports in other files
-   - Exports should be consolidated with `src/hooks/tags/index.ts`
-
-10. **src/utils/tagUtils.ts**
+7. **src/utils/tagUtils.ts**
     - Re-exporting from `./tags`
     - Should be removed after all imports are updated
 
-## Hooks Consolidation Strategy
+## Next Steps
 
-The primary issue is the split between `hooks/tag` and `hooks/tags` directories:
+1. Continue fixing imports in components to use the consolidated modules directly
+2. Remove ambiguous exports from hooks/index.ts
+3. Clean up remaining legacy re-export files
+4. Update documentation to reflect the new structure
 
-1. **Current State:**
-   - `hooks/tag/` contains mutation hooks for tags
-   - `hooks/tags/` contains query hooks for tags
-   
-2. **Consolidation Plan:**
-   - Move all tag-related hooks to `hooks/tags/`
-   - Update `hooks/tags/index.ts` to re-export everything
-   - Update imports in all components to use `@/hooks/tags`
-   - Mark `hooks/tag/` as deprecated with redirection to `hooks/tags`
+## Benefits of the Consolidated Structure
 
-## Migration Priority Order
-
-1. Fix the inconsistent import in AdminTags.tsx
-2. Consolidate tag and tags directories
-3. Remove ambiguous exports from hooks/index.ts
-4. Update imports in all remaining components
-5. Clean up legacy re-export files
-
-## Guidelines for New Code
-
-1. Always import from specific modules directly:
-   ```typescript
-   // Good
-   import { useCurrentProfile } from '@/hooks/profiles';
-   
-   // Bad
-   import { useProfiles } from '@/hooks';
-   ```
-
-2. Create functionality in the appropriate module:
-   ```
-   /api/{domain}/     # For API functionality
-   /hooks/{domain}/   # For React hooks
-   /utils/{domain}/   # For utility functions
-   ```
-
-3. Export from the module's index.ts file:
-   ```typescript
-   // src/hooks/profiles/index.ts
-   export { useProfileList, useProfileById } from './useProfileHooks';
-   ```
-
-4. Use the factory pattern for consistent API and hooks:
-   ```typescript
-   // API
-   import { createApiFactory } from '@/api/core/factory'; 
-   const entityApi = createApiFactory<EntityType>({ /* config */ });
-   
-   // Hooks
-   import { createQueryHooks } from '@/hooks/core/factory';
-   const entityHooks = createQueryHooks(entityConfig, entityApi);
-   ```
+1. **Simplified Imports**: Instead of having to remember whether to import from `hooks/tag` or `hooks/tags`, developers can now import everything from `hooks/tags`
+2. **Reduced Duplication**: All tag-related functionality is now in one place
+3. **Better Organized**: Hooks are now grouped by function (CRUD, queries, assignments)
+4. **Clearer Deprecation Path**: Legacy files now clearly indicate their replacements
 
 ## Timeline for Deprecation Removal
 
@@ -199,16 +168,10 @@ src/
 │   ├── core/             # Core hook utilities
 │   │   └── factory/      # Query hook factory pattern implementation
 │   ├── {domain}/         # Domain-specific hooks
+│   │   ├── index.ts      # Domain exports
+│   │   └── use{Domain}Hooks.ts # Domain-specific hooks implementation
 │   └── index.ts          # Re-exports (to be removed after migration)
 └── utils/                # Utility functions
     ├── {domain}/         # Domain-specific utilities
     └── index.ts          # Re-exports (to be removed after migration)
 ```
-
-## Benefits of the New Structure
-
-1. **Better Code Organization**: Related code is grouped together by domain
-2. **Improved Maintainability**: Smaller, more focused modules are easier to understand and update
-3. **Enhanced Developer Experience**: Direct imports make dependencies clear
-4. **Reduced Bundle Size**: Tree-shaking works better with direct imports
-5. **Easier Testing**: Isolated modules are easier to test

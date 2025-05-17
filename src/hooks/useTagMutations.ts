@@ -1,21 +1,21 @@
 
-// This file is maintained for backward compatibility
-// It re-exports hooks from the new tag hooks directory
+/**
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update your imports to use the modular structure:
+ * import { 
+ *   useTagCrudMutations, 
+ *   useTagAssignmentMutations,
+ *   useTagFindOrCreate
+ * } from '@/hooks/tags';
+ */
 
-import { 
-  useTagCrudMutations, 
-  useTagAssignmentMutations,
-  useTagFindOrCreate,
-  useTagEntityType,
-  useTagBasicCrud
-} from './tag';
+// Re-export all hooks from the consolidated tags module
+export * from './tags';
 
-// Re-export hooks with their original names for backward compatibility
-export const useTagMutations = useTagCrudMutations;
-export { 
-  useTagAssignmentMutations,
-  useTagFindOrCreate,
-  useTagEntityType,
-  useTagBasicCrud
-};
-
+// Add deprecation console warning in development only
+if (process.env.NODE_ENV === 'development') {
+  console.warn(
+    'Deprecated import: Please update your imports to use modules from @/hooks/tags directly ' +
+    'instead of @/hooks/useTagMutations which will be removed in a future release.'
+  );
+}

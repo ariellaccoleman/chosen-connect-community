@@ -6,11 +6,11 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Fix the imports to use the correct path and hook names
+// Fix the imports to use the consolidated module structure
 import { useSelectionTags } from "@/hooks/useTagQueries";
 import { useTagCrudMutations } from "@/hooks/tag";
 
-// Import the new components
+// Import the components
 import AdminTagsHeader from "@/components/admin/tags/AdminTagsHeader";
 import TagForm, { TagFormValues } from "@/components/admin/tags/TagForm";
 import TagsTable from "@/components/admin/tags/TagsTable";

@@ -5,10 +5,19 @@ import { fetchTags, fetchFilterTags, createTag, findOrCreateTag } from '@/utils/
 import { createMutationHandlers } from '@/utils/toastUtils';
 import { invalidateTagCache } from '@/api/tags/cacheApi';
 
+// Re-export the tag query hooks from useTagQueryHooks
+export * from './useTagQueryHooks';
+
+// Re-export the tag CRUD hooks from useTagCrudHooks
+export * from './useTagCrudHooks';
+
+// Re-export the tag assignment hooks from useTagAssignmentHooks
+export * from './useTagAssignmentHooks';
+
 /**
  * Hook for fetching tags that can be used for selection (both entity-specific and general tags)
  */
-export const useSelectionTags = (options: {
+export const useSelectionTagsV2 = (options: {
   type?: string;
   createdBy?: string;
   searchQuery?: string;
@@ -28,7 +37,7 @@ export const useSelectionTags = (options: {
 /**
  * Hook for fetching tags that are used for filtering (only assigned tags)
  */
-export const useFilterTags = (options: {
+export const useFilterTagsV2 = (options: {
   type?: string;
   createdBy?: string;
   searchQuery?: string;
@@ -92,5 +101,5 @@ export const useFindOrCreateTag = () => {
   });
 };
 
-// For backward compatibility
-export const useTags = useSelectionTags;
+// Backward compatibility with old hook names
+export const useTags = useSelectionTagsV2;
