@@ -11,6 +11,7 @@ import { ProfileWithDetails } from "@/types/profile";
 import { OrganizationWithLocation } from "@/types/organization";
 import { EventWithDetails } from "@/types/event";
 import { Calendar, Users, Building2 } from "lucide-react";
+import React from "react";
 
 /**
  * Hook for working with different entity types in a consistent way
@@ -100,7 +101,7 @@ export function useEntityRegistry() {
   /**
    * Get the icon for an entity type
    */
-  const getEntityIcon = useCallback((type: EntityType) => {
+  const getEntityIcon = useCallback((type: EntityType): React.ReactNode => {
     switch (type) {
       case EntityType.PERSON:
         return <Users className="h-3 w-3" />;
