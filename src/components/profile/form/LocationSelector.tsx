@@ -13,8 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useLocations } from "@/hooks/useLocations";
-import { useLocationById } from "@/hooks/useLocationById";
+import { useLocationSearch, useLocationById } from "@/hooks/locations";
 import { LocationWithDetails } from "@/types";
 
 interface LocationSelectorProps {
@@ -35,15 +34,14 @@ const LocationSelector = ({ control, label, required = false, fieldName = "locat
   
   // Get locations for dropdown - pass the search term directly
   // This is now safe since we're handling commas specially in the API
-  const { locations: locationsData = [], isLoading: isLoadingLocations } = useLocations(locationSearch);
+  const { data: locationsData, isLoading: isLoadingLocations } = useLocationSearch(locationSearch);
+  const locations: LocationWithDetails[] = locationsData?.data || [];
   
   // Get specific location by ID if we have an ID but not the location object
-  const { data: locationById } = useLocationById(
+  const { data: locationByIdData } = useLocationById(
     currentLocationId && !selectedLocation ? currentLocationId : undefined
   );
-  
-  // Ensure locations is always a valid array
-  const locations: LocationWithDetails[] = Array.isArray(locationsData) ? locationsData : [];
+  const locationById = locationByIdData?.data || null;
   
   // Update selected location when locationById changes
   useEffect(() => {

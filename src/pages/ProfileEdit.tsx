@@ -2,9 +2,8 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile } from "@/hooks/profiles";
-import { useUpdateProfile } from "@/hooks/profiles";
-import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
+import { useCurrentProfile, useUpdateProfile } from "@/hooks/profiles";
+import { useAddOrganizationRelationship } from "@/hooks/organizations";
 import ProfileForm, { ProfileFormValues } from "@/components/profile/ProfileForm";
 import { toast } from "@/components/ui/sonner";
 import { formatProfileUrls } from "@/utils/formatters/urlFormatters";

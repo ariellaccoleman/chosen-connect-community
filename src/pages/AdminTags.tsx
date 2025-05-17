@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
-import { useSelectionTags as useTags, useTagMutations } from "@/hooks/useTags";
+import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Import the new components
@@ -14,8 +14,8 @@ import TagsTable from "@/components/admin/tags/TagsTable";
 
 const AdminTags = () => {
   const queryClient = useQueryClient();
-  const { data: tagsResponse, isLoading } = useTags();
-  const { createTag: createTagMutation, isCreating } = useTagMutations();
+  const { data: tagsResponse, isLoading } = useSelectionTags();
+  const { createTag: createTagMutation, isCreating } = useTagCrudMutations();
   const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 

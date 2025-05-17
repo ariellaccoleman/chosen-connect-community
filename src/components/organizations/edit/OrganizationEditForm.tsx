@@ -1,7 +1,7 @@
 
 import React, { useState, ReactElement, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { useUpdateOrganization } from "@/hooks/useOrganizationMutations";
+import { useUpdateOrganization } from "@/hooks/organizations";
 import { OrganizationWithLocation, OrganizationFormValues } from "@/types";
 import { useToast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
@@ -76,7 +76,7 @@ export function OrganizationEditForm({
       logger.info("Submitting organization edit form:", values);
       
       await updateOrganization.mutateAsync({
-        orgId,
+        id: orgId,
         data: {
           name: values.name, 
           description: values.description,

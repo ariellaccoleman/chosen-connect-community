@@ -1,8 +1,8 @@
 
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useProfiles } from "@/hooks/useProfiles";
-import { useCommunityProfiles } from "@/hooks/useCommunityProfiles";
+import { useCurrentProfile } from "@/hooks/profiles";
+import { useCommunityProfiles } from "@/hooks/profiles";
 import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
@@ -25,7 +25,7 @@ const CommunityDirectory = () => {
   } = useTagFilter({ entityType: EntityType.PERSON });
   
   // Use the current user's profile separately to ensure we always display it
-  const { data: currentUserProfile } = useProfiles(user?.id || "");
+  const { data: currentUserProfile } = useCurrentProfile(user?.id || "");
 
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
