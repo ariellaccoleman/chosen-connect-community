@@ -1,8 +1,11 @@
 
 /**
- * Re-export all event API functionality
+ * Events API module
  * 
- * Note: Direct API usage is deprecated. Please use event hooks instead:
+ * IMPORTANT: Direct API usage is deprecated. 
+ * Please use event hooks instead:
  * import { useEvents, useEventById, useEventMutations } from '@/hooks/events';
  */
-export * from './eventsApi';
+
+// We're still re-exporting the API for internal use by hooks
+export { eventsApi, extendedEventsApi } from './eventsApi';

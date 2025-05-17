@@ -9,7 +9,6 @@ export * from './core';
 
 // API services
 export * from './tags';
-export * from './events';
 export * from './locations';
 export * from './profiles';
 export * from './organizations';
