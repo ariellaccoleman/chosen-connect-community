@@ -18,7 +18,7 @@ const AdminTags = () => {
   const queryClient = useQueryClient();
   const { data: tagsResponse, isLoading } = useSelectionTags();
   const { createTag, isCreating } = useTagCrudMutations();
-  const { isAdmin, loading } = useAuth();
+  const { isAdmin, loading, user } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
   // Extract the actual tags array from the API response
@@ -32,7 +32,8 @@ const AdminTags = () => {
       await createTag({
         name: values.name,
         description: values.description,
-        type: values.type
+        type: values.type,
+        created_by: user?.id // Add the created_by property with the current user's ID
       });
       
       toast.success("Tag created successfully!");
