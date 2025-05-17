@@ -9,7 +9,8 @@ export const invalidateTagCache = async (
   entityType?: EntityType
 ): Promise<boolean> => {
   try {
-    return await invalidateTagCacheUtil(entityType);
+    const result = await invalidateTagCacheUtil(entityType);
+    return result.error === null && (result.data === true);
   } catch (error) {
     console.error("Error invalidating tag cache:", error);
     return false;
