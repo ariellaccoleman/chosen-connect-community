@@ -5,7 +5,7 @@ This document outlines the plan for migrating the codebase from a monolithic str
 
 ## Current Status
 
-Phase 5 of the migration is in progress. The codebase now has:
+Phase 5 of the migration is complete. The codebase now has:
 
 1. New modular structure fully in place
 2. Legacy files properly marked with deprecation notices 
@@ -14,6 +14,7 @@ Phase 5 of the migration is in progress. The codebase now has:
 5. Streamlined factory pattern implementation
 6. Tag-related hooks consolidated in `hooks/tags`
 7. All components updated to use the consolidated hook structure
+8. All deprecated import references updated to their new modular counterparts
 
 ## Phase 1: Deprecation Notices (Completed)
 
@@ -52,6 +53,7 @@ Phase 5 of the migration is in progress. The codebase now has:
 - [x] Update useEntityFeed.ts to use hooks from @/hooks/tags
 - [x] Clean up hooks/index.ts exports with clear deprecation messages
 - [x] Document all completed migrations
+- [x] Update TagForm.tsx to use types from @/utils/tags/types
 
 ## Phase 6: Removal (Scheduled for Q4 2025)
 
@@ -98,6 +100,10 @@ Phase 5 of the migration is in progress. The codebase now has:
 3. **src/hooks/useEntityFeed.ts**
    - Status: ✅ Fixed
    - Using: `import { useFilterTags, useSelectionTags } from "@/hooks/tags";`
+
+4. **src/components/admin/tags/TagForm.tsx**
+   - Status: ✅ Fixed
+   - Using: `import { ENTITY_TYPE_MAP } from "@/utils/tags/types";`
 
 ### Legacy Files to be Removed in Q4 2025
 
