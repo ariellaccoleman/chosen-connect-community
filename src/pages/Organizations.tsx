@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/organizations";
-import { useSelectionTags, useFilterTags } from "@/hooks/tags";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,8 +13,6 @@ import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
-import { Entity } from "@/types/entity";
-import { Tag, TagAssignment } from "@/utils/tags/types";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -27,7 +25,7 @@ const OrganizationsList = () => {
   // Use tag hooks directly instead of useTagFilter
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
-  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.ORGANIZATION);
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
   
   // Extract tags from the response
   const filterTags = tagsResponse?.data || [];
@@ -48,7 +46,7 @@ const OrganizationsList = () => {
   // Filter by tag id if selected
   const filteredOrganizations = selectedTagId
     ? searchFilteredOrgs.filter(org => {
-        const taggedIds = new Set(tagAssignments.map((ta: TagAssignment) => ta.target_id));
+        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
         return taggedIds.has(org.id);
       })
     : searchFilteredOrgs;

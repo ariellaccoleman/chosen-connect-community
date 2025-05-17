@@ -5,7 +5,7 @@ import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
-import { useFilterByTag, useSelectionTags } from "@/hooks/tags";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 
 interface EntityFeedProps {
@@ -41,26 +41,27 @@ const EntityFeed = ({
     ? defaultEntityTypes 
     : [activeTab];
   
-  const { 
-    entities, 
-    isLoading, 
-    selectedTagId, 
-    setSelectedTagId 
-  } = useEntityFeed({
-    entityTypes,
-    limit
-  });
-
   // Fetch tags for filtering - use our consolidated hook
   const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(
     activeTab !== "all" ? activeTab : undefined
   );
   
   // Get tag assignments using our filter-by-tag hook
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { data: tagAssignments = [] } = useFilterByTag(
     selectedTagId,
     activeTab !== "all" ? activeTab : undefined
   );
+  
+  // Use the entity feed hook
+  const { 
+    entities, 
+    isLoading
+  } = useEntityFeed({
+    entityTypes,
+    limit,
+    tagId: selectedTagId
+  });
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);

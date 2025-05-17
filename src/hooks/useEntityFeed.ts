@@ -2,7 +2,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterTags, useSelectionTags } from "@/hooks/tags";
+import { useFilterByTag, useSelectionTags } from "@/hooks/tags";
 import { useEvents } from "@/hooks/events";
 import { useCommunityProfiles } from "@/hooks/profiles";
 import { useOrganizations } from "./organizations";
@@ -42,8 +42,14 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
   const organizations = organizationsResponse?.data || [];
   
-  // Use tag hooks
-  const { data: tagAssignments = [], isLoading: isTagsLoading } = useFilterTags(selectedTagId);
+  // Use tag hooks - without the reference to activeTab (which isn't defined in this scope)
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
+  
+  // Use tag filtering
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId);
+  
+  // Extract tags from the response - ensuring we have an array
+  const tags = tagsResponse?.data || [];
   
   // If tagId is provided in options, set it as the selected tag
   useEffect(() => {
@@ -142,6 +148,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
     isLoading: isLoading || isTagsLoading,
     error,
     selectedTagId,
-    setSelectedTagId
+    setSelectedTagId,
+    tags
   };
 };
