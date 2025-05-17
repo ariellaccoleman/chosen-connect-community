@@ -4,7 +4,7 @@
  * Please update imports to use modules from '@/api/core/factory' directly.
  */
 
-export * from "./factory";
+export * from './factory';
 
 // Add deprecation console warning in development only
 if (process.env.NODE_ENV === 'development') {

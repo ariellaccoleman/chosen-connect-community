@@ -1,9 +1,7 @@
-
 import { CreateEventInput, EventWithDetails } from "@/types";
 import { apiClient } from "./core/apiClient";
-import { createErrorResponse, createSuccessResponse } from "./core/errorHandler";
+import { ApiResponse, createErrorResponse, createSuccessResponse } from "./core/errorHandler";
 import { formatDateForDb } from "@/utils/formatters/index";
-import { ApiResponse } from "./core/errorHandler";
 import { logger } from "@/utils/logger";
 
 /**
@@ -15,7 +13,7 @@ export const eventsApi = {
    */
   async createEvent(event: CreateEventInput, hostId: string): Promise<ApiResponse<EventWithDetails>> {
     try {
-      console.log("Creating event with data:", { ...event, host_id: hostId });
+      logger.info("Creating event with data:", { ...event, host_id: hostId });
       
       const { data, error } = await apiClient.query(async (client) => {
         return client.from("events").insert({

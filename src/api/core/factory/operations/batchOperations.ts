@@ -1,25 +1,10 @@
-
-import { logger } from "@/utils/logger";
-import { apiClient } from "../../apiClient";
-import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
-import { ApiResponse } from "../../types";
-import { TableNames } from "../types";
-import { DataRepository } from "../../repository/repositoryFactory";
+import { TableNames, ApiFactoryOptions } from "../types";
+import { DataRepository } from "../../repository/DataRepository";
+import { createRepository } from "../../repository/repositoryFactory";
+import { ApiResponse, createSuccessResponse, createErrorResponse } from "../../errorHandler";
 
 /**
- * Options for batch operations
- */
-interface BatchOperationsOptions<T> {
-  idField?: string;
-  defaultSelect?: string;
-  transformResponse?: (item: any) => T;
-  transformRequest?: (item: any) => Record<string, any>;
-  repository?: DataRepository<T> | (() => DataRepository<T>);
-  softDelete?: boolean;
-}
-
-/**
- * Creates standardized batch operations
+ * Creates standardized batch operations for a specific entity type
  */
 export function createBatchOperations<
   T,
@@ -30,188 +15,118 @@ export function createBatchOperations<
 >(
   entityName: string,
   tableName: Table,
-  options: BatchOperationsOptions<T> = {}
+  options: {
+    idField?: string;
+    defaultSelect?: string;
+    transformResponse?: (item: any) => T;
+    transformRequest?: (item: any) => Record<string, any>;
+    repository?: DataRepository<T>;
+    softDelete?: boolean;
+  } = {}
 ) {
-  // Set default options
+  // Extract options with defaults
   const {
-    idField = 'id',
-    defaultSelect = '*',
+    idField = "id",
+    defaultSelect = "*",
     transformResponse = (item) => item as T,
-    transformRequest = (item) => item as unknown as Record<string, any>,
-    repository: repoOption,
+    transformRequest = (item) => item as Record<string, any>,
     softDelete = false
   } = options;
 
-  // Resolve repository (handle both direct instances and factory functions)
-  const repository = typeof repoOption === 'function' ? repoOption() : repoOption;
-
-  /**
-   * Create multiple entities in a single operation
-   */
-  const batchCreate = async (items: TCreate[]): Promise<ApiResponse<T[]>> => {
-    if (!items.length) return createSuccessResponse([]);
-    
-    try {
-      logger.debug(`Batch creating ${entityName}:`, items);
-      
-      // Transform each item individually
-      const transformedItems = items.map(item => transformRequest(item));
-      
-      // Use repository if provided, otherwise use apiClient
-      if (repository) {
-        const { data, error } = await repository.insert(transformedItems as any[])
-          .select(defaultSelect)
-          .execute();
-        
-        if (error) throw error;
-        
-        const transformedData = data ? data.map(transformResponse) : [];
-        
-        return createSuccessResponse(transformedData);
-      }
-      
-      // Legacy implementation using apiClient
-      return await apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from(tableName)
-          .insert(transformedItems as any[])
-          .select(defaultSelect);
-        
-        if (error) throw error;
-        
-        const transformedData = data ? data.map(transformResponse) : [];
-        
-        return createSuccessResponse(transformedData);
-      });
-    } catch (error) {
-      logger.error(`Error batch creating ${entityName}:`, error);
-      return createErrorResponse(error);
-    }
-  };
-
-  /**
-   * Update multiple entities in a single operation
-   * Each item must have an ID field
-   */
-  const batchUpdate = async (items: Array<TUpdate & { id: TId }>): Promise<ApiResponse<boolean>> => {
-    if (!items.length) return createSuccessResponse(true);
-    
-    try {
-      logger.debug(`Batch updating ${entityName}:`, items);
-      
-      // Prepare updates by transforming each item and separating ID
-      const updates = items.map(item => {
-        const { id, ...updateData } = item;
-        return {
-          [idField]: id,
-          ...transformRequest(updateData as any)
-        };
-      });
-      
-      // Use repository if provided
-      if (repository) {
-        // Since we can't update multiple items at once with repository,
-        // we'll do it one by one and collect results
-        for (const update of updates) {
-          const id = update[idField];
-          const { error } = await repository
-            .update(update)
-            .eq(idField, id)
-            .execute();
-          
-          if (error) throw error;
-        }
-        
-        return createSuccessResponse(true);
-      }
-      
-      // Legacy implementation using apiClient
-      return await apiClient.query(async (client) => {
-        const { error } = await client
-          .from(tableName)
-          .upsert(updates as any[]);
-        
-        if (error) throw error;
-        
-        return createSuccessResponse(true);
-      });
-    } catch (error) {
-      logger.error(`Error batch updating ${entityName}:`, error);
-      return createErrorResponse(error);
-    }
-  };
-
-  /**
-   * Delete multiple entities in a single operation
-   */
-  const batchDelete = async (ids: TId[]): Promise<ApiResponse<boolean>> => {
-    if (!ids.length) return createSuccessResponse(true);
-    
-    try {
-      logger.debug(`Batch deleting ${entityName} with IDs:`, ids);
-      
-      // Use repository if provided
-      if (repository) {
-        if (softDelete) {
-          // For soft delete, update all records with deleted_at
-          const updateData = { deleted_at: new Date().toISOString() } as any;
-          
-          const { error } = await repository
-            .update(updateData)
-            .in(idField, ids as any[])
-            .execute();
-          
-          if (error) throw error;
-        } else {
-          // Hard delete
-          const { error } = await repository
-            .delete()
-            .in(idField, ids as any[])
-            .execute();
-          
-          if (error) throw error;
-        }
-        
-        return createSuccessResponse(true);
-      }
-      
-      // Legacy implementation using apiClient
-      if (softDelete) {
-        // For soft delete, update all records with deleted_at
-        return await apiClient.query(async (client) => {
-          const updateData = { deleted_at: new Date().toISOString() } as any;
-          
-          const { error } = await client
-            .from(tableName)
-            .update(updateData)
-            .in(idField, ids as any[]);
-          
-          if (error) throw error;
-          
-          return createSuccessResponse(true);
-        });
-      }
-      
-      // Hard delete
-      return await apiClient.query(async (client) => {
-        const { error } = await client
-          .from(tableName)
-          .delete()
-          .in(idField, ids as any[]);
-        
-        if (error) throw error;
-        
-        return createSuccessResponse(true);
-      });
-    } catch (error) {
-      logger.error(`Error batch deleting ${entityName}:`, error);
-      return createErrorResponse(error);
-    }
-  };
+  // Get or create repository
+  const repository = options.repository || createRepository<T>(tableName as string);
 
   return {
-    batchCreate,
-    batchUpdate,
-    batchDelete
+    /**
+     * Batch create entities
+     */
+    async batchCreate(
+      items: TCreate[],
+      select: string = defaultSelect
+    ): Promise<ApiResponse<T[]>> {
+      try {
+        // Transform items if needed
+        const requestData = items.map((item) => transformRequest(item as unknown as Record<string, any>));
+        
+        const { data, error } = await repository.insert(requestData).select(select);
+        
+        if (error) throw error;
+        
+        // Transform each result if needed
+        const transformedData = Array.isArray(data) 
+          ? data.map(transformResponse)
+          : [];
+          
+        return createSuccessResponse(transformedData);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+    
+    /**
+     * Batch update entities
+     */
+    async batchUpdate(
+      items: (TUpdate & { [key: string]: TId })[],
+      select: string = defaultSelect
+    ): Promise<ApiResponse<T[]>> {
+      try {
+        const results: T[] = [];
+        
+        // Process updates one by one to maintain individual references
+        for (const item of items) {
+          const id = item[idField as keyof typeof item] as unknown as TId;
+          if (!id) throw new Error(`Missing ${idField} in update item`);
+          
+          // Transform data if needed
+          const requestData = transformRequest(item as unknown as Record<string, any>);
+          
+          // Execute the update
+          const { data, error } = await repository
+            .update(requestData)
+            .eq(idField, id)
+            .select(select);
+          
+          if (error) throw error;
+          
+          if (data) {
+            // Transform result if needed
+            const transformedItem = Array.isArray(data) ? data[0] : data;
+            results.push(transformResponse(transformedItem));
+          }
+        }
+        
+        return createSuccessResponse(results);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+    
+    /**
+     * Batch delete entities
+     */
+    async batchDelete(
+      ids: TId[]
+    ): Promise<ApiResponse<boolean>> {
+      try {
+        // If softDelete is enabled, update the deleted_at field
+        if (softDelete) {
+          const { error } = await repository
+            .update({ deleted_at: new Date() })
+            .in(idField, ids);
+            
+          if (error) throw error;
+        } else {
+          // Otherwise, perform a hard delete
+          const { error } = await repository.delete().in(idField, ids);
+          
+          if (error) throw error;
+        }
+        
+        return createSuccessResponse(true);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    }
   };
 }

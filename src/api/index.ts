@@ -14,15 +14,12 @@ export * from './locations';
 export * from './profiles';
 export * from './organizations';
 
-/**
- * @deprecated Legacy exports maintained for backward compatibility.
- * Please update imports to use the modular structure:
- * - import { authApi } from '@/api/auth'
- * - import { eventsApi } from '@/api/events'
- * - import { locationsApi } from '@/api/locations'
- * - import { organizationApi } from '@/api/organizations'
- */
+// Export individual APIs for direct access
 export { authApi } from './authApi';
 export { eventsApi } from './eventsApi';
 export { locationsApi } from './locationsApi';
-export { organizationCrudApi } from './organizations';
+
+// Note: We've removed deprecated re-exports.
+// Please use the modular imports directly from their respective modules:
+// - import { organizationCrudApi } from '@/api/organizations'
+// - import { organizationRelationshipsApi } from '@/api/organizations'
