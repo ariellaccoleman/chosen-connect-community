@@ -4,7 +4,7 @@
  * Please update imports to use modules from '@/hooks/core/factory' directly.
  */
 
-// Import directly from the individual files, not from a non-existent './factory'
+// Re-export all query hook factory functionality from the modular location
 export * from "./factory/queryHookFactory";
 export * from "./factory/types";
 

@@ -34,4 +34,4 @@ export {
   useAddOrganizationRelationship,
   useUpdateOrganizationRelationship,
   useDeleteOrganizationRelationship
-} from './useOrganizationMutations';
+} from './organizations';

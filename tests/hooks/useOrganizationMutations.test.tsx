@@ -1,8 +1,12 @@
 
 import { renderHook, waitFor } from '@testing-library/react';
-import { useCreateOrganization, useUpdateOrganization, useAddOrganizationRelationship } from '@/hooks/useOrganizationMutations';
+import { 
+  useCreateOrganization, 
+  useUpdateOrganization, 
+  useAddOrganizationRelationship 
+} from '@/hooks/organizations';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as organizationApi from '@/api/organizations/organizationsApi';
+import * as organizationApi from '@/api/organizations/organizationApiFactory';
 import * as relationshipsApi from '@/api/organizations/relationshipsApi';
 import { toast } from '@/components/ui/sonner';
 import React from 'react';
@@ -16,7 +20,7 @@ jest.mock('@/components/ui/sonner', () => ({
 }));
 
 // Mock the API modules
-jest.mock('@/api/organizations/organizationsApi');
+jest.mock('@/api/organizations/organizationApiFactory');
 jest.mock('@/api/organizations/relationshipsApi');
 
 // Create a wrapper for react-query hooks
@@ -42,7 +46,7 @@ describe('Organization Mutation Hooks', () => {
   describe('useCreateOrganization', () => {
     test('should call createOrganization API and handle success', async () => {
       // Mock API response
-      const mockCreateOrg = jest.spyOn(organizationApi.organizationCrudApi, 'createOrganization')
+      const mockCreateOrg = jest.spyOn(organizationApi, 'createOrganization')
         .mockResolvedValueOnce({ 
           data: { id: 'new-org-id', name: 'Test Org' }, 
           error: null, 
@@ -56,8 +60,7 @@ describe('Organization Mutation Hooks', () => {
 
       // Execute the mutation
       result.current.mutate({ 
-        data: { name: 'Test Org', description: 'Test Description' },
-        userId: 'user-123'
+        data: { name: 'Test Org', description: 'Test Description' }
       });
 
       // Wait for the mutation to complete
@@ -65,8 +68,7 @@ describe('Organization Mutation Hooks', () => {
 
       // Verify API was called correctly
       expect(mockCreateOrg).toHaveBeenCalledWith(
-        { name: 'Test Org', description: 'Test Description' },
-        'user-123'
+        { name: 'Test Org', description: 'Test Description' }
       );
 
       // Verify toast was shown
@@ -75,7 +77,7 @@ describe('Organization Mutation Hooks', () => {
 
     test('should handle API errors', async () => {
       // Mock API error response
-      const mockCreateOrg = jest.spyOn(organizationApi.organizationCrudApi, 'createOrganization')
+      const mockCreateOrg = jest.spyOn(organizationApi, 'createOrganization')
         .mockRejectedValueOnce(new Error('Failed to create organization'));
 
       // Render the hook
@@ -85,8 +87,7 @@ describe('Organization Mutation Hooks', () => {
 
       // Execute the mutation
       result.current.mutate({ 
-        data: { name: 'Test Org' },
-        userId: 'user-123'
+        data: { name: 'Test Org' }
       });
 
       // Wait for the mutation to complete
@@ -134,7 +135,7 @@ describe('Organization Mutation Hooks', () => {
   describe('useUpdateOrganization', () => {
     test('should call updateOrganization API and handle success', async () => {
       // Mock API response
-      const mockUpdateOrg = jest.spyOn(organizationApi.organizationCrudApi, 'updateOrganization')
+      const mockUpdateOrg = jest.spyOn(organizationApi, 'updateOrganization')
         .mockResolvedValueOnce({ 
           data: true, 
           error: null, 
@@ -148,7 +149,7 @@ describe('Organization Mutation Hooks', () => {
 
       // Execute the mutation
       result.current.mutate({ 
-        orgId: 'org-1',
+        id: 'org-1',
         data: { 
           name: 'Updated Org',
           description: 'Updated Description'
