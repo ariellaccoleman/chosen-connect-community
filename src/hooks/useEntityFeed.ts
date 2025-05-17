@@ -2,9 +2,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterTags, useSelectionTags } from "@/hooks/tags"; // Updated import
-import { useEvents } from "./useEvents";
-import { useCommunityProfiles } from "@/hooks/profiles"; // Fixed import path
+import { useFilterTags, useSelectionTags } from "@/hooks/tags";
+import { useEvents } from "@/hooks/events";
+import { useCommunityProfiles } from "@/hooks/profiles";
 import { useOrganizations } from "./organizations";
 import { useEntityRegistry } from "./useEntityRegistry";
 
@@ -30,9 +30,8 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeProfiles = entityTypes.includes(EntityType.PERSON);
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
   
-  // Fetch data for each entity type
-  const { data: eventsData = [], isLoading: eventsLoading } = useEvents(); 
-  const events = Array.isArray(eventsData) ? eventsData : [];
+  // Fetch data for each entity type using factory hooks
+  const { data: events = [], isLoading: eventsLoading } = useEvents(); 
   
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
     search: options.searchQuery,
@@ -43,7 +42,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
   const organizations = organizationsResponse?.data || [];
   
-  // Use tag hooks directly
+  // Use tag hooks
   const { data: tagAssignments = [], isLoading: isTagsLoading } = useFilterTags(selectedTagId);
   
   // If tagId is provided in options, set it as the selected tag

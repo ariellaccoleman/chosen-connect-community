@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Edit, Loader } from "lucide-react";
-import { useEventById } from "@/hooks/useEventById";
+import { useEventById } from "@/hooks/events";
 import EventDetails from "@/components/events/EventDetails";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";

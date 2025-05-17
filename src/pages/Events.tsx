@@ -3,7 +3,7 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
-import { useEvents } from "@/hooks/useEvents";
+import { useEvents } from "@/hooks/events";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";

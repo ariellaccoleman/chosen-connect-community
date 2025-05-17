@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
-import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
 import { useFilterTags } from "@/hooks/tags";

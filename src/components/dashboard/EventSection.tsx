@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { APP_ROUTES } from "@/config/routes";
 import { PlusCircle, Calendar, AlertCircle } from "lucide-react";
-import { useEvents } from "@/hooks/useEvents";
+import { useEvents } from "@/hooks/events"; // Updated import
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logger } from "@/utils/logger";
