@@ -10,6 +10,7 @@ import * as organizationApi from '@/api/organizations/organizationApiFactory';
 import * as relationshipsApi from '@/api/organizations/relationshipsApi';
 import { toast } from 'sonner';
 import React from 'react';
+import { ConnectionType } from '@/types';
 
 // Mock the toast module
 jest.mock('sonner', () => ({
@@ -113,7 +114,7 @@ describe('Organization Mutation Hooks', () => {
       const relationshipData = {
         profile_id: 'profile-123',
         organization_id: 'org-1',
-        connection_type: 'current'
+        connection_type: 'current' as ConnectionType
       };
       result.current.mutate(relationshipData);
 

@@ -1,7 +1,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
-import { ProfileOrganizationRelationship } from '@/types';
+import { ConnectionType, ProfileOrganizationRelationship } from '@/types';
 import { toast } from '@/components/ui/sonner';
 import { logger } from '@/utils/logger';
 
@@ -15,7 +15,7 @@ export const useAddOrganizationRelationship = () => {
     mutationFn: (data: {
       profile_id: string;
       organization_id: string;
-      connection_type: string;
+      connection_type: ConnectionType;
       department?: string | null;
       notes?: string | null;
     }) => {
