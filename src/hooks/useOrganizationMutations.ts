@@ -1,4 +1,3 @@
-
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Organization, ProfileOrganizationRelationship } from '@/types';
 import { 
@@ -21,7 +20,7 @@ export const useCreateOrganization = () => {
   
   return useMutation({
     mutationFn: ({ data, userId }: { data: Partial<Organization>; userId?: string }) => 
-      createOrganization(data, userId),
+      createOrganization(data),  // Fix here: removed the second argument
     onSuccess: (data) => {
       // Invalidate queries to refetch organization data
       queryClient.invalidateQueries({ queryKey: ['organizations'] });
