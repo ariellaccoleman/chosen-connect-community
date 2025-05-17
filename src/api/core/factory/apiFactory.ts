@@ -5,7 +5,12 @@ import { createBatchOperations } from "./operations/batchOperations";
 import { ApiFactoryOptions, TableNames } from "./types";
 import { createQueryOperations } from "./operations/queryOperations";
 import { createMutationOperations } from "./operations/mutationOperations";
-import { createRepository, DataRepository, RepositoryType } from "../repository/repositoryFactory";
+import { 
+  createRepository, 
+  createEnhancedRepository,
+  DataRepository, 
+  EnhancedRepositoryType 
+} from "../repository";
 
 /**
  * Repository configuration
@@ -14,12 +19,22 @@ export interface RepositoryConfig<T = any> {
   /**
    * Repository type (supabase, mock)
    */
-  type: RepositoryType;
+  type: EnhancedRepositoryType;
   
   /**
    * Initial data for mock repository
    */
   initialData?: T[];
+  
+  /**
+   * Enable enhanced repository features
+   */
+  enhanced?: boolean;
+  
+  /**
+   * Enable logging for repository operations (development only)
+   */
+  enableLogging?: boolean;
 }
 
 /**
@@ -92,11 +107,28 @@ export function createApiFactory<
     } else {
       // It's a repository config
       const repoConfig = repository as RepositoryConfig<T>;
-      dataRepository = createRepository<T>(
-        tableName as string, 
-        repoConfig.type,
-        repoConfig.initialData
-      );
+      
+      if (repoConfig.enhanced) {
+        dataRepository = createEnhancedRepository<T>(
+          tableName as string, 
+          repoConfig.type,
+          repoConfig.initialData,
+          {
+            idField: options.idField,
+            defaultSelect: options.defaultSelect,
+            transformResponse: options.transformResponse,
+            transformRequest: options.transformRequest,
+            softDelete: options.softDelete,
+            enableLogging: repoConfig.enableLogging
+          }
+        );
+      } else {
+        dataRepository = createRepository<T>(
+          tableName as string, 
+          repoConfig.type,
+          repoConfig.initialData
+        );
+      }
     }
   } else {
     // Create default repository
@@ -183,3 +215,4 @@ export function createApiFactory<
 export const createApiOperations = createApiFactory;
 
 export * from "./types";
+
