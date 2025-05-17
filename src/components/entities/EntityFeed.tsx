@@ -52,7 +52,7 @@ const EntityFeed = ({
   });
 
   // Fetch tags for filtering - use our consolidated hook
-  const { data: tagsResponse = { data: [] }, isLoading: tagsLoading } = useSelectionTags(
+  const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(
     activeTab !== "all" ? activeTab : undefined
   );
   
@@ -67,7 +67,7 @@ const EntityFeed = ({
   };
   
   // Extract tags from the response - ensuring we have an array
-  const tags = tagsResponse.data || [];
+  const tags = tagsResponse?.data || [];
   
   return (
     <div className={className}>

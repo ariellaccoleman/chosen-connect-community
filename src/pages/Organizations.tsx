@@ -26,11 +26,11 @@ const OrganizationsList = () => {
   
   // Use tag hooks directly instead of useTagFilter
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: filterTagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
   const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.ORGANIZATION);
   
   // Extract tags from the response
-  const filterTags = filterTagsResponse?.data?.filter(Boolean) || [];
+  const filterTags = tagsResponse?.data || [];
 
   // Show error toast if organization loading fails
   if (error) {
