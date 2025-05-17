@@ -7,5 +7,5 @@
  * import { useEvents, useEventById, useEventMutations } from '@/hooks/events';
  */
 
-// We're still re-exporting the API for internal use by hooks
-export { eventsApi, extendedEventsApi } from './eventsApi';
+// Export the API factory for internal use by hooks
+export * from './eventApiFactory';

@@ -1,6 +1,6 @@
 
 import { EventWithDetails, CreateEventInput } from "@/types/event";
-import { eventsApi } from "@/api/events/eventsApi";
+import { eventApi } from "@/api/events/eventApiFactory";
 import { createQueryHooks } from "../core/factory/queryHookFactory";
 import { useQuery } from "@tanstack/react-query";
 import { logger } from "@/utils/logger";
@@ -20,7 +20,7 @@ export const eventHooks = createQueryHooks<
     displayName: 'Event',
     pluralDisplayName: 'Events'
   },
-  eventsApi
+  eventApi
 );
 
 // Custom useEvents hook that returns the data directly for compatibility
@@ -44,7 +44,7 @@ export const useEventById = (eventId: string | undefined) => {
       if (!eventId) return null;
       
       logger.info(`Fetching event with ID: ${eventId}`);
-      const response = await eventsApi.getById(eventId);
+      const response = await eventApi.getById(eventId);
       
       if (response.error) {
         logger.error(`Error fetching event ${eventId}:`, response.error);

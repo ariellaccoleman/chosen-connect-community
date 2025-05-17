@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { EventWithDetails, CreateEventInput } from "@/types";
-import { extendedEventsApi } from "@/api/events/eventsApi";
+import { extendedEventApi } from "@/api/events/eventApiFactory";
 import { logger } from "@/utils/logger";
 
 /**
@@ -23,8 +23,8 @@ export const useEventMutations = () => {
       
       // Use extended API to create event with tags if provided
       const result = tagIds && tagIds.length > 0
-        ? await extendedEventsApi.createEventWithTags(event, hostId, tagIds)
-        : await extendedEventsApi.create({ ...event, host_id: hostId } as any);
+        ? await extendedEventApi.createEventWithTags(event, hostId, tagIds)
+        : await extendedEventApi.create({ ...event, host_id: hostId } as any);
       
       if (result.error) throw result.error;
       return result.data;
@@ -46,7 +46,7 @@ export const useEventMutations = () => {
       eventData: Partial<CreateEventInput> 
     }) => {
       logger.info("Updating event", { eventId, eventData });
-      const result = await extendedEventsApi.update(eventId, eventData);
+      const result = await extendedEventApi.update(eventId, eventData);
       if (result.error) throw result.error;
       return result.data;
     },
@@ -65,7 +65,7 @@ export const useEventMutations = () => {
   const deleteEventMutation = useMutation({
     mutationFn: async (eventId: string) => {
       logger.info("Deleting event", { eventId });
-      const result = await extendedEventsApi.delete(eventId);
+      const result = await extendedEventApi.delete(eventId);
       if (result.error) throw result.error;
       return eventId;
     },

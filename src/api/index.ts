@@ -12,6 +12,7 @@ export * from './tags';
 export * from './locations';
 export * from './profiles';
 export * from './organizations';
+export * from './events';
 
 // Export individual APIs for direct access
 export { authApi } from './authApi';
@@ -21,4 +22,5 @@ export { locationsApi } from './locationsApi';
 // Please use the modular imports directly from their respective modules:
 // - import { organizationCrudApi } from '@/api/organizations'
 // - import { organizationRelationshipsApi } from '@/api/organizations'
-// - import { eventsApi } from '@/api/events'
+// - import { eventApi, extendedEventApi } from '@/api/events'
+
