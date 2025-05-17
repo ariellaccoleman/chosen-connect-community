@@ -13,22 +13,10 @@ export * from './events';
 export * from './tests';
 
 /**
- * @deprecated The following legacy exports are maintained for backward compatibility only.
- * They will be removed in the next major version (Q4 2025).
- * Please update your code to use the modular structure directly as shown:
+ * Note: All legacy exports have been removed.
+ * Import hooks directly from their respective module folders:
  * 
- * Instead of: import { useLocations } from '@/hooks';
- * Use: import { useLocations } from '@/hooks/locations';
- * 
- * Instead of: import { useCurrentProfile } from '@/hooks';
- * Use: import { useCurrentProfile } from '@/hooks/profiles';
- * 
- * Instead of: import { useTags } from '@/hooks';
- * Use: import { useSelectionTags } from '@/hooks/tags';
+ * - import { useSelectionTags } from '@/hooks/tags';
+ * - import { useLocations } from '@/hooks/locations'; 
+ * - import { useCurrentProfile } from '@/hooks/profiles';
  */
-export { useLocations } from './useLocations';
-export { useProfiles } from './useProfiles';
-
-// Renamed re-export for backward compatibility
-// Will be removed in Q4 2025
-export { useSelectionTags as useTags } from './tags';
