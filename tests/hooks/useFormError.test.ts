@@ -1,11 +1,11 @@
 
 import { renderHook, act } from '@testing-library/react';
 import { useFormError } from '@/hooks/useFormError';
-import { toast } from '@/utils/toast';
+import { toast } from '@/hooks/use-toast';
 import { ApiError } from '@/api/core/errorHandler';
 
 // Mock the toast component
-jest.mock('@/utils/toast', () => ({
+jest.mock('@/hooks/use-toast', () => ({
   toast: {
     error: jest.fn(),
     success: jest.fn()

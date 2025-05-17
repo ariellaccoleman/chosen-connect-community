@@ -1,6 +1,6 @@
 
 import { logger } from './logger';
-import { sonnerToast as toast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import { RepositoryError } from '@/api/core/repository/DataRepository';
 import { formatRepositoryError as formatRepoError } from '@/api/core/repository/repositoryUtils';
 

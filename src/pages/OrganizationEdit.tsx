@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { useIsOrganizationAdmin, useOrganization } from "@/hooks/organizations";
 import { logger } from "@/utils/logger";
 import Layout from "@/components/layout/Layout";

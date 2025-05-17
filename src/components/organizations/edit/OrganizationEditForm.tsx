@@ -3,7 +3,7 @@ import React, { useState, ReactElement, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { useUpdateOrganization } from "@/hooks/organizations";
 import { OrganizationWithLocation, OrganizationFormValues } from "@/types";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { logger } from "@/utils/logger";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { organizationSchema } from "./organizationSchema";

@@ -5,21 +5,15 @@ import {
   showErrorToast,
   ApiError
 } from '@/api/core/errorHandler';
-import { toast } from '@/utils/toast';
+import { toast } from '@/hooks/use-toast';
 import { extractErrorMessage } from '@/utils/toast';
 
 // Mock the toast function
-jest.mock('@/utils/toast', () => ({
+jest.mock('@/hooks/use-toast', () => ({
   toast: {
     error: jest.fn(),
     success: jest.fn()
-  },
-  extractErrorMessage: jest.fn().mockImplementation(error => {
-    if (!error) return 'Unknown error occurred';
-    if (typeof error === 'string') return error;
-    if (error.message) return error.message;
-    return 'Unknown error occurred';
-  })
+  }
 }));
 
 describe('API Error Handler', () => {
