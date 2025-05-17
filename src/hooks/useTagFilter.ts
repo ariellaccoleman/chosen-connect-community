@@ -9,6 +9,7 @@ import { useState, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags, useSelectionTags } from "@/hooks/tags";
+import { TagAssignment } from "@/utils/tags/types";
 
 interface UseTagFilterOptions {
   entityType?: EntityType;
@@ -23,8 +24,8 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   const { data: tagAssignments = [], isLoading: isLoadingTagAssignments } = useFilterTags(selectedTagId, options.entityType);
   const { data: tagsResponse, isLoading: isLoadingSelectionTags } = useSelectionTags(options.entityType);
 
-  // Extract tags from the response
-  const tags = tagsResponse?.data?.map(ta => ta.tag).filter(Boolean) || [];
+  // Extract tags from the response - ensure we handle the data structure correctly
+  const tags = tagsResponse?.data?.filter(Boolean) || [];
 
   /**
    * Filter items by tag assignment
@@ -35,7 +36,7 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
       
       // If we have tag assignments, filter items by matching IDs
       if (tagAssignments.length > 0) {
-        const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
+        const taggedIds = new Set(tagAssignments.map((ta: TagAssignment) => ta.target_id));
         return items.filter(item => taggedIds.has(item.id));
       }
       

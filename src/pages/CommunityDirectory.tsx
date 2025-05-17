@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
 import { useSelectionTags, useFilterTags } from "@/hooks/tags";
+import { Tag } from "@/utils/tags/types";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -36,8 +37,10 @@ const CommunityDirectory = () => {
     toast.error("Failed to load community members. Please try again.");
   }
 
-  // Extract tags from the response
-  const tags = filterTagsResponse.data?.map(ta => ta.tag).filter(Boolean) || [];
+  // Extract tags from the response - fix the structure handling
+  const tags = filterTagsResponse && Array.isArray(filterTagsResponse.data) 
+    ? filterTagsResponse.data.filter(Boolean) 
+    : [];
 
   // No need to combine and deduplicate profiles anymore, just use what's returned
   const allProfiles = profiles || [];
