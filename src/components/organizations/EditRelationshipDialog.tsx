@@ -1,5 +1,5 @@
 
-import { useUpdateOrganizationRelationship } from "@/hooks/useOrganizationMutations";
+import { useUpdateOrganizationRelationship } from "@/hooks/organizations";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import DeleteRelationshipDialog from "./DeleteRelationshipDialog";

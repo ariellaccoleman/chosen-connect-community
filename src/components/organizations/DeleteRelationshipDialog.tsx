@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useDeleteOrganizationRelationship } from "@/hooks/useOrganizationMutations";
+import { useDeleteOrganizationRelationship } from "@/hooks/organizations";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {

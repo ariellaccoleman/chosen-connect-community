@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,10 +9,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/hooks/useAuth";
-import { useCreateAdminRequest, useUserAdminRequests } from "@/hooks/useOrganizationAdmins";
+import { useCreateAdminRequest, useUserAdminRequests, useUserOrganizationRelationships } from "@/hooks/organizations";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShieldCheck } from "lucide-react";
-import { useUserOrganizationRelationships } from "@/hooks/useOrganizationQueries";
 
 interface RequestAdminAccessButtonProps {
   organizationId: string;

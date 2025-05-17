@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { 
   usePendingOrganizationAdmins,
   useUpdateAdminRequest, 
   useDeleteAdminRequest
-} from "@/hooks/useOrganizationAdmins";
+} from "@/hooks/organizations";
 import { OrganizationAdminWithDetails } from "@/types";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";

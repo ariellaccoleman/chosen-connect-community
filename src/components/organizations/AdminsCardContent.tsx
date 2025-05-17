@@ -1,13 +1,13 @@
+
 import { OrganizationAdminWithDetails } from "@/types";
 import { CardContent } from "@/components/ui/card";
 import AdminListItem from "./AdminListItem";
-import { usePendingOrganizationAdmins } from "@/hooks/useOrganizationAdmins";
+import { usePendingOrganizationAdmins, useUpdateAdminRequest, useDeleteAdminRequest } from "@/hooks/organizations";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, X, Eye } from "lucide-react";
-import { useUpdateAdminRequest, useDeleteAdminRequest } from "@/hooks/useOrganizationAdmins";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { format } from "date-fns";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
