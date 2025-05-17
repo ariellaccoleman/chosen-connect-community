@@ -4,7 +4,7 @@ import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags, useSelectionTags } from "@/hooks/tags"; // Updated import
 import { useEvents } from "./useEvents";
-import { useCommunityProfiles } from "./useCommunityProfiles";
+import { useCommunityProfiles } from "@/hooks/profiles"; // Fixed import path
 import { useOrganizations } from "./organizations";
 import { useEntityRegistry } from "./useEntityRegistry";
 
