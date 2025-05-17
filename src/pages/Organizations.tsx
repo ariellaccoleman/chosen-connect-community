@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganizations } from "@/hooks/useOrganizationQueries";
-import { useTagFilter } from "@/hooks/useTagFilter";
+import { useSelectionTags, useFilterTags } from "@/hooks/tags";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
 import { Entity } from "@/types/entity";
+import { Tag, TagAssignment } from "@/utils/tags/types";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -22,16 +23,13 @@ const OrganizationsList = () => {
   // Extract organizations from the response
   const organizations = organizationsResponse?.data || [];
   
-  // Use our tag filter hook
-  const { 
-    selectedTagId, 
-    setSelectedTagId, 
-    filterItemsByTag,
-    tags: filterTags,
-    isLoading: isTagsLoading
-  } = useTagFilter({ 
-    entityType: EntityType.ORGANIZATION 
-  });
+  // Use tag hooks directly instead of useTagFilter
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const { data: filterTagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
+  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.ORGANIZATION);
+  
+  // Extract tags from the response
+  const filterTags = filterTagsResponse?.data?.filter(Boolean) || [];
 
   // Show error toast if organization loading fails
   if (error) {
@@ -46,22 +44,13 @@ const OrganizationsList = () => {
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
-  // Convert organizations to Entity type for filtering
-  const orgsAsEntities: Entity[] = searchFilteredOrgs.map(org => ({
-    id: org.id,
-    entityType: EntityType.ORGANIZATION,
-    name: org.name,
-    description: org.description,
-    tags: org.tags,
-    created_at: org.created_at,
-    updated_at: org.updated_at
-  }));
-  
-  // Apply tag filtering and convert back
-  const filteredEntityIds = filterItemsByTag(orgsAsEntities).map(entity => entity.id);
-  const filteredOrganizations = searchFilteredOrgs.filter(org => 
-    filteredEntityIds.includes(org.id) || !selectedTagId
-  );
+  // Filter by tag id if selected
+  const filteredOrganizations = selectedTagId
+    ? searchFilteredOrgs.filter(org => {
+        const taggedIds = new Set(tagAssignments.map((ta: TagAssignment) => ta.target_id));
+        return taggedIds.has(org.id);
+      })
+    : searchFilteredOrgs;
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">

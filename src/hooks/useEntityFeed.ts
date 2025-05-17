@@ -2,8 +2,7 @@
 import { useState, useEffect } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterTags } from "./useTagQueries";
-import { useTagFilter } from "./useTagFilter";
+import { useFilterTags, useSelectionTags } from "@/hooks/tags"; // Updated import
 import { useEvents } from "./useEvents";
 import { useCommunityProfiles } from "./useCommunityProfiles";
 import { useOrganizations } from "./organizations";
@@ -23,6 +22,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const [entities, setEntities] = useState<Entity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { toEntity } = useEntityRegistry();
   
   const entityTypes = options.entityTypes || Object.values(EntityType);
@@ -37,23 +37,36 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
     search: options.searchQuery,
     limit: options.limit,
-    tagId: options.tagId
+    tagId: options.tagId || selectedTagId
   });
   
   const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
   const organizations = organizationsResponse?.data || [];
   
-  // Set up tag filtering
-  const { selectedTagId, setSelectedTagId, filterItemsByTag } = useTagFilter({
-    entityType: undefined // Don't filter by a specific entity type since we're handling multiple types
-  });
+  // Use tag hooks directly
+  const { data: tagAssignments = [], isLoading: isTagsLoading } = useFilterTags(selectedTagId);
   
   // If tagId is provided in options, set it as the selected tag
   useEffect(() => {
     if (options.tagId) {
       setSelectedTagId(options.tagId);
     }
-  }, [options.tagId, setSelectedTagId]);
+  }, [options.tagId]);
+  
+  // Filter items by tag using the assignments from useFilterTags
+  const filterItemsByTag = useMemo(() => {
+    return (items: Entity[]): Entity[] => {
+      if (!selectedTagId) return items;
+      
+      // If we have tag assignments, filter items by matching IDs
+      if (tagAssignments.length > 0) {
+        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
+        return items.filter(item => taggedIds.has(item.id));
+      }
+      
+      return [];
+    };
+  }, [selectedTagId, tagAssignments]);
   
   // Combine and convert entities
   useEffect(() => {
@@ -121,12 +134,13 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
     includeOrgs,
     options.limit,
     filterItemsByTag,
-    toEntity
+    toEntity,
+    tagAssignments
   ]);
   
   return {
     entities,
-    isLoading,
+    isLoading: isLoading || isTagsLoading,
     error,
     selectedTagId,
     setSelectedTagId
