@@ -62,7 +62,7 @@ const SignupForm = () => {
               last_name: data.lastName,
               email: data.email
             }
-          });
+          } as any);
           console.log('Profile created/updated successfully during signup');
         } catch (profileError) {
           console.error('Error creating profile during signup:', profileError);

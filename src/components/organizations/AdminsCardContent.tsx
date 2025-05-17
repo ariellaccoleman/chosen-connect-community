@@ -1,4 +1,3 @@
-
 import { OrganizationAdminWithDetails } from "@/types";
 import { CardContent } from "@/components/ui/card";
 import AdminListItem from "./AdminListItem";
@@ -33,11 +32,11 @@ const AdminsCardContent = ({ admins, organizationId, isOrgOwner }: AdminsCardCon
       updates: {
         is_approved: true,
       }
-    });
+    } as any);
   };
 
   const handleReject = async (requestId: string) => {
-    await deleteRequest.mutateAsync(requestId);
+    await deleteRequest.mutateAsync(requestId as any);
   };
 
   return (

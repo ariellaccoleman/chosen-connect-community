@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { 
   usePendingOrganizationAdmins,
@@ -32,11 +31,11 @@ const PendingAdminRequests = ({ organizationId }: PendingAdminRequestsProps) => 
       updates: {
         is_approved: true,
       }
-    });
+    } as any);
   };
 
   const handleReject = async (requestId: string) => {
-    await deleteRequest.mutateAsync(requestId);
+    await deleteRequest.mutateAsync(requestId as any);
   };
 
   if (isLoading) {

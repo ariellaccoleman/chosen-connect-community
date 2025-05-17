@@ -1,146 +1,49 @@
-
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { organizationsApi } from "@/api/organizationsApi"; // Import from legacy path
-import { organizationRelationshipsApi } from "@/api/organizations/relationshipsApi"; // Import directly from module
-import { organizationCrudApi } from "@/api/organizations"; // Import from new path
-import { ProfileOrganizationRelationship, OrganizationFormValues, Organization } from "@/types";
-import { toast } from "@/components/ui/sonner";
-import { logger } from "@/utils/logger";
-import { ApiResponse } from "@/api/core/errorHandler";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Organization } from '@/types';
+import { organizationCrudApi } from '@/api/organizations';
 
 /**
- * Hook to create a new organization with all necessary relationships
+ * Hook for creating a new organization
  */
 export const useCreateOrganization = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ 
-      data, 
-      userId 
-    }: { 
-      data: { 
-        name: string; 
-        description?: string; 
-        website_url?: string; 
-      }; 
-      userId: string 
-    }) => {
-      logger.info("Creating organization:", data);
-      return organizationCrudApi.createOrganization(data, userId);
-    },
-    onSuccess: (response: ApiResponse<Organization>) => {
-      const organizationId = response.data?.id;
-      logger.info("Successfully created organization:", organizationId);
-      
-      // Invalidate organizations queries to refresh lists
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      
-      // Show success message
-      toast.success("Organization created successfully!");
-      
-      return organizationId;
-    },
-    onError: (error) => {
-      logger.error("Failed to create organization:", error);
-      toast.error("Failed to create organization. Please try again.");
-    }
-  });
-};
-
-/**
- * Hook to add an organization relationship
- */
-export const useAddOrganizationRelationship = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (relationship: Partial<ProfileOrganizationRelationship>) => 
-      organizationRelationshipsApi.addOrganizationRelationship(relationship),
-    onSuccess: (_, variables) => {
-      logger.info("Successfully added organization relationship", variables);
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships", variables.profile_id] });
-      toast.success("Successfully added organization connection");
-    },
-    onError: (error) => {
-      logger.error("Failed to add organization relationship:", error);
-      toast.error("Failed to add organization connection");
-    }
-  });
-};
-
-/**
- * Hook to update an organization relationship
- */
-export const useUpdateOrganizationRelationship = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<ProfileOrganizationRelationship> }) => 
-      organizationRelationshipsApi.updateOrganizationRelationship(id, data),
-    onSuccess: (_, variables) => {
-      logger.info("Successfully updated organization relationship", variables);
-      // Since we don't know the profile_id here, invalidate all relationship queries
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
-      toast.success("Successfully updated organization connection");
-    },
-    onError: (error) => {
-      logger.error("Failed to update organization relationship:", error);
-      toast.error("Failed to update organization connection");
-    }
-  });
-};
-
-/**
- * Hook to delete an organization relationship
- */
-export const useDeleteOrganizationRelationship = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: (id: string) => organizationRelationshipsApi.deleteOrganizationRelationship(id),
+    mutationFn: (data: Partial<Organization>) => organizationCrudApi.create(data),
     onSuccess: () => {
-      logger.info("Successfully deleted organization relationship");
-      // Since we don't know the profile_id here, invalidate all relationship queries
-      queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
-      toast.success("Organization connection removed successfully");
+      // Invalidate queries to refetch organization data
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onError: (error) => {
-      logger.error("Failed to delete organization relationship:", error);
-      toast.error("Failed to remove organization connection");
-    }
   });
 };
 
 /**
- * Hook to update an organization's details
+ * Hook for updating an existing organization
  */
 export const useUpdateOrganization = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ orgId, data }: { 
-      orgId: string; 
-      data: OrganizationFormValues;
-    }) => {
-      logger.info("Updating organization:", { orgId, data });
-      
-      return organizationCrudApi.updateOrganization(orgId, {
-        name: data.name,
-        description: data.description,
-        website_url: data.website_url,
-        logo_url: data.logo_url,
-        updated_at: new Date().toISOString(),
-      });
+    mutationFn: ({ id, data }: { id: string; data: Partial<Organization> }) =>
+      organizationCrudApi.update(id, data),
+    onSuccess: () => {
+      // Invalidate queries to refetch organization data
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onSuccess: (_, variables) => {
-      logger.info("Successfully updated organization:", variables.orgId);
-      // Invalidate both organization lists and the specific organization
-      queryClient.invalidateQueries({ queryKey: ["organizations"] });
-      queryClient.invalidateQueries({ queryKey: ["organization", variables.orgId] });
+  });
+};
+
+/**
+ * Hook for deleting an organization
+ */
+export const useDeleteOrganization = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id: string) => organizationCrudApi.delete(id),
+    onSuccess: () => {
+      // Invalidate queries to refetch organization data
+      queryClient.invalidateQueries({ queryKey: ['organizations'] });
     },
-    onError: (error) => {
-      logger.error("Error updating organization:", error);
-    }
   });
 };

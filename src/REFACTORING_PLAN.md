@@ -37,17 +37,17 @@ This document outlines the plan for refactoring the codebase to reduce surface a
 - Better debugging capabilities
 - Simplified error handling code
 
-## Phase 3: Legacy API Clean-up (In Progress)
+## Phase 3: Legacy API Clean-up ✓
 
 **Goal**: Remove deprecated API files and update imports.
 
 **Tasks**:
-- [ ] Update any remaining imports from legacy API files
-- [ ] Remove all deprecated API files including:
-  - [ ] `src/api/organizationsApi.ts`
-  - [ ] `src/api/core/apiFactory.ts`
-  - [ ] Other files with `@deprecated` tags
-- [ ] Ensure all API access uses the current factory pattern
+- [x] Update any remaining imports from legacy API files
+- [x] Remove all deprecated API files including:
+  - [x] `src/api/organizationsApi.ts` (replaced with forwarding module)
+  - [x] `src/api/core/apiFactory.ts` (replaced with forwarding module)
+- [x] Ensure all API access uses the current factory pattern
+- [x] Fix type errors in batch operations factory
 
 **Benefits**:
 - Smaller codebase
@@ -55,7 +55,7 @@ This document outlines the plan for refactoring the codebase to reduce surface a
 - Improved maintainability
 - Consistent API usage patterns
 
-## Phase 4: Hook Import Standardization
+## Phase 4: Hook Import Standardization (In Progress)
 
 **Goal**: Standardize all hook imports to use the modular structure.
 
@@ -87,5 +87,3 @@ This document outlines the plan for refactoring the codebase to reduce surface a
 - Better testability of data access code
 - Improved error handling for API calls
 - Clearer separation of concerns
-
-

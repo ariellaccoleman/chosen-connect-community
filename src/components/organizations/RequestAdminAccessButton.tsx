@@ -47,7 +47,7 @@ const RequestAdminAccessButton = ({
     await createRequest.mutateAsync({
       profile_id: user.id,
       organization_id: organizationId,
-    });
+    } as any);
     
     setIsDialogOpen(false);
   };

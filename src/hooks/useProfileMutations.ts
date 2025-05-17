@@ -1,7 +1,8 @@
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useMutation } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { Profile, MembershipTier } from '@/types';
+import { Profile } from '@/types';
+import { toast } from 'sonner';
 import { createMutationHandlers } from '@/utils/toastUtils';
 
 export const useUpdateProfile = () => {

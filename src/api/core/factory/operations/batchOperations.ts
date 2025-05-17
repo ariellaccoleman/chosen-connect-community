@@ -48,13 +48,13 @@ export function createBatchOperations<
         // Transform items if needed
         const requestData = items.map((item) => transformRequest(item as unknown as Record<string, any>));
         
-        const { data, error } = await repository.insert(requestData).select(select);
+        const result = await repository.insert(requestData).select(select);
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
         // Transform each result if needed
-        const transformedData = Array.isArray(data) 
-          ? data.map(transformResponse)
+        const transformedData = Array.isArray(result.data) 
+          ? result.data.map(transformResponse)
           : [];
           
         return createSuccessResponse(transformedData);
@@ -82,16 +82,16 @@ export function createBatchOperations<
           const requestData = transformRequest(item as unknown as Record<string, any>);
           
           // Execute the update
-          const { data, error } = await repository
+          const result = await repository
             .update(requestData)
             .eq(idField, id)
             .select(select);
           
-          if (error) throw error;
+          if (result.error) throw result.error;
           
-          if (data) {
+          if (result.data) {
             // Transform result if needed
-            const transformedItem = Array.isArray(data) ? data[0] : data;
+            const transformedItem = Array.isArray(result.data) ? result.data[0] : result.data;
             results.push(transformResponse(transformedItem));
           }
         }
@@ -111,16 +111,16 @@ export function createBatchOperations<
       try {
         // If softDelete is enabled, update the deleted_at field
         if (softDelete) {
-          const { error } = await repository
+          const result = await repository
             .update({ deleted_at: new Date() })
             .in(idField, ids);
             
-          if (error) throw error;
+          if (result.error) throw result.error;
         } else {
           // Otherwise, perform a hard delete
-          const { error } = await repository.delete().in(idField, ids);
+          const result = await repository.delete().in(idField, ids);
           
-          if (error) throw error;
+          if (result.error) throw result.error;
         }
         
         return createSuccessResponse(true);

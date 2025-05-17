@@ -42,7 +42,7 @@ const AdminRequestDetails = ({
         is_approved: true,
         role: selectedRole
       }
-    });
+    } as any);
     onClose();
   };
 
