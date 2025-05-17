@@ -1,9 +1,7 @@
-
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserOrganizationRelationships } from "@/hooks/organizations";
-import { useOrganizations } from "@/hooks/organizations";
+import { useUserOrganizationRelationships, useOrganizations, useAddOrganizationRelationship } from "@/hooks/organizations";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
@@ -14,7 +12,6 @@ import OrganizationConnectionsHeader from "@/components/organizations/Organizati
 import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
-import { useAddOrganizationRelationship } from "@/hooks/useOrganizationMutations";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();

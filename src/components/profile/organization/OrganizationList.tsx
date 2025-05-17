@@ -1,8 +1,9 @@
+
 import { Button } from "@/components/ui/button";
 import { Eye, Edit, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
-import { useIsOrganizationAdmin } from "@/hooks/useOrganizationAdmins";
+import { useIsOrganizationAdmin } from "@/hooks/organizations";
 import { useAuth } from "@/hooks/useAuth";
 
 interface OrganizationListProps {

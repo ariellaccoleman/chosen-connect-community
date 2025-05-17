@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { useAddOrganizationRelationship } from "@/hooks/useOrganizations";
+import { useAddOrganizationRelationship } from "@/hooks/organizations";
 import { toast } from "@/components/ui/sonner";
 import {
   Dialog,
