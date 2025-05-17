@@ -4,8 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter } from "react-router-dom";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { LayoutProvider } from "@/contexts/LayoutContext";
 import { DebugProvider } from "@/contexts/DebugContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -46,7 +45,6 @@ const AppProviders = ({ children }: AppProvidersProps) => {
                 <TooltipProvider>
                   {children}
                   <Toaster />
-                  <Sonner />
                 </TooltipProvider>
               </LayoutProvider>
             </AuthProvider>

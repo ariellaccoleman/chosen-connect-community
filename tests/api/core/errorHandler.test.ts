@@ -1,4 +1,3 @@
-
 import { 
   createErrorResponse, 
   createSuccessResponse,
@@ -6,15 +5,21 @@ import {
   showErrorToast,
   ApiError
 } from '@/api/core/errorHandler';
-import { sonnerToast as toast } from '@/hooks/use-toast';
-import { extractErrorMessage } from '@/utils/errorUtils';
+import { toast } from '@/utils/toast';
+import { extractErrorMessage } from '@/utils/toast';
 
 // Mock the toast function
-jest.mock('@/hooks/use-toast', () => ({
-  sonnerToast: {
+jest.mock('@/utils/toast', () => ({
+  toast: {
     error: jest.fn(),
     success: jest.fn()
-  }
+  },
+  extractErrorMessage: jest.fn().mockImplementation(error => {
+    if (!error) return 'Unknown error occurred';
+    if (typeof error === 'string') return error;
+    if (error.message) return error.message;
+    return 'Unknown error occurred';
+  })
 }));
 
 describe('API Error Handler', () => {
