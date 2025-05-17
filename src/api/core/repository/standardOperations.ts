@@ -1,3 +1,4 @@
+
 import { DataRepository, RepositoryResponse } from "./DataRepository";
 import { logger } from "@/utils/logger";
 import { ApiResponse, ApiError, createSuccessResponse, createErrorResponse } from "../errorHandler";
@@ -18,11 +19,11 @@ export class StandardRepositoryOperations<T, TId = string> {
     try {
       const result = await this.repository.getById(id as string | number);
       
-      if (result.isError()) {
-        throw result.error;
+      if (!result || (result as unknown as RepositoryResponse<T>).isError()) {
+        throw (result as unknown as RepositoryResponse<T>).error;
       }
       
-      return createSuccessResponse(result.data);
+      return createSuccessResponse((result as unknown as RepositoryResponse<T>).data);
     } catch (error) {
       logger.error(`Error getting ${this.entityName} by ID:`, error);
       return createErrorResponse({ 
@@ -38,11 +39,11 @@ export class StandardRepositoryOperations<T, TId = string> {
     try {
       const result = await this.repository.getAll();
       
-      if (result.isError()) {
-        throw result.error;
+      if ((result as unknown as RepositoryResponse<T[]>).isError()) {
+        throw (result as unknown as RepositoryResponse<T[]>).error;
       }
       
-      return createSuccessResponse(result.data as T[]);
+      return createSuccessResponse((result as unknown as RepositoryResponse<T[]>).data as T[]);
     } catch (error) {
       logger.error(`Error getting all ${this.entityName}s:`, error);
       return createErrorResponse({ 
