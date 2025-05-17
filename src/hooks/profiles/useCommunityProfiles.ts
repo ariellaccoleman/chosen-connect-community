@@ -29,10 +29,7 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
           ...(params.isApproved !== false && { is_approved: true }),
           ...(params.excludeId && { id: { neq: params.excludeId } })
         },
-        search: params.search ? {
-          fields: ['first_name', 'last_name', 'headline'],
-          term: params.search
-        } : undefined,
+        search: params.search, // Simply pass the search string directly
         limit: params.limit
       });
       
