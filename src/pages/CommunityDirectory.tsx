@@ -18,7 +18,7 @@ const CommunityDirectory = () => {
   const { user } = useAuth();
   
   // Use tag hooks directly from the consolidated hooks/tags module
-  const { data: filterTagsResponse = [], isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
+  const { data: filterTagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
   const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
