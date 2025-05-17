@@ -7,22 +7,18 @@ import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import { useTagFilter } from "@/hooks/useTagFilter";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
+import { useSelectionTags, useFilterTags } from "@/hooks/tags";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { user } = useAuth();
   
-  // Use tag filtering with explicit typing
-  const { 
-    selectedTagId, 
-    setSelectedTagId, 
-    filterItemsByTag,
-    tags: filterTags,
-    isLoading: isTagsLoading 
-  } = useTagFilter({ entityType: EntityType.PERSON });
+  // Use tag hooks directly from the consolidated hooks/tags module
+  const { data: filterTagsResponse = [], isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
+  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile(user?.id || "");
@@ -39,6 +35,9 @@ const CommunityDirectory = () => {
     console.error("Error loading community profiles:", error);
     toast.error("Failed to load community members. Please try again.");
   }
+
+  // Extract tags from the response
+  const tags = filterTagsResponse.data?.map(ta => ta.tag).filter(Boolean) || [];
 
   // No need to combine and deduplicate profiles anymore, just use what's returned
   const allProfiles = profiles || [];
@@ -59,7 +58,7 @@ const CommunityDirectory = () => {
               <TagFilter
                 selectedTagId={selectedTagId}
                 onTagSelect={setSelectedTagId}
-                tags={filterTags}
+                tags={tags}
                 isLoading={isTagsLoading}
               />
             </div>

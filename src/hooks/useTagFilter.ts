@@ -1,18 +1,18 @@
-import { useState, useMemo } from "react";
-import { Entity } from "@/types/entity";
-import { EntityType } from "@/types/entityTypes";
-import { useFilterTags } from "./tags";
-import { Tag } from "@/utils/tags/types";
-
-interface UseTagFilterOptions {
-  entityType?: EntityType;
-}
 
 /**
  * @deprecated This file is maintained for backward compatibility only.
  * Please update your imports to use the modular structure:
- * import { useFilterTags } from '@/hooks/tags';
+ * import { useFilterTags, useSelectionTags } from '@/hooks/tags';
  */
+
+import { useState, useMemo } from "react";
+import { Entity } from "@/types/entity";
+import { EntityType } from "@/types/entityTypes";
+import { useFilterTags, useSelectionTags } from "@/hooks/tags";
+
+interface UseTagFilterOptions {
+  entityType?: EntityType;
+}
 
 /**
  * Hook for filtering entities by tag
@@ -21,7 +21,10 @@ interface UseTagFilterOptions {
 export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { data: tagAssignments = [], isLoading: isLoadingTagAssignments } = useFilterTags(selectedTagId, options.entityType);
-  const { data: tags = [], isLoading: isLoadingSelectionTags } = useFilterTags(null, options.entityType);
+  const { data: tagsResponse, isLoading: isLoadingSelectionTags } = useSelectionTags(options.entityType);
+
+  // Extract tags from the response
+  const tags = tagsResponse?.data?.map(ta => ta.tag).filter(Boolean) || [];
 
   /**
    * Filter items by tag assignment
@@ -52,7 +55,7 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
     selectedTagId,
     setSelectedTagId,
     filterItemsByTag,
-    tags: tags.map(ta => ta.tag).filter(Boolean) as Tag[],
+    tags,
     isLoading: isLoadingTagAssignments || isLoadingSelectionTags
   };
 };
