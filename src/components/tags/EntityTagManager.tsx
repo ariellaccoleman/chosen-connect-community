@@ -4,7 +4,7 @@ import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags";
 import TagList from "./TagList";
 import { Skeleton } from "@/components/ui/skeleton";
 import TagSelector from "./TagSelector";
-import { EntityType, isValidEntityType } from "@/types/entityTypes";
+import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 
@@ -66,7 +66,6 @@ const EntityTagManager = ({
     }
 
     logger.info("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
-    console.log("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
     
     try {
       await assignTag({ 
@@ -81,7 +80,6 @@ const EntityTagManager = ({
       }
     } catch (error) {
       logger.error("Error assigning tag:", error);
-      console.error("Error assigning tag:", error);
       
       // Call error callback if provided
       if (onTagError && error instanceof Error) {
@@ -100,7 +98,6 @@ const EntityTagManager = ({
       }
     } catch (error) {
       logger.error("Error removing tag:", error);
-      console.error("Error removing tag:", error);
       
       // Call error callback if provided
       if (onTagError && error instanceof Error) {

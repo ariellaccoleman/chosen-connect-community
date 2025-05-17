@@ -1,9 +1,11 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { TagAssignment } from "@/utils/tags/types";
+import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { apiClient } from "@/api/core/apiClient";
+import { useTagAssignmentMutations } from "@/hooks/tags";
 
 /**
  * Hook to fetch tags for a specific event
@@ -24,7 +26,7 @@ export function useEventTags(eventId: string | undefined) {
             tag:tags(*)
           `)
           .eq("target_id", eventId)
-          .eq("target_type", "event");
+          .eq("target_type", EntityType.EVENT);
       });
       
       if (error) {
@@ -40,9 +42,11 @@ export function useEventTags(eventId: string | undefined) {
 
 /**
  * Hook to add a tag to an event
+ * @deprecated Use the generic useTagAssignmentMutations() hook instead
  */
 export function useAddEventTag() {
   const queryClient = useQueryClient();
+  const { assignTag } = useTagAssignmentMutations();
   
   return useMutation({
     mutationFn: async ({ 
@@ -53,25 +57,12 @@ export function useAddEventTag() {
       tagId: string 
     }) => {
       logger.info(`Adding tag ${tagId} to event ${eventId}`);
-      
-      const { data, error } = await apiClient.query(async (client) => {
-        return client
-          .from("tag_assignments")
-          .insert({
-            target_id: eventId,
-            target_type: "event",
-            tag_id: tagId
-          })
-          .select()
-          .single();
+      await assignTag({
+        tagId,
+        entityId: eventId,
+        entityType: EntityType.EVENT
       });
-      
-      if (error) {
-        logger.error(`Error adding tag ${tagId} to event ${eventId}:`, error);
-        throw new Error(error.message || "Failed to add tag to event");
-      }
-      
-      return data;
+      return { success: true };
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["event", variables.eventId, "tags"] });
@@ -86,9 +77,11 @@ export function useAddEventTag() {
 
 /**
  * Hook to remove a tag from an event
+ * @deprecated Use the generic useTagAssignmentMutations() hook instead
  */
 export function useRemoveEventTag() {
   const queryClient = useQueryClient();
+  const { removeTagAssignment } = useTagAssignmentMutations();
   
   return useMutation({
     mutationFn: async ({ 
@@ -99,19 +92,7 @@ export function useRemoveEventTag() {
       eventId: string 
     }) => {
       logger.info(`Removing tag assignment ${assignmentId} from event ${eventId}`);
-      
-      const { error } = await apiClient.query(async (client) => {
-        return client
-          .from("tag_assignments")
-          .delete()
-          .eq("id", assignmentId);
-      });
-      
-      if (error) {
-        logger.error(`Error removing tag assignment ${assignmentId}:`, error);
-        throw new Error(error.message || "Failed to remove tag from event");
-      }
-      
+      await removeTagAssignment(assignmentId);
       return { success: true };
     },
     onSuccess: (_, variables) => {

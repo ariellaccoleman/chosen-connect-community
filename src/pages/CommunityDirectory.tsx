@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/profiles";
@@ -8,17 +9,16 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterTags } from "@/hooks/tags";
-import { Tag } from "@/utils/tags/types";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { user } = useAuth();
   
-  // Use tag hooks directly from the consolidated hooks/tags module
-  const { data: filterTagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
-  const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.PERSON);
+  // Use the consolidated tag hooks
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
@@ -36,10 +36,8 @@ const CommunityDirectory = () => {
     toast.error("Failed to load community members. Please try again.");
   }
 
-  // Extract tags from the response - fix the structure handling
-  const tags = filterTagsResponse && Array.isArray(filterTagsResponse.data) 
-    ? filterTagsResponse.data.filter(Boolean) 
-    : [];
+  // Extract tags from the response
+  const tags = tagsResponse?.data || [];
 
   // No need to combine and deduplicate profiles anymore, just use what's returned
   const allProfiles = profiles || [];

@@ -1,10 +1,11 @@
+
 import React, { useState } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
-import { useFilterTags } from "@/hooks/tags";
+import { useFilterByTag, useSelectionTags } from "@/hooks/tags";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 
 interface EntityFeedProps {
@@ -50,15 +51,23 @@ const EntityFeed = ({
     limit
   });
 
-  // Fetch tags for filtering - specify the entity type string for the parameter
-  const { data: tagAssignments = [], isLoading: tagsLoading } = useFilterTags(
-    selectedTagId, 
+  // Fetch tags for filtering - use our consolidated hook
+  const { data: tagsResponse = { data: [] }, isLoading: tagsLoading } = useSelectionTags(
+    activeTab !== "all" ? activeTab : undefined
+  );
+  
+  // Get tag assignments using our filter-by-tag hook
+  const { data: tagAssignments = [] } = useFilterByTag(
+    selectedTagId,
     activeTab !== "all" ? activeTab : undefined
   );
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
   };
+  
+  // Extract tags from the response - ensuring we have an array
+  const tags = tagsResponse.data || [];
   
   return (
     <div className={className}>
@@ -82,7 +91,7 @@ const EntityFeed = ({
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={setSelectedTagId}
-            tags={(tagAssignments.map(ta => ta.tag).filter(Boolean)) || []}
+            tags={tags}
             isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />

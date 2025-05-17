@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Use consistent imports from the consolidated tags module
+// Use consolidated tag hooks
 import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";
 
 // Import the components
@@ -17,7 +17,7 @@ import TagsTable from "@/components/admin/tags/TagsTable";
 const AdminTags = () => {
   const queryClient = useQueryClient();
   const { data: tagsResponse, isLoading } = useSelectionTags();
-  const { createTag: createTagMutation, isCreating } = useTagCrudMutations();
+  const { createTag, isCreating } = useTagCrudMutations();
   const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
 
@@ -29,7 +29,7 @@ const AdminTags = () => {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      await createTagMutation({
+      await createTag({
         name: values.name,
         description: values.description,
         type: values.type
