@@ -17,7 +17,8 @@ const EventDetailContent = () => {
   const { data: event, isLoading, error } = useEventById(eventId);
   const [isEditing, setIsEditing] = useState(false);
 
-  const isOwner = user?.id && event?.host_id === user.id;
+  // Use optional chaining to safely access host_id
+  const isOwner = user?.id && event && event.host_id === user.id;
 
   logger.info("EventDetail rendering", {
     eventId,

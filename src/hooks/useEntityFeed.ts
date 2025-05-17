@@ -30,7 +30,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeProfiles = entityTypes.includes(EntityType.PERSON);
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
   
-  // Fetch data for each entity type using factory hooks
+  // Fetch data for each entity type using factory hooks - now returns array directly
   const { data: events = [], isLoading: eventsLoading } = useEvents(); 
   
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({

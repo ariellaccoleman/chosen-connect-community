@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,6 +53,8 @@ const Events: React.FC = () => {
     navigate(`/events/${eventId}`);
   };
 
+  
+  
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
@@ -112,6 +113,7 @@ const Events: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">Found {events.length} event(s)</p>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
+                
                 <div 
                   key={event.id} 
                   className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
