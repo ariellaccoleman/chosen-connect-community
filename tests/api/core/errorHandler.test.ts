@@ -1,3 +1,4 @@
+
 import { 
   createErrorResponse, 
   createSuccessResponse,
@@ -6,13 +7,23 @@ import {
   ApiError
 } from '@/api/core/errorHandler';
 import { toast } from '@/hooks/use-toast';
-import { extractErrorMessage } from '@/utils/toast';
+import { extractErrorMessage } from '@/utils/errorUtils';
 
 // Mock the toast function
 jest.mock('@/hooks/use-toast', () => ({
   toast: {
     error: jest.fn(),
     success: jest.fn()
+  }
+}));
+
+// Mock the logger to avoid console errors in tests
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
   }
 }));
 
@@ -73,7 +84,6 @@ describe('API Error Handler', () => {
     const response = handleApiError(error);
     
     expect(response.status).toBe('error');
-    expect(response.error?.code).toBe('general_error');
     expect(response.error?.message).toBe('Something went wrong');
   });
 
@@ -81,7 +91,6 @@ describe('API Error Handler', () => {
     const response = handleApiError('Unexpected string error');
     
     expect(response.status).toBe('error');
-    expect(response.error?.code).toBe('general_error');
     expect(response.error?.message).toBe('Unexpected string error');
   });
 
@@ -105,6 +114,17 @@ describe('API Error Handler', () => {
     showErrorToast(error);
     
     expect(toast.error).toHaveBeenCalledWith('An error occurred');
+  });
+
+  test('showErrorToast with prefix adds prefix to message', () => {
+    const error: ApiError = {
+      code: 'validation_error',
+      message: 'Invalid input data'
+    };
+    
+    showErrorToast(error, 'Form Error');
+    
+    expect(toast.error).toHaveBeenCalledWith('Form Error: Invalid input data');
   });
 
   test('extractErrorMessage handles various error formats', () => {

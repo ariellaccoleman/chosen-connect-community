@@ -140,3 +140,4 @@ This consolidation has resolved several instances of technical debt:
 6. ✅ Removed complex adapter layers in favor of direct usage
 7. ✅ Removed all deprecated files and legacy re-exports
 8. ✅ Simplified import paths with clear, direct module references
+

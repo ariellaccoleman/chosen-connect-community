@@ -1,7 +1,8 @@
 
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { ApiError } from "@/api/core/errorHandler";
+import { extractErrorMessage } from "@/utils/errorUtils";
+import { logger } from "@/utils/logger";
 
 /**
  * Hook for handling form errors in a standardized way
@@ -10,18 +11,15 @@ export const useFormError = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleError = useCallback((error: unknown) => {
-    console.error("Form error:", error);
+    const errorMessage = extractErrorMessage(error);
     
-    let errorMessage = "An unexpected error occurred. Please try again.";
+    // Log for debugging
+    logger.error("Form error:", error);
     
-    if (error && typeof error === 'object' && 'code' in error && 'message' in error) {
-      // This is likely our ApiError type
-      errorMessage = (error as { message: string }).message;
-    } else if (error instanceof Error) {
-      errorMessage = error.message;
-    }
-    
+    // Set the error state 
     setError(errorMessage);
+    
+    // Show toast notification
     toast.error(errorMessage);
     
     return errorMessage;

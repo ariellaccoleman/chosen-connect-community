@@ -12,6 +12,16 @@ jest.mock('@/hooks/use-toast', () => ({
   }
 }));
 
+// Mock the logger to avoid console errors in tests
+jest.mock('@/utils/logger', () => ({
+  logger: {
+    error: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
+  }
+}));
+
 describe('useFormError Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -57,8 +67,8 @@ describe('useFormError Hook', () => {
       result.current.handleError('Something went wrong');
     });
     
-    expect(result.current.error).toBe('An unexpected error occurred. Please try again.');
-    expect(toast.error).toHaveBeenCalledWith('An unexpected error occurred. Please try again.');
+    expect(result.current.error).toBe('Something went wrong');
+    expect(toast.error).toHaveBeenCalledWith('Something went wrong');
   });
 
   test('clearError resets the error state to null', () => {

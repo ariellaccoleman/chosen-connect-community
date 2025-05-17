@@ -2,9 +2,10 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { extractErrorMessage } from "@/utils/errorUtils";
 
 interface OrganizationEditErrorProps {
-  error?: Error;
+  error?: Error | unknown;
   orgId?: string;
 }
 
@@ -12,10 +13,12 @@ export function OrganizationEditError({ error, orgId }: OrganizationEditErrorPro
   const navigate = useNavigate();
 
   if (error) {
+    const errorMessage = extractErrorMessage(error);
+    
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <p>Error loading organization: {error.message}</p>
+          <p>Error loading organization: {errorMessage}</p>
           <Button className="mt-4" onClick={() => navigate('/organizations')}>
             Return to Organizations
           </Button>

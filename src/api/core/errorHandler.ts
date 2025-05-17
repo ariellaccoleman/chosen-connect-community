@@ -1,6 +1,8 @@
 
 import { PostgrestError } from "@supabase/supabase-js";
 import { toast } from "@/hooks/use-toast";
+import { extractErrorMessage, createErrorObject } from "@/utils/errorUtils";
+import { logger } from "@/utils/logger";
 
 /**
  * Types of API errors that can occur
@@ -24,12 +26,14 @@ export type ApiResponse<T> = {
 /**
  * Create a standardized error response
  */
-export const createErrorResponse = (error: any): ApiResponse<any> => {
+export const createErrorResponse = (error: unknown): ApiResponse<any> => {
+  const errorObj = createErrorObject(error);
+  
   const apiError: ApiError = {
-    code: error?.code || 'unknown_error',
-    message: error?.message || 'An unknown error occurred',
-    details: error?.details || null,
-    original: error
+    code: errorObj.code || 'unknown_error',
+    message: errorObj.message,
+    details: errorObj.details || null,
+    original: errorObj.original
   };
   
   return {
@@ -53,8 +57,8 @@ export const createSuccessResponse = <T>(data: T): ApiResponse<T> => {
 /**
  * Handle API errors and standardize them
  */
-export const handleApiError = (error: unknown): ApiResponse<any> => {
-  console.error("API Error:", error);
+export const handleApiError = (error: unknown, context = 'API Error'): ApiResponse<any> => {
+  logger.error(`${context}:`, error);
   
   // Handle PostgreSQL/Supabase specific errors
   if ((error as PostgrestError)?.code) {
@@ -66,20 +70,18 @@ export const handleApiError = (error: unknown): ApiResponse<any> => {
     });
   }
   
-  // Handle general errors
-  const generalError = error instanceof Error 
-    ? error 
-    : new Error(String(error));
-  
-  return createErrorResponse({
-    code: 'general_error',
-    message: generalError.message
-  });
+  // Use our centralized error handling for all other errors
+  return createErrorResponse(error);
 };
 
 /**
  * Display error toast based on API error
  */
-export const showErrorToast = (error: ApiError) => {
-  toast.error(error.message || 'An error occurred');
+export const showErrorToast = (error: ApiError | unknown, prefix = '') => {
+  const message = typeof error === 'object' && error && 'message' in error 
+    ? (error as ApiError).message 
+    : extractErrorMessage(error);
+    
+  const displayMessage = prefix ? `${prefix}: ${message}` : message;
+  toast.error(displayMessage || 'An error occurred');
 };
