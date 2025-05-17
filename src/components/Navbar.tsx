@@ -1,3 +1,4 @@
+
 import { useToggle } from "@/hooks/useToggle";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Menu, X } from "lucide-react";
@@ -29,7 +30,7 @@ const Navbar = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { data: profileData } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile();
   const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";

@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon } from "lucide-react";
@@ -21,7 +22,7 @@ import {
 const DesktopNav = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { data: profileData } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile();
   const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";

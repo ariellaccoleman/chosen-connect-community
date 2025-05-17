@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -14,7 +15,7 @@ interface MobileNavProps {
 const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { data: profileData } = useCurrentProfile(user?.id);
+  const { data: profileData } = useCurrentProfile();
   const { theme, setTheme } = useTheme();
   
   const isAdmin = user?.user_metadata?.role === "admin";

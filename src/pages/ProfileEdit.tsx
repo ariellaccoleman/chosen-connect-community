@@ -11,7 +11,7 @@ import { formatProfileUrls } from "@/utils/formatters/urlFormatters";
 const ProfileEdit = () => {
   const navigate = useNavigate();
   const { user, loading, isAdmin } = useAuth();
-  const { data: profile, isLoading: isLoadingProfile } = useProfileById(user?.id);
+  const { data: profileData, isLoading: isLoadingProfile } = useProfileById(user?.id);
   const updateProfile = useUpdateProfile();
   const addOrganizationRelationship = useAddOrganizationRelationship();
 
@@ -87,6 +87,9 @@ const ProfileEdit = () => {
       </div>
     );
   }
+
+  // Extract the profile data from the API response
+  const profile = profileData?.data;
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-3xl">

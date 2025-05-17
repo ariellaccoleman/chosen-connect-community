@@ -7,12 +7,16 @@ import EventSection from "@/components/dashboard/EventSection";
 import { useProfileById } from "@/hooks/profiles";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
 import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
+import { ProfileWithDetails } from "@/types";
 
 const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();
-  const { data: profile } = useProfileById(user?.id);
+  const { data: profileData } = useProfileById(user?.id);
   const { data: relationships = [], isLoading: isLoadingOrgs } = usePublicProfileOrganizations(user?.id);
   const { data: tagAssignments = [], isLoading: isLoadingTags } = usePublicProfileTags(user?.id);
+  
+  // Extract the profile data from the API response
+  const profile = profileData?.data;
   
   // If the profile is loaded, add the isAdmin flag and tags to it
   const profileWithAdminStatus = profile ? {

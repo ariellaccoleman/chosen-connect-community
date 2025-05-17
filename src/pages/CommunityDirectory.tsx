@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/profiles";
@@ -22,7 +21,7 @@ const CommunityDirectory = () => {
   const { data: tagAssignments = [] } = useFilterTags(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
-  const { data: currentUserProfile } = useCurrentProfile(user?.id || "");
+  const { data: currentUserProfile } = useCurrentProfile();
 
   // Fetch all community profiles with proper filter object
   const { data: profiles, isLoading, error } = useCommunityProfiles({ 
