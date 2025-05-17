@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterTags, useSelectionTags } from "@/hooks/tags"; // Updated import
