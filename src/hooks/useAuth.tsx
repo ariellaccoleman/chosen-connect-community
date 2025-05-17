@@ -12,17 +12,21 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider");
   }
 
-  const { state, actions } = context;
-  
   return {
-    // Auth state
-    user: state.user,
-    loading: state.loading,
-    isAuthenticated: state.isAuthenticated,
-    isAdmin: state.isAdmin,
-    email: state.email,
+    user: context.user,
+    loading: context.loading,
+    isAuthenticated: !!context.user,
+    isAdmin: context.isAdmin,
+    email: context.user?.email,
     
-    // Auth actions (from the provider)
-    ...actions,
+    // Auth actions
+    login: context.login,
+    signUp: context.signUp,
+    logout: context.logout,
+    signIn: context.signIn,
+    signOut: context.signOut,
+    forgotPassword: context.forgotPassword,
+    resetPassword: context.resetPassword,
+    error: context.error
   };
 }
