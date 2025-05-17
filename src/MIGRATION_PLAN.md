@@ -36,10 +36,13 @@ Phase 4 of the migration is in progress. The codebase now has:
 
 ## Phase 4: Tag Consolidation (In Progress)
 
-- [ ] Fix inconsistent imports in AdminTags.tsx
-- [ ] Create proper exports in hooks/tags/index.ts
-- [ ] Consolidate tag query hooks
-- [ ] Create clean redirections for all tag-related hooks
+- [x] Fix exports in hooks/tags/index.ts
+- [x] Update AdminTags.tsx to use consistent imports
+- [x] Consolidate tag query hooks in hooks/tags/useTagQueryHooks.ts
+- [x] Move hooks from hooks/tag to hooks/tags/useTagCrudHooks.ts and useTagAssignmentHooks.ts
+- [x] Create clean redirections for all tag-related hooks
+- [ ] Update CommunityDirectory.tsx to use hooks from @/hooks/tags
+- [ ] Update useTagFilter to import from @/hooks/tags
 
 ## Phase 5: Removal (To Do)
 
@@ -53,68 +56,99 @@ Phase 4 of the migration is in progress. The codebase now has:
 ### Pages with Deprecated Imports
 
 1. **src/pages/AdminTags.tsx**
-   - Currently using: `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
-   - Needs to update to: `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
+   - Status: ✅ Fixed
+   - Old: `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
+   - New: `import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";`
 
 2. **src/pages/CommunityDirectory.tsx**
-   - Currently using: `import { useTagFilter } from "@/hooks/useTagFilter";`
-   - Needs to update to: `import { useTagFilter } from "@/hooks/tags";`
+   - Status: ⚠️ Needs Update
+   - Current: `import { useTagFilter } from "@/hooks/useTagFilter";`
+   - Needs to update to: `import { useFilterTags } from "@/hooks/tags";`
+   - Note: Will need to refactor the useTagFilter hook functionality into this component
 
 ### Components with Deprecated Imports
 
 1. **src/components/tags/EntityTagManager.tsx**
-   - Currently using: `import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags";`
-   - No change needed - these are the correct imports
+   - Status: ✅ Using correct imports
+   - Current: `import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags";`
 
 2. **src/components/events/form/EventTagsManager.tsx**
-   - Currently using: `import EntityTagManager from "@/components/tags/EntityTagManager";`
-   - No change needed - these are the correct imports
+   - Status: ✅ Using correct imports
+   - Current: `import EntityTagManager from "@/components/tags/EntityTagManager";`
 
 3. **src/components/tags/TagSelector/TagSelectorComponent.tsx**
-   - Currently using: Imports from `@/utils/tags`
-   - No change needed - these are the correct imports
+   - Status: ✅ Using correct imports
+   - Current: Imports from `@/utils/tags`
 
-### Re-export Files To Consolidate
+### Re-export Files Consolidated
 
 1. **src/hooks/tags/index.ts**
-   - Need to properly re-export both:
-     - All hooks from hooks/tag directory
-     - All hooks from hooks/tags directory
-     - Fixed re-export of `useSelectionTags`
+   - Status: ✅ Fixed
+   - Now properly re-exports all hooks from:
+     - hooks/tags/useTagsHooks
+     - hooks/tags/useTagQueryHooks
+     - hooks/tags/useTagCrudHooks
+     - hooks/tags/useTagAssignmentHooks
 
 2. **src/hooks/useTagQueries.ts**
-   - Need to properly re-export from `./tags/useTagQueryHooks`
-   - Add deprecation warning 
+   - Status: ✅ Properly re-exports with deprecation warnings
+   - Current: Re-exports from `./tags`
 
 3. **src/hooks/useTagMutations.ts**
-   - Need to properly re-export from `./tags`
-   - Add deprecation warning 
+   - Status: ✅ Properly re-exports with deprecation warnings
+   - Current: Re-exports from `./tags`
 
 4. **src/hooks/useTags.ts**
-   - Need to properly re-export from `./tags`
-   - Add deprecation warning
+   - Status: ✅ Properly re-exports with deprecation warnings
+   - Current: Re-exports from `./tags`
 
-### Legacy Files To Clean Up
+5. **src/hooks/useTagFilter.ts**
+   - Status: ⚠️ Needs Refactoring
+   - Current: Contains implementation, not just re-exports
+   - Should re-export from `./tags` and add deprecation warning
 
-1. **src/hooks/index.ts**
-   - Contains ambiguous exports that should be removed
-   - Should use direct imports from specific modules
+### Legacy Files Consolidated
 
-2. **src/hooks/tag/index.ts**
-   - Need to consolidate with `hooks/tags/index.ts`
+1. **src/hooks/tag/index.ts**
+   - Status: ✅ All hooks moved to hooks/tags
+   - Implementation has been consolidated in hooks/tags
 
-3. **src/utils/tagUtils.ts**
-   - Re-exporting from `./tags`
-   - Need deprecation warning
-   - Should be removed after all imports are updated
+2. **src/hooks/tag/useTagCrudMutations.ts**
+   - Status: ✅ Moved to hooks/tags/useTagCrudHooks.ts
+
+3. **src/hooks/tag/useTagAssignmentMutations.ts**
+   - Status: ✅ Moved to hooks/tags/useTagAssignmentHooks.ts
+
+4. **src/hooks/tag/useTagFindOrCreate.ts**
+   - Status: ✅ Moved to hooks/tags/useTagCrudHooks.ts
+
+5. **src/hooks/tag/useTagEntityType.ts**
+   - Status: ✅ Moved to hooks/tags/useTagCrudHooks.ts
+
+6. **src/hooks/tag/useTagBasicCrud.ts**
+   - Status: ✅ Moved to hooks/tags/useTagCrudHooks.ts
+
+7. **src/hooks/tag/useTagCreation.ts**
+   - Status: ✅ Moved to hooks/tags/useTagCrudHooks.ts
+
+### API Structure
+
+1. **src/api/tags/index.ts**
+   - Status: ✅ Properly organized
+   - Current: Correctly re-exports all tag-related API functions
+
+2. **src/utils/tags/index.ts**
+   - Status: ✅ Properly organized
+   - Current: Correctly re-exports all tag utility functions
 
 ## Migration Priorities
 
-1. Fix inconsistent imports in AdminTags.tsx and CommunityDirectory.tsx
-2. Consolidate tag hooks (move all hooks from hooks/tag to hooks/tags)
-3. Ensure clean re-exports with deprecation warnings
-4. Remove ambiguous exports from hooks/index.ts
-5. Clean up remaining legacy re-export files
+1. ✅ Fix exports in hooks/tags/index.ts
+2. ✅ Update AdminTags.tsx to use consistent imports
+3. ✅ Consolidate tag hooks (move all hooks from hooks/tag to hooks/tags)
+4. ⚠️ Update CommunityDirectory.tsx to use hooks from @/hooks/tags
+5. ⚠️ Refactor useTagFilter.ts to use hooks from @/hooks/tags
+6. ⚠️ Remove ambiguous exports from hooks/index.ts
 
 ## Benefits of Consolidation
 

@@ -1,8 +1,7 @@
-
 import { useState, useMemo } from "react";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterTags } from "./useTagQueries";
+import { useFilterTags } from "./tags";
 import { Tag } from "@/utils/tags/types";
 
 interface UseTagFilterOptions {
@@ -10,7 +9,14 @@ interface UseTagFilterOptions {
 }
 
 /**
+ * @deprecated This file is maintained for backward compatibility only.
+ * Please update your imports to use the modular structure:
+ * import { useFilterTags } from '@/hooks/tags';
+ */
+
+/**
  * Hook for filtering entities by tag
+ * @deprecated Please use hooks from '@/hooks/tags' directly.
  */
 export const useTagFilter = (options: UseTagFilterOptions = {}) => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
@@ -34,6 +40,14 @@ export const useTagFilter = (options: UseTagFilterOptions = {}) => {
     };
   }, [selectedTagId, tagAssignments]);
 
+  // Add deprecation console warning in development only
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(
+      'Deprecated import: Please update your imports to use modules from @/hooks/tags directly ' +
+      'instead of @/hooks/useTagFilter which will be removed in a future release.'
+    );
+  }
+  
   return {
     selectedTagId,
     setSelectedTagId,

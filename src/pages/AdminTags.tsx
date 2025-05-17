@@ -6,7 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Update imports to use the consolidated module structure
+// Use consistent imports from the consolidated tags module
 import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags";
 
 // Import the components

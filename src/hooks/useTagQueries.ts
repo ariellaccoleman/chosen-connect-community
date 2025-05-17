@@ -10,7 +10,7 @@ export {
   useEntityTags, 
   useFilterTags, 
   useSelectionTags 
-} from './tags/useTagQueryHooks';
+} from './tags';
 
 // Add deprecation console warning in development only
 if (process.env.NODE_ENV === 'development') {
