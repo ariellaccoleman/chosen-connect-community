@@ -9,15 +9,14 @@ import { ApiResponse } from '@/api/core/errorHandler';
  */
 export const useChat = () => {
   const { channelId } = useParams<{ channelId: string }>();
-  const { data: activeChannel } = useChatChannelById(channelId);
+  const { data: activeChannelResponse } = useChatChannelById(channelId);
 
-  // Check if activeChannel is an ApiResponse or a direct ChatChannel
-  // Properly handle the type conversion to ensure typescript is happy
-  const channel = activeChannel && 
-    typeof activeChannel === 'object' && 
-    'data' in activeChannel ? 
-    (activeChannel as ApiResponse<ChatChannel>).data : 
-    (activeChannel as ChatChannel | null);
+  // Extract the channel data from the API response
+  // This properly handles the type conversion by accessing the data property
+  const channel = activeChannelResponse && 
+    typeof activeChannelResponse === 'object' && 
+    'data' in activeChannelResponse ? 
+    activeChannelResponse.data : null;
 
   return {
     channelId,
