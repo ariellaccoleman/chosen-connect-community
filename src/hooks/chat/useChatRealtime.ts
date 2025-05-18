@@ -12,11 +12,14 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!channelId) return;
+    if (!channelId) {
+      logger.warn('No channelId provided to useChannelMessagesRealtime');
+      return;
+    }
     
     logger.info(`Setting up real-time subscription for channel: ${channelId}`);
     
-    // Subscribe to new messages in the channel that don't have a parent (main channel messages)
+    // Subscribe to new messages in the channel
     const channel = supabase
       .channel(`channel-${channelId}`)
       .on(
@@ -28,7 +31,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           filter: `channel_id=eq.${channelId}` 
         },
         (payload) => {
-          logger.info('New channel message received:', payload);
+          logger.info('Real-time: New channel message received:', payload);
           
           // Invalidate the channel messages query to trigger a refetch
           queryClient.invalidateQueries({ 
@@ -36,7 +39,9 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        logger.info(`Real-time channel subscription status: ${status}`);
+      });
       
     // Cleanup on unmount
     return () => {
@@ -69,7 +74,7 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
           filter: `parent_id=eq.${parentId}` 
         },
         (payload) => {
-          logger.info('New thread reply received:', payload);
+          logger.info('Real-time: New thread reply received:', payload);
           
           // Invalidate the thread messages query to trigger a refetch
           queryClient.invalidateQueries({ 
@@ -83,7 +88,9 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        logger.info(`Real-time thread subscription status: ${status}`);
+      });
       
     // Cleanup on unmount
     return () => {

@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ChatSidebar from '@/components/chat/ChatSidebar';
 import MessageFeed from '@/components/chat/MessageFeed';
@@ -8,12 +8,18 @@ import { logger } from '@/utils/logger';
 import { useChannelMessagesRealtime } from '@/hooks/chat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
+import { toast } from 'sonner';
 
 const ChatPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessageWithAuthor | null>(null);
   const [isThreadOpen, setIsThreadOpen] = useState(false);
+
+  // Log the current channel ID to help debug
+  useEffect(() => {
+    logger.info(`Current channel ID from URL params: ${channelId}`);
+  }, [channelId]);
 
   // Setup real-time updates for the selected channel
   useChannelMessagesRealtime(channelId);

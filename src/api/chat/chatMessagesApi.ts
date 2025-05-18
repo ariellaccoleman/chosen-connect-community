@@ -15,6 +15,13 @@ export const getChannelMessages = async (
 ): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
   return apiClient.query(async () => {
     try {
+      if (!channelId || channelId === 'null' || channelId === 'undefined') {
+        logger.error('Invalid channelId provided to getChannelMessages:', channelId);
+        return createSuccessResponse([]);
+      }
+      
+      logger.info(`Fetching messages for channel ID: "${channelId}"`);
+      
       // Create repository for chat messages
       const repository = createRepository('chats');
       
@@ -181,6 +188,16 @@ export const sendChatMessage = async (
 ): Promise<ApiResponse<ChatMessage>> => {
   return apiClient.query(async () => {
     try {
+      if (!channelId || channelId === 'null' || channelId === 'undefined') {
+        logger.error('Invalid channelId provided to sendChatMessage:', channelId);
+        return createErrorResponse(new Error("Invalid channel ID"));
+      }
+      
+      if (!userId || userId === 'null' || userId === 'undefined') {
+        logger.error('Invalid userId provided to sendChatMessage:', userId);
+        return createErrorResponse(new Error("Invalid user ID"));
+      }
+      
       logger.info(`Sending chat message: channel=${channelId}, user=${userId}, message=${message}`);
       
       const repository = createRepository('chats');

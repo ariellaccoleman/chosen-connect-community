@@ -18,7 +18,10 @@ export const useChannelMessages = (
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async () => {
-      if (!channelId) return { data: [] };
+      if (!channelId) {
+        logger.warn('No channelId provided to useChannelMessages');
+        return { data: [] };
+      }
       logger.info(`Fetching messages for channel: ${channelId}`);
       return getChannelMessages(channelId, limit, offset);
     },
@@ -28,6 +31,12 @@ export const useChannelMessages = (
       logger.info('Channel messages response:', response);
       return response.data || [];
     },
+    meta: {
+      onError: (error: any) => {
+        toast.error('Failed to load messages');
+        logger.error('Error in useChannelMessages:', error);
+      }
+    }
   });
 };
 
@@ -45,11 +54,20 @@ export const useSendMessage = () => {
       parentId?: string | null;
     }) => {
       if (!user?.id) {
+        logger.error('User not authenticated when trying to send message');
+        toast.error('You need to be logged in to send messages');
         throw new Error('User is not authenticated');
       }
       
-      logger.info(`Sending message to channel ${channelId}: ${message}`);
-      return sendChatMessage(channelId, message, user.id, parentId);
+      logger.info(`Sending message to channel ${channelId}: ${message} (user: ${user.id})`);
+      const response = await sendChatMessage(channelId, message, user.id, parentId);
+      
+      if (response.status === 'error') {
+        logger.error('Error in sendChatMessage API call:', response.error);
+        throw new Error(response.error?.message || 'Failed to send message');
+      }
+      
+      return response;
     },
     onSuccess: (response, variables) => {
       logger.info('Message sent successfully:', response);
@@ -68,9 +86,9 @@ export const useSendMessage = () => {
         });
       }
     },
-    onError: (error) => {
+    onError: (error: any) => {
       logger.error('Failed to send message:', error);
-      toast.error('Failed to send message. Please try again.');
+      toast.error(error.message || 'Failed to send message. Please try again.');
     }
   });
 };
