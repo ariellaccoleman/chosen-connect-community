@@ -16,7 +16,7 @@ export const useChat = () => {
     typeof activeChannel === 'object' && 
     'data' in activeChannel ? 
     (activeChannel as ApiResponse<ChatChannel>).data : 
-    activeChannel as ChatChannel | null;
+    (activeChannel as ChatChannel | null);
 
   return {
     channelId,
