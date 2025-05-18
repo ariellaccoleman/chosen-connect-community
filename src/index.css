@@ -118,6 +118,42 @@
   .dark select {
     @apply bg-gray-700 border-gray-600;
   }
+
+  /* Fix event cards contrast in dark mode */
+  .dark a .bg-white.shadow {
+    @apply bg-gray-800 border border-gray-700;
+  }
+  
+  /* Fix test failure rows contrast in dark mode */
+  .dark .bg-red-50 {
+    @apply bg-red-900/20 text-red-100;
+  }
+  
+  .dark .bg-red-50:hover {
+    @apply bg-red-900/30;
+  }
+  
+  /* Fix other color contrasts */
+  .dark .bg-green-100 {
+    @apply bg-green-900/30 text-green-100 border-green-700;
+  }
+  
+  .dark .bg-red-100 {
+    @apply bg-red-900/30 text-red-100 border-red-700;
+  }
+  
+  .dark .bg-yellow-100 {
+    @apply bg-yellow-900/30 text-yellow-100 border-yellow-700;
+  }
+  
+  /* Fix code blocks in dark mode */
+  .dark .bg-gray-50 {
+    @apply bg-gray-800 border-gray-700;
+  }
+  
+  .dark .bg-gray-900 {
+    @apply bg-gray-950 border-gray-800;
+  }
 }
 
 @layer components {

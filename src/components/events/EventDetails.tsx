@@ -9,7 +9,6 @@ import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import EventRegistrationButton from "./EventRegistrationButton";
 import { useEventRegistrants } from "@/hooks/events/useEventRegistrants";
-import EventRegistrantsList from "./EventRegistrantsList";
 
 interface EventDetailsProps {
   event: EventWithDetails;
@@ -48,28 +47,28 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
   };
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
       <h2 className="text-2xl font-bold mb-4">{event.title}</h2>
       
       {/* Host info with badge */}
       {event.host && (
-        <div className="flex items-center mb-4 bg-blue-50 p-2 rounded">
-          <UserCheck className="h-5 w-5 mr-2 text-blue-500" />
+        <div className="flex items-center mb-4 bg-blue-50 dark:bg-blue-900/30 p-2 rounded">
+          <UserCheck className="h-5 w-5 mr-2 text-blue-500 dark:text-blue-300" />
           <span className="text-sm">
             Hosted by: <span className="font-medium">{event.host.first_name} {event.host.last_name}</span>
-            {isAdmin && <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-0.5 rounded">You are the host</span>}
+            {isAdmin && <span className="ml-2 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-100 text-xs px-2 py-0.5 rounded">You are the host</span>}
           </span>
         </div>
       )}
       
       {/* Date and Time */}
       {event.start_time && (
-        <div className="flex items-center text-gray-600 mb-4">
+        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-4">
           <Calendar className="h-5 w-5 mr-2" />
           <div>
             <div>{formatEventDate(event.start_time)}</div>
             {event.end_time && (
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
                 Until {format(new Date(event.end_time), "h:mm a")}
               </div>
             )}
@@ -79,12 +78,12 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
       
       {/* Location */}
       {event.is_virtual ? (
-        <div className="flex items-center text-gray-600 mb-4">
+        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-4">
           <Video className="h-5 w-5 mr-2" />
           <span>Virtual Event</span>
         </div>
       ) : event.location ? (
-        <div className="flex items-center text-gray-600 mb-4">
+        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-4">
           <MapPin className="h-5 w-5 mr-2" />
           <span>{event.location.full_name}</span>
         </div>
@@ -92,16 +91,16 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
       
       {/* Price */}
       {event.is_paid && (
-        <div className="flex items-center text-gray-600 mb-4">
+        <div className="flex items-center text-gray-600 dark:text-gray-300 mb-4">
           <DollarSign className="h-5 w-5 mr-2" />
           <span>{event.price ? `$${event.price}` : 'Paid Event'}</span>
         </div>
       )}
       
       {/* Registration button */}
-      <div className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+      <div className="my-6 p-4 border border-gray-200 dark:border-gray-700 rounded-md bg-gray-50 dark:bg-gray-800">
         <h3 className="text-lg font-medium mb-3 flex items-center">
-          <Users className="h-5 w-5 mr-2 text-chosen-blue" />
+          <Users className="h-5 w-5 mr-2 text-chosen-blue dark:text-blue-300" />
           Event Registration
         </h3>
         <EventRegistrationButton eventId={event.id} />
@@ -123,7 +122,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
       {/* Description */}
       <div className="mt-6">
         <h3 className="text-lg font-semibold mb-2">Description</h3>
-        <p className="text-gray-700 whitespace-pre-line">{event.description || 'No description provided.'}</p>
+        <p className="text-gray-700 dark:text-gray-300 whitespace-pre-line">{event.description || 'No description provided.'}</p>
       </div>
       
       {/* Host information */}
@@ -138,7 +137,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
                 className="w-10 h-10 rounded-full mr-3"
               />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+              <div className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
                 {event.host.first_name?.[0] || ''}
                 {event.host.last_name?.[0] || ''}
               </div>
@@ -148,7 +147,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
                 {event.host.first_name} {event.host.last_name}
               </div>
               {event.host.headline && (
-                <div className="text-sm text-gray-500">{event.host.headline}</div>
+                <div className="text-sm text-gray-500 dark:text-gray-400">{event.host.headline}</div>
               )}
             </div>
           </div>
