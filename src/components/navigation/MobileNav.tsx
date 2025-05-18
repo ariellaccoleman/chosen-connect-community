@@ -91,6 +91,13 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Events
           </Link>
           <Link 
+            to="/chat" 
+            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+            onClick={onClose}
+          >
+            Chat
+          </Link>
+          <Link 
             to="/directory" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}

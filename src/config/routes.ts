@@ -21,6 +21,10 @@ export const APP_ROUTES = {
   EVENT_DETAIL: '/events/:id',
   CREATE_EVENT: '/events/create',
   
+  // Chat routes
+  CHAT: '/chat',
+  CHAT_CHANNEL: '/chat/:channelId',
+  
   // Admin routes
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_TAGS: '/admin/tags',

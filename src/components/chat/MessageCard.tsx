@@ -1,0 +1,65 @@
+
+import React from 'react';
+import { ChatMessageWithAuthor } from '@/types/chat';
+import UserAvatar from '@/components/navigation/UserAvatar';
+import { formatDistanceToNow } from 'date-fns';
+import { MessageSquare } from 'lucide-react';
+
+interface MessageCardProps {
+  message: ChatMessageWithAuthor;
+  isSelected?: boolean;
+  onClick?: () => void;
+  showReplies?: boolean;
+}
+
+const MessageCard: React.FC<MessageCardProps> = ({ 
+  message, 
+  isSelected = false,
+  onClick, 
+  showReplies = true 
+}) => {
+  const formattedTime = message.created_at
+    ? formatDistanceToNow(new Date(message.created_at), { addSuffix: true })
+    : '';
+
+  return (
+    <div 
+      className={`p-3 rounded-md ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800'} 
+        ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
+      <div className="flex items-start space-x-3">
+        <UserAvatar 
+          profile={message.author} 
+          className="w-8 h-8 mt-1" 
+        />
+        
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center space-x-2">
+            <span className="font-medium text-sm">
+              {message.author?.full_name || 'Anonymous'}
+            </span>
+            <span className="text-xs text-gray-500 dark:text-gray-400">
+              {formattedTime}
+            </span>
+          </div>
+          
+          <div className="mt-1 text-sm whitespace-pre-wrap break-words">
+            {message.message}
+          </div>
+
+          {showReplies && message.reply_count !== undefined && message.reply_count > 0 && (
+            <div 
+              className="mt-2 text-xs flex items-center text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400"
+            >
+              <MessageSquare size={14} className="mr-1" />
+              {message.reply_count} {message.reply_count === 1 ? 'reply' : 'replies'}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default MessageCard;

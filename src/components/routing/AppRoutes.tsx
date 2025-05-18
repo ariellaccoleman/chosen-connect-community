@@ -21,6 +21,9 @@ import ManageOrganizationConnections from '@/pages/ManageOrganizationConnections
 import CommunityDirectory from '@/pages/CommunityDirectory';
 import TestDataGenerator from '@/pages/TestDataGenerator';
 
+// Chat Routes
+import Chat from '@/pages/Chat';
+
 // Admin Routes
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminTags from '@/pages/AdminTags';
@@ -67,6 +70,10 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
       <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
       <Route path={APP_ROUTES.EVENT_DETAIL} element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+      
+      {/* Chat Routes */}
+      <Route path={APP_ROUTES.CHAT} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.CHAT_CHANNEL} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
