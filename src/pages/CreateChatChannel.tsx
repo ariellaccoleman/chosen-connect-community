@@ -17,7 +17,7 @@ export default function CreateChatChannel() {
     logger.info("Attempting to create channel with data:", data);
     
     // Include the current user ID as the creator of the channel
-    const channelData = {
+    const channelData: ChatChannelCreate = {
       ...data,
       created_by: user?.id
     };

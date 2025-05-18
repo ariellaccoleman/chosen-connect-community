@@ -6,6 +6,9 @@ import { EntityType } from '@/types/entityTypes';
 import { createSuccessResponse, ApiResponse, createErrorResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
 import { createRepository } from '../core/repository/repositoryFactory';
+import { Tables } from '@/integrations/supabase/types';
+
+type ChatChannelRow = Tables<"chat_channels">;
 
 /**
  * Create API operations for chat channels using the factory pattern
@@ -14,15 +17,15 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
   tableName: 'chat_channels',
   entityName: 'chatChannel',
   defaultOrderBy: 'created_at',
-  transformResponse: (data) => ({
+  transformResponse: (data: ChatChannelRow) => ({
     id: data.id,
-    name: data.name,
-    description: data.description,
+    name: data.name || null,
+    description: data.description || null,
     is_public: data.is_public !== false, // Default to true if null
-    created_at: data.created_at,
-    updated_at: data.updated_at || data.created_at,
-    created_by: data.created_by,
-    channel_type: data.channel_type || 'group'
+    created_at: data.created_at || '',
+    updated_at: data.updated_at || data.created_at || '',
+    created_by: data.created_by || null,
+    channel_type: data.channel_type === 'group' ? 'group' : 'announcement'
   }),
   transformRequest: (data) => {
     const transformed: Record<string, any> = {};
@@ -32,6 +35,7 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
     if (data.description !== undefined) transformed.description = data.description;
     if (data.is_public !== undefined) transformed.is_public = data.is_public;
     if (data.channel_type !== undefined) transformed.channel_type = data.channel_type;
+    if (data.created_by !== undefined) transformed.created_by = data.created_by;
     
     return transformed;
   },
@@ -53,12 +57,12 @@ export const {
  * Get chat channel with tags and creator details
  */
 export const getChatChannelWithDetails = async (channelId: string): Promise<ApiResponse<ChatChannelWithDetails>> => {
-  return apiClient.query(async (client) => {
+  return apiClient.query(async () => {
     try {
       // Use repository pattern to get the channel
       const repository = createRepository('chat_channels');
       
-      const { data: channel, error } = await repository
+      const { data, error } = await repository
         .select(`
           *,
           created_by_profile:profiles!chat_channels_created_by_fkey(
@@ -71,6 +75,16 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
       if (error) {
         return createErrorResponse(error);
       }
+      
+      // Type assertion to ensure we can access properties safely
+      const channel = data as ChatChannelRow & {
+        created_by_profile?: {
+          id: string;
+          first_name: string | null;
+          last_name: string | null;
+          avatar_url: string | null;
+        } | null;
+      };
       
       // Get tags assigned to this channel
       const tagAssignmentsRepo = createRepository('tag_assignments');
@@ -91,18 +105,18 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
       // Create a properly transformed channel using our standard structure
       const baseChannel: ChatChannel = {
         id: channel.id,
-        name: channel.name,
-        description: channel.description,
+        name: channel.name || null,
+        description: channel.description || null,
         is_public: channel.is_public !== false,
-        created_at: channel.created_at,
-        updated_at: channel.updated_at || channel.created_at,
-        created_by: channel.created_by,
-        channel_type: channel.channel_type || 'group'
+        created_at: channel.created_at || '',
+        updated_at: channel.updated_at || channel.created_at || '',
+        created_by: channel.created_by || null,
+        channel_type: channel.channel_type === 'group' ? 'group' : 'announcement'
       };
       
       const result: ChatChannelWithDetails = {
         ...baseChannel,
-        created_by_profile: channel.created_by_profile,
+        created_by_profile: channel.created_by_profile || null,
         tag_assignments: tagAssignments || []
       };
       
@@ -121,7 +135,7 @@ export const updateChannelTags = async (
   channelId: string, 
   tagIds: string[]
 ): Promise<ApiResponse<boolean>> => {
-  return apiClient.query(async (client) => {
+  return apiClient.query(async () => {
     try {
       const tagAssignmentsRepo = createRepository('tag_assignments');
       

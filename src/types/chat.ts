@@ -26,6 +26,7 @@ export interface ChatChannelCreate {
   description?: string;
   is_public: boolean;
   channel_type: ChatChannelType;
+  created_by?: string;
 }
 
 /**
