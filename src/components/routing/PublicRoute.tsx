@@ -29,6 +29,7 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
   // Use effect with proper dependencies to prevent redirect loops
   useEffect(() => {
     // Only run this effect when we have definitive authentication information
+    // and haven't already performed the redirect check
     if (!loading && initialized && !redirectChecked.current) {
       // Mark that we've performed the redirect check
       redirectChecked.current = true;
