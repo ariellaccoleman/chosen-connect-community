@@ -15,7 +15,7 @@ export const useLocationById = (locationId: string | undefined) => {
       // Don't fetch if no ID is provided
       if (!locationId) return null;
       
-      const response = await locationsApi.getLocations('', locationId);
+      const response = await locationsApi.getById(locationId);
       
       if (response.error) {
         console.error('Location fetch error:', response.error);
@@ -23,8 +23,7 @@ export const useLocationById = (locationId: string | undefined) => {
         return null;
       }
       
-      // Return the first location if available, otherwise null
-      return response.data && response.data.length > 0 ? response.data[0] : null;
+      return response.data || null;
     },
     // Don't run the query if locationId is undefined
     enabled: !!locationId,

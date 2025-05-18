@@ -6,7 +6,7 @@ export * from './authApi';
 export * from './core';
 export * from './events';
 export * from './locations';
-export * from './locationsApi';
+export { locationsApi } from './locationsApi';
 export * from './organizations';
 export * from './tags';
 export * from './chat'; // Add chat API exports

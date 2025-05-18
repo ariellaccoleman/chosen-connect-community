@@ -1,6 +1,6 @@
 
 import { createApiFactory } from '../core/factory/apiFactory';
-import { ChatChannel, ChatChannelCreate, ChatChannelUpdate } from '@/types/chat';
+import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { apiClient } from '../core/apiClient';
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
@@ -75,7 +75,7 @@ export const createChannelWithTags = async (
       // Create channel
       const { data: channel, error } = await client
         .from('chat_channels')
-        .insert(channelData)
+        .insert([channelData])
         .select()
         .single();
         
@@ -102,7 +102,7 @@ export const createChannelWithTags = async (
         }
       }
       
-      return createSuccessResponse(chatChannelsApi.transformResponse(channel));
+      return createSuccessResponse(chatChannelsApi.operations.transformResponse(channel));
     } catch (error) {
       logger.error("Exception in createChannelWithTags:", error);
       return createErrorResponse(error);
@@ -148,7 +148,7 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
       }
       
       const result = {
-        ...chatChannelsApi.transformResponse(channel),
+        ...chatChannelsApi.operations.transformResponse(channel),
         created_by_profile: channel.created_by_profile,
         tag_assignments: tagAssignments || []
       };

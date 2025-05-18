@@ -1,3 +1,4 @@
+
 import { EntityType } from "./entityTypes";
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
@@ -90,11 +91,9 @@ export function chatChannelToEntity(channel: ChatChannelWithDetails): Entity {
     description: channel.channel_type || 'group',
     imageUrl: null,
     entityType: EntityType.CHAT,
-    metadata: {
-      isPublic: channel.is_public,
-      createdAt: channel.created_at,
-      createdBy: channel.created_by
-    }
+    created_at: channel.created_at,
+    updated_at: channel.updated_at,
+    tags: channel.tag_assignments
   };
 }
 
@@ -108,10 +107,3 @@ export function toEntity(entity: any, entityType: EntityType): Entity | null {
   const { toEntity } = useEntityRegistry();
   return toEntity(entity, entityType);
 }
-
-export {
-  profileToEntity,
-  organizationToEntity,
-  eventToEntity,
-  chatChannelToEntity
-};
