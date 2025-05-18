@@ -1,10 +1,10 @@
-
 import { EntityType } from "./entityTypes";
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
 import { OrganizationWithLocation } from "./organization";
 import { EventWithDetails } from "./event";
 import { TagAssignment } from "@/utils/tags/types";
+import { ChatChannelWithDetails } from './chat';
 
 /**
  * Base entity interface that all entity types should implement
@@ -81,6 +81,24 @@ export function eventToEntity(event: EventWithDetails): Entity {
 }
 
 /**
+ * Convert a chat channel to an entity
+ */
+export function chatChannelToEntity(channel: ChatChannelWithDetails): Entity {
+  return {
+    id: channel.id,
+    name: channel.name || 'Unnamed Channel',
+    description: channel.channel_type || 'group',
+    imageUrl: null,
+    entityType: EntityType.CHAT,
+    metadata: {
+      isPublic: channel.is_public,
+      createdAt: channel.created_at,
+      createdBy: channel.created_by
+    }
+  };
+}
+
+/**
  * @deprecated Use the entity registry's toEntity method instead
  * Convert an entity of any type to the generic Entity interface
  */
@@ -90,3 +108,10 @@ export function toEntity(entity: any, entityType: EntityType): Entity | null {
   const { toEntity } = useEntityRegistry();
   return toEntity(entity, entityType);
 }
+
+export {
+  profileToEntity,
+  organizationToEntity,
+  eventToEntity,
+  chatChannelToEntity
+};

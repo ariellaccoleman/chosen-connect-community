@@ -1,16 +1,19 @@
+
 import { useCallback, useMemo } from "react";
 import { 
   Entity,
   profileToEntity,
   organizationToEntity, 
-  eventToEntity
+  eventToEntity,
+  chatChannelToEntity
 } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { ProfileWithDetails } from "@/types/profile";
 import { OrganizationWithLocation } from "@/types/organization";
 import { EventWithDetails } from "@/types/event";
-import { Calendar, Users, Building2 } from "lucide-react";
+import { Calendar, Users, Building2, MessageSquare } from "lucide-react";
 import React from "react";
+import { ChatChannelWithDetails } from "@/types/chat";
 
 /**
  * Hook for working with different entity types in a consistent way
@@ -29,6 +32,8 @@ export function useEntityRegistry() {
         return organizationToEntity(entity as OrganizationWithLocation);
       case EntityType.EVENT:
         return eventToEntity(entity as EventWithDetails);
+      case EntityType.CHAT:
+        return chatChannelToEntity(entity as ChatChannelWithDetails);
       default:
         console.warn(`Unsupported entity type: ${entityType}`);
         return null;
@@ -46,6 +51,8 @@ export function useEntityRegistry() {
         return "Organization";
       case EntityType.EVENT:
         return "Event";
+      case EntityType.CHAT:
+        return "Chat Channel";
       default:
         return "Unknown";
     }
@@ -62,6 +69,8 @@ export function useEntityRegistry() {
         return "Organizations";
       case EntityType.EVENT:
         return "Events";
+      case EntityType.CHAT:
+        return "Chat Channels";
       default:
         return "Items";
     }
@@ -92,6 +101,8 @@ export function useEntityRegistry() {
         return `/organizations/${entity.id}`;
       case EntityType.EVENT:
         return `/events/${entity.id}`;
+      case EntityType.CHAT:
+        return `/admin/chat/channels/${entity.id}/edit`;
       default:
         return "/";
     }
@@ -108,6 +119,8 @@ export function useEntityRegistry() {
         return <Building2 className="h-3 w-3" />;
       case EntityType.EVENT:
         return <Calendar className="h-3 w-3" />;
+      case EntityType.CHAT:
+        return <MessageSquare className="h-3 w-3" />;
       default:
         return null;
     }

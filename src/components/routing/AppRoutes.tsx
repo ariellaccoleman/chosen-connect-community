@@ -26,6 +26,9 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import AdminTags from '@/pages/AdminTags';
 import AdminTestReports from '@/pages/AdminTestReports';
 import AdminTestRunDetail from '@/pages/AdminTestRunDetail';
+import AdminChatChannels from '@/pages/AdminChatChannels';
+import CreateChatChannel from '@/pages/CreateChatChannel';
+import EditChatChannel from '@/pages/EditChatChannel';
 
 // Route Guards
 import PublicRoute from './PublicRoute';
@@ -69,6 +72,11 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
+      
+      {/* Admin Chat Channel Routes */}
+      <Route path="/admin/chat/channels" element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
+      <Route path="/admin/chat/channels/create" element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
+      <Route path="/admin/chat/channels/:id/edit" element={<AdminRoute><EditChatChannel /></AdminRoute>} />
       
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />
