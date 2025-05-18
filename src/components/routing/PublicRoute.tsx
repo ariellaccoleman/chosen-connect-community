@@ -17,39 +17,40 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
   // Get the intended destination from location state, or use dashboard as default
   const from = location.state?.from || "/dashboard";
   
-  console.log("PublicRoute:", { 
+  console.log("📍 PublicRoute:", { 
     user: !!user, 
     loading, 
     initialized,
     pathname: location.pathname,
     from,
-    shouldRedirect
+    shouldRedirect,
+    redirectChecked: redirectChecked.current
   });
 
-  // Use effect with proper dependencies to prevent redirect loops
+  // Only check redirect once when we have definitive auth information
   useEffect(() => {
-    // Only run this effect when we have definitive authentication information
-    // and haven't already performed the redirect check
-    if (!loading && initialized && !redirectChecked.current) {
-      // Mark that we've performed the redirect check
+    // Wait until auth is fully initialized and not loading
+    if (initialized && !loading && !redirectChecked.current) {
       redirectChecked.current = true;
       
-      // Increase debounce delay to allow auth state to stabilize
-      const timer = setTimeout(() => {
-        if (user) {
-          console.log("PublicRoute: User is authenticated, will redirect to", from);
+      if (user) {
+        console.log("🔒 PublicRoute: User is authenticated, preparing redirect to", from);
+        // Use a consistent delay to avoid race conditions
+        const timer = setTimeout(() => {
+          console.log("⏱️ PublicRoute: Redirect delay completed, setting redirect flag");
           setShouldRedirect(true);
-        } else {
-          console.log("PublicRoute: User is not authenticated, showing public content");
-        }
-      }, 250); // Increased from 100ms to 250ms
-      
-      return () => clearTimeout(timer);
+        }, 300);
+        
+        return () => clearTimeout(timer);
+      } else {
+        console.log("✅ PublicRoute: User is not authenticated, showing public content");
+      }
     }
-  }, [user, loading, initialized, from]);
+  }, [user, loading, initialized, from, location]);
 
-  // Show a loading skeleton while checking authentication or not yet initialized
+  // Show loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
+    console.log("⏳ PublicRoute: Still loading or initializing auth state");
     return (
       <div className="container py-8">
         <div className="space-y-6">
@@ -61,13 +62,13 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
     );
   }
 
-  // Redirect if necessary, but only after our effect has run
+  // Perform the actual redirect if needed
   if (shouldRedirect) {
-    console.log("PublicRoute: Redirecting to", from);
+    console.log("🔄 PublicRoute: Redirecting to", from);
     return <Navigate to={from} replace />;
   }
 
-  // If not authenticated or still determining, show the public content
+  // Show the public content
   return <>{children}</>;
 };
 

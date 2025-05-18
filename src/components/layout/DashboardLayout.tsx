@@ -13,8 +13,8 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [ready, setReady] = useState(false);
   const stateChecked = useRef(false);
 
-  // Add debug log
-  console.log("DashboardLayout - Auth state:", { 
+  // Add clear debug log
+  console.log("📍 DashboardLayout - Auth state:", { 
     user: !!user, 
     loading,
     initialized,
@@ -22,22 +22,26 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     stateChecked: stateChecked.current
   });
 
-  // Use effect to debounce state determination with increased timeout
+  // Improved state determination
   useEffect(() => {
-    if (!loading && initialized && !stateChecked.current) {
+    if (initialized && !loading && !stateChecked.current) {
       stateChecked.current = true;
       
-      // Increase debounce delay
+      console.log("🔍 DashboardLayout: Auth state determined, preparing to render");
+      
+      // Use a consistent delay to avoid race conditions
       const timer = setTimeout(() => {
+        console.log("⏱️ DashboardLayout: Ready delay completed, setting ready state");
         setReady(true);
-      }, 250); // Increased from 100ms to 250ms
+      }, 300);
       
       return () => clearTimeout(timer);
     }
   }, [loading, initialized]);
 
-  // Show loading skeleton when auth state is loading, not initialized, or still determining
+  // Show loading skeleton while determining ready state
   if (loading || !initialized || !ready) {
+    console.log("⏳ DashboardLayout: Still loading, initializing, or determining state");
     return (
       <BaseLayout>
         <div className="container py-8">
@@ -54,9 +58,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   // Return null when no user is authenticated - this lets ProtectedRoute handle the redirect
   if (!user) {
+    console.log("🚫 DashboardLayout: No authenticated user, deferring to ProtectedRoute");
     return null;
   }
 
+  console.log("✅ DashboardLayout: Rendering with authenticated user");
   return (
     <BaseLayout>
       {children}

@@ -16,3 +16,24 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   }
 });
+
+// Add diagnostic logging for session state
+if (typeof window !== "undefined") {
+  // Log session info on load
+  supabase.auth.getSession().then(({ data }) => {
+    console.log("📊 Initial Supabase session check:", {
+      hasSession: !!data.session,
+      hasUser: !!data.session?.user,
+      email: data.session?.user?.email || "none"
+    });
+  });
+  
+  // Monitor session changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    console.log("📊 Supabase auth state changed:", event, {
+      hasSession: !!session,
+      hasUser: !!session?.user,
+      email: session?.user?.email || "none"
+    });
+  });
+}

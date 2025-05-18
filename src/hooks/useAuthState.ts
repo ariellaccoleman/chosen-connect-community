@@ -13,88 +13,101 @@ export const useAuthState = () => {
   useEffect(() => {
     let mounted = true;
     
-    // Setup the auth state change listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("Auth state changed:", event, session?.user?.email);
+    console.log("🔐 Auth state initialization starting...");
+    
+    // Important: Always create the listener BEFORE checking the session
+    // to avoid race conditions
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("🔄 Auth state changed:", event, session?.user?.email);
       
       if (!mounted) return;
       
+      // Process auth state change
       if (session) {
-        // Check for admin role in multiple places to ensure we catch it
         const hasAdminRole = 
           session.user.app_metadata?.role === 'admin' || 
           session.user.user_metadata?.role === 'admin';
         
-        if (mounted) {
-          setUser(session.user);
-          setIsAdmin(hasAdminRole);
-          
-          // Only update loading and initialized if we weren't already initialized
-          // This prevents unnecessary re-renders
-          if (!initialized) {
-            setLoading(false);
-            setInitialized(true);
-          }
-        }
+        console.log("👤 User authenticated:", {
+          email: session.user.email,
+          hasAdminRole,
+          token: session.access_token ? "✓" : "✗"
+        });
+        
+        setUser(session.user);
+        setIsAdmin(hasAdminRole);
       } else {
-        if (mounted) {
-          setUser(null);
-          setIsAdmin(false);
-          
-          // Only update loading and initialized if we weren't already initialized
-          if (!initialized) {
-            setLoading(false);
-            setInitialized(true);
-          }
-        }
+        console.log("👤 No authenticated user");
+        setUser(null);
+        setIsAdmin(false);
+      }
+      
+      // Always update initialized after processing auth events
+      if (!initialized && mounted) {
+        console.log("✅ Auth state initialized via event");
+        setInitialized(true);
+        setLoading(false);
       }
     });
 
-    // Then check the current session with a more robust approach
+    // Retrieve the current session
     const getSession = async () => {
       try {
+        console.log("🔍 Checking for existing session...");
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
         if (error) {
+          console.error("❌ Session error:", error);
           setError(error);
         }
 
         if (session) {
-          // Check for admin role in multiple places to ensure we catch it
           const hasAdminRole = 
             session.user.app_metadata?.role === 'admin' || 
             session.user.user_metadata?.role === 'admin';
           
-          console.log("Initial session loaded:", {
+          console.log("✅ Found existing session:", {
             email: session.user.email,
             app_metadata: session.user.app_metadata,
             user_metadata: session.user.user_metadata,
-            hasAdminRole
+            hasAdminRole,
+            token: session.access_token ? "✓" : "✗"
           });
           
           setUser(session.user);
           setIsAdmin(hasAdminRole);
         } else {
-          console.log("No active session found");
+          console.log("ℹ️ No existing session found");
+          setUser(null);
+          setIsAdmin(false);
         }
         
-        // Always set these states last to avoid race conditions
-        setInitialized(true);
-        setLoading(false);
+        // Always update these states to indicate initialization is complete
+        if (!initialized && mounted) {
+          console.log("✅ Auth state initialized via getSession");
+          setInitialized(true);
+          setLoading(false);
+        }
       } catch (err) {
+        console.error("❌ Session retrieval error:", err);
         if (mounted) {
           setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
-          setLoading(false);
-          setInitialized(true);
+          
+          if (!initialized) {
+            setInitialized(true);
+            setLoading(false);
+          }
         }
       }
     };
 
+    // Execute session check after listener is established
     getSession();
 
     return () => {
+      console.log("🔒 Auth state cleanup - unsubscribing");
       mounted = false;
       subscription.unsubscribe();
     };

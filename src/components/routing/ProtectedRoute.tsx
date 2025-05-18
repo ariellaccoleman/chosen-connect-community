@@ -14,38 +14,39 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
   const redirectChecked = useRef(false);
   
-  console.log("ProtectedRoute:", { 
+  console.log("📍 ProtectedRoute:", { 
     user: !!user, 
     loading, 
     initialized,
     pathname: location.pathname,
-    shouldRedirect
+    shouldRedirect,
+    redirectChecked: redirectChecked.current
   });
 
-  // Use effect with proper dependencies to prevent redirect loops
+  // Only check redirect once when we have definitive auth information
   useEffect(() => {
-    // Only run this effect when we have definitive authentication information
-    // and haven't already performed the redirect check
-    if (!loading && initialized && !redirectChecked.current) {
-      // Mark that we've performed the redirect check
+    // Wait until auth is fully initialized and not loading
+    if (initialized && !loading && !redirectChecked.current) {
       redirectChecked.current = true;
       
-      // Increase debounce delay to allow auth state to stabilize
-      const timer = setTimeout(() => {
-        if (!user) {
-          console.log("ProtectedRoute: User is not authenticated, will redirect to auth");
+      if (!user) {
+        console.log("🚫 ProtectedRoute: No authenticated user, preparing redirect to auth");
+        // Use a consistent delay to avoid race conditions
+        const timer = setTimeout(() => {
+          console.log("⏱️ ProtectedRoute: Redirect delay completed, setting redirect flag");
           setShouldRedirect(true);
-        } else {
-          console.log("ProtectedRoute: User is authenticated, showing protected content");
-        }
-      }, 250); // Increased from 100ms to 250ms
-      
-      return () => clearTimeout(timer);
+        }, 300);
+        
+        return () => clearTimeout(timer);
+      } else {
+        console.log("✅ ProtectedRoute: User is authenticated, showing protected content");
+      }
     }
-  }, [user, loading, initialized]);
+  }, [user, loading, initialized, location]);
 
   // Show loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
+    console.log("⏳ ProtectedRoute: Still loading or initializing auth state");
     return (
       <div className="container py-8">
         <div className="space-y-6">
@@ -57,13 +58,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Redirect if necessary, but only after our effect has run
+  // Perform the actual redirect if needed
   if (shouldRedirect) {
-    console.log("ProtectedRoute: Redirecting to auth");
+    console.log("🔄 ProtectedRoute: Redirecting to auth from", location.pathname);
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  // If authenticated or still determining, show the protected content
+  // Show the protected content
   return <>{children}</>;
 };
 

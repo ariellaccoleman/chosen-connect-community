@@ -23,19 +23,30 @@ const Auth = () => {
   // Get the intended destination from location state
   const from = location.state?.from || "/dashboard";
   
-  // If user is already authenticated, redirect to the intended destination with debouncing
+  // Add clear debug logs
+  console.log("📍 Auth page:", { 
+    user: !!user, 
+    loading, 
+    initialized,
+    authMode,
+    from,
+    pathname: location.pathname,
+    redirectChecked: redirectChecked.current
+  });
+
+  // If user is already authenticated, redirect to the intended destination
   useEffect(() => {
-    // Only run this effect when we have definitive authentication information
-    // and haven't already initiated a redirect
+    // Only redirect when we have reliable auth state and haven't already initiated a redirect
     if (user && initialized && !loading && !redirectChecked.current) {
-      // Mark that we've checked for redirect
       redirectChecked.current = true;
       
-      // Increase debounce delay to allow auth state to stabilize
+      console.log("🔒 Auth page: User is authenticated, preparing redirect to", from);
+      
+      // Use a consistent delay for redirects to avoid race conditions
       const timer = setTimeout(() => {
-        console.log("Auth page: User is authenticated, redirecting to", from);
+        console.log("⏱️ Auth page: Redirect delay completed, navigating to", from);
         navigate(from, { replace: true });
-      }, 300); // Increased from 150ms to 300ms
+      }, 350);
       
       return () => clearTimeout(timer);
     }
@@ -51,17 +62,6 @@ const Auth = () => {
       setAuthMode("signup");
     }
   }, [searchParams]);
-
-  // Add debug logs
-  console.log("Auth page:", { 
-    user: !!user, 
-    loading, 
-    initialized,
-    authMode,
-    from,
-    pathname: location.pathname,
-    redirectChecked: redirectChecked.current
-  });
 
   const handleTabChange = (value: string) => {
     setAuthMode(value as AuthMode);
