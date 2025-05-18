@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { EventWithDetails } from "@/types";
 import { Calendar, MapPin, Video, DollarSign, UserCheck, Users } from "lucide-react";
@@ -9,6 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import EventRegistrationButton from "./EventRegistrationButton";
 import { useEventRegistrants } from "@/hooks/events/useEventRegistrants";
+import EventRegistrantsList from "./EventRegistrantsList"; // Add this import
 
 interface EventDetailsProps {
   event: EventWithDetails;
