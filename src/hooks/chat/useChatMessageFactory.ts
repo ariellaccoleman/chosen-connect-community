@@ -1,4 +1,3 @@
-
 import { createQueryHooks } from '@/hooks/core/factory';
 import { chatMessageApi, getChannelMessages, getThreadReplies, sendChatMessage } from '@/api/chat/chatMessageApiFactory';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -27,11 +26,6 @@ export const useChannelMessages = (
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
-      if (!channelId || channelId === 'null' || channelId === 'undefined') {
-        logger.warn('No valid channelId provided to useChannelMessages');
-        return { data: [], error: null, status: 'success' };
-      }
-
       if (!isAuthenticated || !user) {
         logger.warn('User is not authenticated for fetching messages');
         return { 
@@ -41,10 +35,11 @@ export const useChannelMessages = (
         };
       }
 
-      logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
+      // Even with invalid channelId, we now return success with empty array instead of error
+      logger.info(`Fetching messages for channel: ${channelId || 'none'} (user: ${user.id})`);
       return getChannelMessages(channelId, limit, offset);
     },
-    enabled: !!channelId && channelId !== 'null' && channelId !== 'undefined' && isAuthenticated,
+    enabled: isAuthenticated && !!user?.id,
     // Increase poll frequency temporarily for debugging
     refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {

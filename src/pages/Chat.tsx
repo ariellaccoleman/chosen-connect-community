@@ -23,7 +23,7 @@ const ChatPage = () => {
 
   // Log the current channel ID and auth state to help debug
   useEffect(() => {
-    logger.info(`Current channel ID from URL params: ${channelId}`);
+    logger.info(`Current channel ID from URL params: ${channelId || 'none'}`);
     logger.info(`Authentication state: ${isAuthenticated ? 'Authenticated' : 'Not authenticated'}`);
     logger.info(`User ID: ${user?.id || 'Not available'}`);
     
@@ -86,7 +86,7 @@ const ChatPage = () => {
       {/* Channel Sidebar */}
       <div className="w-full sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
         <ChatSidebar 
-          selectedChannelId={channelId} 
+          selectedChannelId={channelId || null} 
           onSelectChannel={handleChannelSelect} 
         />
       </div>

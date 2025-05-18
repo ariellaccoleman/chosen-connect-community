@@ -14,16 +14,16 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    // Validate channel ID
-    if (!channelId || channelId === 'null' || channelId === 'undefined') {
-      logger.warn('No valid channelId provided to useChannelMessagesRealtime');
-      return;
-    }
-
     // Validate authentication
     if (!isAuthenticated || !user) {
       logger.warn('User is not authenticated for real-time updates');
       return; 
+    }
+    
+    // Skip setup for invalid channel IDs
+    if (!channelId || channelId === 'null' || channelId === 'undefined') {
+      logger.info('No valid channelId to subscribe to real-time updates');
+      return;
     }
     
     logger.info(`Setting up real-time subscription for channel: ${channelId} (user: ${user.id})`);

@@ -76,17 +76,17 @@ export const getChannelMessages = async (
 ): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
   return apiClient.query(async () => {
     try {
-      // Validate channelId
-      if (!channelId || channelId === 'null' || channelId === 'undefined') {
-        logger.error('Invalid channelId provided to getChannelMessages:', channelId);
-        return createErrorResponse(new Error("Invalid channel ID"));
-      }
-      
       // Check authentication
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
         logger.error('No authenticated session when fetching messages');
         return createErrorResponse(new Error("Authentication required"));
+      }
+      
+      // Validate channelId - Return empty array for missing/invalid channelId instead of error
+      if (!channelId || channelId === 'null' || channelId === 'undefined') {
+        logger.warn('Invalid or missing channelId provided to getChannelMessages:', channelId);
+        return createSuccessResponse([]);
       }
       
       logger.info(`Fetching messages for channel ID: "${channelId}" with user ${sessionData.session.user.id}`);
