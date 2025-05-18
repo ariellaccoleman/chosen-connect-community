@@ -13,14 +13,17 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ selectedChannelId, onSelectChannel }) => {
-  const { data: channels, isLoading } = useChatChannels();
+  const { data: channelsResponse, isLoading } = useChatChannels();
   const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Extract the channels from the API response and ensure it's an array
+  const channels = channelsResponse || [];
+
   // Filter channels based on search term
-  const filteredChannels = channels?.filter(channel => 
+  const filteredChannels = channels.filter(channel => 
     channel.name?.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || [];
+  );
 
   return (
     <div className="h-full flex flex-col">

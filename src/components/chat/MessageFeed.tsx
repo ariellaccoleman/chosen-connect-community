@@ -54,15 +54,18 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
     }
   };
 
+  // Extract the channel data from activeChannel response
+  const channelData = activeChannel || { name: "Loading...", description: "No description" };
+
   return (
     <>
       {/* Channel header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <h2 className="text-lg font-semibold">
-          # {activeChannel?.name || 'Loading...'}
+          # {channelData.name || 'Loading...'}
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          {activeChannel?.description || 'No description'}
+          {channelData.description || 'No description'}
         </p>
       </div>
       

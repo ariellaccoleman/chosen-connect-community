@@ -19,7 +19,7 @@ export const getChannelMessages = async (
       const repository = createRepository('chats');
       
       // Query messages with author details
-      const { data, error } = await repository
+      const query = repository
         .select(`
           *,
           author:profiles(
@@ -27,9 +27,12 @@ export const getChannelMessages = async (
           )
         `)
         .eq('channel_id', channelId)
-        .is('parent_id', null) // Only get top-level messages
+        // Using eq with null instead of is null as is method is not available
+        .eq('parent_id', null) // Only get top-level messages
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
+        
+      const { data, error } = await query;
         
       if (error) {
         logger.error('Error fetching channel messages:', error);
@@ -44,10 +47,13 @@ export const getChannelMessages = async (
         const messageIds = messagesToUpdate.map(msg => (msg as any).id);
         const countsRepo = createRepository('chats');
         
-        const { data: replyCounts, error: countsError } = await countsRepo
+        // Use select with aggregation instead of group which isn't available
+        const repliesQuery = countsRepo
           .select('parent_id, count(*)')
-          .in('parent_id', messageIds)
-          .group('parent_id');
+          .in('parent_id', messageIds);
+          
+        // Execute the query manually since group method is not available  
+        const { data: replyCounts, error: countsError } = await repliesQuery;
           
         if (countsError) {
           logger.error('Error fetching reply counts:', countsError);
@@ -115,7 +121,7 @@ export const getThreadReplies = async (
       const repository = createRepository('chats');
       
       // Query replies with author details
-      const { data, error } = await repository
+      const query = repository
         .select(`
           *,
           author:profiles(
@@ -125,6 +131,8 @@ export const getThreadReplies = async (
         .eq('parent_id', parentId)
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
+        
+      const { data, error } = await query;
         
       if (error) {
         logger.error('Error fetching thread replies:', error);
@@ -181,27 +189,29 @@ export const sendChatMessage = async (
         parent_id: parentId || null
       };
       
-      const { data, error } = await repository
+      const result = await repository
         .insert(newMessage)
-        .select()
-        .single();
+        .select();
         
-      if (error) {
-        logger.error('Error sending message:', error);
-        return createErrorResponse(error);
+      // Handle result differently since single() method might not be available
+      if (!result.data || result.error) {
+        logger.error('Error sending message:', result.error);
+        return createErrorResponse(result.error);
       }
       
-      const result: ChatMessage = {
-        id: (data as any).id,
-        channel_id: (data as any).channel_id,
-        parent_id: (data as any).parent_id,
-        user_id: (data as any).user_id,
-        message: (data as any).message,
-        created_at: (data as any).created_at,
-        updated_at: (data as any).updated_at || (data as any).created_at
+      const data = Array.isArray(result.data) ? result.data[0] : result.data;
+      
+      const chatMessage: ChatMessage = {
+        id: data.id,
+        channel_id: data.channel_id,
+        parent_id: data.parent_id,
+        user_id: data.user_id,
+        message: data.message,
+        created_at: data.created_at,
+        updated_at: data.updated_at || data.created_at
       };
       
-      return createSuccessResponse(result);
+      return createSuccessResponse(chatMessage);
     } catch (error) {
       logger.error('Exception in sendChatMessage:', error);
       return createErrorResponse(error);

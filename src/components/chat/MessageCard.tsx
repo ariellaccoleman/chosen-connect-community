@@ -4,6 +4,7 @@ import { ChatMessageWithAuthor } from '@/types/chat';
 import UserAvatar from '@/components/navigation/UserAvatar';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare } from 'lucide-react';
+import { MembershipTier, Profile } from '@/types/profile';
 
 interface MessageCardProps {
   message: ChatMessageWithAuthor;
@@ -40,9 +41,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
     updated_at: '',
     is_approved: true,
     timezone: 'UTC',
-    membership_tier: 'free',
+    membership_tier: 'free' as MembershipTier, // Cast as MembershipTier to match the type
     location_id: null,
-  } : null;
+  } as Profile : null;
 
   return (
     <div 
