@@ -10,7 +10,6 @@ import { ChatMessageWithAuthor } from '@/types/chat';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import MobileDebug from '@/components/common/MobileDebug';
 import { Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -159,9 +158,6 @@ const ChatPage = () => {
           />
         </div>
       )}
-      
-      {/* Include the mobile debug component for mobile debugging */}
-      <MobileDebug />
     </div>
   );
 };

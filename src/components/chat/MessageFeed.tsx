@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useChannelMessages, useSendMessage } from '@/hooks/chat/useChatMessageFactory';
 import MessageCard from '@/components/chat/MessageCard';
@@ -91,8 +92,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
           className="h-full w-full"
           onScroll={handleScroll}
         >
-          <div className="p-4 min-h-full flex flex-col">
-            <div className="flex-grow" />
+          <div className="p-4 min-h-full flex flex-col justify-end">
             <div className="space-y-4">
               {isLoading ? (
                 <div className="flex justify-center items-center h-32">
