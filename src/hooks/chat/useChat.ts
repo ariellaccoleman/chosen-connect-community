@@ -12,6 +12,7 @@ export const useChat = () => {
   const { data: activeChannel } = useChatChannelById(channelId);
 
   // Check if activeChannel is an ApiResponse or a direct ChatChannel
+  // Properly handle the type conversion to ensure typescript is happy
   const channel = activeChannel && 
     typeof activeChannel === 'object' && 
     'data' in activeChannel ? 
