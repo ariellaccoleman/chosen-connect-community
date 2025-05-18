@@ -2,7 +2,6 @@
 import { createApiFactory } from '../core/factory/apiFactory';
 import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { apiClient } from '../core/apiClient';
-import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { createSuccessResponse, ApiResponse, createErrorResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
@@ -68,14 +67,15 @@ export const createChannelWithTags = async (
       const channelData = { 
         name: data.name,
         is_public: data.is_public,
-        channel_type: data.channel_type,
+        // Ensure channel_type is one of the allowed values in the database
+        channel_type: data.channel_type === 'direct' ? 'dm' : data.channel_type,
         created_by: userData.user.id
       };
       
       // Create channel
       const { data: channel, error } = await client
         .from('chat_channels')
-        .insert([channelData])
+        .insert(channelData)
         .select()
         .single();
         
@@ -102,7 +102,9 @@ export const createChannelWithTags = async (
         }
       }
       
-      return createSuccessResponse(chatChannelsApi.operations.transformResponse(channel));
+      // Use the transformResponse function directly from the apiFactory options
+      const transformResponse = chatChannelsApi.transformResponse;
+      return createSuccessResponse(transformResponse(channel));
     } catch (error) {
       logger.error("Exception in createChannelWithTags:", error);
       return createErrorResponse(error);
@@ -147,8 +149,10 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
         // Continue despite error, just log it
       }
       
+      // Use the transformResponse function directly from the apiFactory options
+      const transformResponse = chatChannelsApi.transformResponse;
       const result = {
-        ...chatChannelsApi.operations.transformResponse(channel),
+        ...transformResponse(channel),
         created_by_profile: channel.created_by_profile,
         tag_assignments: tagAssignments || []
       };

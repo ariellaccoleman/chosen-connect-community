@@ -1,7 +1,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { locationsApi } from '@/api';
-import { LocationWithDetails } from '@/types';
+import { LocationWithDetails } from '@/types/location';
 import { showErrorToast } from '@/api/core/errorHandler';
 
 /**
@@ -15,7 +15,8 @@ export const useLocationById = (locationId: string | undefined) => {
       // Don't fetch if no ID is provided
       if (!locationId) return null;
       
-      const response = await locationsApi.getById(locationId);
+      // Use locationsApi.getLocations with the locationId
+      const response = await locationsApi.getLocations('', locationId);
       
       if (response.error) {
         console.error('Location fetch error:', response.error);
@@ -23,7 +24,8 @@ export const useLocationById = (locationId: string | undefined) => {
         return null;
       }
       
-      return response.data || null;
+      // Return the first location if available, otherwise null
+      return response.data && response.data.length > 0 ? response.data[0] : null;
     },
     // Don't run the query if locationId is undefined
     enabled: !!locationId,

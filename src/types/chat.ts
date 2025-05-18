@@ -2,7 +2,7 @@
 /**
  * Chat channel type
  */
-export type ChatChannelType = 'group' | 'direct' | 'announcement';
+export type ChatChannelType = 'group' | 'dm' | 'announcement';
 
 /**
  * Base chat channel model
