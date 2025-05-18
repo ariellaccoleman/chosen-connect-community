@@ -82,8 +82,17 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
         // Continue despite error, just log it
       }
       
-      // Transform the response using the factory transform function
-      const baseChannel = chatChannelsApi.transformResponse(channel);
+      // Create a properly transformed channel using our standard structure
+      const baseChannel: ChatChannel = {
+        id: channel.id,
+        name: channel.name,
+        description: channel.description,
+        is_public: channel.is_public !== false,
+        created_at: channel.created_at,
+        updated_at: channel.updated_at || channel.created_at,
+        created_by: channel.created_by,
+        channel_type: channel.channel_type || 'group'
+      };
       
       const result: ChatChannelWithDetails = {
         ...baseChannel,
