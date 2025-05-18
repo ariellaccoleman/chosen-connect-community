@@ -5,6 +5,7 @@ import { apiClient } from '../core/apiClient';
 import { EntityType } from '@/types/entityTypes';
 import { createSuccessResponse, ApiResponse, createErrorResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Create API operations for chat channels using the factory pattern
@@ -26,7 +27,7 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
   transformRequest: (data) => {
     const transformed: Record<string, any> = {
       // Ensure created_by is set to the current user
-      created_by: apiClient.auth.userId
+      created_by: supabase.auth.getUser().then(res => res.data.user?.id)
     };
     if (data.name !== undefined) transformed.name = data.name;
     if (data.description !== undefined) transformed.description = data.description;
