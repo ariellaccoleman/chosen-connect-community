@@ -5,6 +5,7 @@ import { Loader, Plus } from 'lucide-react';
 import { APP_ROUTES } from '@/config/routes';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { ChatChannel } from '@/types/chat';
 
 interface ChatSidebarProps {
   selectedChannelId?: string;
@@ -16,8 +17,11 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ selectedChannelId, onSelectCh
   const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Make sure channels is treated as an array before filtering
+  const channelsArray = Array.isArray(channels) ? channels : [];
+  
   // Filter channels based on search term
-  const filteredChannels = channels.filter(channel => 
+  const filteredChannels = channelsArray.filter(channel => 
     channel.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
