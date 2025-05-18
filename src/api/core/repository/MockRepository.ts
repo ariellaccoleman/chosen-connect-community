@@ -217,6 +217,27 @@ class MockQuery<T> implements RepositoryQuery<T> {
     this.filters.push(item => regex.test(String(item[column] || '')));
     return this;
   }
+  
+  /**
+   * Filter for NULL values
+   * @param column Column name
+   * @param isNull Whether the value should be NULL (true) or NOT NULL (false)
+   * @returns The query builder for chaining
+   */
+  is(column: string, isNull: null | boolean): RepositoryQuery<T> {
+    if (isNull === null || isNull === true) {
+      // Check for NULL values
+      this.filters.push(item => 
+        item[column] === null || item[column] === undefined
+      );
+    } else {
+      // Check for NOT NULL values
+      this.filters.push(item => 
+        item[column] !== null && item[column] !== undefined
+      );
+    }
+    return this;
+  }
 
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
     this.sortConfig = { 
