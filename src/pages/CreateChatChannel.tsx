@@ -1,20 +1,28 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCreateChatChannel } from '@/hooks/chat/useChatChannels';
+import { useEnhancedCreateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannelCreate } from '@/types/chat';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CreateChatChannel() {
   const navigate = useNavigate();
-  const createMutation = useCreateChatChannel();
+  const { user } = useAuth();
+  const createMutation = useEnhancedCreateChatChannel();
   
   const handleCreateChannel = (data: ChatChannelCreate) => {
     logger.info("Attempting to create channel with data:", data);
     
-    createMutation.mutate(data, {
+    // Include the current user ID as the creator of the channel
+    const channelData = {
+      ...data,
+      created_by: user?.id
+    };
+    
+    createMutation.mutate(channelData, {
       onSuccess: (response) => {
         logger.info("Channel creation response:", response);
         if (response.status === 'success' && response.data) {

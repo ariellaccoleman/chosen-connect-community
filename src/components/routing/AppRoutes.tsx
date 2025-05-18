@@ -60,6 +60,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
       
+      {/* Directory alias for Community route */}
+      <Route path="/directory" element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      
       {/* Event Routes */}
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
       <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
@@ -74,9 +77,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
       
       {/* Admin Chat Channel Routes */}
-      <Route path="/admin/chat/channels" element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
-      <Route path="/admin/chat/channels/create" element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
-      <Route path="/admin/chat/channels/:id/edit" element={<AdminRoute><EditChatChannel /></AdminRoute>} />
+      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
+      <Route path={APP_ROUTES.CREATE_CHAT_CHANNEL} element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
+      <Route path={APP_ROUTES.EDIT_CHAT_CHANNEL} element={<AdminRoute><EditChatChannel /></AdminRoute>} />
       
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />

@@ -11,17 +11,18 @@ import ErrorBoundary from "@/components/common/ErrorBoundary";
 import EventForm from "@/components/events/EventForm";
 
 const EventDetailContent = () => {
-  const { eventId } = useParams<{ eventId: string }>();
+  // Fix the parameter name to match the route definition
+  const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { data: event, isLoading, error } = useEventById(eventId);
+  const { data: event, isLoading, error } = useEventById(id);
   const [isEditing, setIsEditing] = useState(false);
 
   // Use optional chaining to safely access host_id
   const isOwner = user?.id && event && event.host_id === user.id;
 
   logger.info("EventDetail rendering", {
-    eventId,
+    eventId: id,
     isLoading,
     hasEvent: !!event,
     isOwner,
