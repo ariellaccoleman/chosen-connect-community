@@ -28,18 +28,31 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
   const viewportRef = useRef<HTMLDivElement>(null);
+  const initialLoadRef = useRef(true);
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
-  // Ensure we scroll to the bottom when messages change or when a new message is sent
+  // Initial scroll to bottom on first load and when messages change
   useEffect(() => {
-    if (shouldScrollToBottom && viewportRef.current) {
-      setTimeout(() => {
+    // Scroll on initial load or when we should scroll to bottom
+    if ((initialLoadRef.current || shouldScrollToBottom) && viewportRef.current && messages.length > 0) {
+      const scrollToBottom = () => {
         if (viewportRef.current) {
           viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-          logger.info('Scrolling to bottom after messages update');
+          logger.info(`Scrolling to bottom - initial load: ${initialLoadRef.current}`);
         }
-      }, 10); // Small delay to ensure DOM is updated
+      };
+
+      // Scroll immediately and then with a delay to ensure DOM is updated
+      scrollToBottom();
+      
+      // Small delay to ensure DOM is updated
+      setTimeout(scrollToBottom, 50);
+      
+      // Set initial load to false after first render
+      if (initialLoadRef.current) {
+        initialLoadRef.current = false;
+      }
     }
   }, [messages, shouldScrollToBottom]);
   
@@ -72,12 +85,17 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       await refetch();
       
       // Ensure we scroll after message is sent and displayed
-      setTimeout(() => {
+      const forcedScrollToBottom = () => {
         if (viewportRef.current) {
           viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
           logger.info('Forced scroll to bottom after sending message');
         }
-      }, 100);
+      };
+      
+      // Try multiple times with increasing delays to ensure scroll happens after render
+      forcedScrollToBottom();
+      setTimeout(forcedScrollToBottom, 50);
+      setTimeout(forcedScrollToBottom, 150);
       
     } catch (error) {
       logger.error('Failed to send message:', error);
