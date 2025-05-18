@@ -26,3 +26,14 @@ export interface CreateEventInput {
   price: number | null;
   // Remove tag_id as we'll use tag assignments directly
 }
+
+// Event registration type
+export type EventRegistration = {
+  id: string;
+  event_id: string;
+  profile_id: string;
+  created_at: string;
+};
+
+// Registration status for the current user
+export type RegistrationStatus = 'registered' | 'not_registered' | 'loading';

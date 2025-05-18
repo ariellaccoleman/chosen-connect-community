@@ -1,12 +1,13 @@
 
 import React, { useState } from "react";
 import { EventWithDetails } from "@/types";
-import { Calendar, MapPin, Video, DollarSign, UserCheck } from "lucide-react";
+import { Calendar, MapPin, Video, DollarSign, UserCheck, Users } from "lucide-react";
 import { format } from "date-fns";
 import EntityTagManager from "../tags/EntityTagManager";
 import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
+import EventRegistrationButton from "./EventRegistrationButton";
 
 interface EventDetailsProps {
   event: EventWithDetails;
@@ -87,6 +88,15 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
           <span>{event.price ? `$${event.price}` : 'Paid Event'}</span>
         </div>
       )}
+      
+      {/* Registration button */}
+      <div className="my-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+        <h3 className="text-lg font-medium mb-3 flex items-center">
+          <Users className="h-5 w-5 mr-2 text-chosen-blue" />
+          Event Registration
+        </h3>
+        <EventRegistrationButton eventId={event.id} />
+      </div>
       
       {/* Description */}
       <div className="mt-6">
