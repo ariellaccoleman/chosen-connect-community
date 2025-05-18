@@ -14,6 +14,7 @@ interface AuthContextType {
   loading: boolean;
   error: Error | null;
   isAdmin: boolean;
+  initialized: boolean; // Add initialized property
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);

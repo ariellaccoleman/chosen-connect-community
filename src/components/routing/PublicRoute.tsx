@@ -8,7 +8,7 @@ interface PublicRouteProps {
 }
 
 const PublicRoute = ({ children }: PublicRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const location = useLocation();
   
   // Get the intended destination from location state, or use dashboard as default
@@ -17,12 +17,13 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
   console.log("PublicRoute:", { 
     user: !!user, 
     loading, 
+    initialized,
     pathname: location.pathname,
     from
   });
 
-  // Show a loading skeleton while checking authentication
-  if (loading) {
+  // Show a loading skeleton while checking authentication or not yet initialized
+  if (loading || !initialized) {
     return (
       <div className="container py-8">
         <div className="space-y-6">
@@ -34,8 +35,8 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
     );
   }
 
-  // If authenticated, redirect to the intended destination
-  if (user) {
+  // Only redirect if we're fully initialized and found a user
+  if (user && initialized) {
     console.log("PublicRoute: User is authenticated, redirecting to", from);
     return <Navigate to={from} replace />;
   }

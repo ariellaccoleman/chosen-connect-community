@@ -19,6 +19,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser,
     isAdmin,
     setIsAdmin,
+    initialized,
   } = useAuthState();
 
   const {
@@ -41,8 +42,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     isAuthenticated: !!user, 
     isAdmin, 
     loading, 
-    email: user?.email,
-    redirectionDebug: "Fixed redirection loop in AuthProvider"
+    initialized,
+    email: user?.email
   });
 
   const value = {
@@ -57,6 +58,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     error,
     isAdmin,
+    initialized, // Include initialized in the context
   };
 
   return (

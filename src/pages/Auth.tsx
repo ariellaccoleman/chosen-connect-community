@@ -13,7 +13,7 @@ import ResetPasswordForm from "@/components/auth/ResetPasswordForm";
 type AuthMode = "login" | "signup" | "forgotPassword" | "resetPassword";
 
 const Auth = () => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -24,11 +24,11 @@ const Auth = () => {
   
   // If user is already authenticated, redirect to the intended destination
   useEffect(() => {
-    if (user && !loading) {
+    if (user && initialized && !loading) {
       console.log("Auth page: User is authenticated, redirecting to", from);
       navigate(from, { replace: true });
     }
-  }, [user, loading, navigate, from]);
+  }, [user, loading, navigate, from, initialized]);
   
   // Check for password reset, email confirmation, or signup tab parameters
   useEffect(() => {
@@ -45,6 +45,7 @@ const Auth = () => {
   console.log("Auth page:", { 
     user: !!user, 
     loading, 
+    initialized,
     authMode,
     from,
     pathname: location.pathname
@@ -62,8 +63,8 @@ const Auth = () => {
     setAuthMode("login");
   };
 
-  // If still loading or user is authenticated (redirect is handled by useEffect)
-  if (loading || user) {
+  // If still loading, auth not initialized, or user is authenticated (redirect is handled by useEffect)
+  if (loading || !initialized || user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>

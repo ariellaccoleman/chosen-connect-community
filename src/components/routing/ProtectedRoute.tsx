@@ -8,17 +8,18 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
   const location = useLocation();
   
   console.log("ProtectedRoute:", { 
     user: !!user, 
     loading, 
+    initialized,
     pathname: location.pathname
   });
 
-  // Show a loading skeleton while checking authentication
-  if (loading) {
+  // Show loading skeleton while checking authentication or not yet initialized
+  if (loading || !initialized) {
     return (
       <div className="container py-8">
         <div className="space-y-6">
@@ -30,8 +31,8 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to auth with the current location
-  if (!user) {
+  // Only redirect if we're fully initialized and no user is found
+  if (!user && initialized) {
     console.log("ProtectedRoute: User is not authenticated, redirecting to auth");
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }

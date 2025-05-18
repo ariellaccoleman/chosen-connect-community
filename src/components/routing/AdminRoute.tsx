@@ -8,18 +8,19 @@ interface AdminRouteProps {
 }
 
 const AdminRoute = ({ children }: AdminRouteProps) => {
-  const { user, loading, isAdmin } = useAuth();
+  const { user, loading, isAdmin, initialized } = useAuth();
   const location = useLocation();
 
   console.log("AdminRoute:", { 
     user: !!user, 
     isAdmin, 
     loading, 
+    initialized,
     pathname: location.pathname 
   });
 
-  // Show a loading skeleton while checking authentication
-  if (loading) {
+  // Show a loading skeleton while checking authentication or not yet initialized
+  if (loading || !initialized) {
     return (
       <div className="container py-8">
         <div className="space-y-6">
@@ -32,13 +33,13 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
   }
 
   // If not authenticated, redirect to auth page
-  if (!user) {
+  if (!user && initialized) {
     console.log("AdminRoute: User is not authenticated, redirecting to auth");
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
   // If not admin, redirect to dashboard
-  if (!isAdmin) {
+  if (!isAdmin && initialized) {
     console.log("AdminRoute: User is not an admin, redirecting to dashboard");
     return <Navigate to="/dashboard" replace />;
   }

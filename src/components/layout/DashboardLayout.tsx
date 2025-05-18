@@ -9,17 +9,17 @@ interface DashboardLayoutProps {
 }
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
-  const { user, loading } = useAuth();
+  const { user, loading, initialized } = useAuth();
 
   // Add debug log
   console.log("DashboardLayout - Auth state:", { 
     user: !!user, 
     loading,
-    redirectionDebug: "Fixed redirection in DashboardLayout" 
+    initialized
   });
 
-  // Show loading skeleton when auth state is loading
-  if (loading) {
+  // Show loading skeleton when auth state is loading or not initialized
+  if (loading || !initialized) {
     return (
       <BaseLayout>
         <div className="container py-8">

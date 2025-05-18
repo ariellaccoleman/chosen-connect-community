@@ -82,8 +82,11 @@ export const useAuthActions = ({
     setLoading(true);
     setError(null);
     try {
-      // Use direct Supabase client call instead of the API wrapper
-      // This helps avoid potential issues with session validation
+      // Clear auth state first to prevent any redirect loops
+      setUser(null);
+      setIsAdmin(false);
+      
+      // Then perform the actual logout
       const { error } = await supabase.auth.signOut();
       
       if (error) {
@@ -92,9 +95,6 @@ export const useAuthActions = ({
         toast.error("Logout failed: " + error.message);
       } else {
         console.log("Logout successful");
-        // Reset auth state immediately before navigation
-        setUser(null);
-        setIsAdmin(false);
         toast.success("You have been logged out successfully");
         // Navigate after resetting state
         navigate('/auth');

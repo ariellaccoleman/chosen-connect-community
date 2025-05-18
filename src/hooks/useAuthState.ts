@@ -29,12 +29,14 @@ export const useAuthState = () => {
           setUser(session.user);
           setIsAdmin(hasAdminRole);
           setLoading(false);
+          setInitialized(true);
         }
       } else {
         if (mounted) {
           setUser(null);
           setIsAdmin(false);
           setLoading(false);
+          setInitialized(true);
         }
       }
     });
@@ -69,6 +71,8 @@ export const useAuthState = () => {
           console.log("No active session found");
         }
         
+        // Always set initialized to true once we've checked for a session,
+        // regardless of whether we found one or not
         setInitialized(true);
         setLoading(false);
       } catch (err) {

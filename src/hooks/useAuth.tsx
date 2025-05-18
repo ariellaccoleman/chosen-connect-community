@@ -18,6 +18,7 @@ export function useAuth() {
     isAuthenticated: !!context.user,
     isAdmin: context.isAdmin,
     email: context.user?.email,
+    initialized: context.initialized, // Expose the initialized state
     
     // Auth actions
     login: context.login,
