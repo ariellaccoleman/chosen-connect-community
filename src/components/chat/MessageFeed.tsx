@@ -8,6 +8,7 @@ import { ChatMessageWithAuthor } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
 
 interface MessageFeedProps {
   channelId: string;
@@ -25,23 +26,23 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
-  const scrollViewportRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
   // Scroll to bottom when messages change if we're already at the bottom
   useEffect(() => {
-    if (shouldScrollToBottom && scrollViewportRef.current) {
-      const scrollElement = scrollViewportRef.current;
+    if (shouldScrollToBottom && viewportRef.current) {
+      const scrollElement = viewportRef.current;
       scrollElement.scrollTop = scrollElement.scrollHeight;
     }
   }, [messages, shouldScrollToBottom]);
   
   // Handle scroll events to determine if we should auto-scroll
   const handleScroll = () => {
-    if (!scrollViewportRef.current) return;
+    if (!viewportRef.current) return;
     
-    const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
+    const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
     // If we're at the bottom (or close), enable auto-scrolling
     const atBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShouldScrollToBottom(atBottom);
@@ -84,50 +85,52 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       </div>
       
       {/* Messages area */}
-      <ScrollArea 
-        className="flex-1 bg-gray-50 dark:bg-gray-900"
-        ref={scrollViewportRef}
-        onScroll={handleScroll}
-      >
-        <div className="p-4 min-h-full flex flex-col">
-          <div className="flex-grow" />
-          <div className="space-y-4">
-            {isLoading ? (
-              <div className="flex justify-center items-center h-32">
-                <Loader size={24} className="animate-spin text-gray-500" />
-              </div>
-            ) : isError ? (
-              <div className="flex flex-col items-center justify-center text-center py-8">
-                <AlertCircle size={32} className="text-red-500 mb-2" />
-                <p className="text-red-500 font-medium">Error loading messages</p>
-                <p className="text-gray-500 dark:text-gray-400 mb-4">
-                  {error?.message || 'Something went wrong'}
-                </p>
-                <Button onClick={() => refetch()} variant="outline">
-                  Try Again
-                </Button>
-              </div>
-            ) : messages.length > 0 ? (
-              <>
-                {messages.map(message => (
-                  <MessageCard 
-                    key={message.id} 
-                    message={message} 
-                    isSelected={message.id === selectedMessageId}
-                    onClick={() => onMessageSelect(message)}
-                  />
-                ))}
-                <div ref={messagesEndRef} />
-              </>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 dark:text-gray-400">
-                  No messages yet. Be the first to send a message!
-                </p>
-              </div>
-            )}
+      <ScrollArea className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <ScrollAreaPrimitive.Viewport
+          ref={viewportRef}
+          className="h-full w-full"
+          onScroll={handleScroll}
+        >
+          <div className="p-4 min-h-full flex flex-col">
+            <div className="flex-grow" />
+            <div className="space-y-4">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-32">
+                  <Loader size={24} className="animate-spin text-gray-500" />
+                </div>
+              ) : isError ? (
+                <div className="flex flex-col items-center justify-center text-center py-8">
+                  <AlertCircle size={32} className="text-red-500 mb-2" />
+                  <p className="text-red-500 font-medium">Error loading messages</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-4">
+                    {error?.message || 'Something went wrong'}
+                  </p>
+                  <Button onClick={() => refetch()} variant="outline">
+                    Try Again
+                  </Button>
+                </div>
+              ) : messages.length > 0 ? (
+                <>
+                  {messages.map(message => (
+                    <MessageCard 
+                      key={message.id} 
+                      message={message} 
+                      isSelected={message.id === selectedMessageId}
+                      onClick={() => onMessageSelect(message)}
+                    />
+                  ))}
+                  <div ref={messagesEndRef} />
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500 dark:text-gray-400">
+                    No messages yet. Be the first to send a message!
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        </ScrollAreaPrimitive.Viewport>
       </ScrollArea>
       
       {/* Message input */}
