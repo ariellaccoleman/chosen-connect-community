@@ -1,9 +1,11 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getChannelMessages, sendChatMessage, getThreadReplies } from '@/api/chat/chatMessagesApi';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { ApiResponse } from '@/api/core/errorHandler';
 
 /**
  * Hook for fetching channel messages
@@ -17,15 +19,15 @@ export const useChannelMessages = (
 
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
-    queryFn: async () => {
+    queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
       if (!channelId || channelId === 'null' || channelId === 'undefined') {
         logger.warn('No valid channelId provided to useChannelMessages');
-        return { data: [] };
+        return { data: [], error: null, status: 'success' };
       }
 
       if (!isAuthenticated || !user) {
         logger.warn('User is not authenticated for fetching messages');
-        throw new Error('Authentication required');
+        return { data: [], error: { code: 'auth_required', message: 'Authentication required', details: null }, status: 'error' };
       }
 
       logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
@@ -34,7 +36,7 @@ export const useChannelMessages = (
     enabled: !!channelId && channelId !== 'null' && channelId !== 'undefined' && isAuthenticated,
     // Increase poll frequency temporarily for debugging
     refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
-    select: (response) => {
+    select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       logger.info(`Channel messages response: ${response.data?.length || 0} messages`);
       if (response.status === 'error') {
         logger.error('Error in channel messages response:', response.error);
@@ -117,14 +119,14 @@ export const useThreadMessages = (
 
   return useQuery({
     queryKey: ['threadMessages', messageId, offset, limit],
-    queryFn: async () => {
+    queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
       if (!messageId) {
-        return { data: [] };
+        return { data: [], error: null, status: 'success' };
       }
 
       if (!isAuthenticated || !user) {
         logger.warn('User is not authenticated for fetching thread messages');
-        throw new Error('Authentication required');
+        return { data: [], error: { code: 'auth_required', message: 'Authentication required', details: null }, status: 'error' };
       }
 
       logger.info(`Fetching thread replies for message: ${messageId} (user: ${user.id})`);
@@ -132,12 +134,13 @@ export const useThreadMessages = (
     },
     enabled: !!messageId && isAuthenticated,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
-    select: (response) => response.data || [],
-    meta: {
-      onError: (error: any) => {
+    select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
+      if (response.status === 'error' && response.error) {
         toast.error('Failed to load thread replies');
-        logger.error('Error in useThreadMessages:', error);
+        logger.error('Error in useThreadMessages:', response.error);
+        return [];
       }
+      return response.data || [];
     }
   });
 };
