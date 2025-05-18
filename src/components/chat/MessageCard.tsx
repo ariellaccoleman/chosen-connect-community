@@ -40,9 +40,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
     created_at: '',
     updated_at: '',
     is_approved: true,
-    timezone: 'UTC',
     membership_tier: 'free' as MembershipTier,
-    location_id: null,
+    location_id: null
   } : null;
 
   return (

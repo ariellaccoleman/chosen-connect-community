@@ -111,6 +111,6 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       </div>
     </>
   );
-};
+}
 
 export default MessageFeed;

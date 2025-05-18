@@ -19,7 +19,7 @@ export const useChatChannels = () => {
   // Transform the result to ensure data is an array
   return {
     ...result,
-    data: result.data?.data || [],
+    data: result.data || [],
   };
 };
 
@@ -28,7 +28,7 @@ export const useChatChannelById = (channelId: string | null | undefined) => {
   // Transform the result to ensure data is properly returned
   return {
     ...result,
-    data: result.data?.data || null,
+    data: result.data || null,
   };
 };
 
@@ -49,7 +49,8 @@ export function useChatChannelWithDetails(channelId: string | null | undefined) 
       if (!channelId) return null;
       return getChatChannelWithDetails(channelId);
     },
-    enabled: !!channelId
+    enabled: !!channelId,
+    select: (response) => response?.data || null,
   });
 }
 

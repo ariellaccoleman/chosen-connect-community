@@ -7,7 +7,7 @@ import ChatChannelList from '@/components/admin/chat/ChatChannelList';
 import { useChatChannels, useDeleteChatChannel } from '@/hooks/chat/useChatChannels';
 
 export default function AdminChatChannels() {
-  const { data: channels, isLoading } = useChatChannels();
+  const { data: channels = [], isLoading } = useChatChannels();
   const deleteMutation = useDeleteChatChannel();
   
   const handleDeleteChannel = (channelId: string) => {

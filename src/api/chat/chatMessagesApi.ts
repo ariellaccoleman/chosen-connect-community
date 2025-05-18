@@ -31,7 +31,7 @@ export const getChannelMessages = async (
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
-      const result = await query;
+      const result = await query.execute();
         
       if (result.error) {
         logger.error('Error fetching channel messages:', result.error);
@@ -52,7 +52,7 @@ export const getChannelMessages = async (
           .in('parent_id', messageIds);
           
         // Execute the query  
-        const repliesResult = await repliesQuery;
+        const repliesResult = await repliesQuery.execute();
           
         if (repliesResult.error) {
           logger.error('Error fetching reply counts:', repliesResult.error);
@@ -131,7 +131,7 @@ export const getThreadReplies = async (
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
-      const result = await query;
+      const result = await query.execute();
         
       if (result.error) {
         logger.error('Error fetching thread replies:', result.error);
@@ -190,7 +190,8 @@ export const sendChatMessage = async (
       
       const result = await repository
         .insert(newMessage)
-        .select();
+        .select()
+        .execute();
         
       // Handle result
       if (!result.data || result.error) {
