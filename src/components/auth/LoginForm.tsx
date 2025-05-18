@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -28,7 +29,13 @@ interface LoginFormProps {
 
 const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
   const { login } = useAuth();
+  const location = useLocation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get the intended destination from location state
+  const from = location.state?.from || "/dashboard";
+  
+  console.log("Login form: Redirect destination after login will be:", from);
   
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -41,7 +48,7 @@ const LoginForm = ({ onForgotPasswordClick }: LoginFormProps) => {
   const onSubmit = async (data: LoginValues) => {
     setIsSubmitting(true);
     try {
-      await login(data.email, data.password);
+      await login(data.email, data.password, from);
     } catch (error) {
       console.error(error);
     } finally {

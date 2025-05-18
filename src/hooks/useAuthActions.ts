@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +20,7 @@ export const useAuthActions = ({
 }: UseAuthActionsProps) => {
   const navigate = useNavigate();
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, redirectTo?: string) => {
     setLoading(true);
     setError(null);
     try {
@@ -35,7 +34,8 @@ export const useAuthActions = ({
       } else {
         setUser(data.user);
         setIsAdmin(data.user?.app_metadata?.role === 'admin');
-        navigate('/dashboard');
+        console.log(`Login successful, redirecting to: ${redirectTo || '/dashboard'}`);
+        navigate(redirectTo || '/dashboard');
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('An unexpected error occurred.'));
@@ -152,7 +152,7 @@ export const useAuthActions = ({
   };
 
   // Create alias functions to maintain compatibility
-  const signIn = login;
+  const signIn = (email: string, password: string, redirectTo?: string) => login(email, password, redirectTo);
   const signOut = logout;
 
   return {
