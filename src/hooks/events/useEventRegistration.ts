@@ -1,11 +1,17 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { eventRegistrationApi } from '@/api/events/registrationApi';
 import { logger } from '@/utils/logger';
 import { RegistrationStatus } from '@/types/event';
+import { 
+  isUserRegistered, 
+  getRegistrationCount, 
+  createRegistration,
+  deleteRegistration,
+  getEventRegistrants
+} from '@/api/events/registrationApiFactory';
 
 /**
  * Hook for checking if the current user is registered for an event
@@ -22,9 +28,7 @@ export const useEventRegistrationStatus = (eventId: string | undefined) => {
     queryKey: ['event-registration', eventId, profileId],
     queryFn: async () => {
       if (!eventId || !profileId) return false;
-      const response = await eventRegistrationApi.isUserRegistered(eventId, profileId);
-      if (response.error) throw response.error;
-      return response.data || false;
+      return await isUserRegistered(eventId, profileId);
     },
     // Don't run the query if we don't have an event ID or profile ID
     enabled: !!eventId && !!profileId,
@@ -52,9 +56,7 @@ export const useEventRegistrationCount = (eventId: string | undefined) => {
     queryKey: ['event-registration-count', eventId],
     queryFn: async () => {
       if (!eventId) return 0;
-      const response = await eventRegistrationApi.getRegistrationCount(eventId);
-      if (response.error) throw response.error;
-      return response.data || 0;
+      return await getRegistrationCount(eventId);
     },
     // Don't run the query if we don't have an event ID
     enabled: !!eventId,
@@ -75,9 +77,14 @@ export const useEventRegistrationActions = (eventId: string | undefined) => {
       if (!eventId || !profileId) {
         throw new Error("Missing event ID or user profile");
       }
-      const result = await eventRegistrationApi.registerForEvent(eventId, profileId);
-      if (result.error) throw result.error;
-      return result.data;
+      
+      const response = await createRegistration({ 
+        event_id: eventId, 
+        profile_id: profileId 
+      });
+      
+      if (response.error) throw response.error;
+      return response.data;
     },
     onSuccess: () => {
       toast.success("You've successfully registered for this event!");
@@ -102,9 +109,18 @@ export const useEventRegistrationActions = (eventId: string | undefined) => {
       if (!eventId || !profileId) {
         throw new Error("Missing event ID or user profile");
       }
-      const result = await eventRegistrationApi.cancelRegistration(eventId, profileId);
-      if (result.error) throw result.error;
-      return result.data;
+
+      // First, we need to find the registration ID
+      const registrations = await getEventRegistrants(eventId);
+      const userRegistration = registrations.find(reg => reg.profile_id === profileId);
+      
+      if (!userRegistration) {
+        throw new Error("Registration not found");
+      }
+      
+      const response = await deleteRegistration(userRegistration.id);
+      if (response.error) throw response.error;
+      return response.data;
     },
     onSuccess: () => {
       toast.success("Your registration has been canceled.");
@@ -125,4 +141,19 @@ export const useEventRegistrationActions = (eventId: string | undefined) => {
     isCanceling: cancelMutation.isPending,
     error: registerMutation.error || cancelMutation.error,
   };
+};
+
+/**
+ * Hook for fetching event registrants (attendees)
+ */
+export const useEventRegistrants = (eventId: string | undefined) => {
+  return useQuery({
+    queryKey: ['event-registrants', eventId],
+    queryFn: async () => {
+      if (!eventId) return [];
+      const registrants = await getEventRegistrants(eventId);
+      return registrants;
+    },
+    enabled: !!eventId,
+  });
 };

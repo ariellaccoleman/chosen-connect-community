@@ -15,8 +15,8 @@ export * from './useEventMutations';
 // Export event registration hooks
 export * from './useEventRegistration';
 
-// Export event registrants hook
-export * from './useEventRegistrants';
+// Export event registrants hook (now comes directly from useEventRegistration)
+export { useEventRegistrants } from './useEventRegistration';
 
 // Legacy compatibility exports
 export { useEvents, useEventById } from './useEventHooks';
