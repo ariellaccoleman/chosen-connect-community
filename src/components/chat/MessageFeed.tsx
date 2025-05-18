@@ -8,7 +8,7 @@ import { useChat } from '@/hooks/chat/useChat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
-import { toast } from 'sonner';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface MessageFeedProps {
   channelId: string;
@@ -26,7 +26,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
@@ -60,12 +60,8 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       
       // Ensure we scroll to bottom after sending
       setShouldScrollToBottom(true);
-      
-      // Show feedback for successful message send
-      toast.success("Message sent");
     } catch (error) {
       logger.error('Failed to send message:', error);
-      toast.error('Failed to send message. Please try again.');
     }
   };
 
@@ -85,46 +81,49 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
         </p>
       </div>
       
-      {/* Messages area */}
+      {/* Messages area with flex-col-reverse to position messages at bottom */}
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
+        className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 flex flex-col"
         onScroll={handleScroll}
-        ref={messagesContainerRef}
+        ref={scrollAreaRef}
       >
-        {isLoading ? (
-          <div className="flex justify-center items-center h-32">
-            <Loader size={24} className="animate-spin text-gray-500" />
-          </div>
-        ) : isError ? (
-          <div className="flex flex-col items-center justify-center text-center py-8">
-            <AlertCircle size={32} className="text-red-500 mb-2" />
-            <p className="text-red-500 font-medium">Error loading messages</p>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {error?.message || 'Something went wrong'}
-            </p>
-            <Button onClick={() => refetch()} variant="outline">
-              Try Again
-            </Button>
-          </div>
-        ) : messages.length > 0 ? (
-          <>
-            {messages.map(message => (
-              <MessageCard 
-                key={message.id} 
-                message={message} 
-                isSelected={message.id === selectedMessageId}
-                onClick={() => onMessageSelect(message)}
-              />
-            ))}
-            <div ref={messagesEndRef} />
-          </>
-        ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              No messages yet. Be the first to send a message!
-            </p>
-          </div>
-        )}
+        <div className="flex-grow"></div>
+        <div className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-32">
+              <Loader size={24} className="animate-spin text-gray-500" />
+            </div>
+          ) : isError ? (
+            <div className="flex flex-col items-center justify-center text-center py-8">
+              <AlertCircle size={32} className="text-red-500 mb-2" />
+              <p className="text-red-500 font-medium">Error loading messages</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">
+                {error?.message || 'Something went wrong'}
+              </p>
+              <Button onClick={() => refetch()} variant="outline">
+                Try Again
+              </Button>
+            </div>
+          ) : messages.length > 0 ? (
+            <>
+              {messages.map(message => (
+                <MessageCard 
+                  key={message.id} 
+                  message={message} 
+                  isSelected={message.id === selectedMessageId}
+                  onClick={() => onMessageSelect(message)}
+                />
+              ))}
+              <div ref={messagesEndRef} />
+            </>
+          ) : (
+            <div className="text-center py-8">
+              <p className="text-gray-500 dark:text-gray-400">
+                No messages yet. Be the first to send a message!
+              </p>
+            </div>
+          )}
+        </div>
       </div>
       
       {/* Message input */}
