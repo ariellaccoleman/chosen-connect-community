@@ -1,5 +1,5 @@
 
-import { useEventRegistrants as useRegistrants } from './useEventRegistration';
+import { useEventRegistrants } from './useEventRegistration';
 
 /**
  * Hook for fetching event registrants (attendees)
