@@ -4,6 +4,7 @@ import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core
 import { ChatMessage, ChatMessageCreate, ChatMessageWithAuthor } from '@/types/chat';
 import { createRepository } from '../core/repository/repositoryFactory';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Get messages for a specific channel
@@ -15,12 +16,19 @@ export const getChannelMessages = async (
 ): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
   return apiClient.query(async () => {
     try {
+      // Check if user is authenticated
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        logger.error('No authenticated session when fetching messages');
+        return createErrorResponse(new Error("Authentication required"));
+      }
+
       if (!channelId || channelId === 'null' || channelId === 'undefined') {
         logger.error('Invalid channelId provided to getChannelMessages:', channelId);
-        return createSuccessResponse([]);
+        return createErrorResponse(new Error("Invalid channel ID"));
       }
       
-      logger.info(`Fetching messages for channel ID: "${channelId}"`);
+      logger.info(`Fetching messages for channel ID: "${channelId}" with user ${sessionData.session.user.id}`);
       
       // Create repository for chat messages
       const repository = createRepository('chats');
@@ -40,8 +48,8 @@ export const getChannelMessages = async (
         
       const result = await query.execute();
       
-      logger.info('getChannelMessages result:', result);
-        
+      logger.info(`getChannelMessages result: ${result.data ? result.data.length : 0} messages found`);
+      
       if (result.error) {
         logger.error('Error fetching channel messages:', result.error);
         return createErrorResponse(result.error);
@@ -188,6 +196,19 @@ export const sendChatMessage = async (
 ): Promise<ApiResponse<ChatMessage>> => {
   return apiClient.query(async () => {
     try {
+      // Check if user is authenticated
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        logger.error('No authenticated session when sending message');
+        return createErrorResponse(new Error("Authentication required"));
+      }
+
+      // Verify the user is sending as themselves
+      if (userId !== sessionData.session.user.id) {
+        logger.error(`User ID mismatch: ${userId} vs ${sessionData.session.user.id}`);
+        return createErrorResponse(new Error("Cannot send messages as another user"));
+      }
+
       if (!channelId || channelId === 'null' || channelId === 'undefined') {
         logger.error('Invalid channelId provided to sendChatMessage:', channelId);
         return createErrorResponse(new Error("Invalid channel ID"));

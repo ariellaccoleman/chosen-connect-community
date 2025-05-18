@@ -15,6 +15,8 @@ export const useChannelMessages = (
   limit = 50,
   offset = 0
 ) => {
+  const { isAuthenticated, user } = useAuth();
+
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async () => {
@@ -22,10 +24,17 @@ export const useChannelMessages = (
         logger.warn('No channelId provided to useChannelMessages');
         return { data: [] };
       }
-      logger.info(`Fetching messages for channel: ${channelId}`);
+
+      if (!isAuthenticated || !user) {
+        logger.warn('User is not authenticated for fetching messages');
+        toast.error('Authentication required to view messages');
+        throw new Error('Authentication required');
+      }
+
+      logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
       return getChannelMessages(channelId, limit, offset);
     },
-    enabled: !!channelId,
+    enabled: !!channelId && isAuthenticated,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
     select: (response) => {
       logger.info('Channel messages response:', response);
@@ -33,7 +42,8 @@ export const useChannelMessages = (
     },
     meta: {
       onError: (error: any) => {
-        toast.error('Failed to load messages');
+        const errorMessage = error?.message || 'Failed to load messages';
+        toast.error(errorMessage);
         logger.error('Error in useChannelMessages:', error);
       }
     }
@@ -45,7 +55,7 @@ export const useChannelMessages = (
  */
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   return useMutation({
     mutationFn: async ({ channelId, message, parentId }: { 
@@ -53,7 +63,7 @@ export const useSendMessage = () => {
       message: string;
       parentId?: string | null;
     }) => {
-      if (!user?.id) {
+      if (!isAuthenticated || !user?.id) {
         logger.error('User not authenticated when trying to send message');
         toast.error('You need to be logged in to send messages');
         throw new Error('User is not authenticated');
@@ -101,12 +111,32 @@ export const useThreadMessages = (
   limit = 50,
   offset = 0
 ) => {
+  const { isAuthenticated, user } = useAuth();
+
   return useQuery({
     queryKey: ['threadMessages', messageId, offset, limit],
-    queryFn: () => getThreadReplies(messageId as string, limit, offset),
-    enabled: !!messageId,
+    queryFn: async () => {
+      if (!messageId) {
+        return { data: [] };
+      }
+
+      if (!isAuthenticated || !user) {
+        logger.warn('User is not authenticated for fetching thread messages');
+        throw new Error('Authentication required');
+      }
+
+      logger.info(`Fetching thread replies for message: ${messageId} (user: ${user.id})`);
+      return getThreadReplies(messageId as string, limit, offset);
+    },
+    enabled: !!messageId && isAuthenticated,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
     select: (response) => response.data || [],
+    meta: {
+      onError: (error: any) => {
+        toast.error('Failed to load thread replies');
+        logger.error('Error in useThreadMessages:', error);
+      }
+    }
   });
 };
 

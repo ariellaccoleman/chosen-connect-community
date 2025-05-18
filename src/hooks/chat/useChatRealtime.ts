@@ -3,21 +3,28 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
-import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
+import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Hook to subscribe to real-time channel messages
  */
 export const useChannelMessagesRealtime = (channelId: string | null | undefined) => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     if (!channelId) {
       logger.warn('No channelId provided to useChannelMessagesRealtime');
       return;
     }
+
+    if (!isAuthenticated || !user) {
+      logger.warn('User is not authenticated for real-time updates');
+      return; // Don't set up subscription if not authenticated
+    }
     
-    logger.info(`Setting up real-time subscription for channel: ${channelId}`);
+    logger.info(`Setting up real-time subscription for channel: ${channelId} (user: ${user.id})`);
     
     // Subscribe to new messages in the channel
     const channel = supabase
@@ -41,6 +48,12 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
       )
       .subscribe((status) => {
         logger.info(`Real-time channel subscription status: ${status}`);
+        if (status === 'SUBSCRIBED') {
+          logger.info('Successfully subscribed to real-time updates for channel');
+        } else if (status === 'CHANNEL_ERROR') {
+          logger.error('Error subscribing to real-time updates for channel');
+          toast.error('Error connecting to chat. Please refresh the page.');
+        }
       });
       
     // Cleanup on unmount
@@ -48,7 +61,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
       logger.info(`Cleaning up real-time subscription for channel: ${channelId}`);
       supabase.removeChannel(channel);
     };
-  }, [channelId, queryClient]);
+  }, [channelId, queryClient, isAuthenticated, user]);
 };
 
 /**
@@ -56,11 +69,16 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
  */
 export const useThreadRepliesRealtime = (parentId: string | null | undefined) => {
   const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     if (!parentId) return;
+    if (!isAuthenticated || !user) {
+      logger.warn('User is not authenticated for real-time thread updates');
+      return;
+    }
     
-    logger.info(`Setting up real-time subscription for thread: ${parentId}`);
+    logger.info(`Setting up real-time subscription for thread: ${parentId} (user: ${user.id})`);
     
     // Subscribe to new replies to the thread
     const channel = supabase
@@ -90,6 +108,10 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
       )
       .subscribe((status) => {
         logger.info(`Real-time thread subscription status: ${status}`);
+        if (status === 'CHANNEL_ERROR') {
+          logger.error('Error subscribing to real-time thread updates');
+          toast.error('Error connecting to thread updates');
+        }
       });
       
     // Cleanup on unmount
@@ -97,5 +119,5 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
       logger.info(`Cleaning up real-time subscription for thread: ${parentId}`);
       supabase.removeChannel(channel);
     };
-  }, [parentId, queryClient]);
+  }, [parentId, queryClient, isAuthenticated, user]);
 };

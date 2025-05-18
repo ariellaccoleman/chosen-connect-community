@@ -9,17 +9,26 @@ import { useChannelMessagesRealtime } from '@/hooks/chat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import MobileDebug from '@/components/common/MobileDebug';
 
 const ChatPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessageWithAuthor | null>(null);
   const [isThreadOpen, setIsThreadOpen] = useState(false);
+  const { user, isAuthenticated } = useAuth();
 
-  // Log the current channel ID to help debug
+  // Log the current channel ID and auth state to help debug
   useEffect(() => {
     logger.info(`Current channel ID from URL params: ${channelId}`);
-  }, [channelId]);
+    logger.info(`Authentication state: ${isAuthenticated ? 'Authenticated' : 'Not authenticated'}`);
+    logger.info(`User ID: ${user?.id || 'Not available'}`);
+    
+    if (!isAuthenticated) {
+      logger.warn('User is not authenticated, this will cause RLS policies to block access');
+    }
+  }, [channelId, isAuthenticated, user]);
 
   // Setup real-time updates for the selected channel
   useChannelMessagesRealtime(channelId);
@@ -83,14 +92,29 @@ const ChatPage = () => {
           />
         </div>
       )}
+      
+      {/* Include the mobile debug component for mobile debugging */}
+      <MobileDebug />
     </div>
   );
 };
 
 const Chat = () => {
+  const { user, isAuthenticated, initialized } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (initialized && !isAuthenticated) {
+      logger.warn('Chat page: User is not authenticated, redirecting to auth page');
+      toast.error('You need to be logged in to access the chat');
+      navigate('/auth', { replace: true });
+    }
+  }, [isAuthenticated, initialized, navigate]);
+
   return (
     <ErrorBoundary name="ChatPage">
-      <ChatPage />
+      {initialized && isAuthenticated ? <ChatPage /> : null}
     </ErrorBoundary>
   );
 };
