@@ -3,4 +3,5 @@
  * Chat API module exports
  */
 export * from './chatChannelsApi';
-export * from './chatMessagesApi';
+export * from './chatMessageApiFactory';
+
