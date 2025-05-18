@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -7,9 +7,8 @@ import ChatChannelList from '@/components/admin/chat/ChatChannelList';
 import { useChatChannels, useDeleteChatChannel } from '@/hooks/chat/useChatChannels';
 
 export default function AdminChatChannels() {
-  const { data, isLoading } = useChatChannels();
+  const { data: channels, isLoading } = useChatChannels();
   const deleteMutation = useDeleteChatChannel();
-  const channels = data?.data || [];
   
   const handleDeleteChannel = (channelId: string) => {
     if (window.confirm('Are you sure you want to delete this channel? This action cannot be undone.')) {

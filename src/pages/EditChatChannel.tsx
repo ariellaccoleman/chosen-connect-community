@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function EditChatChannel() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data, isLoading } = useChatChannelById(id);
+  const { data: channel, isLoading } = useChatChannelById(id);
   const updateMutation = useUpdateChatChannel();
   
   const handleUpdateChannel = (formData: ChatChannelUpdate) => {
@@ -49,8 +49,6 @@ export default function EditChatChannel() {
       </div>
     );
   }
-  
-  const channel = data?.data;
   
   if (!channel) {
     return (

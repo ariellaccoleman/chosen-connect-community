@@ -27,44 +27,43 @@ export const getChannelMessages = async (
           )
         `)
         .eq('channel_id', channelId)
-        // Using eq with null instead of is null as is method is not available
         .eq('parent_id', null) // Only get top-level messages
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
-      const { data, error } = await query;
+      const result = await query;
         
-      if (error) {
-        logger.error('Error fetching channel messages:', error);
-        return createErrorResponse(error);
+      if (result.error) {
+        logger.error('Error fetching channel messages:', result.error);
+        return createErrorResponse(result.error);
       }
 
       // Count replies for each message
-      const messagesToUpdate = data || [];
+      const messagesToUpdate = result.data || [];
       
       // If there are messages, get reply counts for them
       if (messagesToUpdate.length > 0) {
         const messageIds = messagesToUpdate.map(msg => (msg as any).id);
         const countsRepo = createRepository('chats');
         
-        // Use select with aggregation instead of group which isn't available
+        // Use select with aggregation
         const repliesQuery = countsRepo
           .select('parent_id, count(*)')
           .in('parent_id', messageIds);
           
-        // Execute the query manually since group method is not available  
-        const { data: replyCounts, error: countsError } = await repliesQuery;
+        // Execute the query  
+        const repliesResult = await repliesQuery;
           
-        if (countsError) {
-          logger.error('Error fetching reply counts:', countsError);
+        if (repliesResult.error) {
+          logger.error('Error fetching reply counts:', repliesResult.error);
           // Continue despite error, just log it
         }
         
         // Map of message ID to reply count
         const replyCountMap: Record<string, number> = {};
         
-        if (replyCounts) {
-          replyCounts.forEach((item: any) => {
+        if (repliesResult.data) {
+          repliesResult.data.forEach((item: any) => {
             replyCountMap[item.parent_id] = parseInt(item.count, 10);
           });
         }
@@ -132,15 +131,15 @@ export const getThreadReplies = async (
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
-      const { data, error } = await query;
+      const result = await query;
         
-      if (error) {
-        logger.error('Error fetching thread replies:', error);
-        return createErrorResponse(error);
+      if (result.error) {
+        logger.error('Error fetching thread replies:', result.error);
+        return createErrorResponse(result.error);
       }
       
       // Transform the raw messages
-      const transformedMessages = (data || []).map((msg: any): ChatMessageWithAuthor => {
+      const transformedMessages = (result.data || []).map((msg: any): ChatMessageWithAuthor => {
         // Format the author name
         if (msg.author) {
           const firstName = msg.author.first_name || '';
@@ -193,7 +192,7 @@ export const sendChatMessage = async (
         .insert(newMessage)
         .select();
         
-      // Handle result differently since single() method might not be available
+      // Handle result
       if (!result.data || result.error) {
         logger.error('Error sending message:', result.error);
         return createErrorResponse(result.error);

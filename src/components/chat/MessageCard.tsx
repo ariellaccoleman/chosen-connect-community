@@ -24,7 +24,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     : '';
 
   // Create a minimal profile object that works with UserAvatar
-  const profileForAvatar = message.author ? {
+  const profileForAvatar: Profile | null = message.author ? {
     id: message.author.id,
     first_name: message.author.first_name,
     last_name: message.author.last_name,
@@ -41,9 +41,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
     updated_at: '',
     is_approved: true,
     timezone: 'UTC',
-    membership_tier: 'free' as MembershipTier, // Cast as MembershipTier to match the type
+    membership_tier: 'free' as MembershipTier,
     location_id: null,
-  } as Profile : null;
+  } : null;
 
   return (
     <div 
