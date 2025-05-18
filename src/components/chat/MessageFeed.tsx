@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useChannelMessages, useSendMessage } from '@/hooks/chat/useChatMessageFactory';
 import MessageCard from '@/components/chat/MessageCard';
@@ -26,20 +25,23 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
   // Scroll to bottom when messages change if we're already at the bottom
   useEffect(() => {
-    if (shouldScrollToBottom && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (shouldScrollToBottom && scrollViewportRef.current) {
+      const scrollElement = scrollViewportRef.current;
+      scrollElement.scrollTop = scrollElement.scrollHeight;
     }
   }, [messages, shouldScrollToBottom]);
   
   // Handle scroll events to determine if we should auto-scroll
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+  const handleScroll = () => {
+    if (!scrollViewportRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollViewportRef.current;
     // If we're at the bottom (or close), enable auto-scrolling
     const atBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShouldScrollToBottom(atBottom);
@@ -70,7 +72,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const channelDescription = activeChannel?.description || 'No description';
 
   return (
-    <>
+    <div className="flex flex-col h-full">
       {/* Channel header */}
       <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <h2 className="text-lg font-semibold">
@@ -81,50 +83,52 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
         </p>
       </div>
       
-      {/* Messages area with flex-col-reverse to position messages at bottom */}
-      <div 
-        className="flex-1 overflow-y-auto p-4 bg-gray-50 dark:bg-gray-900 flex flex-col"
+      {/* Messages area */}
+      <ScrollArea 
+        className="flex-1 bg-gray-50 dark:bg-gray-900"
+        ref={scrollViewportRef}
         onScroll={handleScroll}
-        ref={scrollAreaRef}
       >
-        <div className="flex-grow"></div>
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center h-32">
-              <Loader size={24} className="animate-spin text-gray-500" />
-            </div>
-          ) : isError ? (
-            <div className="flex flex-col items-center justify-center text-center py-8">
-              <AlertCircle size={32} className="text-red-500 mb-2" />
-              <p className="text-red-500 font-medium">Error loading messages</p>
-              <p className="text-gray-500 dark:text-gray-400 mb-4">
-                {error?.message || 'Something went wrong'}
-              </p>
-              <Button onClick={() => refetch()} variant="outline">
-                Try Again
-              </Button>
-            </div>
-          ) : messages.length > 0 ? (
-            <>
-              {messages.map(message => (
-                <MessageCard 
-                  key={message.id} 
-                  message={message} 
-                  isSelected={message.id === selectedMessageId}
-                  onClick={() => onMessageSelect(message)}
-                />
-              ))}
-              <div ref={messagesEndRef} />
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <p className="text-gray-500 dark:text-gray-400">
-                No messages yet. Be the first to send a message!
-              </p>
-            </div>
-          )}
+        <div className="p-4 min-h-full flex flex-col">
+          <div className="flex-grow" />
+          <div className="space-y-4">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <Loader size={24} className="animate-spin text-gray-500" />
+              </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center justify-center text-center py-8">
+                <AlertCircle size={32} className="text-red-500 mb-2" />
+                <p className="text-red-500 font-medium">Error loading messages</p>
+                <p className="text-gray-500 dark:text-gray-400 mb-4">
+                  {error?.message || 'Something went wrong'}
+                </p>
+                <Button onClick={() => refetch()} variant="outline">
+                  Try Again
+                </Button>
+              </div>
+            ) : messages.length > 0 ? (
+              <>
+                {messages.map(message => (
+                  <MessageCard 
+                    key={message.id} 
+                    message={message} 
+                    isSelected={message.id === selectedMessageId}
+                    onClick={() => onMessageSelect(message)}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500 dark:text-gray-400">
+                  No messages yet. Be the first to send a message!
+                </p>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      </ScrollArea>
       
       {/* Message input */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -134,7 +138,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
           isSubmitting={sendMessage.isPending}
         />
       </div>
-    </>
+    </div>
   );
 };
 
