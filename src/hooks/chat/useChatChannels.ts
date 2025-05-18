@@ -34,6 +34,35 @@ export function useChatChannelWithDetails(channelId: string | null | undefined) 
 }
 
 /**
+ * Enhanced hook to create chat channels with better error handling
+ */
+export function useEnhancedCreateChatChannel() {
+  const queryClient = useQueryClient();
+  const { mutate, isPending, isError, isSuccess, error } = useMutation({
+    mutationFn: async (data: ChatChannelCreate) => {
+      logger.info("Creating chat channel with data:", data);
+      const result = await chatChannelsApi.create(data);
+      logger.info("Create chat channel result:", result);
+      return result;
+    },
+    onSuccess: (response) => {
+      if (response.status === 'success') {
+        queryClient.invalidateQueries({ queryKey: ['chatChannels'] });
+        toast.success('Chat channel created successfully');
+      } else if (response.error) {
+        toast.error(`Failed to create chat channel: ${response.error.message}`);
+      }
+    },
+    onError: (error) => {
+      logger.error('Error creating chat channel:', error);
+      toast.error('Failed to create chat channel: An unexpected error occurred');
+    }
+  });
+
+  return { mutate, isPending, isError, isSuccess, error };
+}
+
+/**
  * Hook to update channel tags
  */
 export function useUpdateChannelTags() {

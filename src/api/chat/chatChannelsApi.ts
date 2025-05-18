@@ -24,7 +24,10 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
     channel_type: data.channel_type || 'group'
   }),
   transformRequest: (data) => {
-    const transformed: Record<string, any> = {};
+    const transformed: Record<string, any> = {
+      // Ensure created_by is set to the current user
+      created_by: apiClient.auth.userId
+    };
     if (data.name !== undefined) transformed.name = data.name;
     if (data.description !== undefined) transformed.description = data.description;
     if (data.is_public !== undefined) transformed.is_public = data.is_public;

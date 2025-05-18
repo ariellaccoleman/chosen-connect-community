@@ -4,17 +4,30 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useCreateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannelCreate } from '@/types/chat';
+import { toast } from 'sonner';
+import { logger } from '@/utils/logger';
 
 export default function CreateChatChannel() {
   const navigate = useNavigate();
   const createMutation = useCreateChatChannel();
   
   const handleCreateChannel = (data: ChatChannelCreate) => {
+    logger.info("Attempting to create channel with data:", data);
+    
     createMutation.mutate(data, {
       onSuccess: (response) => {
+        logger.info("Channel creation response:", response);
         if (response.status === 'success' && response.data) {
+          toast.success("Channel created successfully");
           navigate(`/admin/chat/channels`);
+        } else if (response.error) {
+          toast.error(`Failed to create channel: ${response.error.message}`);
+          logger.error("Channel creation failed:", response.error);
         }
+      },
+      onError: (error) => {
+        toast.error("Failed to create channel: An unexpected error occurred");
+        logger.error("Channel creation error:", error);
       }
     });
   };

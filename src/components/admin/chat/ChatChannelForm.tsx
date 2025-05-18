@@ -18,7 +18,7 @@ const channelFormSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters'),
   description: z.string().optional(),
   is_public: z.boolean().default(true),
-  channel_type: z.enum(['group', 'dm', 'announcement']).default('group'),
+  channel_type: z.enum(['group', 'announcement']).default('group'),
 });
 
 type ChatChannelFormValues = z.infer<typeof channelFormSchema>;
@@ -108,7 +108,6 @@ export default function ChatChannelForm({
               </FormControl>
               <SelectContent>
                 <SelectItem value="group">Group</SelectItem>
-                <SelectItem value="dm">Direct Message</SelectItem>
                 <SelectItem value="announcement">Announcement</SelectItem>
               </SelectContent>
             </Select>
