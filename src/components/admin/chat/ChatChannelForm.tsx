@@ -9,22 +9,22 @@ import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FormWrapper } from '@/components/common/form/FormWrapper';
+import { Textarea } from '@/components/ui/textarea';
 import { ChatChannelCreate, ChatChannelType } from '@/types/chat';
 import EntityTagManager from '@/components/tags/EntityTagManager';
 import { EntityType } from '@/types/entityTypes';
-import { ChatChannelWithDetails } from '@/types/chat';
-import { useEffect, useState } from 'react';
 
 const channelFormSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters'),
+  description: z.string().optional(),
   is_public: z.boolean().default(true),
-  channel_type: z.enum(['group', 'direct', 'announcement']).default('group'),
+  channel_type: z.enum(['group', 'dm', 'announcement']).default('group'),
 });
 
 type ChatChannelFormValues = z.infer<typeof channelFormSchema>;
 
 interface ChatChannelFormProps {
-  onSubmit: (data: ChatChannelCreate, tags: string[]) => void; 
+  onSubmit: (data: ChatChannelCreate) => void; 
   isSubmitting?: boolean;
   defaultValues?: Partial<ChatChannelFormValues>;
   isEditMode?: boolean;
@@ -42,26 +42,19 @@ export default function ChatChannelForm({
     resolver: zodResolver(channelFormSchema),
     defaultValues: {
       name: defaultValues?.name || '',
+      description: defaultValues?.description || '',
       is_public: defaultValues?.is_public === false ? false : true,
       channel_type: defaultValues?.channel_type || 'group'
     },
   });
   
-  // Store and manage selected tag IDs
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  
-  // This function will be called when tags are added or removed
-  const handleTagsChange = (assignmentIds: string[]) => {
-    setSelectedTags(assignmentIds);
-  };
-  
   const handleSubmitForm = (values: ChatChannelFormValues) => {
     onSubmit({
       name: values.name,
+      description: values.description,
       is_public: values.is_public,
-      channel_type: values.channel_type as ChatChannelType,
-      tag_ids: selectedTags
-    }, selectedTags);
+      channel_type: values.channel_type as ChatChannelType
+    });
   };
   
   return (
@@ -74,6 +67,24 @@ export default function ChatChannelForm({
             <FormLabel>Channel Name</FormLabel>
             <FormControl>
               <Input {...field} placeholder="Enter channel name" />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+      
+      <FormField
+        name="description"
+        control={form.control}
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <Textarea 
+                {...field} 
+                placeholder="Enter channel description" 
+                rows={3} 
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -97,7 +108,7 @@ export default function ChatChannelForm({
               </FormControl>
               <SelectContent>
                 <SelectItem value="group">Group</SelectItem>
-                <SelectItem value="direct">Direct</SelectItem>
+                <SelectItem value="dm">Direct Message</SelectItem>
                 <SelectItem value="announcement">Announcement</SelectItem>
               </SelectContent>
             </Select>
@@ -123,26 +134,19 @@ export default function ChatChannelForm({
         )}
       />
       
-      <div className="space-y-2">
-        <FormLabel>Channel Tags</FormLabel>
-        <div className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800">
-          {existingChannelId ? (
+      {existingChannelId && (
+        <div className="space-y-2">
+          <FormLabel>Channel Tags</FormLabel>
+          <div className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800">
             <EntityTagManager
               entityId={existingChannelId}
               entityType={EntityType.CHAT}
               isAdmin={true}
               isEditing={true}
-              onTagSuccess={() => {
-                // Re-fetch tags after changes
-              }}
             />
-          ) : (
-            <div className="text-sm text-muted-foreground">
-              You can add tags after creating the channel
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
       
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>

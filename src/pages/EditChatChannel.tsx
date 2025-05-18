@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useChatChannelById, useUpdateChatChannel, useChatChannelWithDetails, useUpdateChannelTags } from '@/hooks/chat/useChatChannels';
+import { useChatChannelById, useUpdateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannelUpdate } from '@/types/chat';
 import { logger } from '@/utils/logger';
@@ -12,32 +12,16 @@ export default function EditChatChannel() {
   const navigate = useNavigate();
   const { data, isLoading } = useChatChannelById(id);
   const updateMutation = useUpdateChatChannel();
-  const updateTagsMutation = useUpdateChannelTags();
   
-  const handleUpdateChannel = (formData: any, tags: string[]) => {
+  const handleUpdateChannel = (formData: ChatChannelUpdate) => {
     if (!id) return;
     
-    const channelData: ChatChannelUpdate = {
-      name: formData.name,
-      is_public: formData.is_public,
-      channel_type: formData.channel_type
-    };
-    
-    // Update channel data
     updateMutation.mutate({ 
       id, 
-      data: channelData 
+      data: formData
     }, {
       onSuccess: () => {
-        // After channel is updated, update tags
-        updateTagsMutation.mutate({ 
-          channelId: id, 
-          tagIds: tags 
-        }, {
-          onSuccess: () => {
-            navigate('/admin/chat/channels');
-          }
-        });
+        navigate('/admin/chat/channels');
       }
     });
   };
@@ -101,7 +85,7 @@ export default function EditChatChannel() {
       <div className="bg-white dark:bg-gray-800 rounded-md shadow p-6">
         <ChatChannelForm 
           onSubmit={handleUpdateChannel}
-          isSubmitting={updateMutation.isPending || updateTagsMutation.isPending}
+          isSubmitting={updateMutation.isPending}
           defaultValues={channel}
           isEditMode={true}
           existingChannelId={id}

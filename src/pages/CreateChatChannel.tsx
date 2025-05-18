@@ -1,15 +1,15 @@
 
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useCreateChannelWithTags } from '@/hooks/chat/useChatChannels';
+import { useCreateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannelCreate } from '@/types/chat';
 
 export default function CreateChatChannel() {
   const navigate = useNavigate();
-  const createMutation = useCreateChannelWithTags();
+  const createMutation = useCreateChatChannel();
   
-  const handleCreateChannel = (data: ChatChannelCreate, tags: string[]) => {
+  const handleCreateChannel = (data: ChatChannelCreate) => {
     createMutation.mutate(data, {
       onSuccess: (response) => {
         if (response.status === 'success' && response.data) {

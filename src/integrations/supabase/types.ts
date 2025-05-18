@@ -32,30 +32,30 @@ export type Database = {
           channel_type: Database["public"]["Enums"]["chat_channel_type"] | null
           created_at: string | null
           created_by: string | null
+          description: string | null
           id: string
           is_public: boolean | null
           name: string | null
-          tag_id: string | null
           updated_at: string | null
         }
         Insert: {
           channel_type?: Database["public"]["Enums"]["chat_channel_type"] | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           id?: string
           is_public?: boolean | null
           name?: string | null
-          tag_id?: string | null
           updated_at?: string | null
         }
         Update: {
           channel_type?: Database["public"]["Enums"]["chat_channel_type"] | null
           created_at?: string | null
           created_by?: string | null
+          description?: string | null
           id?: string
           is_public?: boolean | null
           name?: string | null
-          tag_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -64,13 +64,6 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "chat_channels_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]

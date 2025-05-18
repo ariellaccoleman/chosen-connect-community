@@ -51,6 +51,7 @@ export default function ChatChannelList({
         <TableHeader>
           <TableRow>
             <TableHead>Name</TableHead>
+            <TableHead>Description</TableHead>
             <TableHead>Type</TableHead>
             <TableHead>Access</TableHead>
             <TableHead>Tags</TableHead>
@@ -86,8 +87,9 @@ function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) 
   return (
     <TableRow key={channel.id}>
       <TableCell className="font-medium">{channel.name || 'Unnamed channel'}</TableCell>
+      <TableCell className="max-w-xs truncate">{channel.description || '-'}</TableCell>
       <TableCell>
-        <span className="capitalize">{channel.channel_type || 'group'}</span>
+        <span className="capitalize">{channel.channel_type}</span>
       </TableCell>
       <TableCell>
         {channel.is_public ? (

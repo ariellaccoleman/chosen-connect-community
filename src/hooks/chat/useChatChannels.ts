@@ -2,7 +2,7 @@
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '../core/factory/queryHookFactory';
-import { chatChannelsApi, createChannelWithTags, updateChannelTags } from '@/api/chat';
+import { chatChannelsApi, getChatChannelWithDetails, updateChannelTags } from '@/api/chat';
 import { ChatChannel, ChatChannelCreate, ChatChannelWithDetails } from '@/types/chat';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
@@ -20,29 +20,6 @@ export const {
 );
 
 /**
- * Hook to create a chat channel with tags
- */
-export function useCreateChannelWithTags() {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: createChannelWithTags,
-    onSuccess: (response) => {
-      if (response.status === 'success') {
-        queryClient.invalidateQueries({ queryKey: ['chatChannels'] });
-        toast.success('Chat channel created successfully');
-      } else if (response.error) {
-        toast.error(`Failed to create channel: ${response.error.message}`);
-      }
-    },
-    onError: (error) => {
-      logger.error('Error creating chat channel with tags:', error);
-      toast.error('Failed to create channel: An unexpected error occurred');
-    }
-  });
-}
-
-/**
  * Hook to get chat channel with details
  */
 export function useChatChannelWithDetails(channelId: string | null | undefined) {
@@ -50,7 +27,6 @@ export function useChatChannelWithDetails(channelId: string | null | undefined) 
     queryKey: ['chatChannel', channelId, 'details'],
     queryFn: async () => {
       if (!channelId) return null;
-      const { getChatChannelWithDetails } = await import('@/api/chat/chatChannelsApi');
       return getChatChannelWithDetails(channelId);
     },
     enabled: !!channelId

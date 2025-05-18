@@ -16,6 +16,7 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
   transformResponse: (data) => ({
     id: data.id,
     name: data.name,
+    description: data.description,
     is_public: data.is_public !== false, // Default to true if null
     created_at: data.created_at,
     updated_at: data.updated_at || data.created_at,
@@ -25,6 +26,7 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
   transformRequest: (data) => {
     const transformed: Record<string, any> = {};
     if (data.name !== undefined) transformed.name = data.name;
+    if (data.description !== undefined) transformed.description = data.description;
     if (data.is_public !== undefined) transformed.is_public = data.is_public;
     if (data.channel_type !== undefined) transformed.channel_type = data.channel_type;
     return transformed;
@@ -42,75 +44,6 @@ export const {
   update: updateChatChannel,
   delete: deleteChatChannel
 } = chatChannelsApi;
-
-/**
- * Create a chat channel with tags
- * @param data Channel data with optional tag IDs
- * @returns New chat channel data
- */
-export const createChannelWithTags = async (
-  data: ChatChannelCreate
-): Promise<ApiResponse<ChatChannel>> => {
-  return apiClient.query(async (client) => {
-    try {
-      // Start a transaction
-      const { data: userData } = await client.auth.getUser();
-      if (!userData?.user) {
-        return createErrorResponse({
-          message: 'User must be authenticated to create a chat channel',
-          code: 'auth_required'
-        });
-      }
-      
-      // Extract tag IDs and prepare channel data
-      const tagIds = data.tag_ids || [];
-      const channelData = { 
-        name: data.name,
-        is_public: data.is_public,
-        // Ensure channel_type is one of the allowed values in the database
-        channel_type: data.channel_type === 'direct' ? 'dm' : data.channel_type,
-        created_by: userData.user.id
-      };
-      
-      // Create channel
-      const { data: channel, error } = await client
-        .from('chat_channels')
-        .insert(channelData)
-        .select()
-        .single();
-        
-      if (error) {
-        logger.error("Error creating chat channel:", error);
-        return createErrorResponse(error);
-      }
-      
-      // If there are tags to assign, create tag assignments
-      if (tagIds.length > 0 && channel) {
-        const tagAssignments = tagIds.map(tagId => ({
-          tag_id: tagId,
-          target_id: channel.id,
-          target_type: EntityType.CHAT
-        }));
-        
-        const { error: tagError } = await client
-          .from('tag_assignments')
-          .insert(tagAssignments);
-          
-        if (tagError) {
-          logger.error("Error assigning tags to channel:", tagError);
-          // We don't fail the whole operation if tag assignment fails
-        }
-      }
-      
-      // Use the transformResponse function directly from the apiFactory options
-      const transformResponse = chatChannelsApi.transformResponse;
-      return createSuccessResponse(transformResponse(channel));
-    } catch (error) {
-      logger.error("Exception in createChannelWithTags:", error);
-      return createErrorResponse(error);
-    }
-  });
-};
 
 /**
  * Get chat channel with tags and creator details
@@ -149,10 +82,11 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
         // Continue despite error, just log it
       }
       
-      // Use the transformResponse function directly from the apiFactory options
-      const transformResponse = chatChannelsApi.transformResponse;
-      const result = {
-        ...transformResponse(channel),
+      // Transform the response using the factory transform function
+      const baseChannel = chatChannelsApi.transformResponse(channel);
+      
+      const result: ChatChannelWithDetails = {
+        ...baseChannel,
         created_by_profile: channel.created_by_profile,
         tag_assignments: tagAssignments || []
       };

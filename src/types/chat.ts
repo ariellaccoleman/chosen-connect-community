@@ -10,6 +10,7 @@ export type ChatChannelType = 'group' | 'dm' | 'announcement';
 export interface ChatChannel {
   id: string;
   name: string | null;
+  description: string | null;
   is_public: boolean;
   created_at: string;
   updated_at: string;
@@ -22,9 +23,9 @@ export interface ChatChannel {
  */
 export interface ChatChannelCreate {
   name: string;
+  description?: string;
   is_public: boolean;
   channel_type: ChatChannelType;
-  tag_ids?: string[];
 }
 
 /**
@@ -32,6 +33,7 @@ export interface ChatChannelCreate {
  */
 export interface ChatChannelUpdate {
   name?: string;
+  description?: string;
   is_public?: boolean;
   channel_type?: ChatChannelType;
 }
