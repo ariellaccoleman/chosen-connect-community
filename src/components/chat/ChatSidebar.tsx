@@ -21,16 +21,32 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const { isAuthenticated } = useAuth();
   const [initialLoad, setInitialLoad] = useState(true);
 
-  // Log sidebar rendering info
+  // Enhanced logging for debugging
   logger.info(`ChatSidebar rendering - Selected Channel: ${selectedChannelId || 'none'}`);
   logger.info(`Channels loaded: ${channels.length}, isLoading: ${isLoading}, isError: ${isError}`);
+  
+  if (channels.length > 0) {
+    logger.info('Available channels:', channels.map(c => ({ id: c.id, name: c.name })));
+  }
 
   // Set a default channel on initial load if one isn't already selected
   useEffect(() => {
-    if (initialLoad && !isLoading && channels.length > 0 && !selectedChannelId) {
-      logger.info('Setting default channel:', channels[0].id);
-      onSelectChannel(channels[0].id);
-      setInitialLoad(false);
+    if (initialLoad && !isLoading && channels.length > 0) {
+      // If there's no selectedChannelId or it's invalid (null/undefined)
+      if (!selectedChannelId) {
+        const defaultChannel = channels[0];
+        logger.info('Setting default channel:', defaultChannel.id, defaultChannel.name);
+        onSelectChannel(defaultChannel.id);
+        setInitialLoad(false);
+      } else {
+        // Verify selected channel exists in our channels list
+        const channelExists = channels.some(c => c.id === selectedChannelId);
+        if (!channelExists) {
+          logger.info('Selected channel not found in channels list, resetting to default');
+          onSelectChannel(channels[0].id);
+        }
+        setInitialLoad(false);
+      }
     }
   }, [channels, isLoading, selectedChannelId, onSelectChannel, initialLoad]);
 
@@ -83,7 +99,10 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         {channels.map(channel => (
           <button
             key={channel.id}
-            onClick={() => onSelectChannel(channel.id)}
+            onClick={() => {
+              logger.info(`Channel selected: ${channel.id} (${channel.name})`);
+              onSelectChannel(channel.id);
+            }}
             className={cn(
               "w-full px-2 py-2 rounded-md flex items-center text-left transition-colors",
               selectedChannelId === channel.id

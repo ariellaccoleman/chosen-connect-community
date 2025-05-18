@@ -20,27 +20,42 @@ const ChatPage = () => {
   const [selectedMessage, setSelectedMessage] = useState<ChatMessageWithAuthor | null>(null);
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const { user, isAuthenticated, initialized } = useAuth();
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(channelId || null);
 
-  // Log the current channel ID and auth state to help debug
+  // Enhanced logging for debugging channel selection
   useEffect(() => {
-    logger.info(`Current channel ID from URL params: ${channelId || 'none'}`);
+    logger.info(`Channel ID from URL params: ${channelId || 'none'}`);
+    logger.info(`Active channel ID in state: ${activeChannelId || 'none'}`);
+    
+    // Update active channel ID when URL param changes
+    if (channelId && channelId !== activeChannelId) {
+      logger.info(`Updating active channel ID to match URL param: ${channelId}`);
+      setActiveChannelId(channelId);
+    }
+  }, [channelId, activeChannelId]);
+
+  // Authentication check
+  useEffect(() => {
     logger.info(`Authentication state: ${isAuthenticated ? 'Authenticated' : 'Not authenticated'}`);
     logger.info(`User ID: ${user?.id || 'Not available'}`);
     
     if (!isAuthenticated && initialized) {
-      logger.warn('User is not authenticated, this will cause RLS policies to block access');
+      logger.warn('User is not authenticated, redirecting to auth page');
       toast.error('You must be logged in to access chat');
       navigate('/auth', { replace: true });
     }
-  }, [channelId, isAuthenticated, user, initialized, navigate]);
+  }, [isAuthenticated, user, initialized, navigate]);
 
   // Setup real-time updates for the selected channel
-  useChannelMessagesRealtime(channelId);
+  useChannelMessagesRealtime(activeChannelId);
 
   const handleChannelSelect = (newChannelId: string) => {
     // Close thread panel when changing channels
     setSelectedMessage(null);
     setIsThreadOpen(false);
+    
+    logger.info(`Selected channel: ${newChannelId}, navigating to chat/${newChannelId}`);
+    setActiveChannelId(newChannelId); // Update our local state immediately
     navigate(`/chat/${newChannelId}`);
   };
 
@@ -86,16 +101,16 @@ const ChatPage = () => {
       {/* Channel Sidebar */}
       <div className="w-full sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
         <ChatSidebar 
-          selectedChannelId={channelId || null} 
+          selectedChannelId={activeChannelId} 
           onSelectChannel={handleChannelSelect} 
         />
       </div>
       
       {/* Main Message Area */}
       <div className={`flex-1 flex flex-col overflow-hidden ${isThreadOpen ? 'hidden md:flex' : ''}`}>
-        {channelId ? (
+        {activeChannelId ? (
           <MessageFeed 
-            channelId={channelId}
+            channelId={activeChannelId}
             onMessageSelect={handleMessageSelect}
             selectedMessageId={selectedMessage?.id}
           />
@@ -118,7 +133,7 @@ const ChatPage = () => {
         <div className="w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col overflow-hidden">
           <ThreadPanel 
             parentMessage={selectedMessage}
-            channelId={channelId || ''}
+            channelId={activeChannelId || ''}
             onClose={handleCloseThread}
           />
         </div>
@@ -131,18 +146,6 @@ const ChatPage = () => {
 };
 
 const Chat = () => {
-  const { user, isAuthenticated, initialized } = useAuth();
-  const navigate = useNavigate();
-
-  // Redirect to auth if not authenticated
-  useEffect(() => {
-    if (initialized && !isAuthenticated) {
-      logger.warn('Chat page: User is not authenticated, redirecting to auth page');
-      toast.error('You need to be logged in to access the chat');
-      navigate('/auth', { replace: true });
-    }
-  }, [isAuthenticated, initialized, navigate]);
-
   return (
     <ErrorBoundary name="ChatPage">
       <ChatPage />

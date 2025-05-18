@@ -21,8 +21,8 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
     }
     
     // Skip setup for invalid channel IDs
-    if (!channelId || channelId === 'null' || channelId === 'undefined') {
-      logger.info('No valid channelId to subscribe to real-time updates');
+    if (!channelId) {
+      logger.info('No valid channelId provided to useChannelMessagesRealtime');
       return;
     }
     

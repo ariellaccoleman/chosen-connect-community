@@ -1,3 +1,4 @@
+
 import { createQueryHooks } from '@/hooks/core/factory';
 import { chatMessageApi, getChannelMessages, getThreadReplies, sendChatMessage } from '@/api/chat/chatMessageApiFactory';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -22,6 +23,7 @@ export const useChannelMessages = (
   offset = 0
 ) => {
   const { isAuthenticated, user } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
@@ -35,15 +37,21 @@ export const useChannelMessages = (
         };
       }
 
-      // Even with invalid channelId, we now return success with empty array instead of error
-      logger.info(`Fetching messages for channel: ${channelId || 'none'} (user: ${user.id})`);
+      // Enhanced validation for channelId
+      if (!channelId) {
+        logger.warn('No channelId provided to useChannelMessages, returning empty array');
+        return { data: [], error: null, status: 'success' };
+      }
+      
+      // Log for debugging
+      logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
       return getChannelMessages(channelId, limit, offset);
     },
-    enabled: isAuthenticated && !!user?.id,
+    enabled: isAuthenticated && !!user?.id && !!channelId,
     // Increase poll frequency temporarily for debugging
     refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
-      logger.info(`Channel messages response: ${response.data?.length || 0} messages`);
+      logger.info(`Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
       if (response.status === 'error') {
         logger.error('Error in channel messages response:', response.error);
         toast.error(response.error?.message || 'Failed to load messages');
@@ -51,6 +59,10 @@ export const useChannelMessages = (
       }
       return response.data || [];
     },
+    onError: (error) => {
+      logger.error('Query error in useChannelMessages:', error);
+      queryClient.setQueryData(['chatMessages', channelId, offset, limit], []);
+    }
   });
 };
 
