@@ -1,4 +1,3 @@
-
 import { apiClient } from '../core/apiClient';
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
@@ -103,7 +102,7 @@ export const getChannelMessages = async (
           )
         `)
         .eq('channel_id', channelId)
-        .eq('parent_id', null) // Only get top-level messages
+        .is('parent_id', null) // Use is() instead of eq() for NULL values
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
