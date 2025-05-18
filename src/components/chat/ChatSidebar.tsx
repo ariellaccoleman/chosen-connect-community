@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useAllChatChannels } from '@/hooks/chat';
+import { useChatChannels } from '@/hooks/chat';
 import { ChatChannel } from '@/types/chat';
 import { Loader, Plus } from 'lucide-react';
 import { APP_ROUTES } from '@/config/routes';
@@ -13,7 +13,7 @@ interface ChatSidebarProps {
 }
 
 const ChatSidebar: React.FC<ChatSidebarProps> = ({ selectedChannelId, onSelectChannel }) => {
-  const { data: channels, isLoading } = useAllChatChannels();
+  const { data: channels, isLoading } = useChatChannels();
   const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 

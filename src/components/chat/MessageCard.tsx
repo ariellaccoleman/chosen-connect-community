@@ -22,6 +22,28 @@ const MessageCard: React.FC<MessageCardProps> = ({
     ? formatDistanceToNow(new Date(message.created_at), { addSuffix: true })
     : '';
 
+  // Create a minimal profile object that works with UserAvatar
+  const profileForAvatar = message.author ? {
+    id: message.author.id,
+    first_name: message.author.first_name,
+    last_name: message.author.last_name,
+    avatar_url: message.author.avatar_url,
+    // Add minimal required props for UserAvatar component
+    email: null,
+    headline: null,
+    bio: null,
+    linkedin_url: null,
+    twitter_url: null,
+    website_url: null,
+    company: null,
+    created_at: '',
+    updated_at: '',
+    is_approved: true,
+    timezone: 'UTC',
+    membership_tier: 'free',
+    location_id: null,
+  } : null;
+
   return (
     <div 
       className={`p-3 rounded-md ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800'} 
@@ -30,7 +52,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
     >
       <div className="flex items-start space-x-3">
         <UserAvatar 
-          profile={message.author} 
+          profile={profileForAvatar} 
           className="w-8 h-8 mt-1" 
         />
         
