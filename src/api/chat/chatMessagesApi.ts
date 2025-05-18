@@ -32,6 +32,8 @@ export const getChannelMessages = async (
         .range(offset, offset + limit - 1);
         
       const result = await query.execute();
+      
+      logger.info('getChannelMessages result:', result);
         
       if (result.error) {
         logger.error('Error fetching channel messages:', result.error);
@@ -179,6 +181,8 @@ export const sendChatMessage = async (
 ): Promise<ApiResponse<ChatMessage>> => {
   return apiClient.query(async () => {
     try {
+      logger.info(`Sending chat message: channel=${channelId}, user=${userId}, message=${message}`);
+      
       const repository = createRepository('chats');
       
       const newMessage = {
@@ -187,6 +191,8 @@ export const sendChatMessage = async (
         user_id: userId,
         parent_id: parentId || null
       };
+      
+      logger.info('New message object to insert:', newMessage);
       
       const result = await repository
         .insert(newMessage)
@@ -198,6 +204,8 @@ export const sendChatMessage = async (
         logger.error('Error sending message:', result.error);
         return createErrorResponse(result.error);
       }
+      
+      logger.info('Message inserted successfully, result:', result);
       
       const data = Array.isArray(result.data) ? result.data[0] : result.data;
       

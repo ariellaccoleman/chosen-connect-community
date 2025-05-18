@@ -25,7 +25,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           event: 'INSERT', 
           schema: 'public', 
           table: 'chats',
-          filter: `channel_id=eq.${channelId} AND parent_id=is.null` 
+          filter: `channel_id=eq.${channelId}` 
         },
         (payload) => {
           logger.info('New channel message received:', payload);

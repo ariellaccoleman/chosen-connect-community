@@ -17,10 +17,17 @@ export const useChannelMessages = (
 ) => {
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
-    queryFn: () => getChannelMessages(channelId as string, limit, offset),
+    queryFn: async () => {
+      if (!channelId) return { data: [] };
+      logger.info(`Fetching messages for channel: ${channelId}`);
+      return getChannelMessages(channelId, limit, offset);
+    },
     enabled: !!channelId,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
-    select: (response) => response.data || [],
+    select: (response) => {
+      logger.info('Channel messages response:', response);
+      return response.data || [];
+    },
   });
 };
 
@@ -40,10 +47,12 @@ export const useSendMessage = () => {
       if (!user?.id) {
         throw new Error('User is not authenticated');
       }
-
+      
+      logger.info(`Sending message to channel ${channelId}: ${message}`);
       return sendChatMessage(channelId, message, user.id, parentId);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      logger.info('Message sent successfully:', response);
       // Invalidate relevant queries to fetch fresh data
       const { channelId, parentId } = variables;
       

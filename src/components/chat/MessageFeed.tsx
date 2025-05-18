@@ -6,6 +6,7 @@ import MessageInput from '@/components/chat/MessageInput';
 import { Loader } from 'lucide-react';
 import { useChat } from '@/hooks/chat/useChat';
 import { ChatMessageWithAuthor } from '@/types/chat';
+import { logger } from '@/utils/logger';
 
 interface MessageFeedProps {
   channelId: string;
@@ -23,6 +24,8 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
+  
+  logger.info(`MessageFeed - Channel: ${channelId}, Messages: ${messages.length}`);
   
   // Scroll to bottom when messages change if we're already at the bottom
   useEffect(() => {
@@ -43,6 +46,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
     if (!content.trim()) return;
 
     try {
+      logger.info(`Sending message in channel ${channelId}: ${content}`);
       await sendMessage.mutateAsync({ 
         channelId,
         message: content
@@ -50,7 +54,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       // Ensure we scroll to bottom after sending
       setShouldScrollToBottom(true);
     } catch (error) {
-      console.error('Failed to send message:', error);
+      logger.error('Failed to send message:', error);
     }
   };
 
