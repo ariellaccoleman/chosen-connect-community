@@ -25,6 +25,12 @@ export const useChannelMessages = (
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
 
+  // Validate channelId early - if it's null/undefined/"null"/"undefined", don't even try to fetch
+  const isValidChannelId = channelId && channelId !== 'null' && channelId !== 'undefined';
+
+  // Add detailed logging for debugging the channelId
+  logger.info(`useChannelMessages called with channelId: ${channelId} (type: ${typeof channelId}), isValid: ${isValidChannelId}`);
+
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
@@ -37,9 +43,9 @@ export const useChannelMessages = (
         };
       }
 
-      // Enhanced validation for channelId
-      if (!channelId) {
-        logger.warn('No channelId provided to useChannelMessages, returning empty array');
+      // Enhanced validation for channelId - don't attempt API call with invalid values
+      if (!isValidChannelId) {
+        logger.warn(`Invalid channelId provided to useChannelMessages: "${channelId}", returning empty array`);
         return { data: [], error: null, status: 'success' };
       }
       
@@ -47,8 +53,8 @@ export const useChannelMessages = (
       logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
       return getChannelMessages(channelId, limit, offset);
     },
-    enabled: isAuthenticated && !!user?.id && !!channelId,
-    // Increase poll frequency temporarily for debugging
+    // Only enable the query if we have both authentication and a valid channel ID
+    enabled: isAuthenticated && !!user?.id && isValidChannelId,
     refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       logger.info(`Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
@@ -137,11 +143,17 @@ export const useThreadMessages = (
   offset = 0
 ) => {
   const { isAuthenticated, user } = useAuth();
+  
+  // Validate messageId early
+  const isValidMessageId = messageId && messageId !== 'null' && messageId !== 'undefined';
+  
+  logger.info(`useThreadMessages called with messageId: ${messageId}, isValid: ${isValidMessageId}`);
 
   return useQuery({
     queryKey: ['threadMessages', messageId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
-      if (!messageId) {
+      if (!isValidMessageId) {
+        logger.warn(`Invalid messageId provided to useThreadMessages: "${messageId}", returning empty array`);
         return { data: [], error: null, status: 'success' };
       }
 
@@ -155,9 +167,9 @@ export const useThreadMessages = (
       }
 
       logger.info(`Fetching thread replies for message: ${messageId} (user: ${user.id})`);
-      return getThreadReplies(messageId as string, limit, offset);
+      return getThreadReplies(messageId, limit, offset);
     },
-    enabled: !!messageId && isAuthenticated,
+    enabled: isValidMessageId && isAuthenticated,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       if (response.status === 'error' && response.error) {

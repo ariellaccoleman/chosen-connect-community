@@ -7,6 +7,17 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 
 /**
+ * Helper function to validate if a string is a valid UUID
+ */
+const isValidUUID = (id: string | null | undefined): boolean => {
+  if (!id || id === 'null' || id === 'undefined') return false;
+  
+  // Basic UUID validation regex
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
+/**
  * Hook to subscribe to real-time channel messages
  */
 export const useChannelMessagesRealtime = (channelId: string | null | undefined) => {
@@ -14,16 +25,16 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
+    // Enhanced validation for channelId
+    if (!isValidUUID(channelId)) {
+      logger.info(`No valid channelId provided to useChannelMessagesRealtime: "${channelId}"`);
+      return; 
+    }
+    
     // Validate authentication
     if (!isAuthenticated || !user) {
       logger.warn('User is not authenticated for real-time updates');
       return; 
-    }
-    
-    // Skip setup for invalid channel IDs
-    if (!channelId) {
-      logger.info('No valid channelId provided to useChannelMessagesRealtime');
-      return;
     }
     
     logger.info(`Setting up real-time subscription for channel: ${channelId} (user: ${user.id})`);
@@ -80,7 +91,11 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (!parentId || parentId === 'null' || parentId === 'undefined') return;
+    // Enhanced validation for parentId
+    if (!isValidUUID(parentId)) {
+      logger.info(`No valid parentId provided to useThreadRepliesRealtime: "${parentId}"`);
+      return;
+    }
     
     if (!isAuthenticated || !user) {
       logger.warn('User is not authenticated for real-time thread updates');

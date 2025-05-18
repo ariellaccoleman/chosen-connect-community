@@ -31,9 +31,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   // Set a default channel on initial load if one isn't already selected
   useEffect(() => {
-    if (initialLoad && !isLoading && channels.length > 0) {
-      // If there's no selectedChannelId or it's invalid (null/undefined)
-      if (!selectedChannelId) {
+    if (!isLoading && channels.length > 0) {
+      // If there's no selectedChannelId or it's invalid
+      if (!selectedChannelId || selectedChannelId === 'null' || selectedChannelId === 'undefined') {
         const defaultChannel = channels[0];
         logger.info('Setting default channel:', defaultChannel.id, defaultChannel.name);
         onSelectChannel(defaultChannel.id);
@@ -41,11 +41,14 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
       } else {
         // Verify selected channel exists in our channels list
         const channelExists = channels.some(c => c.id === selectedChannelId);
-        if (!channelExists) {
+        if (!channelExists && initialLoad) {
           logger.info('Selected channel not found in channels list, resetting to default');
           onSelectChannel(channels[0].id);
         }
-        setInitialLoad(false);
+        
+        if (initialLoad) {
+          setInitialLoad(false);
+        }
       }
     }
   }, [channels, isLoading, selectedChannelId, onSelectChannel, initialLoad]);

@@ -14,21 +14,35 @@ import MobileDebug from '@/components/common/MobileDebug';
 import { Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+/**
+ * Helper function to validate if a string is a valid UUID
+ */
+const isValidChannelId = (id: string | null | undefined): boolean => {
+  if (!id || id === 'null' || id === 'undefined') return false;
+  
+  // Basic UUID validation regex
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(id);
+};
+
 const ChatPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessageWithAuthor | null>(null);
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const { user, isAuthenticated, initialized } = useAuth();
-  const [activeChannelId, setActiveChannelId] = useState<string | null>(channelId || null);
+  const [activeChannelId, setActiveChannelId] = useState<string | null>(
+    isValidChannelId(channelId) ? channelId : null
+  );
 
   // Enhanced logging for debugging channel selection
   useEffect(() => {
-    logger.info(`Channel ID from URL params: ${channelId || 'none'}`);
-    logger.info(`Active channel ID in state: ${activeChannelId || 'none'}`);
+    logger.info(`Chat page mounted/updated`);
+    logger.info(`Channel ID from URL params: ${channelId || 'none'} (type: ${typeof channelId}, valid: ${isValidChannelId(channelId)})`);
+    logger.info(`Active channel ID in state: ${activeChannelId || 'none'} (type: ${typeof activeChannelId}, valid: ${isValidChannelId(activeChannelId)})`);
     
-    // Update active channel ID when URL param changes
-    if (channelId && channelId !== activeChannelId) {
+    // Update active channel ID when URL param changes and is valid
+    if (channelId && isValidChannelId(channelId) && channelId !== activeChannelId) {
       logger.info(`Updating active channel ID to match URL param: ${channelId}`);
       setActiveChannelId(channelId);
     }
@@ -46,10 +60,17 @@ const ChatPage = () => {
     }
   }, [isAuthenticated, user, initialized, navigate]);
 
-  // Setup real-time updates for the selected channel
-  useChannelMessagesRealtime(activeChannelId);
+  // Setup real-time updates only for valid channel IDs
+  useChannelMessagesRealtime(isValidChannelId(activeChannelId) ? activeChannelId : null);
 
   const handleChannelSelect = (newChannelId: string) => {
+    // Validate the channel ID before setting it
+    if (!isValidChannelId(newChannelId)) {
+      logger.error(`Invalid channel ID selected: ${newChannelId}`);
+      toast.error('Invalid channel selected');
+      return;
+    }
+    
     // Close thread panel when changing channels
     setSelectedMessage(null);
     setIsThreadOpen(false);
@@ -108,7 +129,7 @@ const ChatPage = () => {
       
       {/* Main Message Area */}
       <div className={`flex-1 flex flex-col overflow-hidden ${isThreadOpen ? 'hidden md:flex' : ''}`}>
-        {activeChannelId ? (
+        {isValidChannelId(activeChannelId) ? (
           <MessageFeed 
             channelId={activeChannelId}
             onMessageSelect={handleMessageSelect}
