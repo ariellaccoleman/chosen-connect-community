@@ -168,6 +168,16 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     }
   }
 
+  is(column: string, isNull: null | boolean): RepositoryQuery<T> {
+    try {
+      this.query = this.query.is(column, isNull);
+      return this;
+    } catch (error) {
+      logger.error(`Error in is operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.is(${column})`);
+    }
+  }
+
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
     try {
       this.query = this.query.order(column, options);
@@ -287,6 +297,7 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   neq(_column: string, _value: any): RepositoryQuery<T> { return this; }
   in(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
   ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
+  is(_column: string, _isNull: null | boolean): RepositoryQuery<T> { return this; }
   order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
   limit(_count: number): RepositoryQuery<T> { return this; }
   range(_from: number, _to: number): RepositoryQuery<T> { return this; }

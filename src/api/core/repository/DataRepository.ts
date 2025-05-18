@@ -94,6 +94,14 @@ export interface RepositoryQuery<T = any> {
   ilike(column: string, pattern: string): RepositoryQuery<T>;
   
   /**
+   * Filter for NULL values
+   * @param column Column name
+   * @param isNull Whether the value should be NULL (true) or NOT NULL (false)
+   * @returns The query builder for chaining
+   */
+  is(column: string, isNull: null | boolean): RepositoryQuery<T>;
+  
+  /**
    * Order results by a column
    * @param column Column to order by
    * @param options Options for ordering
