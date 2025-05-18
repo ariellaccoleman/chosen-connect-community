@@ -59,9 +59,12 @@ export const useChannelMessages = (
       }
       return response.data || [];
     },
-    onError: (error) => {
-      logger.error('Query error in useChannelMessages:', error);
-      queryClient.setQueryData(['chatMessages', channelId, offset, limit], []);
+    meta: {
+      // Use meta for additional options
+      errorHandler: (error: Error) => {
+        logger.error('Query error in useChannelMessages:', error);
+        queryClient.setQueryData(['chatMessages', channelId, offset, limit], []);
+      }
     }
   });
 };
