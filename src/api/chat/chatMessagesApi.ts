@@ -133,6 +133,12 @@ export const getThreadReplies = async (
 ): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
   return apiClient.query(async () => {
     try {
+      // Validate parentId
+      if (!parentId || parentId === 'null' || parentId === 'undefined') {
+        logger.error('Invalid parentId provided to getThreadReplies:', parentId);
+        return createErrorResponse(new Error("Invalid parent message ID"));
+      }
+      
       // Create repository for chat messages
       const repository = createRepository('chats');
       
@@ -219,7 +225,12 @@ export const sendChatMessage = async (
         return createErrorResponse(new Error("Invalid user ID"));
       }
       
-      logger.info(`Sending chat message: channel=${channelId}, user=${userId}, message=${message}`);
+      // Check if parentId is valid
+      if (parentId === 'null' || parentId === 'undefined') {
+        parentId = null;
+      }
+      
+      logger.info(`Sending chat message: channel=${channelId}, user=${userId}, parentId=${parentId || 'none'}, message=${message}`);
       
       const repository = createRepository('chats');
       

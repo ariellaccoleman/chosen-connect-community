@@ -58,9 +58,8 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
         logger.info(`Real-time channel subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
           logger.info('Successfully subscribed to real-time updates for channel');
-          toast.success('Connected to chat updates');
         } else if (status === 'CHANNEL_ERROR') {
-          logger.error('Error subscribing to real-time updates for channel');
+          logger.error('Error subscribing to real-time updates for channel', channelId);
           toast.error('Error connecting to chat. Please refresh the page.');
         }
       });
