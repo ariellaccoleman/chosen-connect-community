@@ -2,6 +2,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useEffect, useState } from "react";
 
 interface PublicRouteProps {
   children: React.ReactNode;
@@ -10,6 +11,8 @@ interface PublicRouteProps {
 const PublicRoute = ({ children }: PublicRouteProps) => {
   const { user, loading, initialized } = useAuth();
   const location = useLocation();
+  const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
+  const redirectChecked = useRef(false);
   
   // Get the intended destination from location state, or use dashboard as default
   const from = location.state?.from || "/dashboard";
@@ -19,8 +22,30 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
     loading, 
     initialized,
     pathname: location.pathname,
-    from
+    from,
+    shouldRedirect
   });
+
+  // Use effect with proper dependencies to prevent redirect loops
+  useEffect(() => {
+    // Only run this effect when we have definitive authentication information
+    if (!loading && initialized && !redirectChecked.current) {
+      // Mark that we've performed the redirect check
+      redirectChecked.current = true;
+      
+      // Debounce the redirect decision with a short delay
+      const timer = setTimeout(() => {
+        if (user) {
+          console.log("PublicRoute: User is authenticated, will redirect to", from);
+          setShouldRedirect(true);
+        } else {
+          console.log("PublicRoute: User is not authenticated, showing public content");
+        }
+      }, 100); 
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading, initialized, from]);
 
   // Show a loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
@@ -35,14 +60,13 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
     );
   }
 
-  // Only redirect if we're fully initialized and found a user
-  if (user && initialized) {
-    console.log("PublicRoute: User is authenticated, redirecting to", from);
+  // Redirect if necessary, but only after our effect has run
+  if (shouldRedirect) {
+    console.log("PublicRoute: Redirecting to", from);
     return <Navigate to={from} replace />;
   }
 
-  // If not authenticated, show the public content
-  console.log("PublicRoute: User is not authenticated, showing public content");
+  // If not authenticated or still determining, show the public content
   return <>{children}</>;
 };
 

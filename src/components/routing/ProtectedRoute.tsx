@@ -2,6 +2,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useEffect, useState } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,13 +11,37 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading, initialized } = useAuth();
   const location = useLocation();
+  const [shouldRedirect, setShouldRedirect] = useState<boolean>(false);
+  const redirectChecked = useRef(false);
   
   console.log("ProtectedRoute:", { 
     user: !!user, 
     loading, 
     initialized,
-    pathname: location.pathname
+    pathname: location.pathname,
+    shouldRedirect
   });
+
+  // Use effect with proper dependencies to prevent redirect loops
+  useEffect(() => {
+    // Only run this effect when we have definitive authentication information
+    if (!loading && initialized && !redirectChecked.current) {
+      // Mark that we've performed the redirect check
+      redirectChecked.current = true;
+      
+      // Debounce the redirect decision with a short delay
+      const timer = setTimeout(() => {
+        if (!user) {
+          console.log("ProtectedRoute: User is not authenticated, will redirect to auth");
+          setShouldRedirect(true);
+        } else {
+          console.log("ProtectedRoute: User is authenticated, showing protected content");
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, loading, initialized]);
 
   // Show loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
@@ -31,14 +56,13 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Only redirect if we're fully initialized and no user is found
-  if (!user && initialized) {
-    console.log("ProtectedRoute: User is not authenticated, redirecting to auth");
+  // Redirect if necessary, but only after our effect has run
+  if (shouldRedirect) {
+    console.log("ProtectedRoute: Redirecting to auth");
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 
-  // If authenticated, show the protected content
-  console.log("ProtectedRoute: User is authenticated, showing protected content");
+  // If authenticated or still determining, show the protected content
   return <>{children}</>;
 };
 

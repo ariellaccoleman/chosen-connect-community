@@ -1,5 +1,5 @@
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import BaseLayout from "@/components/layout/BaseLayout";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,16 +10,34 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const { user, loading, initialized } = useAuth();
+  const [ready, setReady] = useState(false);
+  const stateChecked = useRef(false);
 
   // Add debug log
   console.log("DashboardLayout - Auth state:", { 
     user: !!user, 
     loading,
-    initialized
+    initialized,
+    ready,
+    stateChecked: stateChecked.current
   });
 
-  // Show loading skeleton when auth state is loading or not initialized
-  if (loading || !initialized) {
+  // Use effect to debounce state determination
+  useEffect(() => {
+    if (!loading && initialized && !stateChecked.current) {
+      stateChecked.current = true;
+      
+      // Debounce the state determination
+      const timer = setTimeout(() => {
+        setReady(true);
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [loading, initialized]);
+
+  // Show loading skeleton when auth state is loading, not initialized, or still determining
+  if (loading || !initialized || !ready) {
     return (
       <BaseLayout>
         <div className="container py-8">

@@ -2,6 +2,7 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useRef, useEffect, useState } from "react";
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -10,14 +11,41 @@ interface AdminRouteProps {
 const AdminRoute = ({ children }: AdminRouteProps) => {
   const { user, loading, isAdmin, initialized } = useAuth();
   const location = useLocation();
+  const [redirectTo, setRedirectTo] = useState<string | null>(null);
+  const redirectChecked = useRef(false);
 
   console.log("AdminRoute:", { 
     user: !!user, 
     isAdmin, 
     loading, 
     initialized,
-    pathname: location.pathname 
+    pathname: location.pathname,
+    redirectTo
   });
+
+  // Use effect with proper dependencies to prevent redirect loops
+  useEffect(() => {
+    // Only run this effect when we have definitive authentication information
+    if (!loading && initialized && !redirectChecked.current) {
+      // Mark that we've performed the redirect check
+      redirectChecked.current = true;
+      
+      // Debounce the redirect decision with a short delay
+      const timer = setTimeout(() => {
+        if (!user) {
+          console.log("AdminRoute: User is not authenticated, will redirect to auth");
+          setRedirectTo("/auth");
+        } else if (!isAdmin) {
+          console.log("AdminRoute: User is not an admin, will redirect to dashboard");
+          setRedirectTo("/dashboard");
+        } else {
+          console.log("AdminRoute: User is an admin, showing admin content");
+        }
+      }, 100);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [user, isAdmin, loading, initialized]);
 
   // Show a loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
@@ -32,20 +60,16 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
     );
   }
 
-  // If not authenticated, redirect to auth page
-  if (!user && initialized) {
-    console.log("AdminRoute: User is not authenticated, redirecting to auth");
+  // Handle redirects if necessary
+  if (redirectTo === "/auth") {
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
-
-  // If not admin, redirect to dashboard
-  if (!isAdmin && initialized) {
-    console.log("AdminRoute: User is not an admin, redirecting to dashboard");
+  
+  if (redirectTo === "/dashboard") {
     return <Navigate to="/dashboard" replace />;
   }
 
-  // If authenticated and admin, show the protected content
-  console.log("AdminRoute: User is an admin, showing admin content");
+  // If authenticated and admin, or still determining, show the protected content
   return <>{children}</>;
 };
 

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/components/ui/sonner";
@@ -18,15 +18,26 @@ const Auth = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const redirectChecked = useRef(false);
   
   // Get the intended destination from location state
   const from = location.state?.from || "/dashboard";
   
-  // If user is already authenticated, redirect to the intended destination
+  // If user is already authenticated, redirect to the intended destination with debouncing
   useEffect(() => {
-    if (user && initialized && !loading) {
-      console.log("Auth page: User is authenticated, redirecting to", from);
-      navigate(from, { replace: true });
+    // Only run this effect when we have definitive authentication information
+    // and haven't already initiated a redirect
+    if (user && initialized && !loading && !redirectChecked.current) {
+      // Mark that we've checked for redirect
+      redirectChecked.current = true;
+      
+      // Debounce the redirect with a short delay
+      const timer = setTimeout(() => {
+        console.log("Auth page: User is authenticated, redirecting to", from);
+        navigate(from, { replace: true });
+      }, 150);
+      
+      return () => clearTimeout(timer);
     }
   }, [user, loading, navigate, from, initialized]);
   
@@ -48,7 +59,8 @@ const Auth = () => {
     initialized,
     authMode,
     from,
-    pathname: location.pathname
+    pathname: location.pathname,
+    redirectChecked: redirectChecked.current
   });
 
   const handleTabChange = (value: string) => {
@@ -64,7 +76,7 @@ const Auth = () => {
   };
 
   // If still loading, auth not initialized, or user is authenticated (redirect is handled by useEffect)
-  if (loading || !initialized || user) {
+  if (loading || !initialized || (user && redirectChecked.current)) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-chosen-blue"></div>
