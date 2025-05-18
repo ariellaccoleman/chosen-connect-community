@@ -14,14 +14,16 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
+    // Validate channel ID
     if (!channelId || channelId === 'null' || channelId === 'undefined') {
       logger.warn('No valid channelId provided to useChannelMessagesRealtime');
       return;
     }
 
+    // Validate authentication
     if (!isAuthenticated || !user) {
       logger.warn('User is not authenticated for real-time updates');
-      return; // Don't set up subscription if not authenticated
+      return; 
     }
     
     logger.info(`Setting up real-time subscription for channel: ${channelId} (user: ${user.id})`);
@@ -40,16 +42,23 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
         (payload) => {
           logger.info('Real-time: New channel message received:', payload);
           
-          // Invalidate the channel messages query to trigger a refetch
+          // Immediately invalidate and refetch the channel messages query
           queryClient.invalidateQueries({ 
-            queryKey: ['chatMessages', channelId] 
+            queryKey: ['chatMessages', channelId],
+            refetchType: 'all' // Force refetch instead of just invalidating
           });
+          
+          // Show toast notification for new messages not from current user
+          if (payload.new && payload.new.user_id !== user.id) {
+            toast.info('New message received');
+          }
         }
       )
       .subscribe((status) => {
         logger.info(`Real-time channel subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
           logger.info('Successfully subscribed to real-time updates for channel');
+          toast.success('Connected to chat updates');
         } else if (status === 'CHANNEL_ERROR') {
           logger.error('Error subscribing to real-time updates for channel');
           toast.error('Error connecting to chat. Please refresh the page.');
@@ -95,16 +104,22 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
         (payload) => {
           logger.info('Real-time: New thread reply received:', payload);
           
-          // Invalidate the thread messages query to trigger a refetch
+          // Invalidate and refetch the thread messages query
           queryClient.invalidateQueries({ 
-            queryKey: ['threadMessages', parentId] 
+            queryKey: ['threadMessages', parentId],
+            refetchType: 'all'
           });
           
           // Also update reply count for the parent message in all channel queries
           queryClient.invalidateQueries({
             queryKey: ['chatMessages'],
-            refetchType: 'none' // Don't actually refetch, just invalidate
+            refetchType: 'all' // Force refetch
           });
+          
+          // Notify if message is from someone else
+          if (payload.new && payload.new.user_id !== user.id) {
+            toast.info('New reply in thread');
+          }
         }
       )
       .subscribe((status) => {

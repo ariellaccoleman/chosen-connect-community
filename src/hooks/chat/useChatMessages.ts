@@ -1,10 +1,8 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getChannelMessages, sendChatMessage, getThreadReplies } from '@/api/chat/chatMessagesApi';
-import { ChatMessageCreate, ChatMessageWithAuthor } from '@/types/chat';
+import { ChatMessageWithAuthor } from '@/types/chat';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/utils/logger';
-import { ApiResponse } from '@/api/core/errorHandler';
 import { toast } from 'sonner';
 
 /**
@@ -27,7 +25,6 @@ export const useChannelMessages = (
 
       if (!isAuthenticated || !user) {
         logger.warn('User is not authenticated for fetching messages');
-        toast.error('Authentication required to view messages');
         throw new Error('Authentication required');
       }
 
@@ -35,18 +32,17 @@ export const useChannelMessages = (
       return getChannelMessages(channelId, limit, offset);
     },
     enabled: !!channelId && channelId !== 'null' && channelId !== 'undefined' && isAuthenticated,
-    refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
+    // Increase poll frequency temporarily for debugging
+    refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
     select: (response) => {
-      logger.info('Channel messages response:', response);
+      logger.info(`Channel messages response: ${response.data?.length || 0} messages`);
+      if (response.status === 'error') {
+        logger.error('Error in channel messages response:', response.error);
+        toast.error(response.error?.message || 'Failed to load messages');
+        return [];
+      }
       return response.data || [];
     },
-    meta: {
-      onError: (error: any) => {
-        const errorMessage = error?.message || 'Failed to load messages';
-        toast.error(errorMessage);
-        logger.error('Error in useChannelMessages:', error);
-      }
-    }
   });
 };
 

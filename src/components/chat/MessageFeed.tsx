@@ -8,6 +8,7 @@ import { useChat } from '@/hooks/chat/useChat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface MessageFeedProps {
   channelId: string;
@@ -25,8 +26,9 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
   const { activeChannel } = useChat();
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
-  logger.info(`MessageFeed - Channel: ${channelId}, Messages: ${messages.length}`);
+  logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
   // Scroll to bottom when messages change if we're already at the bottom
   useEffect(() => {
@@ -52,10 +54,18 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
         channelId,
         message: content
       });
+      
+      // Force refetch messages after sending
+      await refetch();
+      
       // Ensure we scroll to bottom after sending
       setShouldScrollToBottom(true);
+      
+      // Show feedback for successful message send
+      toast.success("Message sent");
     } catch (error) {
       logger.error('Failed to send message:', error);
+      toast.error('Failed to send message. Please try again.');
     }
   };
 
@@ -79,6 +89,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       <div 
         className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
         onScroll={handleScroll}
+        ref={messagesContainerRef}
       >
         {isLoading ? (
           <div className="flex justify-center items-center h-32">

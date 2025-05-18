@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import MobileDebug from '@/components/common/MobileDebug';
 import { Loader } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const ChatPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
@@ -26,10 +27,12 @@ const ChatPage = () => {
     logger.info(`Authentication state: ${isAuthenticated ? 'Authenticated' : 'Not authenticated'}`);
     logger.info(`User ID: ${user?.id || 'Not available'}`);
     
-    if (!isAuthenticated) {
+    if (!isAuthenticated && initialized) {
       logger.warn('User is not authenticated, this will cause RLS policies to block access');
+      toast.error('You must be logged in to access chat');
+      navigate('/auth', { replace: true });
     }
-  }, [channelId, isAuthenticated, user]);
+  }, [channelId, isAuthenticated, user, initialized, navigate]);
 
   // Setup real-time updates for the selected channel
   useChannelMessagesRealtime(channelId);
@@ -58,6 +61,21 @@ const ChatPage = () => {
         <div className="text-center">
           <Loader size={36} className="mx-auto animate-spin text-primary mb-4" />
           <p className="text-gray-500 dark:text-gray-400">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is not authenticated but initialization is complete, show login prompt
+  if (!isAuthenticated && initialized) {
+    return (
+      <div className="h-[calc(100vh-64px)] pt-16 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+          <p className="mb-6 text-gray-600 dark:text-gray-300">You need to be logged in to access the chat functionality.</p>
+          <Button onClick={() => navigate('/auth')} size="lg">
+            Log In / Sign Up
+          </Button>
         </div>
       </div>
     );
@@ -127,7 +145,7 @@ const Chat = () => {
 
   return (
     <ErrorBoundary name="ChatPage">
-      {initialized && isAuthenticated ? <ChatPage /> : null}
+      <ChatPage />
     </ErrorBoundary>
   );
 };
