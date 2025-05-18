@@ -31,11 +31,15 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
-  // Scroll to bottom when messages change if we're already at the bottom
+  // Ensure we scroll to the bottom when messages change or when a new message is sent
   useEffect(() => {
     if (shouldScrollToBottom && viewportRef.current) {
-      const scrollElement = viewportRef.current;
-      scrollElement.scrollTop = scrollElement.scrollHeight;
+      setTimeout(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+          logger.info('Scrolling to bottom after messages update');
+        }
+      }, 10); // Small delay to ensure DOM is updated
     }
   }, [messages, shouldScrollToBottom]);
   
@@ -47,6 +51,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
     // If we're at the bottom (or close), enable auto-scrolling
     const atBottom = scrollHeight - scrollTop - clientHeight < 100;
     setShouldScrollToBottom(atBottom);
+    logger.info(`Scroll position: ${scrollTop}, scrollHeight: ${scrollHeight}, clientHeight: ${clientHeight}, atBottom: ${atBottom}`);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -54,6 +59,10 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
 
     try {
       logger.info(`Sending message in channel ${channelId}: ${content}`);
+      
+      // Force scroll to bottom when sending a new message
+      setShouldScrollToBottom(true);
+      
       await sendMessage.mutateAsync({ 
         channelId,
         message: content
@@ -62,8 +71,14 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       // Force refetch messages after sending
       await refetch();
       
-      // Ensure we scroll to bottom after sending
-      setShouldScrollToBottom(true);
+      // Ensure we scroll after message is sent and displayed
+      setTimeout(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+          logger.info('Forced scroll to bottom after sending message');
+        }
+      }, 100);
+      
     } catch (error) {
       logger.error('Failed to send message:', error);
     }
