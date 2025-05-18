@@ -118,7 +118,22 @@ const Events: React.FC = () => {
                   className="relative bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => handleViewEvent(event.id)}
                 >
-                  <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
+                  {/* Registration button positioned in top right */}
+                  <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
+                    <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                      <EventCardRegistrationButton eventId={event.id} />
+                    </div>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      View
+                    </Button>
+                  </div>
+                  
+                  <h3 className="font-semibold text-lg mb-2 pr-24">{event.title}</h3>
                   <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
                   
                   <div className="text-sm text-gray-600 mb-2 flex items-center">
@@ -134,22 +149,9 @@ const Events: React.FC = () => {
                     </div>
                   )}
                   
-                  <div className="mt-3 pt-3 border-t flex justify-between items-center">
+                  <div className="mt-3 pt-3 border-t">
                     <div className="text-sm text-gray-500">
                       {event.host && `Hosted by: ${event.host.first_name} ${event.host.last_name}`}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                        <EventCardRegistrationButton eventId={event.id} />
-                      </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        View
-                      </Button>
                     </div>
                   </div>
                 </div>
