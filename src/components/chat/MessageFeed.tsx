@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useChannelMessages, useSendMessage } from '@/hooks/chat';
+import { useChannelMessages, useSendMessage } from '@/hooks/chat/useChatMessageFactory';
 import MessageCard from '@/components/chat/MessageCard';
 import MessageInput from '@/components/chat/MessageInput';
 import { Loader, AlertCircle } from 'lucide-react';

@@ -1,15 +1,21 @@
 
+import { createQueryHooks } from '@/hooks/core/factory';
+import { chatMessageApi, getChannelMessages, getThreadReplies, sendChatMessage } from '@/api/chat/chatMessageApiFactory';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getChannelMessages, sendChatMessage, getThreadReplies } from '@/api/chat/chatMessagesApi';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { ApiResponse } from '@/api/core/errorHandler';
 
+// Create standardized hooks using the factory pattern
+export const chatMessageHooks = createQueryHooks(
+  { name: 'chatMessage', pluralName: 'chatMessages' },
+  chatMessageApi
+);
+
 /**
- * Hook for fetching channel messages
- * @deprecated Use useChannelMessages from useChatMessageFactory.ts instead
+ * Hook for fetching channel messages with factory pattern support
  */
 export const useChannelMessages = (
   channelId: string | null | undefined,
@@ -39,7 +45,8 @@ export const useChannelMessages = (
       return getChannelMessages(channelId, limit, offset);
     },
     enabled: !!channelId && channelId !== 'null' && channelId !== 'undefined' && isAuthenticated,
-    refetchInterval: 5000,
+    // Increase poll frequency temporarily for debugging
+    refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       logger.info(`Channel messages response: ${response.data?.length || 0} messages`);
       if (response.status === 'error') {
@@ -54,7 +61,6 @@ export const useChannelMessages = (
 
 /**
  * Hook for sending a new message to a channel
- * @deprecated Use useSendMessage from useChatMessageFactory.ts instead
  */
 export const useSendMessage = () => {
   const queryClient = useQueryClient();
@@ -114,7 +120,6 @@ export const useSendMessage = () => {
 
 /**
  * Hook for fetching thread replies
- * @deprecated Use useThreadMessages from useChatMessageFactory.ts instead
  */
 export const useThreadMessages = (
   messageId: string | null | undefined,
@@ -143,7 +148,7 @@ export const useThreadMessages = (
       return getThreadReplies(messageId as string, limit, offset);
     },
     enabled: !!messageId && isAuthenticated,
-    refetchInterval: 10000,
+    refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       if (response.status === 'error' && response.error) {
         toast.error('Failed to load thread replies');
@@ -157,7 +162,6 @@ export const useThreadMessages = (
 
 /**
  * Hook for sending a reply in a thread
- * @deprecated Use useSendReply from useChatMessageFactory.ts instead 
  */
 export const useSendReply = () => {
   const sendMessageMutation = useSendMessage();
