@@ -30,7 +30,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
       // Mark that we've performed the redirect check
       redirectChecked.current = true;
       
-      // Debounce the redirect decision with a short delay
+      // Increase debounce delay to allow auth state to stabilize
       const timer = setTimeout(() => {
         if (!user) {
           console.log("ProtectedRoute: User is not authenticated, will redirect to auth");
@@ -38,7 +38,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
         } else {
           console.log("ProtectedRoute: User is authenticated, showing protected content");
         }
-      }, 100);
+      }, 250); // Increased from 100ms to 250ms
       
       return () => clearTimeout(timer);
     }

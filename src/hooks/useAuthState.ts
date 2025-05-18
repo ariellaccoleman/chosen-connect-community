@@ -28,20 +28,29 @@ export const useAuthState = () => {
         if (mounted) {
           setUser(session.user);
           setIsAdmin(hasAdminRole);
-          setLoading(false);
-          setInitialized(true);
+          
+          // Only update loading and initialized if we weren't already initialized
+          // This prevents unnecessary re-renders
+          if (!initialized) {
+            setLoading(false);
+            setInitialized(true);
+          }
         }
       } else {
         if (mounted) {
           setUser(null);
           setIsAdmin(false);
-          setLoading(false);
-          setInitialized(true);
+          
+          // Only update loading and initialized if we weren't already initialized
+          if (!initialized) {
+            setLoading(false);
+            setInitialized(true);
+          }
         }
       }
     });
 
-    // Then check the current session
+    // Then check the current session with a more robust approach
     const getSession = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -71,8 +80,7 @@ export const useAuthState = () => {
           console.log("No active session found");
         }
         
-        // Always set initialized to true once we've checked for a session,
-        // regardless of whether we found one or not
+        // Always set these states last to avoid race conditions
         setInitialized(true);
         setLoading(false);
       } catch (err) {

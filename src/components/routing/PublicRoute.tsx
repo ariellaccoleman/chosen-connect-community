@@ -34,7 +34,7 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
       // Mark that we've performed the redirect check
       redirectChecked.current = true;
       
-      // Debounce the redirect decision with a short delay
+      // Increase debounce delay to allow auth state to stabilize
       const timer = setTimeout(() => {
         if (user) {
           console.log("PublicRoute: User is authenticated, will redirect to", from);
@@ -42,7 +42,7 @@ const PublicRoute = ({ children }: PublicRouteProps) => {
         } else {
           console.log("PublicRoute: User is not authenticated, showing public content");
         }
-      }, 100); 
+      }, 250); // Increased from 100ms to 250ms
       
       return () => clearTimeout(timer);
     }

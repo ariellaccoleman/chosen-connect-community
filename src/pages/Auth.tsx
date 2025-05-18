@@ -31,11 +31,11 @@ const Auth = () => {
       // Mark that we've checked for redirect
       redirectChecked.current = true;
       
-      // Debounce the redirect with a short delay
+      // Increase debounce delay to allow auth state to stabilize
       const timer = setTimeout(() => {
         console.log("Auth page: User is authenticated, redirecting to", from);
         navigate(from, { replace: true });
-      }, 150);
+      }, 300); // Increased from 150ms to 300ms
       
       return () => clearTimeout(timer);
     }

@@ -31,7 +31,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
       // Mark that we've performed the redirect check
       redirectChecked.current = true;
       
-      // Debounce the redirect decision with a short delay
+      // Increase debounce delay to allow auth state to stabilize
       const timer = setTimeout(() => {
         if (!user) {
           console.log("AdminRoute: User is not authenticated, will redirect to auth");
@@ -42,7 +42,7 @@ const AdminRoute = ({ children }: AdminRouteProps) => {
         } else {
           console.log("AdminRoute: User is an admin, showing admin content");
         }
-      }, 100);
+      }, 250); // Increased from 100ms to 250ms
       
       return () => clearTimeout(timer);
     }

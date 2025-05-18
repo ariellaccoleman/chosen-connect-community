@@ -22,15 +22,15 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     stateChecked: stateChecked.current
   });
 
-  // Use effect to debounce state determination
+  // Use effect to debounce state determination with increased timeout
   useEffect(() => {
     if (!loading && initialized && !stateChecked.current) {
       stateChecked.current = true;
       
-      // Debounce the state determination
+      // Increase debounce delay
       const timer = setTimeout(() => {
         setReady(true);
-      }, 100);
+      }, 250); // Increased from 100ms to 250ms
       
       return () => clearTimeout(timer);
     }
