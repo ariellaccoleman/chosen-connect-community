@@ -119,7 +119,7 @@ export const getChannelMessages = async (
       
       // If there are messages, get reply counts for them
       if (messagesToUpdate.length > 0) {
-        const messageIds = messagesToUpdate.map(msg => msg.id);
+        const messageIds = messagesToUpdate.map(msg => (msg as any).id);
         const countsRepo = createRepository('chats');
         
         // Use select with aggregation
@@ -319,14 +319,17 @@ export const sendChatMessage = async (
         return createErrorResponse(new Error("Failed to create message: No data returned"));
       }
       
+      // Type cast data to ensure we can access its properties safely
+      const typedData = data as Record<string, any>;
+      
       const chatMessage: ChatMessage = {
-        id: data.id,
-        channel_id: data.channel_id,
-        parent_id: data.parent_id,
-        user_id: data.user_id,
-        message: data.message,
-        created_at: data.created_at,
-        updated_at: data.updated_at || data.created_at
+        id: typedData.id,
+        channel_id: typedData.channel_id,
+        parent_id: typedData.parent_id,
+        user_id: typedData.user_id,
+        message: typedData.message,
+        created_at: typedData.created_at,
+        updated_at: typedData.updated_at || typedData.created_at
       };
       
       return createSuccessResponse(chatMessage);
