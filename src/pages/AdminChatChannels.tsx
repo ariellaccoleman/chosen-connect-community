@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import ChatChannelList from '@/components/admin/chat/ChatChannelList';
 import { useChatChannels, useDeleteChatChannel } from '@/hooks/chat/useChatChannels';
+import { ChatChannel } from '@/types/chat';
 
 export default function AdminChatChannels() {
   const { data: channels = [], isLoading } = useChatChannels();
@@ -39,7 +40,7 @@ export default function AdminChatChannels() {
       
       <div className="bg-white dark:bg-gray-800 rounded-md shadow p-6">
         <ChatChannelList 
-          channels={channels} 
+          channels={channels as ChatChannel[]} 
           isLoading={isLoading} 
           onDelete={handleDeleteChannel}
           isDeleting={deleteMutation.isPending}

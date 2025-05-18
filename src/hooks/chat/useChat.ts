@@ -1,6 +1,7 @@
 
 import { useParams } from 'react-router-dom';
 import { useChatChannelById } from './useChatChannels';
+import { ChatChannel } from '@/types/chat';
 
 /**
  * Hook for accessing chat context data
@@ -11,6 +12,6 @@ export const useChat = () => {
 
   return {
     channelId,
-    activeChannel
+    activeChannel: activeChannel as ChatChannel | null
   };
 };

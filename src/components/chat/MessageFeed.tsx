@@ -55,9 +55,8 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   };
 
   // Extract the channel data from activeChannel response
-  const channelData = activeChannel || { name: "Loading...", description: "No description" };
-  const channelName = channelData.name || 'Loading...';
-  const channelDescription = channelData.description || 'No description';
+  const channelName = activeChannel?.name || 'Loading...';
+  const channelDescription = activeChannel?.description || 'No description';
 
   return (
     <>
@@ -111,6 +110,6 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       </div>
     </>
   );
-}
+};
 
 export default MessageFeed;

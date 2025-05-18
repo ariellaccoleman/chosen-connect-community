@@ -3,7 +3,7 @@ import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useChatChannelById, useUpdateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
-import { ChatChannelUpdate } from '@/types/chat';
+import { ChatChannel, ChatChannelUpdate } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -67,6 +67,8 @@ export default function EditChatChannel() {
     );
   }
   
+  const channelData = channel as unknown as ChatChannel;
+  
   return (
     <div className="container mx-auto py-6">
       <Link to="/admin/chat/channels" className="text-sm text-muted-foreground hover:underline">
@@ -84,7 +86,7 @@ export default function EditChatChannel() {
         <ChatChannelForm 
           onSubmit={handleUpdateChannel}
           isSubmitting={updateMutation.isPending}
-          defaultValues={channel}
+          defaultValues={channelData}
           isEditMode={true}
           existingChannelId={id}
         />
