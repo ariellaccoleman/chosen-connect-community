@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Loader } from 'lucide-react';
+import { Loader, Bug } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +41,47 @@ const MobileDebug = () => {
         queryResult = { success: false, error: queryError.message };
       }
       
+      // Test querying the current channel
+      let channelResult;
+      if (channelId) {
+        try {
+          const { data, error } = await supabase
+            .from('chat_channels')
+            .select('*')
+            .eq('id', channelId)
+            .single();
+          
+          channelResult = { 
+            success: !error, 
+            exists: !!data, 
+            data: data ? { name: data.name, is_public: data.is_public } : null,
+            error: error?.message 
+          };
+        } catch (channelError: any) {
+          channelResult = { success: false, error: channelError.message };
+        }
+      }
+      
+      // Test querying messages
+      let messagesResult;
+      if (channelId) {
+        try {
+          const { data, error } = await supabase
+            .from('chats')
+            .select('id')
+            .eq('channel_id', channelId)
+            .limit(5);
+          
+          messagesResult = { 
+            success: !error, 
+            count: data?.length || 0,
+            error: error?.message 
+          };
+        } catch (messagesError: any) {
+          messagesResult = { success: false, error: messagesError.message };
+        }
+      }
+      
       // Gather basic user and auth info
       const info = {
         auth: {
@@ -54,6 +95,8 @@ const MobileDebug = () => {
         },
         chat: {
           channelId,
+          channelInfo: channelResult,
+          messages: messagesResult,
           queryTest: queryResult
         },
         route: window.location.pathname,
@@ -73,9 +116,44 @@ const MobileDebug = () => {
       setIsLoading(true);
       await supabase.auth.refreshSession();
       await gatherDebugInfo();
-      setDebugInfo({ ...debugInfo, message: 'Auth refreshed' });
     } catch (error: any) {
       setDebugInfo({ ...debugInfo, refreshError: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const testSendMessage = async () => {
+    if (!channelId || !user?.id) return;
+    
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('chats')
+        .insert({
+          channel_id: channelId,
+          user_id: user.id,
+          message: "Debug test message"
+        })
+        .select();
+      
+      setDebugInfo({
+        ...debugInfo,
+        testMessage: {
+          success: !error,
+          data: data ? { id: data[0]?.id } : null,
+          error: error?.message
+        }
+      });
+    } catch (error: any) {
+      setDebugInfo({
+        ...debugInfo,
+        testMessage: {
+          success: false,
+          error: error.message
+        }
+      });
     } finally {
       setIsLoading(false);
     }
@@ -89,6 +167,7 @@ const MobileDebug = () => {
         variant="ghost"
         onClick={toggleVisibility}
       >
+        <Bug size={12} className="mr-1" />
         Debug
       </Button>
     );
@@ -101,7 +180,7 @@ const MobileDebug = () => {
         <Button size="sm" variant="ghost" onClick={toggleVisibility}>Close</Button>
       </div>
       
-      <div className="flex space-x-2 mb-2">
+      <div className="flex flex-wrap gap-2 mb-2">
         <Button 
           size="sm" 
           variant="outline" 
@@ -120,6 +199,16 @@ const MobileDebug = () => {
         >
           {isLoading && <Loader size={12} className="mr-1 animate-spin" />}
           Refresh Auth
+        </Button>
+
+        <Button 
+          size="sm" 
+          variant="outline" 
+          onClick={testSendMessage}
+          disabled={isLoading || !channelId}
+        >
+          {isLoading && <Loader size={12} className="mr-1 animate-spin" />}
+          Test Message
         </Button>
       </div>
       

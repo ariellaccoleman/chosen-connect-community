@@ -14,8 +14,8 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (!channelId) {
-      logger.warn('No channelId provided to useChannelMessagesRealtime');
+    if (!channelId || channelId === 'null' || channelId === 'undefined') {
+      logger.warn('No valid channelId provided to useChannelMessagesRealtime');
       return;
     }
 
@@ -72,7 +72,8 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
   const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
-    if (!parentId) return;
+    if (!parentId || parentId === 'null' || parentId === 'undefined') return;
+    
     if (!isAuthenticated || !user) {
       logger.warn('User is not authenticated for real-time thread updates');
       return;

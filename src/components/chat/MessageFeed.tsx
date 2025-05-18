@@ -3,10 +3,11 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useChannelMessages, useSendMessage } from '@/hooks/chat';
 import MessageCard from '@/components/chat/MessageCard';
 import MessageInput from '@/components/chat/MessageInput';
-import { Loader } from 'lucide-react';
+import { Loader, AlertCircle } from 'lucide-react';
 import { useChat } from '@/hooks/chat/useChat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { logger } from '@/utils/logger';
+import { Button } from '@/components/ui/button';
 
 interface MessageFeedProps {
   channelId: string;
@@ -19,7 +20,7 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   onMessageSelect,
   selectedMessageId
 }) => {
-  const { data: messages = [], isLoading } = useChannelMessages(channelId);
+  const { data: messages = [], isLoading, isError, error, refetch } = useChannelMessages(channelId);
   const sendMessage = useSendMessage();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
@@ -82,6 +83,17 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
         {isLoading ? (
           <div className="flex justify-center items-center h-32">
             <Loader size={24} className="animate-spin text-gray-500" />
+          </div>
+        ) : isError ? (
+          <div className="flex flex-col items-center justify-center text-center py-8">
+            <AlertCircle size={32} className="text-red-500 mb-2" />
+            <p className="text-red-500 font-medium">Error loading messages</p>
+            <p className="text-gray-500 dark:text-gray-400 mb-4">
+              {error?.message || 'Something went wrong'}
+            </p>
+            <Button onClick={() => refetch()} variant="outline">
+              Try Again
+            </Button>
           </div>
         ) : messages.length > 0 ? (
           <>

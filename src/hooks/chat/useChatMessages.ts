@@ -20,8 +20,8 @@ export const useChannelMessages = (
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async () => {
-      if (!channelId) {
-        logger.warn('No channelId provided to useChannelMessages');
+      if (!channelId || channelId === 'null' || channelId === 'undefined') {
+        logger.warn('No valid channelId provided to useChannelMessages');
         return { data: [] };
       }
 
@@ -34,7 +34,7 @@ export const useChannelMessages = (
       logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
       return getChannelMessages(channelId, limit, offset);
     },
-    enabled: !!channelId && isAuthenticated,
+    enabled: !!channelId && channelId !== 'null' && channelId !== 'undefined' && isAuthenticated,
     refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
     select: (response) => {
       logger.info('Channel messages response:', response);
@@ -67,6 +67,12 @@ export const useSendMessage = () => {
         logger.error('User not authenticated when trying to send message');
         toast.error('You need to be logged in to send messages');
         throw new Error('User is not authenticated');
+      }
+      
+      if (!channelId || channelId === 'null' || channelId === 'undefined') {
+        logger.error('Invalid channelId when trying to send message:', channelId);
+        toast.error('Cannot send message: Invalid channel');
+        throw new Error('Invalid channel ID');
       }
       
       logger.info(`Sending message to channel ${channelId}: ${message} (user: ${user.id})`);

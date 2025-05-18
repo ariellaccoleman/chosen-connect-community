@@ -11,13 +11,14 @@ import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import MobileDebug from '@/components/common/MobileDebug';
+import { Loader } from 'lucide-react';
 
 const ChatPage = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const [selectedMessage, setSelectedMessage] = useState<ChatMessageWithAuthor | null>(null);
   const [isThreadOpen, setIsThreadOpen] = useState(false);
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, initialized } = useAuth();
 
   // Log the current channel ID and auth state to help debug
   useEffect(() => {
@@ -49,6 +50,18 @@ const ChatPage = () => {
   const handleCloseThread = () => {
     setIsThreadOpen(false);
   };
+
+  // If authentication is still initializing, show a loading state
+  if (!initialized) {
+    return (
+      <div className="h-[calc(100vh-64px)] pt-16 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="text-center">
+          <Loader size={36} className="mx-auto animate-spin text-primary mb-4" />
+          <p className="text-gray-500 dark:text-gray-400">Loading chat...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-[calc(100vh-64px)] pt-16 flex flex-col sm:flex-row bg-gray-50 dark:bg-gray-900">
