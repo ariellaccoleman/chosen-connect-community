@@ -80,9 +80,6 @@ export const getRegistrationCount = async (eventId: string): Promise<number> => 
  */
 export const getEventRegistrants = async (eventId: string): Promise<EventRegistration[]> => {
   try {
-    // Using custom query to join with profiles
-    const result = await eventRegistrationApiFactory.tableName;
-    
     // For now, we'll use the old implementation approach for this complex query
     // We'll refactor the underlying repository layer in a future update
     const { data, error } = await apiClient.query(async (client) => {

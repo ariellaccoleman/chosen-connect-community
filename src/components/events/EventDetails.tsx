@@ -24,7 +24,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
     data: registrants = [],
     isLoading: registrantsLoading,
     error: registrantsError
-  } = useEventRegistrants(event.id, isAdmin);
+  } = useEventRegistrants(event.id);
   
   // Explicitly log auth status and host matching for debugging
   React.useEffect(() => {
