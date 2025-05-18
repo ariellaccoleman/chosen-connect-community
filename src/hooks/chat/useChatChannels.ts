@@ -16,20 +16,24 @@ const chatChannelHooks = createQueryHooks(
 // Modified hooks to ensure proper data handling
 export const useChatChannels = () => {
   const result = chatChannelHooks.useList();
+  
   // Transform the result to ensure data is an array
+  // The original issue was that we weren't properly extracting the data from the ApiResponse
   return {
     ...result,
-    data: result.data || [],
+    data: Array.isArray(result.data?.data) 
+      ? result.data.data 
+      : Array.isArray(result.data) 
+        ? result.data 
+        : [],
   };
 };
 
 export const useChatChannelById = (channelId: string | null | undefined) => {
   const result = chatChannelHooks.useById(channelId);
-  // Transform the result to ensure data is properly returned
-  return {
-    ...result,
-    data: result.data || null,
-  };
+  
+  // Return the raw response to handle ApiResponse<ChatChannel> type properly
+  return result;
 };
 
 // Re-export other hooks with the original implementation

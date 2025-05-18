@@ -17,13 +17,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({ selectedChannelId, onSelectCh
   const { isAdmin } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Make sure channels is treated as an array before filtering
-  const channelsArray = Array.isArray(channels) ? channels : [];
-  
   // Filter channels based on search term
-  const filteredChannels = channelsArray.filter(channel => 
+  const filteredChannels = channels.filter(channel => 
     channel.name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  console.log('Chat channels loaded:', channels.length, channels);
 
   return (
     <div className="h-full flex flex-col">
