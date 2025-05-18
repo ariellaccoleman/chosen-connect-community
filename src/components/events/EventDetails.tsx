@@ -8,6 +8,8 @@ import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import EventRegistrationButton from "./EventRegistrationButton";
+import { useEventRegistrants } from "@/hooks/events/useEventRegistrants";
+import EventRegistrantsList from "./EventRegistrantsList";
 
 interface EventDetailsProps {
   event: EventWithDetails;
@@ -16,6 +18,13 @@ interface EventDetailsProps {
 
 const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
   const { user } = useAuth();
+  
+  // Fetch registrants if user is the host
+  const { 
+    data: registrants = [],
+    isLoading: registrantsLoading,
+    error: registrantsError
+  } = useEventRegistrants(event.id, isAdmin);
   
   // Explicitly log auth status and host matching for debugging
   React.useEffect(() => {
@@ -97,6 +106,19 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
         </h3>
         <EventRegistrationButton eventId={event.id} />
       </div>
+      
+      {/* Registrants list - only visible to host */}
+      {isAdmin && (
+        <div className="my-6">
+          <EventRegistrantsList 
+            eventId={event.id} 
+            isHost={isAdmin}
+            registrants={registrants}
+            isLoading={registrantsLoading}
+            error={registrantsError}
+          />
+        </div>
+      )}
       
       {/* Description */}
       <div className="mt-6">

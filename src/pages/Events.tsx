@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
 import TagList from "@/components/tags/TagList";
+import EventCardRegistrationButton from "@/components/events/EventCardRegistrationButton";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
@@ -53,8 +55,6 @@ const Events: React.FC = () => {
     navigate(`/events/${eventId}`);
   };
 
-  
-  
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
@@ -113,10 +113,9 @@ const Events: React.FC = () => {
             <p className="text-sm text-gray-500 mb-4">Found {events.length} event(s)</p>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {events.map((event) => (
-                
                 <div 
                   key={event.id} 
-                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                  className="relative bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
                   onClick={() => handleViewEvent(event.id)}
                 >
                   <h3 className="font-semibold text-lg mb-2">{event.title}</h3>
@@ -139,14 +138,19 @@ const Events: React.FC = () => {
                     <div className="text-sm text-gray-500">
                       {event.host && `Hosted by: ${event.host.first_name} ${event.host.last_name}`}
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      View
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+                        <EventCardRegistrationButton eventId={event.id} />
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        View
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}

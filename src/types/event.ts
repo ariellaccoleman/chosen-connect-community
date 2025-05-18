@@ -33,6 +33,7 @@ export type EventRegistration = {
   event_id: string;
   profile_id: string;
   created_at: string;
+  profile?: Profile; // Add optional profile field for joined data
 };
 
 // Registration status for the current user

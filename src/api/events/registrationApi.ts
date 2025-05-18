@@ -124,6 +124,37 @@ export const eventRegistrationApi = {
       logger.error("Failed to get registration count:", error);
       return createErrorResponse(error);
     }
+  },
+
+  /**
+   * Get all registrations with user profiles for an event
+   * Only the event host should be able to access this
+   */
+  async getEventRegistrants(eventId: string): Promise<ApiResponse<EventRegistration[]>> {
+    try {
+      logger.info(`Getting registrations with profiles for event ${eventId}`);
+      
+      return await apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from("event_registrations")
+          .select(`
+            id, 
+            event_id,
+            profile_id,
+            created_at,
+            profile:profiles(id, first_name, last_name, email, avatar_url, headline)
+          `)
+          .eq("event_id", eventId)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return createSuccessResponse(data as EventRegistration[]);
+      });
+    } catch (error) {
+      logger.error("Failed to get event registrants:", error);
+      return createErrorResponse(error);
+    }
   }
 };
 
@@ -132,5 +163,6 @@ export const {
   registerForEvent,
   cancelRegistration,
   isUserRegistered,
-  getRegistrationCount
+  getRegistrationCount,
+  getEventRegistrants
 } = eventRegistrationApi;
