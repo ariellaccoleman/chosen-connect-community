@@ -1,13 +1,12 @@
-
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useThreadMessages, useSendReply } from '@/hooks/chat/useChatMessageFactory';
-import { useThreadRepliesRealtime } from '@/hooks/chat/useChatRealtime';
 import { ChatMessageWithAuthor } from '@/types/chat';
-import MessageCard from './MessageCard';
-import MessageInput from './MessageInput';
+import MessageCard from '@/components/chat/MessageCard';
+import MessageInput from '@/components/chat/MessageInput';
 import { X, Loader, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { logger } from '@/utils/logger';
+import { useThreadRepliesRealtime } from '@/hooks/chat/useChatRealtime';
 
 interface ThreadPanelProps {
   parentMessage: ChatMessageWithAuthor;
@@ -16,105 +15,101 @@ interface ThreadPanelProps {
 }
 
 const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, channelId, onClose }) => {
-  const { data: replies = [], isLoading, isError, error, refetch } = useThreadMessages(parentMessage.id);
+  const { data: replies = [], isLoading, isError, refetch } = useThreadMessages(parentMessage.id);
   const sendReply = useSendReply();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   
-  // Setup real-time updates for the thread
+  // Set up real-time updates for this thread
   useThreadRepliesRealtime(parentMessage.id);
   
-  // Scroll to bottom when replies change if we're already at the bottom
+  // Scroll to bottom when new replies come in
   useEffect(() => {
-    if (shouldScrollToBottom && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
     }
-  }, [replies, shouldScrollToBottom]);
+  }, [replies]);
   
-  // Handle scroll events to determine if we should auto-scroll
-  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    // If we're at the bottom (or close), enable auto-scrolling
-    const atBottom = scrollHeight - scrollTop - clientHeight < 100;
-    setShouldScrollToBottom(atBottom);
-  };
-
   const handleSendReply = async (content: string) => {
     if (!content.trim()) return;
-
+    
     try {
-      // Ensure we have valid IDs
-      if (!parentMessage.id || !channelId) {
-        throw new Error("Missing required IDs for replying");
-      }
-      
       logger.info(`Sending reply to message ${parentMessage.id}: ${content}`);
       
-      // Send the reply
-      await sendReply.mutateAsync({ 
+      await sendReply.mutateAsync({
         channelId,
         message: content,
         parentId: parentMessage.id
       });
       
-      // Force refetch replies after sending
+      // Force refetch after sending
       await refetch();
       
-      // Ensure we scroll to bottom after sending
-      setShouldScrollToBottom(true);
+      // Scroll to bottom after sending
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 100);
+      
     } catch (error) {
       logger.error('Failed to send reply:', error);
     }
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col h-full">
       {/* Thread header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800">
-        <h3 className="text-lg font-medium">Thread</h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>
-          <X size={18} />
-          <span className="sr-only">Close thread</span>
-        </Button>
+      <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center bg-white dark:bg-gray-800">
+        <h3 className="font-medium">Thread</h3>
+        <button 
+          onClick={onClose}
+          className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+        >
+          <X size={20} />
+        </button>
       </div>
       
-      {/* Parent message */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-        <MessageCard message={parentMessage} showReplies={false} />
-      </div>
-      
-      {/* Replies */}
-      <div 
-        className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50 dark:bg-gray-900"
-        onScroll={handleScroll}
-      >
+      {/* Thread messages */}
+      <div className="flex-1 overflow-y-auto p-4" ref={messagesContainerRef}>
+        {/* Parent Message */}
+        <div className="pb-4 mb-4 border-b border-gray-200 dark:border-gray-700">
+          <MessageCard 
+            message={parentMessage} 
+            showReplies={false} 
+          />
+        </div>
+        
+        {/* Replies */}
         {isLoading ? (
-          <div className="flex justify-center items-center h-32">
+          <div className="flex justify-center py-8">
             <Loader size={24} className="animate-spin text-gray-500" />
           </div>
         ) : isError ? (
-          <div className="flex flex-col items-center justify-center text-center py-8">
-            <AlertCircle size={32} className="text-red-500 mb-2" />
-            <p className="text-red-500 font-medium">Error loading replies</p>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {error?.message || 'Something went wrong'}
-            </p>
-            <Button onClick={() => refetch()} variant="outline">
+          <div className="text-center py-8">
+            <AlertCircle size={24} className="mx-auto mb-2 text-red-500" />
+            <p className="text-red-500">Error loading replies</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => refetch()} 
+              className="mt-2"
+            >
               Try Again
             </Button>
           </div>
-        ) : replies.length > 0 ? (
-          <>
-            {replies.map(reply => (
-              <MessageCard key={reply.id} message={reply} showReplies={false} />
-            ))}
-            <div ref={messagesEndRef} />
-          </>
+        ) : replies.length === 0 ? (
+          <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+            No replies yet. Start the conversation!
+          </div>
         ) : (
-          <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              No replies yet. Start the conversation!
-            </p>
+          <div className="space-y-4">
+            {replies.map((reply) => (
+              <MessageCard 
+                key={reply.id} 
+                message={reply} 
+                showReplies={false}
+              />
+            ))}
           </div>
         )}
       </div>
@@ -122,10 +117,9 @@ const ThreadPanel: React.FC<ThreadPanelProps> = ({ parentMessage, channelId, onC
       {/* Reply input */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <MessageInput 
-          onSendMessage={handleSendReply} 
-          placeholder="Reply to thread..."
+          onSendMessage={handleSendReply}
+          placeholder="Reply in thread"
           isSubmitting={sendReply.isPending}
-          autoFocus
         />
       </div>
     </div>

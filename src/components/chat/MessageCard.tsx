@@ -5,6 +5,7 @@ import UserAvatar from '@/components/navigation/UserAvatar';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare } from 'lucide-react';
 import { MembershipTier, Profile } from '@/types/profile';
+import { formatRelativeTime } from '@/utils/formatters';
 
 interface MessageCardProps {
   message: ChatMessageWithAuthor;
@@ -19,8 +20,9 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onClick, 
   showReplies = true 
 }) => {
+  // Use the formatRelativeTime function to handle timezone conversion properly
   const formattedTime = message.created_at
-    ? formatDistanceToNow(new Date(message.created_at), { addSuffix: true })
+    ? formatRelativeTime(message.created_at)
     : '';
 
   // Create a minimal profile object that works with UserAvatar
