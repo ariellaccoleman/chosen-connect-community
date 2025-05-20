@@ -1,6 +1,5 @@
 
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
 import { logger } from '@/utils/logger';
 
 // Cache for parsed dates to avoid repeated expensive parsing
@@ -8,7 +7,6 @@ const parsedDateCache = new Map<string, Date>();
 
 /**
  * Formats a timestamp into a human-readable relative time string
- * that respects the user's local timezone
  * 
  * @param timestamp ISO string or Date object
  * @returns Formatted relative time string (e.g., "2 hours ago")
@@ -49,14 +47,8 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}`);
   
   try {
-    // Format the date in the user's timezone directly using formatInTimeZone
-    // This properly handles the conversion without modifying the underlying date
-    const formattedLocalTime = formatInTimeZone(date, userTimeZone, 'yyyy-MM-dd HH:mm:ss');
-    logger.info(`[TIME FORMATTER] Formatted in local timezone (${userTimeZone}): ${formattedLocalTime}`);
-    
     // Use formatDistanceToNow to get the relative time (e.g., "2 hours ago")
-    // We don't need to do any additional timezone conversion as formatDistanceToNow
-    // will use the system's timezone settings automatically
+    // Since both the input date and now() are in UTC, we can directly compare them
     const result = formatDistanceToNow(date, { addSuffix: true });
     logger.info(`[TIME FORMATTER] Formatted result: ${result}`);
     return result;

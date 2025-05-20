@@ -33,8 +33,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
       `Raw timestamp: ${rawTimestamp}\n` + 
       `User timezone: ${userTimeZone}\n` +
       `Pre-formatted time: ${message.formatted_time || 'none'}\n` +
-      `Displayed time: ${formattedTime}\n` +
-      `Local time now: ${new Date().toLocaleString()} (${userTimeZone})`
+      `Displayed time: ${formattedTime}`
     );
   }, [message.id, rawTimestamp, message.formatted_time, formattedTime]);
 

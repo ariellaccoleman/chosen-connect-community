@@ -1,10 +1,7 @@
 
-// Re-export all formatters from subdirectories
+// Re-export all formatter utilities for consistency
 export * from './locationFormatters';
-export * from './profileFormatters';
 export * from './organizationFormatters';
-export * from './urlFormatters';
+export * from './profileFormatters';
 export * from './timeFormatters';
-
-// Re-export formatDateForDb and formatters from formatters.ts
-export { formatDateForDb, formatters } from './formatters';
+export * from './urlFormatters';
