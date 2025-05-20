@@ -1,3 +1,4 @@
+
 import { createQueryHooks } from '@/hooks/core/factory';
 import { chatMessageApi, getChannelMessages, getThreadReplies, sendChatMessage } from '@/api/chat/chatMessageApiFactory';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -119,6 +120,25 @@ export const useSendMessage = () => {
         queryClient.invalidateQueries({ 
           queryKey: ['threadMessages', parentId] 
         });
+
+        // Also update the reply_count for the parent message in the channel messages
+        const messagesKey = ['chatMessages', channelId];
+        queryClient.setQueriesData(
+          { queryKey: messagesKey, exact: false },
+          (oldData: any) => {
+            // If no data, return as is
+            if (!oldData || !Array.isArray(oldData)) return oldData;
+            
+            // Find and update the parent message's reply count
+            return oldData.map((message: ChatMessageWithAuthor) => {
+              if (message.id === parentId) {
+                const currentCount = message.reply_count || 0;
+                return { ...message, reply_count: currentCount + 1 };
+              }
+              return message;
+            });
+          }
+        );
       } else {
         // If posting to channel, invalidate channel messages
         queryClient.invalidateQueries({ 

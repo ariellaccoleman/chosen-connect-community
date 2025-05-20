@@ -5,6 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { ChatMessageWithAuthor } from '@/types/chat';
 
 /**
  * Helper function to validate if a string is a valid UUID
@@ -52,6 +53,34 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
         },
         (payload) => {
           logger.info('Real-time: New channel message received:', payload);
+          
+          // Check if this is a reply to a thread
+          if (payload.new && payload.new.parent_id) {
+            // If it's a reply, we need to update the reply count for the parent message
+            const parentId = payload.new.parent_id;
+            logger.info(`Updating reply count for parent message: ${parentId}`);
+            
+            // Get all message queries for this channel
+            const messagesKey = ['chatMessages', channelId];
+            
+            // Update the reply_count for the parent message in all matching queries
+            queryClient.setQueriesData(
+              { queryKey: messagesKey, exact: false },
+              (oldData: any) => {
+                // If no data or not an array, return as is
+                if (!oldData || !Array.isArray(oldData)) return oldData;
+                
+                // Find and update the parent message's reply count
+                return oldData.map((message: ChatMessageWithAuthor) => {
+                  if (message.id === parentId) {
+                    const currentCount = message.reply_count || 0;
+                    return { ...message, reply_count: currentCount + 1 };
+                  }
+                  return message;
+                });
+              }
+            );
+          }
           
           // Immediately invalidate and refetch the channel messages query
           queryClient.invalidateQueries({ 
@@ -124,11 +153,30 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
             refetchType: 'all'
           });
           
-          // Also update reply count for the parent message in all channel queries
-          queryClient.invalidateQueries({
-            queryKey: ['chatMessages'],
-            refetchType: 'all' // Force refetch
-          });
+          // Update the reply count for the parent message in channel messages queries
+          const channelId = payload.new?.channel_id;
+          if (channelId) {
+            // Get all message queries that might contain this channel's messages
+            const messagesKey = ['chatMessages', channelId];
+            
+            // Update the reply_count for the parent message
+            queryClient.setQueriesData(
+              { queryKey: messagesKey, exact: false },
+              (oldData: any) => {
+                // If no data, return as is
+                if (!oldData || !Array.isArray(oldData)) return oldData;
+                
+                // Find and update the parent message
+                return oldData.map((message: ChatMessageWithAuthor) => {
+                  if (message.id === parentId) {
+                    const currentCount = message.reply_count || 0;
+                    return { ...message, reply_count: currentCount + 1 };
+                  }
+                  return message;
+                });
+              }
+            );
+          }
           
           // Notify if message is from someone else
           if (payload.new && payload.new.user_id !== user.id) {
