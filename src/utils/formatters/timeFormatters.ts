@@ -1,6 +1,6 @@
 
-import { formatDistanceToNow, parseISO, differenceInSeconds } from 'date-fns';
-import { toZonedTime } from 'date-fns-tz';
+import { formatDistanceToNow, parseISO, format } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 import { logger } from '@/utils/logger';
 
 // Cache for parsed dates to avoid repeated expensive parsing
@@ -41,41 +41,30 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
     date = timestamp;
   }
   
-  // Get current time and calculate difference in seconds with RAW timestamp
-  // before any timezone conversion happens
-  const now = new Date();
-  const rawSecDiff = differenceInSeconds(now, date);
-  logger.info(`[TIME FORMATTER] Raw time difference in seconds (before timezone conversion): ${rawSecDiff}`);
-  logger.info(`[TIME FORMATTER] Raw now: ${now.toISOString()}, Raw date: ${date.toISOString()}`);
-  
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}, Date object: ${date.toISOString()}`);
   
-  // Convert the UTC timestamp to the user's local timezone
-  const localDate = toZonedTime(date, userTimeZone);
+  // Log raw details for debugging
+  logger.info(`[TIME FORMATTER] Raw UTC date: ${date.toISOString()}`);
+  logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}`);
   
-  // Calculate difference after timezone conversion
-  const afterConversionSecDiff = differenceInSeconds(now, localDate);
-  logger.info(`[TIME FORMATTER] Time difference after timezone conversion: ${afterConversionSecDiff}`);
-  
-  // Log the actual local date representation properly
-  const localISOString = new Date(
-    localDate.getFullYear(),
-    localDate.getMonth(),
-    localDate.getDate(),
-    localDate.getHours(),
-    localDate.getMinutes(),
-    localDate.getSeconds()
-  ).toISOString();
-  
-  logger.info(`[TIME FORMATTER] Converted to local timezone: ${localISOString} (local time)`);
-  logger.info(`[TIME FORMATTER] Local date components: ${localDate.toLocaleString()} (${userTimeZone})`);
-  
-  // Standard case - format the local date as a relative time
-  const result = formatDistanceToNow(localDate, { addSuffix: true });
-  logger.info(`[TIME FORMATTER] Formatted result: ${result}`);
-  return result;
+  try {
+    // Format the date in the user's timezone directly using formatInTimeZone
+    // This properly handles the conversion without modifying the underlying date
+    const formattedLocalTime = formatInTimeZone(date, userTimeZone, 'yyyy-MM-dd HH:mm:ss');
+    logger.info(`[TIME FORMATTER] Formatted in local timezone (${userTimeZone}): ${formattedLocalTime}`);
+    
+    // Use formatDistanceToNow to get the relative time (e.g., "2 hours ago")
+    // We don't need to do any additional timezone conversion as formatDistanceToNow
+    // will use the system's timezone settings automatically
+    const result = formatDistanceToNow(date, { addSuffix: true });
+    logger.info(`[TIME FORMATTER] Formatted result: ${result}`);
+    return result;
+  } catch (error) {
+    logger.error('[TIME FORMATTER] Error formatting time:', error);
+    // Fallback to a simple formatted date if an error occurs
+    return format(date, 'yyyy-MM-dd HH:mm');
+  }
 };
 
 /**
