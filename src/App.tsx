@@ -3,7 +3,7 @@ import ScrollToTop from "./components/layout/ScrollToTop";
 import AppRoutes from "./components/routing/AppRoutes";
 import AppProviders from "./components/providers/AppProviders";
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
+import FooterWrapper from "./components/layout/FooterWrapper";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { logger } from "./utils/logger";
 import { useEffect } from "react";
@@ -29,7 +29,7 @@ const App = () => {
               <AppRoutes />
             </ErrorBoundary>
           </main>
-          <Footer />
+          <FooterWrapper />
         </div>
       </AppProviders>
     </ErrorBoundary>
