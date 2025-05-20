@@ -77,6 +77,7 @@ export interface ChatMessageWithAuthor extends ChatMessage {
     full_name?: string;
   } | null;
   reply_count?: number;
+  formatted_time?: string; // Added formatted display time
 }
 
 /**

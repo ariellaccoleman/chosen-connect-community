@@ -20,9 +20,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onClick, 
   showReplies = true 
 }) => {
-  // Get the timestamp and format it
+  // Get the timestamp information
   const rawTimestamp = message.created_at;
-  const formattedTime = rawTimestamp ? formatRelativeTime(rawTimestamp) : '';
+  // Use the pre-formatted time from processChatMessage if available, otherwise format it here
+  const formattedTime = message.formatted_time || formatRelativeTime(rawTimestamp);
   
   // Log the timezone information and timestamps once when the component renders
   useEffect(() => {
@@ -31,9 +32,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
       `[MessageCard] Message ID: ${message.id}\n` +
       `Raw timestamp: ${rawTimestamp}\n` + 
       `User timezone: ${userTimeZone}\n` +
-      `Formatted time: ${formattedTime}`
+      `Pre-formatted time: ${message.formatted_time}\n` +
+      `Displayed time: ${formattedTime}`
     );
-  }, [message.id, rawTimestamp, formattedTime]);
+  }, [message.id, rawTimestamp, message.formatted_time, formattedTime]);
 
   // Create a minimal profile object that works with UserAvatar
   const profileForAvatar: Profile | null = message.author ? {

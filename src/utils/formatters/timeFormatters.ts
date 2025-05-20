@@ -1,6 +1,7 @@
 
 import { formatDistanceToNow, parseISO, differenceInSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { logger } from '@/utils/logger';
 
 // Cache for parsed dates to avoid repeated expensive parsing
 const parsedDateCache = new Map<string, Date>();
@@ -14,6 +15,9 @@ const parsedDateCache = new Map<string, Date>();
  */
 export const formatRelativeTime = (timestamp: string | Date): string => {
   if (!timestamp) return '';
+  
+  // Log the input timestamp for debugging
+  logger.info(`formatRelativeTime input: ${timestamp}`);
   
   // Parse the ISO string to a Date object if it's a string, using cache for performance
   let date: Date;
@@ -38,23 +42,31 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  logger.info(`User timezone: ${userTimeZone}, Date object: ${date.toISOString()}`);
   
   // Convert the UTC timestamp to the user's local timezone
   const localDate = toZonedTime(date, userTimeZone);
+  logger.info(`Converted to local timezone: ${localDate.toISOString()}`);
   
   // Calculate seconds difference to detect if we're dealing with a server-client time discrepancy
   const now = new Date();
   const secDiff = differenceInSeconds(now, localDate);
+  logger.info(`Time difference in seconds: ${secDiff}`);
   
   // If the difference is suspiciously close to exact hours (within 30 sec),
   // it might be a timezone issue where the server time is UTC but displayed as local
   if (Math.abs(secDiff % 3600) < 30 && Math.abs(secDiff) >= 3600 && Math.abs(secDiff) <= 86400) {
+    logger.info(`Potential timezone issue detected (${secDiff} seconds difference)`);
     // Use current time as base for relative calculation instead of the potentially mismatched timestamp
-    return formatDistanceToNow(now, { addSuffix: true });
+    const result = formatDistanceToNow(now, { addSuffix: true });
+    logger.info(`Adjusted formatted result: ${result}`);
+    return result;
   }
   
   // Standard case - format the local date as a relative time
-  return formatDistanceToNow(localDate, { addSuffix: true });
+  const result = formatDistanceToNow(localDate, { addSuffix: true });
+  logger.info(`Standard formatted result: ${result}`);
+  return result;
 };
 
 /**

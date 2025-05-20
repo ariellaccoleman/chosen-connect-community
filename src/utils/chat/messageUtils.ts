@@ -20,6 +20,10 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
     full_name: formatAuthorName(message.author)
   } : undefined;
 
+  // Pre-format the timestamp consistently for all messages
+  const formattedTime = formatRelativeTime(message.created_at);
+  logger.info(`Pre-formatted time for message ${message.id}: ${formattedTime}`);
+
   // Create a standardized message object with consistent timestamp handling
   const processedMessage: ChatMessageWithAuthor = {
     id: message.id,
@@ -30,12 +34,13 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
     created_at: message.created_at,
     updated_at: message.updated_at || message.created_at,
     reply_count: message.reply_count || 0,
+    formatted_time: formattedTime, // Add the pre-formatted timestamp
     // Only include author if requested and available
     ...(includeAuthor && { author: authorData })
   };
 
   // Log the processed message
-  logger.info(`Processed message: ${processedMessage.id}, timestamp: ${processedMessage.created_at}`);
+  logger.info(`Processed message: ${processedMessage.id}, timestamp: ${processedMessage.created_at}, formatted: ${processedMessage.formatted_time}`);
   
   return processedMessage;
 }
