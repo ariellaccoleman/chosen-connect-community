@@ -173,7 +173,7 @@ async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<s
       .from('chats')
       .select('parent_id, count(*)')
       .in('parent_id', messageIds)
-      .group('parent_id');
+      .groupBy('parent_id'); // FIX: Changed from .group() to .groupBy()
       
     if (error) {
       logger.error('Error fetching reply counts:', error);
