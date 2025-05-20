@@ -27,16 +27,17 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const [autoScroll, setAutoScroll] = useState(true);
   const { refreshTimestamps } = useTimestampRefresh();
   
-  const {
-    messages,
+  const channelMessagesQuery = useChannelMessages(channelId);
+  const { 
+    data: messages = [],
     isLoading,
     isError,
     error
-  } = useChannelMessages(channelId);
+  } = channelMessagesQuery;
   
   // Scroll to bottom on new messages if autoScroll is enabled
   useEffect(() => {
-    if (autoScroll && feedRef.current && messages?.length > 0) {
+    if (autoScroll && feedRef.current && messages.length > 0) {
       const feedElement = feedRef.current;
       feedElement.scrollTop = feedElement.scrollHeight;
     }
@@ -126,7 +127,11 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
       {/* Message input */}
       {user && channelId && (
         <div className="border-t border-gray-200 dark:border-gray-800 p-4">
-          <MessageInput channelId={channelId} userId={user.id} onMessageSent={() => setAutoScroll(true)} />
+          <MessageInput 
+            channelId={channelId} 
+            userId={user.id} 
+            onMessageSent={() => setAutoScroll(true)} 
+          />
         </div>
       )}
     </div>

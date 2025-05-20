@@ -3,24 +3,29 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader, Send } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { useSendMessage } from '@/hooks/chat';
+import { logger } from '@/utils/logger';
 
 interface MessageInputProps {
-  onSendMessage: (message: string) => void;
+  channelId: string;
+  userId: string;
+  parentId?: string;
   placeholder?: string;
-  isSubmitting?: boolean;
-  initialValue?: string;
+  onMessageSent?: () => void;
   autoFocus?: boolean;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
-  onSendMessage,
+  channelId,
+  userId,
+  parentId,
   placeholder = 'Type your message...',
-  isSubmitting = false,
-  initialValue = '',
+  onMessageSent,
   autoFocus = false
 }) => {
-  const [message, setMessage] = useState(initialValue);
+  const [message, setMessage] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sendMessageMutation = useSendMessage();
 
   // Auto resize the textarea based on content
   useEffect(() => {
@@ -37,12 +42,27 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [autoFocus]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (message.trim() && !isSubmitting) {
-      onSendMessage(message);
-      setMessage('');
+    if (message.trim() && !sendMessageMutation.isPending) {
+      logger.info(`Sending message to channel ${channelId}: ${message.substring(0, 20)}${message.length > 20 ? '...' : ''}`);
+      
+      try {
+        await sendMessageMutation.mutateAsync({ 
+          channelId, 
+          message: message.trim(), 
+          parentId 
+        });
+        
+        setMessage('');
+        
+        if (onMessageSent) {
+          onMessageSent();
+        }
+      } catch (error) {
+        logger.error('Failed to send message:', error);
+      }
     }
   };
 
@@ -64,17 +84,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="pr-10 resize-none max-h-[200px] min-h-[40px]"
-          disabled={isSubmitting}
+          disabled={sendMessageMutation.isPending}
           rows={1}
         />
         <Button
           type="submit"
           size="sm"
-          disabled={!message.trim() || isSubmitting}
+          disabled={!message.trim() || sendMessageMutation.isPending}
           className="absolute bottom-2 right-2 p-1 h-auto w-auto"
           variant="ghost"
         >
-          {isSubmitting ? (
+          {sendMessageMutation.isPending ? (
             <Loader size={16} className="animate-spin" />
           ) : (
             <Send size={16} />

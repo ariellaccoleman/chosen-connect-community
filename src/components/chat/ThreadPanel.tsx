@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { useThreadReplies } from '@/hooks/chat';
+import { useThreadMessages } from '@/hooks/chat';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import MessageCard from './MessageCard';
 import MessageInput from './MessageInput';
@@ -27,16 +27,17 @@ const ThreadPanel: React.FC<ThreadPanelProps> = ({
   const threadRef = useRef<HTMLDivElement>(null);
   const { refreshTimestamps } = useTimestampRefresh();
   
+  const threadMessagesQuery = useThreadMessages(parentMessage.id);
   const {
-    replies,
+    data: replies = [],
     isLoading,
     isError,
     error
-  } = useThreadReplies(parentMessage.id);
+  } = threadMessagesQuery;
   
   // Scroll to bottom on new messages if autoScroll is enabled
   useEffect(() => {
-    if (autoScroll && threadRef.current && replies?.length > 0) {
+    if (autoScroll && threadRef.current && replies.length > 0) {
       const threadElement = threadRef.current;
       threadElement.scrollTop = threadElement.scrollHeight;
     }
