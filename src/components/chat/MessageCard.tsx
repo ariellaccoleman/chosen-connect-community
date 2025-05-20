@@ -1,9 +1,11 @@
-import React from 'react';
+
+import React, { useEffect } from 'react';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import UserAvatar from '@/components/navigation/UserAvatar';
 import { MessageSquare } from 'lucide-react';
 import { MembershipTier, Profile } from '@/types/profile';
 import { formatRelativeTime } from '@/utils/formatters';
+import { logger } from '@/utils/logger';
 
 interface MessageCardProps {
   message: ChatMessageWithAuthor;
@@ -18,10 +20,20 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onClick, 
   showReplies = true 
 }) => {
-  // Use the formatRelativeTime function to handle timezone conversion properly
-  const formattedTime = message.created_at
-    ? formatRelativeTime(message.created_at)
-    : '';
+  // Log the raw timestamp and formatted time for debugging
+  const rawTimestamp = message.created_at;
+  const formattedTime = rawTimestamp ? formatRelativeTime(rawTimestamp) : '';
+  
+  // Log the timezone information and timestamps once when the component renders
+  useEffect(() => {
+    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    logger.info(
+      `[MessageCard] Message ID: ${message.id}\n` +
+      `Raw timestamp: ${rawTimestamp}\n` + 
+      `User timezone: ${userTimeZone}\n` +
+      `Formatted time: ${formattedTime}`
+    );
+  }, [message.id, rawTimestamp, formattedTime]);
 
   // Create a minimal profile object that works with UserAvatar
   const profileForAvatar: Profile | null = message.author ? {
