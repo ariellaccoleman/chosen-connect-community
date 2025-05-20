@@ -51,7 +51,19 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   
   // Convert the UTC timestamp to the user's local timezone
   const localDate = toZonedTime(date, userTimeZone);
-  logger.info(`[TIME FORMATTER] Converted to local timezone: ${localDate.toISOString()}`);
+  
+  // Log the actual local date representation properly
+  const localISOString = new Date(
+    localDate.getFullYear(),
+    localDate.getMonth(),
+    localDate.getDate(),
+    localDate.getHours(),
+    localDate.getMinutes(),
+    localDate.getSeconds()
+  ).toISOString();
+  
+  logger.info(`[TIME FORMATTER] Converted to local timezone: ${localISOString} (local time)`);
+  logger.info(`[TIME FORMATTER] Local date components: ${localDate.toLocaleString()} (${userTimeZone})`);
   
   // Calculate seconds difference to detect if we're dealing with a server-client time discrepancy
   const now = new Date();
