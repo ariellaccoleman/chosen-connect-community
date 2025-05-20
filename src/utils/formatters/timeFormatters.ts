@@ -16,14 +16,19 @@ const parsedDateCache = new Map<string, Date>();
 export const formatRelativeTime = (timestamp: string | Date): string => {
   if (!timestamp) return '';
   
+  // Get caller information for debugging
+  const callerInfo = new Error().stack?.split('\n')[2] || 'unknown';
+  
   // Log the input timestamp for debugging
-  logger.info(`formatRelativeTime input: ${timestamp}`);
+  logger.info(`[TIME FORMATTER] Called from: ${callerInfo}`);
+  logger.info(`[TIME FORMATTER] Input timestamp: ${timestamp}`);
   
   // Parse the ISO string to a Date object if it's a string, using cache for performance
   let date: Date;
   if (typeof timestamp === 'string') {
     if (parsedDateCache.has(timestamp)) {
       date = parsedDateCache.get(timestamp)!;
+      logger.info(`[TIME FORMATTER] Using cached date for: ${timestamp}`);
     } else {
       date = parseISO(timestamp);
       // Store in cache for future reuse
@@ -42,30 +47,30 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  logger.info(`User timezone: ${userTimeZone}, Date object: ${date.toISOString()}`);
+  logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}, Date object: ${date.toISOString()}`);
   
   // Convert the UTC timestamp to the user's local timezone
   const localDate = toZonedTime(date, userTimeZone);
-  logger.info(`Converted to local timezone: ${localDate.toISOString()}`);
+  logger.info(`[TIME FORMATTER] Converted to local timezone: ${localDate.toISOString()}`);
   
   // Calculate seconds difference to detect if we're dealing with a server-client time discrepancy
   const now = new Date();
   const secDiff = differenceInSeconds(now, localDate);
-  logger.info(`Time difference in seconds: ${secDiff}`);
+  logger.info(`[TIME FORMATTER] Time difference in seconds: ${secDiff}`);
   
   // If the difference is suspiciously close to exact hours (within 30 sec),
   // it might be a timezone issue where the server time is UTC but displayed as local
   if (Math.abs(secDiff % 3600) < 30 && Math.abs(secDiff) >= 3600 && Math.abs(secDiff) <= 86400) {
-    logger.info(`Potential timezone issue detected (${secDiff} seconds difference)`);
+    logger.info(`[TIME FORMATTER] Potential timezone issue detected (${secDiff} seconds difference)`);
     // Use current time as base for relative calculation instead of the potentially mismatched timestamp
     const result = formatDistanceToNow(now, { addSuffix: true });
-    logger.info(`Adjusted formatted result: ${result}`);
+    logger.info(`[TIME FORMATTER] Adjusted formatted result: ${result}`);
     return result;
   }
   
   // Standard case - format the local date as a relative time
   const result = formatDistanceToNow(localDate, { addSuffix: true });
-  logger.info(`Standard formatted result: ${result}`);
+  logger.info(`[TIME FORMATTER] Standard formatted result: ${result}`);
   return result;
 };
 

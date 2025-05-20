@@ -43,20 +43,23 @@ export const getChannelMessages = async (
 ): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
   return apiClient.query(async () => {
     try {
+      logger.info(`[CODE PATH] API FETCH: getChannelMessages called for channel ${channelId}`);
+      logger.info(`[API FETCH] User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+      
       // Check authentication
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        logger.error('No authenticated session when fetching messages');
+        logger.error('[API FETCH] No authenticated session when fetching messages');
         return createErrorResponse(new Error("Authentication required"));
       }
       
       // Validate channelId - Return empty array for missing/invalid channelId instead of error
       if (!channelId || channelId === 'null' || channelId === 'undefined') {
-        logger.warn('Invalid or missing channelId provided to getChannelMessages:', channelId);
+        logger.warn('[API FETCH] Invalid or missing channelId provided to getChannelMessages:', channelId);
         return createSuccessResponse([]);
       }
       
-      logger.info(`Fetching messages for channel ID: "${channelId}" with user ${sessionData.session.user.id}`);
+      logger.info(`[API FETCH] Fetching messages for channel ID: "${channelId}" with user ${sessionData.session.user.id}`);
       
       // Create repository for base message query
       const repository = createRepository('chats');
@@ -74,14 +77,16 @@ export const getChannelMessages = async (
         .order('created_at', { ascending: true })
         .range(offset, offset + limit - 1);
         
+      logger.info('[API FETCH] Executing database query');
       const result = await query.execute();
       
       if (result.error) {
-        logger.error('Error fetching channel messages:', result.error);
+        logger.error('[API FETCH] Error fetching channel messages:', result.error);
         return createErrorResponse(result.error);
       }
       
       const messagesResult = result.data || [];
+      logger.info(`[API FETCH] Retrieved ${messagesResult.length} messages from database`);
       
       // If there are no messages, return empty array
       if (messagesResult.length === 0) {
@@ -93,26 +98,31 @@ export const getChannelMessages = async (
       
       // OPTIMIZATION: Single query to get reply counts for all messages at once
       // This replaces the previous approach that made a separate query for each message
+      logger.info('[API FETCH] Fetching reply counts for messages');
       const replyCounts = await getReplyCountsForMessages(messageIds);
       
       // Log timestamps for debugging timezone issues
       messagesResult.forEach((msg: any) => {
-        logger.info(`Message ID ${msg.id} raw timestamp: ${msg.created_at}`);
+        logger.info(`[API FETCH] Message ID ${msg.id} raw timestamp from DB: ${msg.created_at}`);
       });
       
       // Apply reply counts to messages and process them consistently using our utility
+      logger.info('[API FETCH] Processing messages with processChatMessage utility');
       const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
         // Add reply count to the message object before processing
         const replyCount = replyCounts[msg.id] || 0;
         msg.reply_count = replyCount;
         
         // Use shared processing utility for consistent handling
-        return processChatMessage(msg);
+        const processedMsg = processChatMessage(msg);
+        logger.info(`[API FETCH] Processed message ${processedMsg.id}: raw=${processedMsg.created_at}, formatted=${processedMsg.formatted_time}`);
+        return processedMsg;
       });
       
+      logger.info(`[API FETCH] Returning ${transformedMessages.length} processed messages`);
       return createSuccessResponse(transformedMessages);
     } catch (error) {
-      logger.error('Exception in getChannelMessages:', error);
+      logger.error('[API FETCH] Exception in getChannelMessages:', error);
       return createErrorResponse(error);
     }
   });

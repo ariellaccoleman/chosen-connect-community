@@ -8,8 +8,12 @@ import { logger } from '@/utils/logger';
  * across both API responses and real-time updates
  */
 export function processChatMessage(message: any, includeAuthor = true): ChatMessageWithAuthor {
-  // Log the incoming message timestamp for debugging
-  logger.info(`Processing message ID: ${message.id}, raw timestamp: ${message.created_at}`);
+  // Capture the source of the call for debugging
+  const callerInfo = new Error().stack?.split('\n')[2] || 'unknown';
+  
+  // Log the incoming message with source information
+  logger.info(`[CODE PATH] processChatMessage called from: ${callerInfo}`);
+  logger.info(`[MESSAGE] Processing message ID: ${message.id}, raw timestamp: ${message.created_at}`);
 
   // Format author information if available
   const authorData = message.author ? {
@@ -22,7 +26,7 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
 
   // Pre-format the timestamp consistently for all messages
   const formattedTime = formatRelativeTime(message.created_at);
-  logger.info(`Pre-formatted time for message ${message.id}: ${formattedTime}`);
+  logger.info(`[TIMESTAMP] Pre-formatted time for message ${message.id}: ${formattedTime}`);
 
   // Create a standardized message object with consistent timestamp handling
   const processedMessage: ChatMessageWithAuthor = {
@@ -40,7 +44,7 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
   };
 
   // Log the processed message
-  logger.info(`Processed message: ${processedMessage.id}, timestamp: ${processedMessage.created_at}, formatted: ${processedMessage.formatted_time}`);
+  logger.info(`[PROCESSED] Message: ${processedMessage.id}, raw timestamp: ${processedMessage.created_at}, formatted: ${processedMessage.formatted_time}`);
   
   return processedMessage;
 }

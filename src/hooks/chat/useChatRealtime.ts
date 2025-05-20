@@ -39,7 +39,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
       return; 
     }
     
-    logger.info(`Setting up real-time subscription for channel: ${channelId} (user: ${user.id})`);
+    logger.info(`[CODE PATH] REAL-TIME: Setting up subscription for channel: ${channelId} (user: ${user.id})`);
     
     // Subscribe to new messages in the channel
     const channel = supabase
@@ -53,15 +53,23 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           filter: `channel_id=eq.${channelId}` 
         },
         (payload) => {
-          logger.info('Real-time: New channel message received:', payload);
+          logger.info('[CODE PATH] REAL-TIME: New channel message received:');
+          logger.info(`[REAL-TIME] Payload for message: ${JSON.stringify(payload.new?.id)}`);
           
           // Log timestamp for debugging
           if (payload.new && payload.new.created_at) {
-            logger.info(`Real-time message timestamp: ${payload.new.created_at}`);
+            logger.info(`[REAL-TIME] Raw timestamp: ${payload.new.created_at}`);
+            logger.info(`[REAL-TIME] User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
           }
           
           // Process the new message with our utility for consistent timestamp handling
+          logger.info('[REAL-TIME] Processing message with processChatMessage');
           const processedMessage = processChatMessage(payload.new, false); // false because we don't have author info yet
+          
+          // Log the processed message
+          logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
+          logger.info(`[REAL-TIME] Processed timestamp: ${processedMessage.created_at}`);
+          logger.info(`[REAL-TIME] Formatted timestamp: ${processedMessage.formatted_time}`);
           
           // Check if this is a reply to a thread
           if (processedMessage.parent_id) {
@@ -92,6 +100,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           }
           
           // Immediately invalidate and refetch the channel messages query
+          logger.info('[REAL-TIME] Invalidating and refetching channel messages');
           queryClient.invalidateQueries({ 
             queryKey: ['chatMessages', channelId],
             refetchType: 'all' // Force refetch instead of just invalidating
@@ -104,18 +113,18 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
         }
       )
       .subscribe((status) => {
-        logger.info(`Real-time channel subscription status: ${status}`);
+        logger.info(`[REAL-TIME] Channel subscription status: ${status}`);
         if (status === 'SUBSCRIBED') {
-          logger.info('Successfully subscribed to real-time updates for channel');
+          logger.info('[REAL-TIME] Successfully subscribed to real-time updates for channel');
         } else if (status === 'CHANNEL_ERROR') {
-          logger.error('Error subscribing to real-time updates for channel', channelId);
+          logger.error('[REAL-TIME] Error subscribing to real-time updates for channel', channelId);
           toast.error('Error connecting to chat. Please refresh the page.');
         }
       });
       
     // Cleanup on unmount
     return () => {
-      logger.info(`Cleaning up real-time subscription for channel: ${channelId}`);
+      logger.info(`[REAL-TIME] Cleaning up subscription for channel: ${channelId}`);
       supabase.removeChannel(channel);
     };
   }, [channelId, queryClient, isAuthenticated, user]);

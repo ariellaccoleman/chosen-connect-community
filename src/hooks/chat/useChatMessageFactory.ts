@@ -29,13 +29,15 @@ export const useChannelMessages = (
   const isValidChannelId = channelId && channelId !== 'null' && channelId !== 'undefined';
 
   // Add detailed logging for debugging the channelId
-  logger.info(`useChannelMessages called with channelId: ${channelId} (type: ${typeof channelId}), isValid: ${isValidChannelId}`);
+  logger.info(`[CODE PATH] useChannelMessages hook called for channelId: ${channelId} (valid: ${isValidChannelId})`);
 
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
+      logger.info(`[QUERY PATH] Executing query function for channel ${channelId}`);
+      
       if (!isAuthenticated || !user) {
-        logger.warn('User is not authenticated for fetching messages');
+        logger.warn('[QUERY PATH] User is not authenticated for fetching messages');
         return { 
           data: [], 
           error: { code: 'auth_required', message: 'Authentication required', details: null }, 
@@ -45,30 +47,50 @@ export const useChannelMessages = (
 
       // Enhanced validation for channelId - don't attempt API call with invalid values
       if (!isValidChannelId) {
-        logger.warn(`Invalid channelId provided to useChannelMessages: "${channelId}", returning empty array`);
+        logger.warn(`[QUERY PATH] Invalid channelId provided to useChannelMessages: "${channelId}", returning empty array`);
         return { data: [], error: null, status: 'success' };
       }
       
       // Log for debugging
-      logger.info(`Fetching messages for channel: ${channelId} (user: ${user.id})`);
-      return getChannelMessages(channelId, limit, offset);
+      logger.info(`[QUERY PATH] Fetching messages for channel: ${channelId} (user: ${user.id})`);
+      logger.info(`[QUERY PATH] User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+      
+      // Call the API function to get channel messages
+      logger.info('[QUERY PATH] Calling getChannelMessages API function');
+      const response = await getChannelMessages(channelId, limit, offset);
+      
+      // Log the response
+      logger.info(`[QUERY PATH] API response status: ${response.status}`);
+      logger.info(`[QUERY PATH] Retrieved ${response.data?.length || 0} messages`);
+      
+      if (response.data && response.data.length > 0) {
+        // Log the first few messages for debugging
+        const sampleSize = Math.min(3, response.data.length);
+        logger.info(`[QUERY PATH] Sample of ${sampleSize} messages:`);
+        for (let i = 0; i < sampleSize; i++) {
+          const msg = response.data[i];
+          logger.info(`[QUERY PATH] Sample message ${i+1}: id=${msg.id}, raw=${msg.created_at}, formatted=${msg.formatted_time}`);
+        }
+      }
+      
+      return response;
     },
     // Only enable the query if we have both authentication and a valid channel ID
     enabled: isAuthenticated && !!user?.id && isValidChannelId,
     // OPTIMIZATION: Remove polling since we have realtime subscriptions
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
-      logger.info(`Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
+      logger.info(`[QUERY PATH] Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
       if (response.status === 'error') {
-        logger.error('Error in channel messages response:', response.error);
+        logger.error('[QUERY PATH] Error in channel messages response:', response.error);
         toast.error(response.error?.message || 'Failed to load messages');
         return [];
       }
 
       // Log each message timestamp for debugging
       if (response.data && response.data.length > 0) {
-        logger.info('Message timestamps from API response:');
+        logger.info('[QUERY PATH] Message timestamps from API response:');
         response.data.forEach(msg => {
-          logger.info(`Message ${msg.id}: ${msg.created_at}`);
+          logger.info(`[QUERY PATH] Message ${msg.id}: raw=${msg.created_at}, formatted=${msg.formatted_time}`);
         });
       }
       
@@ -77,7 +99,7 @@ export const useChannelMessages = (
     meta: {
       // Use meta for additional options
       errorHandler: (error: Error) => {
-        logger.error('Query error in useChannelMessages:', error);
+        logger.error('[QUERY PATH] Query error in useChannelMessages:', error);
         queryClient.setQueryData(['chatMessages', channelId, offset, limit], []);
       }
     }

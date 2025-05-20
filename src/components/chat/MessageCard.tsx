@@ -29,10 +29,10 @@ const MessageCard: React.FC<MessageCardProps> = ({
   useEffect(() => {
     const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     logger.info(
-      `[MessageCard] Message ID: ${message.id}\n` +
+      `[DISPLAY] MessageCard rendering message ID: ${message.id}\n` +
       `Raw timestamp: ${rawTimestamp}\n` + 
       `User timezone: ${userTimeZone}\n` +
-      `Pre-formatted time: ${message.formatted_time}\n` +
+      `Pre-formatted time: ${message.formatted_time || 'none'}\n` +
       `Displayed time: ${formattedTime}`
     );
   }, [message.id, rawTimestamp, message.formatted_time, formattedTime]);
