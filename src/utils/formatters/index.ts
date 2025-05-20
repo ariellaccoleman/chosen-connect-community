@@ -6,5 +6,5 @@ export * from './organizationFormatters';
 export * from './urlFormatters';
 export * from './timeFormatters';
 
-// Re-export formatDateForDb and formatters from formatters/index.ts
-export { formatDateForDb, formatters } from './formatters/index';
+// Re-export formatDateForDb and formatters from formatters.ts
+export { formatDateForDb, formatters } from './formatters';

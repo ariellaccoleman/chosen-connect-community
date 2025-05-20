@@ -1,8 +1,6 @@
-
 import React from 'react';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import UserAvatar from '@/components/navigation/UserAvatar';
-import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare } from 'lucide-react';
 import { MembershipTier, Profile } from '@/types/profile';
 import { formatRelativeTime } from '@/utils/formatters';
