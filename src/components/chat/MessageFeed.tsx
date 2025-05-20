@@ -1,222 +1,134 @@
 
-import React, { useEffect, useRef, useState } from 'react';
-import { useChannelMessages, useSendMessage } from '@/hooks/chat/useChatMessageFactory';
-import MessageCard from '@/components/chat/MessageCard';
-import MessageInput from '@/components/chat/MessageInput';
-import { Loader, AlertCircle } from 'lucide-react';
-import { useChat } from '@/hooks/chat/useChat';
+import React, { useState, useRef, useEffect } from 'react';
+import { useChannelMessages } from '@/hooks/chat';
+import MessageCard from './MessageCard';
+import MessageInput from './MessageInput';
 import { ChatMessageWithAuthor } from '@/types/chat';
-import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-// OPTIMIZATION: Remove duplicate import since this is already managed in the chat page
-// import { useChannelMessagesRealtime } from '@/hooks/chat/useChatRealtime';
+import { AlertCircle, RefreshCw } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { logger } from '@/utils/logger';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useTimestampRefresh } from '@/hooks/useTimestampRefresh';
 
 interface MessageFeedProps {
-  channelId: string;
-  onMessageSelect: (message: ChatMessageWithAuthor) => void;
+  channelId: string | null;
+  onMessageSelect?: (message: ChatMessageWithAuthor) => void;
   selectedMessageId?: string;
 }
 
-const MessageFeed: React.FC<MessageFeedProps> = ({ 
-  channelId, 
+const MessageFeed: React.FC<MessageFeedProps> = ({
+  channelId,
   onMessageSelect,
   selectedMessageId
 }) => {
-  const { data: messages = [], isLoading, isError, error, refetch } = useChannelMessages(channelId);
-  const sendMessage = useSendMessage();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [shouldScrollToBottom, setShouldScrollToBottom] = useState(true);
-  const { activeChannel } = useChat();
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const initialLoadRef = useRef(true);
-  const previousMessagesLengthRef = useRef(0);
+  const feedRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
+  const [autoScroll, setAutoScroll] = useState(true);
+  const { refreshTimestamps } = useTimestampRefresh();
   
-  logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
+  const {
+    messages,
+    isLoading,
+    isError,
+    error
+  } = useChannelMessages(channelId);
   
-  // Log messages for debugging timestamp issues
+  // Scroll to bottom on new messages if autoScroll is enabled
   useEffect(() => {
-    if (messages && messages.length > 0) {
-      logger.info('Messages loaded in MessageFeed:');
-      messages.forEach(msg => {
-        logger.info(`Message ID: ${msg.id}, timestamp: ${msg.created_at}`);
-      });
+    if (autoScroll && feedRef.current && messages?.length > 0) {
+      const feedElement = feedRef.current;
+      feedElement.scrollTop = feedElement.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, autoScroll]);
   
-  // OPTIMIZATION: Remove duplicate realtime subscription
-  // The parent Chat component already sets up the subscription
-  // useChannelMessagesRealtime(channelId);
-  
-  // Detect when new messages arrive by comparing the current count with the previous count
-  useEffect(() => {
-    if (messages.length > previousMessagesLengthRef.current) {
-      // New messages have arrived
-      logger.info(`New messages detected: previous=${previousMessagesLengthRef.current}, current=${messages.length}`);
-      
-      // If we should auto-scroll (user was already at the bottom), scroll to bottom
-      if (shouldScrollToBottom) {
-        const scrollToBottom = () => {
-          if (viewportRef.current) {
-            viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-            logger.info('Auto-scrolling to bottom after new messages received');
-          }
-        };
-        
-        // Scroll immediately and with a delay to ensure DOM is updated
-        scrollToBottom();
-        setTimeout(scrollToBottom, 50);
-      }
-    }
-    
-    // Update the previous message count reference
-    previousMessagesLengthRef.current = messages.length;
-  }, [messages, shouldScrollToBottom]);
-  
-  // Initial scroll to bottom on first load and when messages change
-  useEffect(() => {
-    // Scroll on initial load or when we should scroll to bottom
-    if ((initialLoadRef.current || shouldScrollToBottom) && viewportRef.current && messages.length > 0) {
-      const scrollToBottom = () => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-          logger.info(`Scrolling to bottom - initial load: ${initialLoadRef.current}`);
-        }
-      };
-
-      // Scroll immediately and then with a delay to ensure DOM is updated
-      scrollToBottom();
-      
-      // Small delay to ensure DOM is updated
-      setTimeout(scrollToBottom, 50);
-      
-      // Set initial load to false after first render
-      if (initialLoadRef.current) {
-        initialLoadRef.current = false;
-      }
-    }
-  }, [messages, shouldScrollToBottom]);
-  
-  // Handle scroll events to determine if we should auto-scroll
+  // Handle manual scroll interaction
   const handleScroll = () => {
-    if (!viewportRef.current) return;
+    if (!feedRef.current) return;
     
-    const { scrollTop, scrollHeight, clientHeight } = viewportRef.current;
-    // If we're at the bottom (or close), enable auto-scrolling
-    const atBottom = scrollHeight - scrollTop - clientHeight < 100;
-    setShouldScrollToBottom(atBottom);
-    logger.info(`Scroll position: ${scrollTop}, scrollHeight: ${scrollHeight}, clientHeight: ${clientHeight}, atBottom: ${atBottom}`);
-  };
-
-  const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return;
-
-    try {
-      logger.info(`Sending message in channel ${channelId}: ${content}`);
-      
-      // Force scroll to bottom when sending a new message
-      setShouldScrollToBottom(true);
-      
-      await sendMessage.mutateAsync({ 
-        channelId,
-        message: content
-      });
-      
-      // Force refetch messages after sending
-      await refetch();
-      
-      // Ensure we scroll after message is sent and displayed
-      const forcedScrollToBottom = () => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
-          logger.info('Forced scroll to bottom after sending message');
-        }
-      };
-      
-      // Try multiple times with increasing delays to ensure scroll happens after render
-      forcedScrollToBottom();
-      setTimeout(forcedScrollToBottom, 50);
-      setTimeout(forcedScrollToBottom, 150);
-      
-    } catch (error) {
-      logger.error('Failed to send message:', error);
+    const { scrollTop, scrollHeight, clientHeight } = feedRef.current;
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    // Only update autoScroll if the value would change (prevents unnecessary re-renders)
+    if (autoScroll !== isNearBottom) {
+      setAutoScroll(isNearBottom);
     }
   };
-
-  // Extract the channel data from activeChannel response
-  const channelName = activeChannel?.name || 'Loading...';
-  const channelDescription = activeChannel?.description || 'No description';
-
+  
+  // Handle error states
+  if (isError) {
+    logger.error('Error loading messages:', error);
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center bg-red-50 dark:bg-red-900/20 p-6 rounded-lg">
+            <AlertCircle className="mx-auto h-10 w-10 text-red-500 mb-4" />
+            <h3 className="text-lg font-medium text-red-800 dark:text-red-300">Failed to load messages</h3>
+            <p className="mt-2 text-sm text-red-600 dark:text-red-400">
+              {error instanceof Error ? error.message : 'An unexpected error occurred'}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
   return (
-    <div className="flex flex-col h-full">
-      {/* Channel header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <h2 className="text-lg font-semibold">
-          # {channelName}
-        </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          {channelDescription}
-        </p>
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center">
+        <h2 className="font-medium">Messages</h2>
+        <Button variant="ghost" size="sm" onClick={refreshTimestamps} title="Refresh timestamps if they appear incorrect">
+          <RefreshCw className="h-4 w-4 mr-1" />
+          Refresh Times
+        </Button>
       </div>
       
-      {/* Messages area */}
-      <ScrollArea className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <ScrollAreaPrimitive.Viewport
-          ref={viewportRef}
-          className="h-full w-full"
-          onScroll={handleScroll}
-        >
-          <div className="p-4 min-h-full flex flex-col justify-end">
-            <div className="space-y-4">
-              {isLoading ? (
-                <div className="flex flex-col justify-center items-center h-32">
-                  <Loader size={24} className="animate-spin text-gray-500 mb-2" />
-                  <p className="text-sm text-gray-500">Loading messages...</p>
+      {/* Message list */}
+      <div 
+        ref={feedRef}
+        className="flex-1 overflow-y-auto p-4"
+        onScroll={handleScroll}
+      >
+        {isLoading ? (
+          // Loading state
+          <div className="space-y-4">
+            {Array(3).fill(0).map((_, i) => (
+              <div key={i} className="flex items-start space-x-3">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="space-y-2 flex-1">
+                  <Skeleton className="h-4 w-1/4" />
+                  <Skeleton className="h-16 w-full" />
                 </div>
-              ) : isError ? (
-                <div className="flex flex-col items-center justify-center text-center py-8">
-                  <AlertCircle size={32} className="text-red-500 mb-2" />
-                  <p className="text-red-500 font-medium">Error loading messages</p>
-                  <p className="text-gray-500 dark:text-gray-400 mb-4">
-                    {error?.message || 'Something went wrong'}
-                  </p>
-                  <Button onClick={() => refetch()} variant="outline">
-                    Try Again
-                  </Button>
-                </div>
-              ) : messages.length > 0 ? (
-                <>
-                  {messages.map(message => (
-                    <MessageCard 
-                      key={message.id} 
-                      message={message} 
-                      isSelected={message.id === selectedMessageId}
-                      onClick={() => onMessageSelect(message)}
-                    />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </>
-              ) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500 dark:text-gray-400">
-                    No messages yet. Be the first to send a message!
-                  </p>
-                </div>
-              )}
+              </div>
+            ))}
+          </div>
+        ) : messages && messages.length > 0 ? (
+          // Messages loaded successfully
+          messages.map(message => (
+            <MessageCard
+              key={message.id}
+              message={message}
+              isSelected={message.id === selectedMessageId}
+              onClick={onMessageSelect ? () => onMessageSelect(message) : undefined}
+            />
+          ))
+        ) : (
+          // No messages
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center text-gray-500 dark:text-gray-400">
+              <p>No messages yet</p>
+              <p className="text-sm mt-2">Start the conversation below</p>
             </div>
           </div>
-        </ScrollAreaPrimitive.Viewport>
-      </ScrollArea>
+        )}
+      </div>
       
       {/* Message input */}
-      <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-        <MessageInput 
-          onSendMessage={handleSendMessage} 
-          placeholder="Message this channel"
-          isSubmitting={sendMessage.isPending}
-        />
-      </div>
+      {user && channelId && (
+        <div className="border-t border-gray-200 dark:border-gray-800 p-4">
+          <MessageInput channelId={channelId} userId={user.id} onMessageSent={() => setAutoScroll(true)} />
+        </div>
+      )}
     </div>
   );
 };

@@ -20,21 +20,13 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   // Parse the ISO string to a Date object if it's a string, using cache for performance
   let date: Date;
   if (typeof timestamp === 'string') {
-    if (parsedDateCache.has(timestamp)) {
-      date = parsedDateCache.get(timestamp)!;
-      logger.info(`[TIME FORMATTER] Using cached date for: ${timestamp}`);
-    } else {
-      date = parseISO(timestamp);
-      // Store in cache for future reuse
-      parsedDateCache.set(timestamp, date);
-      
-      // Prevent cache from growing too large (simple LRU-like behavior)
-      if (parsedDateCache.size > 1000) {
-        // Remove oldest entry
-        const firstKey = parsedDateCache.keys().next().value;
-        parsedDateCache.delete(firstKey);
-      }
-    }
+    // IMPORTANT FIX: Don't use cached dates as they might have incorrect timezone conversion
+    // Parse directly from the ISO string, which correctly preserves the UTC time
+    date = parseISO(timestamp);
+    
+    // Log the original date string and parsed date for debugging
+    logger.info(`[TIME FORMATTER] Original ISO string: ${timestamp}`);
+    logger.info(`[TIME FORMATTER] Parsed as UTC: ${date.toISOString()}`);
   } else {
     date = timestamp;
   }
@@ -48,7 +40,6 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   
   try {
     // Use formatDistanceToNow to get the relative time (e.g., "2 hours ago")
-    // Since both the input date and now() are in UTC, we can directly compare them
     const result = formatDistanceToNow(date, { addSuffix: true });
     logger.info(`[TIME FORMATTER] Formatted result: ${result}`);
     return result;
@@ -75,15 +66,10 @@ export const formatLocalDate = (
 ): string => {
   if (!timestamp) return '';
   
-  // Use cache for parsing dates when it's a string
+  // IMPORTANT FIX: Don't use cache, parse directly for correct timezone handling
   let date: Date;
   if (typeof timestamp === 'string') {
-    if (parsedDateCache.has(timestamp)) {
-      date = parsedDateCache.get(timestamp)!;
-    } else {
-      date = parseISO(timestamp);
-      parsedDateCache.set(timestamp, date);
-    }
+    date = parseISO(timestamp);
   } else {
     date = timestamp;
   }
@@ -96,4 +82,15 @@ export const formatLocalDate = (
  */
 export const clearDateCache = (): void => {
   parsedDateCache.clear();
+  logger.info('[TIME FORMATTER] Date cache cleared');
+};
+
+/**
+ * Force clear the date cache and reload all chat messages
+ * This function should be called when timezone issues are detected
+ */
+export const forceRefreshTimestamps = (): void => {
+  clearDateCache();
+  logger.info('[TIME FORMATTER] Timestamps refreshed, cache cleared');
+  // The next time messages are displayed, they'll be parsed freshly
 };
