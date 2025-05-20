@@ -6,7 +6,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
 import { ApiResponse, createErrorResponse, createSuccessResponse } from '../core/errorHandler';
-import { getReplyCounts } from './chatReplyCountView';
 
 /**
  * API Factory for chat messages
@@ -127,7 +126,7 @@ export const getChannelMessages = async (
       
       // OPTIMIZATION: Single query to get reply counts for all messages at once
       // This replaces the previous approach that made a separate query for each message
-      const replyCounts = await getReplyCounts(messageIds);
+      const replyCounts = await getReplyCountsForMessages(messageIds);
       
       // Apply reply counts to messages
       const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
@@ -170,13 +169,11 @@ async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<s
     if (!messageIds.length) return {};
     
     // Execute a single query to count replies for all messages
-    // Using raw SQL query with SELECT and GROUP BY since the Supabase JS client's
-    // group/groupBy methods are having TypeScript compatibility issues
     const { data, error } = await supabase
       .from('chats')
-      .select('parent_id, count')
-      .eq('count_type', 'replies')
-      .in('parent_id', messageIds);
+      .select('parent_id, count(*)')
+      .in('parent_id', messageIds)
+      .groupBy('parent_id'); // FIX: Changed from .group() to .groupBy()
       
     if (error) {
       logger.error('Error fetching reply counts:', error);
