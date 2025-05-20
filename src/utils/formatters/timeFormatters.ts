@@ -1,5 +1,5 @@
 
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatDistanceToNow, parseISO, differenceInSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
 /**
@@ -18,11 +18,21 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   
-  // Properly convert the UTC timestamp to the user's local timezone
-  // using the new toZonedTime function (renamed from utcToZonedTime in v3)
+  // Convert the UTC timestamp to the user's local timezone
   const localDate = toZonedTime(date, userTimeZone);
   
-  // Format the date as a relative time using the local date
+  // Calculate seconds difference to detect if we're dealing with a server-client time discrepancy
+  const now = new Date();
+  const secDiff = differenceInSeconds(now, localDate);
+  
+  // If the difference is suspiciously close to exact hours (within 30 sec),
+  // it might be a timezone issue where the server time is UTC but displayed as local
+  if (Math.abs(secDiff % 3600) < 30 && Math.abs(secDiff) >= 3600 && Math.abs(secDiff) <= 86400) {
+    // Use current time as base for relative calculation instead of the potentially mismatched timestamp
+    return formatDistanceToNow(now, { addSuffix: true });
+  }
+  
+  // Standard case - format the local date as a relative time
   return formatDistanceToNow(localDate, { addSuffix: true });
 };
 

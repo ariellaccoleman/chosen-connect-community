@@ -1,3 +1,4 @@
+
 import { apiClient } from '../core/apiClient';
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
@@ -119,31 +120,32 @@ export const getChannelMessages = async (
       // If there are messages, get reply counts for them
       if (messagesToUpdate.length > 0) {
         const messageIds = messagesToUpdate.map(msg => (msg as any).id);
-        const countsRepo = createRepository('chats');
         
-        // Use select with aggregation
-        const repliesQuery = countsRepo
-          .select('parent_id, count(*)')
-          .in('parent_id', messageIds);
+        // Fixed query: Use separate select and count calls with proper Supabase syntax
+        for (const messageId of messageIds) {
+          const repliesRepo = createRepository('chats');
           
-        const repliesResult = await repliesQuery.execute();
-        
-        // Map of message ID to reply count
-        const replyCountMap: Record<string, number> = {};
-        
-        if (repliesResult.data && !repliesResult.error) {
-          repliesResult.data.forEach((item: any) => {
-            replyCountMap[item.parent_id] = parseInt(item.count, 10);
-          });
-        } else if (repliesResult.error) {
-          logger.error('Error fetching reply counts:', repliesResult.error);
-          // Continue despite error, just log it
+          // Count replies for this parent message
+          const countQuery = repliesRepo
+            .select('id', { count: 'exact', head: true })
+            .eq('parent_id', messageId);
+            
+          const countResult = await countQuery.execute();
+          
+          if (!countResult.error) {
+            // Get the count from the result and add to message
+            const count = countResult.count || 0;
+            
+            // Find the message and update its reply count
+            const message = messagesToUpdate.find((msg: any) => msg.id === messageId);
+            if (message) {
+              message.reply_count = count;
+            }
+          } else {
+            logger.error(`Error fetching reply count for message ${messageId}:`, countResult.error);
+            // Continue despite error, just log it
+          }
         }
-        
-        // Add reply counts to messages
-        messagesToUpdate.forEach((msg: any) => {
-          msg.reply_count = replyCountMap[msg.id] || 0;
-        });
       }
       
       // Apply transformations to raw data
