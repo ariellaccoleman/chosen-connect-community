@@ -10,7 +10,8 @@ import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
-import { useChannelMessagesRealtime } from '@/hooks/chat/useChatRealtime';
+// OPTIMIZATION: Remove duplicate import since this is already managed in the chat page
+// import { useChannelMessagesRealtime } from '@/hooks/chat/useChatRealtime';
 
 interface MessageFeedProps {
   channelId: string;
@@ -34,8 +35,9 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
-  // Set up real-time updates for this channel and track message count changes
-  useChannelMessagesRealtime(channelId);
+  // OPTIMIZATION: Remove duplicate realtime subscription
+  // The parent Chat component already sets up the subscription
+  // useChannelMessagesRealtime(channelId);
   
   // Detect when new messages arrive by comparing the current count with the previous count
   useEffect(() => {
@@ -158,8 +160,9 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
           <div className="p-4 min-h-full flex flex-col justify-end">
             <div className="space-y-4">
               {isLoading ? (
-                <div className="flex justify-center items-center h-32">
-                  <Loader size={24} className="animate-spin text-gray-500" />
+                <div className="flex flex-col justify-center items-center h-32">
+                  <Loader size={24} className="animate-spin text-gray-500 mb-2" />
+                  <p className="text-sm text-gray-500">Loading messages...</p>
                 </div>
               ) : isError ? (
                 <div className="flex flex-col items-center justify-center text-center py-8">

@@ -2,6 +2,9 @@
 import { formatDistanceToNow, parseISO, differenceInSeconds } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
 
+// Cache for parsed dates to avoid repeated expensive parsing
+const parsedDateCache = new Map<string, Date>();
+
 /**
  * Formats a timestamp into a human-readable relative time string
  * that respects the user's local timezone
@@ -12,8 +15,26 @@ import { toZonedTime } from 'date-fns-tz';
 export const formatRelativeTime = (timestamp: string | Date): string => {
   if (!timestamp) return '';
   
-  // Parse the ISO string to a Date object if it's a string
-  const date = typeof timestamp === 'string' ? parseISO(timestamp) : timestamp;
+  // Parse the ISO string to a Date object if it's a string, using cache for performance
+  let date: Date;
+  if (typeof timestamp === 'string') {
+    if (parsedDateCache.has(timestamp)) {
+      date = parsedDateCache.get(timestamp)!;
+    } else {
+      date = parseISO(timestamp);
+      // Store in cache for future reuse
+      parsedDateCache.set(timestamp, date);
+      
+      // Prevent cache from growing too large (simple LRU-like behavior)
+      if (parsedDateCache.size > 1000) {
+        // Remove oldest entry
+        const firstKey = parsedDateCache.keys().next().value;
+        parsedDateCache.delete(firstKey);
+      }
+    }
+  } else {
+    date = timestamp;
+  }
   
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -52,7 +73,25 @@ export const formatLocalDate = (
 ): string => {
   if (!timestamp) return '';
   
-  const date = typeof timestamp === 'string' ? parseISO(timestamp) : timestamp;
+  // Use cache for parsing dates when it's a string
+  let date: Date;
+  if (typeof timestamp === 'string') {
+    if (parsedDateCache.has(timestamp)) {
+      date = parsedDateCache.get(timestamp)!;
+    } else {
+      date = parseISO(timestamp);
+      parsedDateCache.set(timestamp, date);
+    }
+  } else {
+    date = timestamp;
+  }
   
   return new Intl.DateTimeFormat(undefined, options).format(date);
+};
+
+/**
+ * Clear the date cache if needed (useful for testing or when memory concerns arise)
+ */
+export const clearDateCache = (): void => {
+  parsedDateCache.clear();
 };

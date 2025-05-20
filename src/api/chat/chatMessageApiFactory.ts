@@ -91,7 +91,7 @@ export const getChannelMessages = async (
       
       logger.info(`Fetching messages for channel ID: "${channelId}" with user ${sessionData.session.user.id}`);
       
-      // Create repository with joins for author information
+      // Create repository for base message query
       const repository = createRepository('chats');
       
       // Query messages with author details
@@ -114,51 +114,29 @@ export const getChannelMessages = async (
         return createErrorResponse(result.error);
       }
       
-      // Count replies for each message
-      const messagesToUpdate = result.data || [];
+      const messagesResult = result.data || [];
       
-      // If there are messages, get reply counts for them
-      if (messagesToUpdate.length > 0) {
-        const messageIds = messagesToUpdate.map(msg => (msg as any).id);
-        
-        // Fixed query: Use proper Supabase syntax for counting replies
-        for (const messageId of messageIds) {
-          // Create a new repository instance for each count query
-          const repliesRepo = createRepository('chats');
-          
-          // First get all replies that match this parent ID
-          const countQuery = repliesRepo
-            .select('id')
-            .eq('parent_id', messageId);
-            
-          const countResult = await countQuery.execute();
-          
-          if (!countResult.error) {
-            // Count the replies by getting the array length
-            const replyCount = countResult.data ? countResult.data.length : 0;
-            
-            // Find the message and update its reply count
-            const message = messagesToUpdate.find((msg: any) => msg.id === messageId);
-            if (message) {
-              // Use a type assertion to inform TypeScript that we can modify this property
-              (message as any).reply_count = replyCount;
-            }
-          } else {
-            logger.error(`Error fetching reply count for message ${messageId}:`, countResult.error);
-            // Continue despite error, just log it
-          }
-        }
+      // If there are no messages, return empty array
+      if (messagesResult.length === 0) {
+        return createSuccessResponse([]);
       }
       
-      // Apply transformations to raw data
-      const transformedMessages = messagesToUpdate.map((msg: any): ChatMessageWithAuthor => {
+      // Extract message IDs for efficient reply count query
+      const messageIds = messagesResult.map((msg: any) => msg.id);
+      
+      // OPTIMIZATION: Single query to get reply counts for all messages at once
+      // This replaces the previous approach that made a separate query for each message
+      const replyCounts = await getReplyCountsForMessages(messageIds);
+      
+      // Apply reply counts to messages
+      const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
         // Format author information
         if (msg.author) {
-          const firstName = msg.author.first_name || '';
-          const lastName = msg.author.last_name || '';
-          const fullName = [firstName, lastName].filter(Boolean).join(' ');
-          msg.author.full_name = fullName || 'Anonymous';
+          msg.author.full_name = formatAuthorName(msg.author);
         }
+        
+        // Get reply count for this message from our efficient query results
+        const replyCount = replyCounts[msg.id] || 0;
         
         // Return properly formatted message
         return {
@@ -170,7 +148,7 @@ export const getChannelMessages = async (
           created_at: msg.created_at,
           updated_at: msg.updated_at || msg.created_at,
           author: msg.author,
-          reply_count: msg.reply_count || 0
+          reply_count: replyCount
         };
       });
       
@@ -181,6 +159,43 @@ export const getChannelMessages = async (
     }
   });
 };
+
+/**
+ * Get reply counts for multiple messages in a single query
+ * This is a major optimization over querying counts individually
+ */
+async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<string, number>> {
+  try {
+    if (!messageIds.length) return {};
+    
+    // Execute a single query to count replies for all messages
+    const { data, error } = await supabase
+      .from('chats')
+      .select('parent_id, count(*)')
+      .in('parent_id', messageIds)
+      .group('parent_id');
+      
+    if (error) {
+      logger.error('Error fetching reply counts:', error);
+      return {};
+    }
+    
+    // Convert the result to a map of message ID -> count
+    const countMap: Record<string, number> = {};
+    if (data) {
+      data.forEach((item: any) => {
+        if (item.parent_id && item.count) {
+          countMap[item.parent_id] = parseInt(item.count, 10);
+        }
+      });
+    }
+    
+    return countMap;
+  } catch (error) {
+    logger.error('Error in getReplyCountsForMessages:', error);
+    return {};
+  }
+}
 
 /**
  * Get thread replies with author details

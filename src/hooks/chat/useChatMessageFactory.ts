@@ -55,7 +55,9 @@ export const useChannelMessages = (
     },
     // Only enable the query if we have both authentication and a valid channel ID
     enabled: isAuthenticated && !!user?.id && isValidChannelId,
-    refetchInterval: 5000, // Poll every 5 seconds as backup for real-time
+    // OPTIMIZATION: Remove polling since we have realtime subscriptions
+    // This was causing duplicate fetches and network overhead
+    // refetchInterval: 5000, 
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       logger.info(`Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
       if (response.status === 'error') {
@@ -189,7 +191,9 @@ export const useThreadMessages = (
       return getThreadReplies(messageId, limit, offset);
     },
     enabled: isValidMessageId && isAuthenticated,
-    refetchInterval: 10000, // Poll every 10 seconds as backup for real-time
+    // OPTIMIZATION: Remove polling since we have realtime subscriptions
+    // This was causing duplicate fetches and network overhead
+    // refetchInterval: 10000, 
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       if (response.status === 'error' && response.error) {
         toast.error('Failed to load thread replies');
