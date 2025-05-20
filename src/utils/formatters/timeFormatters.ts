@@ -2,9 +2,6 @@
 import { formatDistanceToNow, parseISO, format } from 'date-fns';
 import { logger } from '@/utils/logger';
 
-// Cache for parsed dates to avoid repeated expensive parsing
-const parsedDateCache = new Map<string, Date>();
-
 /**
  * Formats a timestamp into a human-readable relative time string
  * 
@@ -17,12 +14,15 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   // Log the input timestamp for debugging
   logger.info(`[TIME FORMATTER] Input timestamp: ${timestamp}`);
   
-  // Parse the ISO string to a Date object if it's a string, using cache for performance
   let date: Date;
   if (typeof timestamp === 'string') {
-    // IMPORTANT FIX: Don't use cached dates as they might have incorrect timezone conversion
-    // Parse directly from the ISO string, which correctly preserves the UTC time
-    date = parseISO(timestamp);
+    // IMPORTANT FIX: Ensure database timestamps (which are UTC but don't have Z) 
+    // are correctly parsed as UTC by appending 'Z' if missing
+    const timestampWithUTC = timestamp.endsWith('Z') ? timestamp : `${timestamp}Z`;
+    logger.info(`[TIME FORMATTER] Adjusted ISO string with UTC marker: ${timestampWithUTC}`);
+    
+    // Parse the timestamp as UTC
+    date = parseISO(timestampWithUTC);
     
     // Log the original date string and parsed date for debugging
     logger.info(`[TIME FORMATTER] Original ISO string: ${timestamp}`);
@@ -71,10 +71,11 @@ export const formatLocalDate = (
 ): string => {
   if (!timestamp) return '';
   
-  // IMPORTANT FIX: Don't use cache, parse directly for correct timezone handling
   let date: Date;
   if (typeof timestamp === 'string') {
-    date = parseISO(timestamp);
+    // IMPORTANT FIX: Ensure database timestamps are correctly parsed as UTC
+    const timestampWithUTC = timestamp.endsWith('Z') ? timestamp : `${timestamp}Z`;
+    date = parseISO(timestampWithUTC);
   } else {
     date = timestamp;
   }
@@ -83,19 +84,10 @@ export const formatLocalDate = (
 };
 
 /**
- * Clear the date cache if needed (useful for testing or when memory concerns arise)
- */
-export const clearDateCache = (): void => {
-  parsedDateCache.clear();
-  logger.info('[TIME FORMATTER] Date cache cleared');
-};
-
-/**
- * Force clear the date cache and reload all chat messages
+ * Force clear any cached data and reload all chat messages
  * This function should be called when timezone issues are detected
  */
 export const forceRefreshTimestamps = (): void => {
-  clearDateCache();
-  logger.info('[TIME FORMATTER] Timestamps refreshed, cache cleared');
+  logger.info('[TIME FORMATTER] Timestamps refreshed');
   // The next time messages are displayed, they'll be parsed freshly
 };

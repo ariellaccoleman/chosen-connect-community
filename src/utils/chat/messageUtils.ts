@@ -30,7 +30,7 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
   } : undefined;
 
   // Pre-format the timestamp consistently for all messages
-  // Since we're using UTC dates throughout the app, this will work correctly
+  // Our fixed version of formatRelativeTime will handle the UTC conversion properly
   const formattedTime = formatRelativeTime(message.created_at);
   logger.info(`[TIMESTAMP] Pre-formatted time for message ${message.id}: ${formattedTime}`);
 
