@@ -10,6 +10,7 @@ import { logger } from '@/utils/logger';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area";
+import { useChannelMessagesRealtime } from '@/hooks/chat/useChatRealtime';
 
 interface MessageFeedProps {
   channelId: string;
@@ -29,8 +30,37 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   const { activeChannel } = useChat();
   const viewportRef = useRef<HTMLDivElement>(null);
   const initialLoadRef = useRef(true);
+  const previousMessagesLengthRef = useRef(0);
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
+  
+  // Set up real-time updates for this channel and track message count changes
+  useChannelMessagesRealtime(channelId);
+  
+  // Detect when new messages arrive by comparing the current count with the previous count
+  useEffect(() => {
+    if (messages.length > previousMessagesLengthRef.current) {
+      // New messages have arrived
+      logger.info(`New messages detected: previous=${previousMessagesLengthRef.current}, current=${messages.length}`);
+      
+      // If we should auto-scroll (user was already at the bottom), scroll to bottom
+      if (shouldScrollToBottom) {
+        const scrollToBottom = () => {
+          if (viewportRef.current) {
+            viewportRef.current.scrollTop = viewportRef.current.scrollHeight;
+            logger.info('Auto-scrolling to bottom after new messages received');
+          }
+        };
+        
+        // Scroll immediately and with a delay to ensure DOM is updated
+        scrollToBottom();
+        setTimeout(scrollToBottom, 50);
+      }
+    }
+    
+    // Update the previous message count reference
+    previousMessagesLengthRef.current = messages.length;
+  }, [messages, shouldScrollToBottom]);
   
   // Initial scroll to bottom on first load and when messages change
   useEffect(() => {
