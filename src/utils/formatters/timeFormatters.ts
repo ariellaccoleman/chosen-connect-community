@@ -41,12 +41,23 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
     date = timestamp;
   }
   
+  // Get current time and calculate difference in seconds with RAW timestamp
+  // before any timezone conversion happens
+  const now = new Date();
+  const rawSecDiff = differenceInSeconds(now, date);
+  logger.info(`[TIME FORMATTER] Raw time difference in seconds (before timezone conversion): ${rawSecDiff}`);
+  logger.info(`[TIME FORMATTER] Raw now: ${now.toISOString()}, Raw date: ${date.toISOString()}`);
+  
   // Get the user's local timezone
   const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}, Date object: ${date.toISOString()}`);
   
   // Convert the UTC timestamp to the user's local timezone
   const localDate = toZonedTime(date, userTimeZone);
+  
+  // Calculate difference after timezone conversion
+  const afterConversionSecDiff = differenceInSeconds(now, localDate);
+  logger.info(`[TIME FORMATTER] Time difference after timezone conversion: ${afterConversionSecDiff}`);
   
   // Log the actual local date representation properly
   const localISOString = new Date(
