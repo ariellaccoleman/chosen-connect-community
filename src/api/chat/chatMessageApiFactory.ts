@@ -169,11 +169,11 @@ async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<s
     if (!messageIds.length) return {};
     
     // Execute a single query to count replies for all messages
+    // Using Supabase's implicit grouping approach where any non-aggregated column is used as grouping column
     const { data, error } = await supabase
       .from('chats')
-      .select('parent_id, count(*)')
-      .in('parent_id', messageIds)
-      .groupBy('parent_id'); // FIX: Changed from .group() to .groupBy()
+      .select('parent_id, count')
+      .in('parent_id', messageIds);
       
     if (error) {
       logger.error('Error fetching reply counts:', error);
