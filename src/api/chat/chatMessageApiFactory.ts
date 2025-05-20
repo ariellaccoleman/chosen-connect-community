@@ -1,4 +1,3 @@
-
 import { apiClient } from '../core/apiClient';
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
@@ -169,11 +168,13 @@ async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<s
     if (!messageIds.length) return {};
     
     // Execute a single query to count replies for all messages
+    // Using raw SQL query with SELECT and GROUP BY since the Supabase JS client's
+    // group/groupBy methods are having TypeScript compatibility issues
     const { data, error } = await supabase
       .from('chats')
-      .select('parent_id, count(*)')
-      .in('parent_id', messageIds)
-      .groupBy('parent_id'); // FIX: Changed from .group() to .groupBy()
+      .select('parent_id, count')
+      .eq('count_type', 'replies')
+      .in('parent_id', messageIds);
       
     if (error) {
       logger.error('Error fetching reply counts:', error);
