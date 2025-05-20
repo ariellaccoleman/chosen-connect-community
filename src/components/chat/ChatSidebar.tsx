@@ -7,6 +7,7 @@ import { Loader, PlusCircle, MessageSquare } from 'lucide-react';
 import { logger } from '@/utils/logger';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatSidebarProps {
   selectedChannelId: string | null;
@@ -18,8 +19,9 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onSelectChannel 
 }) => {
   const { data: channels = [], isLoading, isError } = useChatChannels();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [initialLoad, setInitialLoad] = useState(true);
+  const navigate = useNavigate();
 
   // Enhanced logging for debugging
   logger.info(`ChatSidebar rendering - Selected Channel: ${selectedChannelId || 'none'}`);
@@ -53,6 +55,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     }
   }, [channels, isLoading, selectedChannelId, onSelectChannel, initialLoad]);
 
+  const handleAddChannel = () => {
+    logger.info('Add channel button clicked');
+    if (isAuthenticated && user) {
+      navigate('/admin/chat/channels/create');
+    }
+  };
+
   // Show loading state
   if (isLoading) {
     return (
@@ -81,6 +90,12 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
     return (
       <div className="p-4 text-center">
         <p className="text-gray-500 dark:text-gray-400 mb-2">No channels found</p>
+        {isAuthenticated && (
+          <Button variant="outline" size="sm" onClick={handleAddChannel} className="mt-2">
+            <PlusCircle size={16} className="mr-2" />
+            Create Channel
+          </Button>
+        )}
       </div>
     );
   }
@@ -91,7 +106,13 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         <h2 className="font-semibold text-lg flex items-center justify-between">
           Channels
           {isAuthenticated && (
-            <Button variant="ghost" size="icon" className="h-6 w-6">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6"
+              onClick={handleAddChannel}
+              title="Create New Channel"
+            >
               <PlusCircle size={18} />
             </Button>
           )}
