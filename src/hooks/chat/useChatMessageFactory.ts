@@ -56,8 +56,6 @@ export const useChannelMessages = (
     // Only enable the query if we have both authentication and a valid channel ID
     enabled: isAuthenticated && !!user?.id && isValidChannelId,
     // OPTIMIZATION: Remove polling since we have realtime subscriptions
-    // This was causing duplicate fetches and network overhead
-    // refetchInterval: 5000, 
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       logger.info(`Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
       if (response.status === 'error') {
@@ -65,6 +63,15 @@ export const useChannelMessages = (
         toast.error(response.error?.message || 'Failed to load messages');
         return [];
       }
+
+      // Log each message timestamp for debugging
+      if (response.data && response.data.length > 0) {
+        logger.info('Message timestamps from API response:');
+        response.data.forEach(msg => {
+          logger.info(`Message ${msg.id}: ${msg.created_at}`);
+        });
+      }
+      
       return response.data || [];
     },
     meta: {

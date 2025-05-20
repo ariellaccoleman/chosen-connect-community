@@ -1,4 +1,3 @@
-
 import { apiClient } from '../core/apiClient';
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
@@ -6,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
 import { ApiResponse, createErrorResponse, createSuccessResponse } from '../core/errorHandler';
+import { processChatMessage, formatAuthorName } from '@/utils/chat/messageUtils';
 
 /**
  * API Factory for chat messages
@@ -23,53 +23,15 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
     enableLogging: true
   },
   
-  // Transform raw database response to domain type
+  // Transform raw database response to domain type using shared utility
   transformResponse: (data) => {
     // Return empty data if missing
     if (!data) return {} as ChatMessageWithAuthor;
     
-    // Log the raw timestamp data for debugging
-    if (data.created_at) {
-      logger.info(`Transforming timestamp in API factory: ${data.created_at}`);
-    }
-    
-    // Basic structure for transformed message
-    const message: ChatMessageWithAuthor = {
-      id: data.id,
-      channel_id: data.channel_id,
-      parent_id: data.parent_id,
-      user_id: data.user_id,
-      message: data.message,
-      created_at: data.created_at,
-      updated_at: data.updated_at || data.created_at,
-      // Transform author data if present
-      author: data.author ? {
-        id: data.author.id,
-        first_name: data.author.first_name,
-        last_name: data.author.last_name,
-        avatar_url: data.author.avatar_url,
-        full_name: formatAuthorName(data.author)
-      } : undefined,
-      // Include reply count if present
-      reply_count: data.reply_count || 0
-    };
-    
-    return message;
+    // Use the shared message processing utility for consistent handling
+    return processChatMessage(data);
   }
 });
-
-/**
- * Format author's full name
- */
-function formatAuthorName(author: any): string {
-  if (!author) return 'Anonymous';
-  
-  const firstName = author.first_name || '';
-  const lastName = author.last_name || '';
-  const fullName = [firstName, lastName].filter(Boolean).join(' ');
-  
-  return fullName || 'Anonymous';
-}
 
 /**
  * Get channel messages with author details and reply counts
@@ -138,28 +100,14 @@ export const getChannelMessages = async (
         logger.info(`Message ID ${msg.id} raw timestamp: ${msg.created_at}`);
       });
       
-      // Apply reply counts to messages
+      // Apply reply counts to messages and process them consistently using our utility
       const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
-        // Format author information
-        if (msg.author) {
-          msg.author.full_name = formatAuthorName(msg.author);
-        }
-        
-        // Get reply count for this message from our efficient query results
+        // Add reply count to the message object before processing
         const replyCount = replyCounts[msg.id] || 0;
+        msg.reply_count = replyCount;
         
-        // Return properly formatted message
-        return {
-          id: msg.id,
-          channel_id: msg.channel_id,
-          parent_id: msg.parent_id,
-          user_id: msg.user_id,
-          message: msg.message,
-          created_at: msg.created_at,
-          updated_at: msg.updated_at || msg.created_at,
-          author: msg.author,
-          reply_count: replyCount
-        };
+        // Use shared processing utility for consistent handling
+        return processChatMessage(msg);
       });
       
       return createSuccessResponse(transformedMessages);
@@ -252,26 +200,9 @@ export const getThreadReplies = async (
         });
       }
       
-      // Transform the raw messages
+      // Transform the raw messages using our shared utility
       const transformedMessages = (result.data || []).map((msg: any): ChatMessageWithAuthor => {
-        // Format the author name
-        if (msg.author) {
-          const firstName = msg.author.first_name || '';
-          const lastName = msg.author.last_name || '';
-          const fullName = [firstName, lastName].filter(Boolean).join(' ');
-          msg.author.full_name = fullName || 'Anonymous';
-        }
-        
-        return {
-          id: msg.id,
-          channel_id: msg.channel_id,
-          parent_id: msg.parent_id,
-          user_id: msg.user_id,
-          message: msg.message,
-          created_at: msg.created_at,
-          updated_at: msg.updated_at || msg.created_at,
-          author: msg.author
-        };
+        return processChatMessage(msg);
       });
       
       return createSuccessResponse(transformedMessages);

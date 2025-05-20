@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { ChatMessageWithAuthor } from '@/types/chat';
+import { processChatMessage } from '@/utils/chat/messageUtils';
 
 /**
  * Helper function to validate if a string is a valid UUID
@@ -59,10 +60,13 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
             logger.info(`Real-time message timestamp: ${payload.new.created_at}`);
           }
           
+          // Process the new message with our utility for consistent timestamp handling
+          const processedMessage = processChatMessage(payload.new, false); // false because we don't have author info yet
+          
           // Check if this is a reply to a thread
-          if (payload.new && payload.new.parent_id) {
+          if (processedMessage.parent_id) {
             // If it's a reply, we need to update the reply count for the parent message
-            const parentId = payload.new.parent_id;
+            const parentId = processedMessage.parent_id;
             logger.info(`Updating reply count for parent message: ${parentId}`);
             
             // Get all message queries for this channel
@@ -94,7 +98,7 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
           });
           
           // Show toast notification for new messages not from current user
-          if (payload.new && payload.new.user_id !== user.id) {
+          if (processedMessage.user_id !== user.id) {
             toast.info('New message received');
           }
         }
@@ -157,6 +161,9 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
             logger.info(`Real-time thread reply timestamp: ${payload.new.created_at}`);
           }
           
+          // Process the message with our utility for consistent handling
+          const processedMessage = processChatMessage(payload.new, false); // false because we don't have author info yet
+          
           // Invalidate and refetch the thread messages query
           queryClient.invalidateQueries({ 
             queryKey: ['threadMessages', parentId],
@@ -164,7 +171,7 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
           });
           
           // Update the reply count for the parent message in channel messages queries
-          const channelId = payload.new?.channel_id;
+          const channelId = processedMessage.channel_id;
           if (channelId) {
             // Get all message queries that might contain this channel's messages
             const messagesKey = ['chatMessages', channelId];
@@ -189,7 +196,7 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
           }
           
           // Notify if message is from someone else
-          if (payload.new && payload.new.user_id !== user.id) {
+          if (processedMessage.user_id !== user.id) {
             toast.info('New reply in thread');
           }
         }

@@ -20,7 +20,7 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onClick, 
   showReplies = true 
 }) => {
-  // Log the raw timestamp and formatted time for debugging
+  // Get the timestamp and format it
   const rawTimestamp = message.created_at;
   const formattedTime = rawTimestamp ? formatRelativeTime(rawTimestamp) : '';
   
