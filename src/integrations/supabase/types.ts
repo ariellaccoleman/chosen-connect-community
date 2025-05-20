@@ -868,7 +868,21 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      chat_reply_counts: {
+        Row: {
+          count: number | null
+          parent_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       get_cached_tags: {

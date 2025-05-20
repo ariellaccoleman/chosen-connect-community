@@ -54,6 +54,11 @@ export const useChannelMessagesRealtime = (channelId: string | null | undefined)
         (payload) => {
           logger.info('Real-time: New channel message received:', payload);
           
+          // Log timestamp for debugging
+          if (payload.new && payload.new.created_at) {
+            logger.info(`Real-time message timestamp: ${payload.new.created_at}`);
+          }
+          
           // Check if this is a reply to a thread
           if (payload.new && payload.new.parent_id) {
             // If it's a reply, we need to update the reply count for the parent message
@@ -146,6 +151,11 @@ export const useThreadRepliesRealtime = (parentId: string | null | undefined) =>
         },
         (payload) => {
           logger.info('Real-time: New thread reply received:', payload);
+          
+          // Log the timestamp for debugging
+          if (payload.new && payload.new.created_at) {
+            logger.info(`Real-time thread reply timestamp: ${payload.new.created_at}`);
+          }
           
           // Invalidate and refetch the thread messages query
           queryClient.invalidateQueries({ 

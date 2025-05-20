@@ -28,6 +28,11 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
     // Return empty data if missing
     if (!data) return {} as ChatMessageWithAuthor;
     
+    // Log the raw timestamp data for debugging
+    if (data.created_at) {
+      logger.info(`Transforming timestamp in API factory: ${data.created_at}`);
+    }
+    
     // Basic structure for transformed message
     const message: ChatMessageWithAuthor = {
       id: data.id,
@@ -128,6 +133,11 @@ export const getChannelMessages = async (
       // This replaces the previous approach that made a separate query for each message
       const replyCounts = await getReplyCountsForMessages(messageIds);
       
+      // Log timestamps for debugging timezone issues
+      messagesResult.forEach((msg: any) => {
+        logger.info(`Message ID ${msg.id} raw timestamp: ${msg.created_at}`);
+      });
+      
       // Apply reply counts to messages
       const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
         // Format author information
@@ -171,8 +181,8 @@ async function getReplyCountsForMessages(messageIds: string[]): Promise<Record<s
     // Execute a single query to count replies for all messages
     // Using Supabase's implicit grouping approach where any non-aggregated column is used as grouping column
     const { data, error } = await supabase
-      .from('chats')
-      .select('parent_id, count')
+      .from('chat_reply_counts')
+      .select('*')
       .in('parent_id', messageIds);
       
     if (error) {
@@ -233,6 +243,13 @@ export const getThreadReplies = async (
       if (result.error) {
         logger.error('Error fetching thread replies:', result.error);
         return createErrorResponse(result.error);
+      }
+      
+      // Log timestamps for debugging
+      if (result.data && result.data.length > 0) {
+        result.data.forEach((msg: any) => {
+          logger.info(`Thread reply ID ${msg.id} raw timestamp: ${msg.created_at}`);
+        });
       }
       
       // Transform the raw messages
@@ -339,6 +356,9 @@ export const sendChatMessage = async (
       
       // Type cast data to ensure we can access its properties safely
       const typedData = data as Record<string, any>;
+      
+      // Log the timestamp for debugging
+      logger.info(`New message timestamp: ${typedData.created_at}`);
       
       const chatMessage: ChatMessage = {
         id: typedData.id,

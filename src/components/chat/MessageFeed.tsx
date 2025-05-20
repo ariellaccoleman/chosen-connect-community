@@ -35,6 +35,16 @@ const MessageFeed: React.FC<MessageFeedProps> = ({
   
   logger.info(`MessageFeed - Channel: ${channelId}, Messages count: ${messages.length}`);
   
+  // Log messages for debugging timestamp issues
+  useEffect(() => {
+    if (messages && messages.length > 0) {
+      logger.info('Messages loaded in MessageFeed:');
+      messages.forEach(msg => {
+        logger.info(`Message ID: ${msg.id}, timestamp: ${msg.created_at}`);
+      });
+    }
+  }, [messages]);
+  
   // OPTIMIZATION: Remove duplicate realtime subscription
   // The parent Chat component already sets up the subscription
   // useChannelMessagesRealtime(channelId);
