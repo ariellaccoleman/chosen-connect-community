@@ -140,7 +140,8 @@ export const getChannelMessages = async (
             // Find the message and update its reply count
             const message = messagesToUpdate.find((msg: any) => msg.id === messageId);
             if (message) {
-              message.reply_count = replyCount;
+              // Use a type assertion to inform TypeScript that we can modify this property
+              (message as any).reply_count = replyCount;
             }
           } else {
             logger.error(`Error fetching reply count for message ${messageId}:`, countResult.error);
