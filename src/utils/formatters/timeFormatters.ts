@@ -38,6 +38,11 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   logger.info(`[TIME FORMATTER] Raw UTC date: ${date.toISOString()}`);
   logger.info(`[TIME FORMATTER] User timezone: ${userTimeZone}`);
   
+  // Add current time for comparison
+  const now = new Date();
+  logger.info(`[TIME FORMATTER] Current time (Now): ${now.toISOString()}`);
+  logger.info(`[TIME FORMATTER] Time difference (milliseconds): ${now.getTime() - date.getTime()}`);
+  
   try {
     // Use formatDistanceToNow to get the relative time (e.g., "2 hours ago")
     const result = formatDistanceToNow(date, { addSuffix: true });

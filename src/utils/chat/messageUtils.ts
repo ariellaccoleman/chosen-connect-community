@@ -14,7 +14,12 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
   // Log the incoming message with source information
   logger.info(`[CODE PATH] processChatMessage called from: ${callerInfo}`);
   logger.info(`[MESSAGE] Processing message ID: ${message.id}, raw timestamp: ${message.created_at}`);
-
+  
+  // Add current time for comparison
+  const now = new Date();
+  logger.info(`[MESSAGE PROCESSING] Current time (Now): ${now.toISOString()}`);
+  logger.info(`[MESSAGE PROCESSING] Raw input timestamp: ${message.created_at}`);
+  
   // Format author information if available
   const authorData = message.author ? {
     id: message.author.id,
@@ -44,7 +49,7 @@ export function processChatMessage(message: any, includeAuthor = true): ChatMess
     ...(includeAuthor && { author: authorData })
   };
 
-  // Log the processed message
+  // Log the processed message with comparison between raw and formatted timestamps
   logger.info(`[PROCESSED] Message: ${processedMessage.id}, raw timestamp: ${processedMessage.created_at}, formatted: ${processedMessage.formatted_time}`);
   
   return processedMessage;
