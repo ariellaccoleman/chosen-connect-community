@@ -1,3 +1,4 @@
+
 import { apiClient } from '../core/apiClient';
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
@@ -5,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
 import { ApiResponse, createErrorResponse, createSuccessResponse } from '../core/errorHandler';
+import { getReplyCounts } from './chatReplyCountView';
 
 /**
  * API Factory for chat messages
@@ -125,7 +127,7 @@ export const getChannelMessages = async (
       
       // OPTIMIZATION: Single query to get reply counts for all messages at once
       // This replaces the previous approach that made a separate query for each message
-      const replyCounts = await getReplyCountsForMessages(messageIds);
+      const replyCounts = await getReplyCounts(messageIds);
       
       // Apply reply counts to messages
       const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
