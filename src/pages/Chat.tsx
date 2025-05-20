@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ChatSidebar from '@/components/chat/ChatSidebar';
@@ -92,7 +93,7 @@ const ChatPage = () => {
 
   // If authentication is still initializing, show a loading state
   if (!initialized) {
-    return <div className="h-[calc(100vh-64px)] pt-16 flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+    return <div className="h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
           <Loader size={36} className="mx-auto animate-spin text-primary mb-4" />
           <p className="text-gray-500 dark:text-gray-400">Loading chat...</p>
@@ -102,7 +103,7 @@ const ChatPage = () => {
 
   // If user is not authenticated but initialization is complete, show login prompt
   if (!isAuthenticated && initialized) {
-    return <div className="h-[calc(100vh-64px)] pt-16 flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
+    return <div className="h-[calc(100vh-64px)] flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center max-w-md p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
           <p className="mb-6 text-gray-600 dark:text-gray-300">You need to be logged in to access the chat functionality.</p>
@@ -112,7 +113,7 @@ const ChatPage = () => {
         </div>
       </div>;
   }
-  return <div className="h-[calc(100vh-64px)] pt-16 flex flex-col sm:flex-row bg-gray-50 dark:bg-gray-900 py-0">
+  return <div className="h-[calc(100vh-64px)] flex flex-col sm:flex-row bg-gray-50 dark:bg-gray-900">
       {/* Channel Sidebar */}
       <div className="w-full sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
         <ChatSidebar selectedChannelId={activeChannelId} onSelectChannel={handleChannelSelect} />
