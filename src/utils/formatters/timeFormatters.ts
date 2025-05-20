@@ -1,5 +1,6 @@
 
 import { formatDistanceToNow, parseISO } from 'date-fns';
+import { formatInTimeZone } from 'date-fns-tz';
 
 /**
  * Formats a timestamp into a human-readable relative time string
@@ -14,8 +15,14 @@ export const formatRelativeTime = (timestamp: string | Date): string => {
   // Parse the ISO string to a Date object if it's a string
   const date = typeof timestamp === 'string' ? parseISO(timestamp) : timestamp;
   
-  // Format the date as a relative time, making sure to use the local timezone
-  return formatDistanceToNow(date, { addSuffix: true });
+  // Get the user's local timezone
+  const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  
+  // Convert the UTC timestamp to the user's local time before calculating relative time
+  const localDate = new Date(formatInTimeZone(date, userTimeZone, 'yyyy-MM-dd HH:mm:ss'));
+  
+  // Format the date as a relative time using the local date
+  return formatDistanceToNow(localDate, { addSuffix: true });
 };
 
 /**
