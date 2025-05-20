@@ -121,25 +121,26 @@ export const getChannelMessages = async (
       if (messagesToUpdate.length > 0) {
         const messageIds = messagesToUpdate.map(msg => (msg as any).id);
         
-        // Fixed query: Use separate select and count calls with proper Supabase syntax
+        // Fixed query: Use proper Supabase syntax for counting replies
         for (const messageId of messageIds) {
+          // Create a new repository instance for each count query
           const repliesRepo = createRepository('chats');
           
-          // Count replies for this parent message
+          // First get all replies that match this parent ID
           const countQuery = repliesRepo
-            .select('id', { count: 'exact', head: true })
+            .select('id')
             .eq('parent_id', messageId);
             
           const countResult = await countQuery.execute();
           
           if (!countResult.error) {
-            // Get the count from the result and add to message
-            const count = countResult.count || 0;
+            // Count the replies by getting the array length
+            const replyCount = countResult.data ? countResult.data.length : 0;
             
             // Find the message and update its reply count
             const message = messagesToUpdate.find((msg: any) => msg.id === messageId);
             if (message) {
-              message.reply_count = count;
+              message.reply_count = replyCount;
             }
           } else {
             logger.error(`Error fetching reply count for message ${messageId}:`, countResult.error);
