@@ -13,7 +13,7 @@ export function extendApiOperations<
   TId = string, 
   TCreate = Partial<T>, 
   TUpdate = Partial<T>,
-  TCustom extends Record<string, any> = Record<string, never>
+  TCustom = Record<string, any>
 >(
   baseOperations: ApiOperations<T, TId, TCreate, TUpdate>,
   customOperations: TCustom

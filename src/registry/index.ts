@@ -1,5 +1,5 @@
 
-import defaultRegistrations, { initializeDefaultEntityRegistrations } from "./defaultEntityRegistrations";
+import defaultRegistrations from "./defaultEntityRegistrations";
 import { entityRegistry } from "./entityRegistry";
 import { EntityType } from "@/types/entityTypes";
 

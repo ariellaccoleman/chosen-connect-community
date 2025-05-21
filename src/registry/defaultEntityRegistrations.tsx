@@ -1,6 +1,7 @@
 
 import React from 'react';
 import { EntityType } from '@/types/entityTypes';
+import { EntityRegistration } from '@/types/entityRegistry';
 import { Users, Building, Calendar, MessageCircle, 
   FolderKanban, FileText, MessageSquare } from 'lucide-react';
 
@@ -8,7 +9,7 @@ import { Users, Building, Calendar, MessageCircle,
  * Default entity registrations for core entity types.
  * This provides configuration for each entity type across the app.
  */
-const defaultRegistrations = {
+const defaultRegistrations: Record<EntityType, EntityRegistration> = {
   [EntityType.PERSON]: {
     type: EntityType.PERSON,
     icon: <Users className="h-4 w-4" />,
@@ -40,6 +41,7 @@ const defaultRegistrations = {
     type: EntityType.GUIDE,
     icon: <FileText className="h-4 w-4" />,
     label: 'Guide',
+    pluralLabel: 'Guides',
     avatarFallback: (name: string) => name?.charAt(0) || '?',
     defaultRoute: '/guides'
   },
@@ -48,6 +50,7 @@ const defaultRegistrations = {
     type: EntityType.CHAT,
     icon: <MessageCircle className="h-4 w-4" />,
     label: 'Chat',
+    pluralLabel: 'Chats',
     avatarFallback: (name: string) => name?.charAt(0) || '?',
     defaultRoute: '/chat'
   },
@@ -56,6 +59,7 @@ const defaultRegistrations = {
     type: EntityType.HUB,
     icon: <FolderKanban className="h-4 w-4" />,
     label: 'Hub',
+    pluralLabel: 'Hubs',
     avatarFallback: (name: string) => name?.charAt(0) || '?',
     defaultRoute: '/hubs'
   },
@@ -72,9 +76,3 @@ const defaultRegistrations = {
 
 // Export the default registrations
 export default defaultRegistrations;
-
-// Export the function to initialize the registry with default registrations
-export const initializeDefaultEntityRegistrations = () => {
-  // This would normally initialize the registry, but is now handled differently
-  // The import and usage is preserved for compatibility
-}

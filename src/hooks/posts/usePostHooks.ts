@@ -9,7 +9,7 @@ import {
   getPostById
 } from "@/api/posts";
 import { CreatePostRequest, CreateCommentRequest } from "@/types/post";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // Query keys
 const POSTS_KEY = "posts";
@@ -82,15 +82,10 @@ export const useCreatePost = () => {
     mutationFn: (data: CreatePostRequest) => postsApi.createPostWithTags(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
-      toast({
-        description: "Your post has been published"
-      });
+      toast("Your post has been published");
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        description: error.message || "An error occurred"
-      });
+      toast.error(error.message || "An error occurred");
     }
   });
 };
@@ -107,15 +102,10 @@ export const useCreateComment = (postId: string) => {
       queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, postId] });
       queryClient.invalidateQueries({ queryKey: [POST_KEY, postId] });
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
-      toast({
-        description: "Your comment has been posted"
-      });
+      toast("Your comment has been posted");
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        description: error.message || "An error occurred"
-      });
+      toast.error(error.message || "An error occurred");
     }
   });
 };
@@ -134,10 +124,7 @@ export const useTogglePostLike = (postId: string) => {
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        description: error.message || "An error occurred"
-      });
+      toast.error(error.message || "An error occurred");
     }
   });
 };
@@ -155,10 +142,7 @@ export const useToggleCommentLike = (commentId: string, postId: string) => {
       queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, postId] });
     },
     onError: (error: any) => {
-      toast({
-        variant: "destructive",
-        description: error.message || "An error occurred"
-      });
+      toast.error(error.message || "An error occurred");
     }
   });
 };
