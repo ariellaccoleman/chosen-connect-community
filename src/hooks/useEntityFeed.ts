@@ -5,10 +5,10 @@ import { EntityType } from "@/types/entityTypes";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
 
-// Import needed APIs
-import { organizationsApi } from "@/api/organizations";
-import { eventsApi } from "@/api/events";
-import { profilesApi } from "@/api/profiles";
+// Import proper API clients
+import { organizationApi } from "@/api/organizations";
+import { eventApi } from "@/api/events";
+import { profileApi } from "@/api/profiles";
 
 interface UseEntityFeedProps {
   entityTypes: EntityType[];
@@ -43,7 +43,8 @@ export const useEntityFeed = ({
             // Fetch the appropriate data based on entity type
             switch (type) {
               case EntityType.PERSON:
-                const { data: profiles } = await profilesApi.getAllProfiles({ 
+                logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
+                const { data: profiles } = await profileApi.getAllProfiles({ 
                   tagId, 
                   limit, 
                   filterByUserId 
@@ -52,7 +53,8 @@ export const useEntityFeed = ({
                 break;
                 
               case EntityType.ORGANIZATION:
-                const { data: orgs } = await organizationsApi.getAllOrganizations({ 
+                logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
+                const { data: orgs } = await organizationApi.getAllOrganizations({ 
                   tagId, 
                   limit
                 });
@@ -60,7 +62,8 @@ export const useEntityFeed = ({
                 break;
                 
               case EntityType.EVENT:
-                const { data: events } = await eventsApi.getAllEvents({ 
+                logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
+                const { data: events } = await eventApi.getAllEvents({ 
                   tagId, 
                   limit
                 });
