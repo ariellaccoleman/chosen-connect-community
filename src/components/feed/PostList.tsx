@@ -2,6 +2,10 @@
 import React from "react";
 import PostCard from "./PostCard";
 
+interface PostListProps {
+  selectedTagId: string | null;
+}
+
 // Mock data for demonstration
 const MOCK_POSTS = [
   {
@@ -16,6 +20,10 @@ const MOCK_POSTS = [
     timestamp: new Date(Date.now() - 3600000 * 2),
     likes: 24,
     comments: 8,
+    tags: [
+      { id: "tag1", name: "Product Launch", color: "blue" },
+      { id: "tag2", name: "Tech", color: "green" }
+    ]
   },
   {
     id: "2",
@@ -29,7 +37,11 @@ const MOCK_POSTS = [
     timestamp: new Date(Date.now() - 3600000 * 5),
     likes: 12,
     comments: 15,
-    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-1.2.1&auto=format&fit=crop&w=2700&q=80"
+    image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?ixlib=rb-1.2.1&auto=format&fit=crop&w=2700&q=80",
+    tags: [
+      { id: "tag3", name: "Remote Work", color: "purple" },
+      { id: "tag4", name: "Project Management", color: "orange" }
+    ]
   },
   {
     id: "3",
@@ -43,13 +55,30 @@ const MOCK_POSTS = [
     timestamp: new Date(Date.now() - 3600000 * 24),
     likes: 56,
     comments: 7,
+    tags: [
+      { id: "tag5", name: "Marketing", color: "red" },
+      { id: "tag6", name: "Social Media", color: "pink" }
+    ]
   }
 ];
 
-const PostList: React.FC = () => {
+const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
+  // Filter posts by selected tag
+  const filteredPosts = selectedTagId
+    ? MOCK_POSTS.filter(post => post.tags.some(tag => tag.id === selectedTagId))
+    : MOCK_POSTS;
+
+  if (filteredPosts.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-8 text-center">
+        <p className="text-gray-500">No posts match the selected tag.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
-      {MOCK_POSTS.map(post => (
+      {filteredPosts.map(post => (
         <PostCard key={post.id} post={post} />
       ))}
     </div>

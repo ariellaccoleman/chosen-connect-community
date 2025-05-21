@@ -6,6 +6,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Heart, MessageSquare, Share2, MoreHorizontal } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+
+interface Tag {
+  id: string;
+  name: string;
+  color?: string;
+}
 
 interface Author {
   id: string;
@@ -22,6 +29,7 @@ interface Post {
   image?: string;
   likes: number;
   comments: number;
+  tags?: Tag[];
 }
 
 interface PostCardProps {
@@ -58,6 +66,17 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="px-4 pb-3">
           <p className="text-sm">{post.content}</p>
         </div>
+        
+        {/* Post tags */}
+        {post.tags && post.tags.length > 0 && (
+          <div className="px-4 pb-3 flex flex-wrap gap-2">
+            {post.tags.map(tag => (
+              <Badge key={tag.id} variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                {tag.name}
+              </Badge>
+            ))}
+          </div>
+        )}
         
         {/* Post image (if available) */}
         {post.image && (

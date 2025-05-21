@@ -6,10 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/profiles";
-import { Image, Video, Send } from "lucide-react";
+import { Image, Video, Send, Tag } from "lucide-react";
+import TagSelector from "@/components/tags/TagSelector";
+import { EntityType } from "@/types/entityTypes";
+import { Tag as TagType } from "@/utils/tags/types";
 
 const PostComposer: React.FC = () => {
   const [postContent, setPostContent] = useState("");
+  const [showTagSelector, setShowTagSelector] = useState(false);
+  const [selectedTags, setSelectedTags] = useState<TagType[]>([]);
   const { user } = useAuth();
   const { data: profileData } = useCurrentProfile();
   const profile = profileData?.data;
@@ -18,10 +23,22 @@ const PostComposer: React.FC = () => {
     setPostContent(e.target.value);
   };
 
+  const handleTagSelected = (tag: TagType) => {
+    if (!selectedTags.some(t => t.id === tag.id)) {
+      setSelectedTags([...selectedTags, tag]);
+    }
+    setShowTagSelector(false);
+  };
+
+  const handleRemoveTag = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(tag => tag.id !== tagId));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Post submitted:", postContent);
+    console.log("Post submitted:", postContent, "with tags:", selectedTags);
     setPostContent("");
+    setSelectedTags([]);
   };
 
   const getInitials = () => {
@@ -53,6 +70,38 @@ const PostComposer: React.FC = () => {
                 onChange={handlePostContentChange}
               />
               
+              {/* Display selected tags */}
+              {selectedTags.length > 0 && (
+                <div className="mb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {selectedTags.map(tag => (
+                      <div 
+                        key={tag.id} 
+                        className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs flex items-center"
+                      >
+                        <span>{tag.name}</span>
+                        <button 
+                          onClick={() => handleRemoveTag(tag.id)}
+                          className="ml-1 text-blue-700 hover:text-blue-900"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Tag selector */}
+              {showTagSelector && (
+                <div className="mb-3">
+                  <TagSelector
+                    targetType={EntityType.POST}
+                    onTagSelected={handleTagSelected}
+                  />
+                </div>
+              )}
+              
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-2">
                   <Button type="button" variant="ghost" size="sm" className="text-gray-600">
@@ -62,6 +111,16 @@ const PostComposer: React.FC = () => {
                   <Button type="button" variant="ghost" size="sm" className="text-gray-600">
                     <Video className="h-5 w-5 mr-1" />
                     Video
+                  </Button>
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-gray-600"
+                    onClick={() => setShowTagSelector(!showTagSelector)}
+                  >
+                    <Tag className="h-5 w-5 mr-1" />
+                    Tag
                   </Button>
                 </div>
                 
