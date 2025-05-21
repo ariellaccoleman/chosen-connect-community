@@ -13,6 +13,7 @@ import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
 import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
+import { APP_ROUTES } from "@/config/routes";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -56,7 +57,7 @@ const OrganizationsList = () => {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <h1 className="text-3xl font-bold font-heading">Organizations</h1>
         <Button 
-          onClick={() => navigate("/organizations/manage-connections")} 
+          onClick={() => navigate(APP_ROUTES.MANAGE_ORGANIZATIONS)} 
           className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
         >
           <Briefcase className="mr-2 h-4 w-4" />
@@ -146,3 +147,4 @@ const OrganizationCard = ({
 };
 
 export default OrganizationsList;
+
