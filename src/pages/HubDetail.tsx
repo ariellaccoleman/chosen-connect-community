@@ -18,7 +18,7 @@ import { useEntityFeed } from '@/hooks/useEntityFeed';
 import { useChatChannelsByTag } from '@/hooks/chat/useChatChannels';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import ChannelPreview from '@/components/chat/ChannelPreview';
-import EntityList from '@/components/entities/EntityList';
+import EntityCard from '@/components/entities/EntityCard';
 import { useEntityRegistry } from '@/hooks/useEntityRegistry';
 
 const HubDetail = () => {
@@ -112,7 +112,9 @@ const HubDetail = () => {
           <CarouselContent className="-ml-4">
             {entities.map((entity) => (
               <CarouselItem key={`entity-${entity.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
-                <EntityCard entity={entity} showTags={true} />
+                <div className="h-full">
+                  <EntityCard entity={entity} showTags={true} className="h-full" />
+                </div>
               </CarouselItem>
             ))}
           </CarouselContent>
@@ -124,39 +126,6 @@ const HubDetail = () => {
           )}
         </Carousel>
       </div>
-    );
-  };
-
-  // Helper component for individual entity cards
-  const EntityCard = ({ entity, showTags }) => {
-    return (
-      <Card className="h-full transition-shadow hover:shadow-md">
-        <CardContent className="p-6">
-          <CardTitle className="mb-2 text-xl">{entity.name}</CardTitle>
-          {entity.description && (
-            <p className="text-muted-foreground mt-2 line-clamp-2">{entity.description}</p>
-          )}
-          {showTags && entity.tags && entity.tags.length > 0 && (
-            <div className="mt-4">
-              <div className="flex flex-wrap gap-1">
-                {entity.tags.slice(0, 3).map(tagAssignment => (
-                  <span 
-                    key={`tag-${tagAssignment.tag_id}`}
-                    className="bg-primary-50 text-primary-700 text-xs px-2 py-1 rounded-full"
-                  >
-                    {tagAssignment.tag?.name}
-                  </span>
-                ))}
-                {entity.tags.length > 3 && (
-                  <span className="text-xs text-muted-foreground">
-                    +{entity.tags.length - 3} more
-                  </span>
-                )}
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     );
   };
 
