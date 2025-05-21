@@ -88,15 +88,13 @@ export function useEnhancedCreateChatChannel() {
 }
 
 /**
- * Hook to update channel tags using the admin API endpoint
- * This bypasses RLS policies and allows admins to manage channel tags
+ * Hook to update channel tags
  */
 export function useUpdateChannelTags() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ channelId, tagIds }: { channelId: string; tagIds: string[] }) => {
-      logger.info(`Running updateChannelTags mutation for channel ${channelId} with tags:`, tagIds);
       return updateChannelTags(channelId, tagIds);
     },
     onSuccess: (response, variables) => {

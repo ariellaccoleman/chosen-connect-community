@@ -1,83 +1,29 @@
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useChatChannelById, useUpdateChatChannel, useUpdateChannelTags, useChatChannelWithDetails } from '@/hooks/chat/useChatChannels';
+import { useChatChannelById, useUpdateChatChannel } from '@/hooks/chat/useChatChannels';
 import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannel, ChatChannelUpdate } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Skeleton } from '@/components/ui/skeleton';
-import { toast } from 'sonner';
 
 export default function EditChatChannel() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  // Get detailed channel info including tags
-  const { data: channelDetailResponse, isLoading: detailsLoading } = useChatChannelWithDetails(id);
-  const channelDetail = channelDetailResponse;
-  
-  // Get basic channel info for the form
-  const { data: channelResponse, isLoading: basicLoading } = useChatChannelById(id);
-  
-  // Mutations for updating channel and tags
+  const { data: channelResponse, isLoading } = useChatChannelById(id);
   const updateMutation = useUpdateChatChannel();
-  const tagsMutation = useUpdateChannelTags();
-  
-  // Track selected tag IDs
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  
-  // Extract tag IDs from channel details when loaded
-  useEffect(() => {
-    if (channelDetail?.tag_assignments && Array.isArray(channelDetail.tag_assignments)) {
-      const tagIds = channelDetail.tag_assignments
-        .map(assignment => assignment.tag?.id)
-        .filter(Boolean) as string[];
-      setSelectedTagIds(tagIds);
-      logger.info('Loaded initial tag IDs:', tagIds);
-    }
-  }, [channelDetail]);
-  
-  const isLoading = detailsLoading || basicLoading;
   
   const handleUpdateChannel = (formData: ChatChannelUpdate) => {
     if (!id) return;
     
-    // Update channel basic info
     updateMutation.mutate({ 
       id, 
       data: formData
     }, {
       onSuccess: () => {
-        // Then update tags if we have any
-        if (selectedTagIds.length > 0 || (channelDetail?.tag_assignments?.length || 0) > 0) {
-          tagsMutation.mutate({
-            channelId: id,
-            tagIds: selectedTagIds
-          }, {
-            onSuccess: (response) => {
-              if (response.status === 'success') {
-                toast.success('Channel updated successfully');
-                navigate('/admin/chat/channels');
-              } else {
-                toast.error('Channel updated but tags failed to update');
-              }
-            },
-            onError: () => {
-              toast.error('Channel updated but tags failed to update');
-              navigate('/admin/chat/channels');
-            }
-          });
-        } else {
-          toast.success('Channel updated successfully');
-          navigate('/admin/chat/channels');
-        }
+        navigate('/admin/chat/channels');
       }
     });
-  };
-  
-  const handleTagChange = (tagIds: string[]) => {
-    setSelectedTagIds(tagIds);
-    logger.info('Tags selected:', tagIds);
   };
   
   if (isLoading) {
@@ -124,6 +70,9 @@ export default function EditChatChannel() {
     );
   }
   
+  // Log the channel data to make sure we have the correct properties
+  logger.info('Channel data for form:', channel);
+  
   return (
     <div className="container mx-auto py-6">
       <Link to="/admin/chat/channels" className="text-sm text-muted-foreground hover:underline">
@@ -140,12 +89,10 @@ export default function EditChatChannel() {
       <div className="bg-white dark:bg-gray-800 rounded-md shadow p-6">
         <ChatChannelForm 
           onSubmit={handleUpdateChannel}
-          isSubmitting={updateMutation.isPending || tagsMutation.isPending}
+          isSubmitting={updateMutation.isPending}
           defaultValues={channel as ChatChannel}
           isEditMode={true}
           existingChannelId={id}
-          onTagsChange={handleTagChange}
-          initialTagIds={selectedTagIds}
         />
       </div>
     </div>

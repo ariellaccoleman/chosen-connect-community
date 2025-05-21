@@ -130,23 +130,21 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
 
 /**
  * Update channel tags (remove all existing and add new ones)
- * This function uses direct database queries with admin privileges
- * to bypass RLS policies that would normally prevent tag assignments
  */
 export const updateChannelTags = async (
   channelId: string, 
   tagIds: string[]
 ): Promise<ApiResponse<boolean>> => {
-  return apiClient.query(async (client) => {
+  return apiClient.query(async () => {
     try {
-      logger.info(`Updating tags for channel ${channelId} with tags: ${tagIds.join(', ')}`);
+      const tagAssignmentsRepo = createRepository('tag_assignments');
       
-      // Delete existing tag assignments (direct query to bypass RLS)
-      const { error: deleteError } = await client
-        .from('tag_assignments')
+      // Delete existing tag assignments
+      const { error: deleteError } = await tagAssignmentsRepo
         .delete()
         .eq('target_id', channelId)
-        .eq('target_type', EntityType.CHAT);
+        .eq('target_type', EntityType.CHAT)
+        .execute();
         
       if (deleteError) {
         logger.error("Error deleting existing tag assignments:", deleteError);
@@ -155,44 +153,15 @@ export const updateChannelTags = async (
       
       // If there are new tags to assign, create those assignments
       if (tagIds.length > 0) {
-        // First ensure tag_entity_types are properly set up
-        for (const tagId of tagIds) {
-          // Check if this tag already has an entity type association
-          const { data: existingType, error: typeCheckError } = await client
-            .from('tag_entity_types')
-            .select('id')
-            .eq('tag_id', tagId)
-            .eq('entity_type', EntityType.CHAT)
-            .maybeSingle();
-            
-          if (typeCheckError) {
-            logger.error(`Error checking tag entity type for tagId ${tagId}:`, typeCheckError);
-            continue; // Try to continue with other tags
-          }
-          
-          // If no association exists, create it
-          if (!existingType) {
-            const { error: typeError } = await client
-              .from('tag_entity_types')
-              .insert({ tag_id: tagId, entity_type: EntityType.CHAT });
-              
-            if (typeError) {
-              logger.error(`Error creating tag entity type for tagId ${tagId}:`, typeError);
-              continue; // Try to continue with other tags
-            }
-          }
-        }
-        
-        // Create the tag assignments with direct query to bypass RLS
         const tagAssignments = tagIds.map(tagId => ({
           tag_id: tagId,
           target_id: channelId,
           target_type: EntityType.CHAT
         }));
         
-        const { error: insertError } = await client
-          .from('tag_assignments')
-          .insert(tagAssignments);
+        const { error: insertError } = await tagAssignmentsRepo
+          .insert(tagAssignments)
+          .execute();
           
         if (insertError) {
           logger.error("Error creating new tag assignments:", insertError);
@@ -200,7 +169,6 @@ export const updateChannelTags = async (
         }
       }
       
-      logger.info(`Successfully updated tags for channel ${channelId}`);
       return createSuccessResponse(true);
     } catch (error) {
       logger.error("Exception in updateChannelTags:", error);
