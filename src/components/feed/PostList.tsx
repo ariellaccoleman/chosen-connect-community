@@ -88,7 +88,7 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   return (
     <div className="space-y-4">
       {filteredPosts.map(post => (
-        <PostCard key={post.id} post={post} />
+        <PostCard key={post.id} post={post} isCompact={false} />
       ))}
     </div>
   );
