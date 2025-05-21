@@ -48,21 +48,17 @@ export const useEntityFeed = ({
                 logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
                 
                 if (tagId) {
-                  // Fetch profiles with tag filtering
+                  // Fetch profiles with tag filtering - use raw SQL query
                   const { data: profiles } = await profileApi.getAll({ 
-                    filters: {
-                      ...(filterByUserId ? { user_id: filterByUserId } : {}),
-                    },
-                    // Use the SQL query parameter to filter by tag
-                    ...(tagId ? {
-                      query: `select distinct on (p.id) p.* from profiles p
-                             inner join tag_assignments ta 
-                             on p.id = ta.target_id 
-                             where ta.target_type = 'person' 
-                             and ta.tag_id = '${tagId}'
-                             limit ${limit}`
-                    } : {}),
-                    limit: tagId ? undefined : limit
+                    ...(filterByUserId ? { filters: { user_id: filterByUserId } } : {}),
+                    query: `
+                      SELECT DISTINCT p.*
+                      FROM profiles p
+                      JOIN tag_assignments ta ON p.id = ta.target_id
+                      WHERE ta.target_type = 'person'
+                      AND ta.tag_id = '${tagId}'
+                      LIMIT ${limit}
+                    `
                   });
                   
                   items = profiles || [];
@@ -82,23 +78,24 @@ export const useEntityFeed = ({
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
                 
                 if (tagId) {
-                  // Fetch organizations with tag filtering
+                  // Fetch organizations with tag filtering - use raw SQL query
                   const { data: orgs } = await organizationApi.getAll({ 
-                    filters: {},
-                    // Use the SQL query parameter to filter by tag
-                    ...(tagId ? {
-                      query: `select distinct on (o.id) o.* from organizations o
-                             inner join tag_assignments ta 
-                             on o.id = ta.target_id 
-                             where ta.target_type = 'organization' 
-                             and ta.tag_id = '${tagId}'
-                             limit ${limit}`
-                    } : {}),
-                    limit: tagId ? undefined : limit
+                    query: `
+                      SELECT DISTINCT o.*
+                      FROM organizations o
+                      JOIN tag_assignments ta ON o.id = ta.target_id
+                      WHERE ta.target_type = 'organization'
+                      AND ta.tag_id = '${tagId}'
+                      LIMIT ${limit}
+                    `
                   });
                   
                   items = orgs || [];
                   logger.debug(`EntityFeed: Received ${items?.length || 0} organizations with tag filter`);
+                  logger.debug(`EntityFeed: Tag filter SQL used:`, { 
+                    tagId, 
+                    firstItem: items[0] ? items[0].id : 'none'
+                  });
                 } else {
                   // Regular fetch without tag filtering
                   const { data: orgs } = await organizationApi.getAll({ 
@@ -113,23 +110,25 @@ export const useEntityFeed = ({
                 logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
                 
                 if (tagId) {
-                  // Fetch events with tag filtering
+                  // Fetch events with tag filtering - use raw SQL query
                   const { data: events } = await eventApi.getAll({ 
-                    filters: {},
-                    // Use the SQL query parameter to filter by tag
-                    ...(tagId ? {
-                      query: `select distinct on (e.id) e.* from events e
-                             inner join tag_assignments ta 
-                             on e.id = ta.target_id 
-                             where ta.target_type = 'event' 
-                             and ta.tag_id = '${tagId}'
-                             limit ${limit}`
-                    } : {}),
-                    limit: tagId ? undefined : limit
+                    query: `
+                      SELECT DISTINCT e.*
+                      FROM events e
+                      JOIN tag_assignments ta ON e.id = ta.target_id
+                      WHERE ta.target_type = 'event'
+                      AND ta.tag_id = '${tagId}'
+                      LIMIT ${limit}
+                    `
                   });
                   
                   items = events || [];
-                  logger.debug(`EntityFeed: Received ${items?.length || 0} events with tag filter`);
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} events with tag filter, tag_id=${tagId}`);
+                  
+                  // Debug the first event if available
+                  if (items.length > 0) {
+                    logger.debug(`EntityFeed: Sample event:`, { id: items[0].id, title: items[0].title });
+                  }
                 } else {
                   // Regular fetch without tag filtering
                   const { data: events } = await eventApi.getAll({ 
