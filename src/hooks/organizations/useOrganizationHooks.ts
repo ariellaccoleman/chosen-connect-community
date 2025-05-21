@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { organizationApi } from '@/api/organizations/organizationApiFactory';
@@ -80,7 +79,11 @@ export const useOrganization = (id?: string) => {
           throw error;
         });
     },
-    enabled: !!id
+    enabled: !!id,
+    // Add retry configuration to handle intermittent issues
+    retry: 2,
+    // Use a stale time to reduce unnecessary refetches
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 

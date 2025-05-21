@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,7 +16,6 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 const OrganizationDetail = () => {
-  // Fix: Use id parameter name to match the route definition in APP_ROUTES
   const { id } = useParams<{ id: string }>();
   const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("members");
