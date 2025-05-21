@@ -11,6 +11,7 @@ export interface ListParams {
   sortDirection?: 'asc' | 'desc';
   filters?: Record<string, any>;
   query?: string; // Added this property to support custom SQL queries
+  include?: string; // Added for Supabase relationship inclusion
 }
 
 /**

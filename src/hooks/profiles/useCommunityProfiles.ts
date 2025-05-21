@@ -30,7 +30,9 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
         },
         search: params.search,
         limit: params.limit,
-        include: 'tags' // Explicitly request tags to be included
+        // We need to get tag data for each profile
+        // This is passed as a custom parameter to the API
+        query: `*, tags:tag_assignments(*, tag:tags(*))` 
       });
       
       if (response.error) {

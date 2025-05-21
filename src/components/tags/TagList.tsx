@@ -3,19 +3,26 @@ import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { TagAssignment } from '@/utils/tags';
 import { logger } from '@/utils/logger';
+import { EntityType } from '@/types/entityTypes';
 
 interface TagListProps {
   tagAssignments?: TagAssignment[] | null;
   className?: string;
   max?: number;
   showMore?: boolean;
+  onRemove?: (assignmentId: string) => void;
+  currentEntityType?: EntityType;
+  isRemoving?: boolean;
 }
 
 const TagList: React.FC<TagListProps> = ({ 
   tagAssignments = [], 
   className = '', 
   max, 
-  showMore = false 
+  showMore = false,
+  onRemove,
+  currentEntityType, 
+  isRemoving = false
 }) => {
   // Safety check for null or undefined
   if (!tagAssignments || tagAssignments.length === 0) {
@@ -53,9 +60,23 @@ const TagList: React.FC<TagListProps> = ({
           <Badge 
             key={assignment.id || assignment.tag_id} 
             variant="secondary"
-            className="text-xs py-1"
+            className="text-xs py-1 mr-2 mb-2 flex items-center"
           >
             {tagName}
+            {onRemove && (
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onRemove(assignment.id);
+                }}
+                disabled={isRemoving}
+                className="ml-1 hover:text-red-500"
+                aria-label="Remove tag"
+              >
+                ×
+              </button>
+            )}
           </Badge>
         );
       })}

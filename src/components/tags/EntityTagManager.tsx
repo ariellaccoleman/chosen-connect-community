@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagHooks";
 import TagList from "./TagList";
@@ -126,7 +125,6 @@ const EntityTagManager = ({
           <TagList 
             tagAssignments={tagAssignments} 
             onRemove={isAdmin ? handleRemoveTag : undefined}
-            currentEntityType={entityType}
             isRemoving={isRemoving}
           />
         </div>
@@ -134,7 +132,6 @@ const EntityTagManager = ({
         <TagList 
           tagAssignments={tagAssignments} 
           onRemove={isAdmin ? handleRemoveTag : undefined}
-          currentEntityType={entityType}
           isRemoving={isRemoving}
         />
       )}
