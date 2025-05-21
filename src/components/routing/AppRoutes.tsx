@@ -1,4 +1,3 @@
-
 import { Routes, Route } from 'react-router-dom';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -21,6 +20,7 @@ import ManageOrganizationConnections from '@/pages/ManageOrganizationConnections
 import CommunityDirectory from '@/pages/CommunityDirectory';
 import TestDataGenerator from '@/pages/TestDataGenerator';
 import Hubs from '@/pages/Hubs';
+import HubDetail from '@/pages/HubDetail';
 
 // Chat Routes
 import Chat from '@/pages/Chat';
@@ -74,7 +74,8 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.EVENT_DETAIL} element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
       
       {/* Hub Routes */}
-      <Route path={APP_ROUTES.HUBS} element={<ProtectedRoute><Hubs /></ProtectedRoute>} />
+      <Route path="/hubs" element={<Hubs />} />
+      <Route path="/hubs/:hubId" element={<HubDetail />} />
       
       {/* Chat Routes */}
       <Route path={APP_ROUTES.CHAT} element={<ProtectedRoute><Chat /></ProtectedRoute>} />

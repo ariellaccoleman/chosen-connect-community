@@ -1,87 +1,70 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Tables } from '@/integrations/supabase/types';
-import { 
-  getAllTestRuns, 
-  getTestRunById, 
-  getTestResultsByRunId,
-  getRecentFailedTests
-} from '@/api/tests/testReportingApi';
-import { logger } from '@/utils/logger';
-
-type TestRun = Tables<'test_runs'>;
-type TestResult = Tables<'test_results'>;
+import { useQuery } from '@tanstack/react-query';
+import { getAllTestRuns, getTestRunById, getTestResultsByRunId } from '@/api/tests';
 
 /**
  * Hook to fetch all test runs
  */
 export const useTestRuns = () => {
   return useQuery({
-    queryKey: ['test-runs'],
-    queryFn: getAllTestRuns,
-    staleTime: 60000, // Data considered fresh for 1 minute
+    queryKey: ['testRuns'],
+    queryFn: async () => {
+      const response = await getAllTestRuns();
+      return response.data || [];
+    }
   });
 };
 
 /**
  * Hook to fetch a specific test run by ID
  */
-export const useTestRunDetails = (testRunId: string | undefined) => {
+export const useTestRunDetails = (testRunId?: string) => {
   return useQuery({
-    queryKey: ['test-run', testRunId],
-    queryFn: () => testRunId ? getTestRunById(testRunId) : Promise.resolve(null),
-    enabled: !!testRunId,
-    staleTime: 60000, // Cache for 1 minute
-    refetchOnWindowFocus: true,
+    queryKey: ['testRun', testRunId],
+    queryFn: async () => {
+      if (!testRunId) throw new Error('Test run ID is required');
+      const response = await getTestRunById(testRunId);
+      return response.data;
+    },
+    enabled: !!testRunId
   });
 };
 
 /**
  * Hook to fetch test results for a specific run
  */
-export const useTestResults = (testRunId: string | undefined) => {
+export const useTestResults = (testRunId?: string) => {
   return useQuery({
-    queryKey: ['test-results', testRunId],
-    queryFn: () => testRunId ? getTestResultsByRunId(testRunId) : Promise.resolve([]),
-    enabled: !!testRunId,
-    staleTime: 60000, // Cache for 1 minute
-    refetchOnWindowFocus: true,
+    queryKey: ['testResults', testRunId],
+    queryFn: async () => {
+      if (!testRunId) throw new Error('Test run ID is required');
+      const response = await getTestResultsByRunId(testRunId);
+      return response.data || [];
+    },
+    enabled: !!testRunId
   });
 };
 
 /**
- * Hook to fetch recent failed tests
+ * Group test results by test suite
  */
-export const useRecentFailedTests = (limit = 20) => {
-  return useQuery({
-    queryKey: ['failed-tests', limit],
-    queryFn: () => getRecentFailedTests(limit),
-    staleTime: 120000, // Consider failed tests fresh for 2 minutes
-  });
-};
-
-/**
- * Calculate success rate from test run data
- */
-export const calculateSuccessRate = (testRuns: TestRun[]): number => {
-  if (!testRuns || testRuns.length === 0) return 0;
-  
-  const totalRuns = testRuns.length;
-  const successfulRuns = testRuns.filter(run => run.status === 'success').length;
-  
-  return (successfulRuns / totalRuns) * 100;
-};
-
-/**
- * Group test results by suite
- */
-export const groupTestResultsBySuite = (results: TestResult[]): Record<string, TestResult[]> => {
-  return results.reduce((groups, result) => {
-    const suite = result.test_suite;
-    if (!groups[suite]) {
-      groups[suite] = [];
+export const groupTestResultsBySuite = (testResults = []) => {
+  return testResults.reduce((acc, result) => {
+    const suite = result.test_suite || 'Uncategorized';
+    if (!acc[suite]) {
+      acc[suite] = [];
     }
-    groups[suite].push(result);
-    return groups;
-  }, {} as Record<string, TestResult[]>);
+    acc[suite].push(result);
+    return acc;
+  }, {});
+};
+
+/**
+ * Calculate the overall success rate for a list of test runs
+ */
+export const calculateSuccessRate = (testRuns = []) => {
+  if (testRuns.length === 0) return 0;
+  
+  const successfulRuns = testRuns.filter(run => run.status === 'success').length;
+  return (successfulRuns / testRuns.length) * 100;
 };
