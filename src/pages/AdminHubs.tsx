@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet'; // Now properly imported
+import { Helmet } from 'react-helmet';
 import { Button } from '@/components/ui/button';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
