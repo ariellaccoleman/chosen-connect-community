@@ -6,7 +6,8 @@ import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
 import { 
   getChannelMessages,
   getThreadReplies,
-  sendChatMessage
+  sendChatMessage,
+  getChannelMessagePreviews
 } from './chatMessageService';
 
 /**
@@ -36,4 +37,4 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
 });
 
 // Re-export functions from the service
-export { getChannelMessages, getThreadReplies, sendChatMessage };
+export { getChannelMessages, getThreadReplies, sendChatMessage, getChannelMessagePreviews };

@@ -1,4 +1,3 @@
-
 import { apiClient } from '../core/apiClient';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
@@ -264,6 +263,65 @@ export class ChatMessageService {
       return {};
     }
   }
+  
+  /**
+   * Get recent channel messages for preview (limited number)
+   */
+  static async getChannelMessagePreviews(
+    channelId: string | null | undefined,
+    limit = 3
+  ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
+    return apiClient.query(async () => {
+      try {
+        // Validate channelId
+        if (!channelId || channelId === 'null' || channelId === 'undefined') {
+          logger.warn('[API] Invalid or missing channelId provided:', channelId);
+          return createSuccessResponse([]);
+        }
+        
+        // Create repository for base message query
+        const repository = createRepository('chats');
+        
+        // Query messages with author details, limited count
+        const query = repository
+          .select(`
+            *,
+            author:profiles(
+              id, first_name, last_name, avatar_url
+            )
+          `)
+          .eq('channel_id', channelId)
+          .is('parent_id', null)
+          .order('created_at', { ascending: false }) // Most recent first
+          .limit(limit);
+          
+        const result = await query.execute();
+        
+        if (result.error) {
+          logger.error('[API] Error fetching channel message previews:', result.error);
+          return createErrorResponse(result.error);
+        }
+        
+        const messagesResult = result.data || [];
+        
+        // If there are no messages, return empty array
+        if (messagesResult.length === 0) {
+          return createSuccessResponse([]);
+        }
+        
+        // Process messages with our factory
+        const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
+          return ChatMessageFactory.createMessageWithAuthor(msg);
+        });
+        
+        // Return messages in chronological order (oldest first)
+        return createSuccessResponse(transformedMessages.reverse());
+      } catch (error) {
+        logger.error('[API] Exception in getChannelMessagePreviews:', error);
+        return createErrorResponse(error);
+      }
+    });
+  }
 }
 
 // Export individual functions for backward compatibility and easier testing
@@ -295,3 +353,11 @@ export const sendChatMessage = (
   userId: string | null | undefined,
   parentId?: string | null | undefined
 ) => ChatMessageService.sendChatMessage(channelId, message, userId, parentId);
+
+/**
+ * Get channel message previews (limited number for display in UI)
+ */
+export const getChannelMessagePreviews = (
+  channelId: string | null | undefined,
+  limit = 3
+) => ChatMessageService.getChannelMessagePreviews(channelId, limit);

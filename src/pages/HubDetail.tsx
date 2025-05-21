@@ -20,6 +20,7 @@ import EntityCard from '@/components/entities/EntityCard';
 import { useEntityRegistry } from '@/hooks/useEntityRegistry';
 import { useChatChannelsByTag } from '@/hooks/chat/useChatChannels';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import ChannelPreview from '@/components/chat/ChannelPreview';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
@@ -99,19 +100,20 @@ const HubDetail = () => {
                 <CarouselContent>
                   {chatChannels.map(channel => (
                     <CarouselItem key={`channel-${channel.id}`} className="md:basis-1/2 lg:basis-1/3">
-                      <Link to={`/chat/${channel.id}`}>
-                        <Card className="h-full transition-shadow hover:shadow-md">
-                          <CardContent className="pt-6">
-                            <CardTitle className="flex items-center">
-                              <MessageSquare className="mr-2 h-5 w-5" />
-                              {channel.name || "Unnamed Channel"}
-                            </CardTitle>
-                            {channel.description && (
-                              <p className="text-muted-foreground mt-2 line-clamp-2">{channel.description}</p>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </Link>
+                      <Card className="h-full transition-shadow hover:shadow-md">
+                        <CardContent className="pt-6">
+                          <CardTitle className="flex items-center">
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            {channel.name || "Unnamed Channel"}
+                          </CardTitle>
+                          {channel.description && (
+                            <p className="text-muted-foreground mt-2 line-clamp-2">{channel.description}</p>
+                          )}
+                          
+                          {/* Add the channel preview component */}
+                          <ChannelPreview channel={channel} />
+                        </CardContent>
+                      </Card>
                     </CarouselItem>
                   ))}
                 </CarouselContent>
