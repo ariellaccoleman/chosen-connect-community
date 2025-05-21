@@ -20,6 +20,7 @@ import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import ChannelPreview from '@/components/chat/ChannelPreview';
 import EntityCard from '@/components/entities/EntityCard';
 import { useEntityRegistry } from '@/hooks/useEntityRegistry';
+import PostCarousel from '@/components/feed/PostCarousel';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
@@ -155,6 +156,9 @@ const HubDetail = () => {
         </div>
         
         <div className="space-y-8">
+          {/* Posts Carousel - NEW SECTION */}
+          <PostCarousel tagId={hub.tag_id} />
+          
           {/* Display Chat Channels if available */}
           {chatChannels.length > 0 && (
             <div className="mb-8">
