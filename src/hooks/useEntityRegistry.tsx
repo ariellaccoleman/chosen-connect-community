@@ -1,159 +1,95 @@
 
-import { useCallback, useMemo } from "react";
-import { 
-  Entity,
-  profileToEntity,
-  organizationToEntity, 
-  eventToEntity,
-  chatChannelToEntity,
-  hubToEntity
-} from "@/types/entity";
-import { EntityType } from "@/types/entityTypes";
-import { ProfileWithDetails } from "@/types/profile";
-import { OrganizationWithLocation } from "@/types/organization";
-import { EventWithDetails } from "@/types/event";
-import { Calendar, Users, Building2, MessageSquare, Layers } from "lucide-react";
-import React from "react";
-import { ChatChannelWithDetails } from "@/types/chat";
-import { HubWithDetails } from "@/types/hub";
+import { useMemo } from 'react';
+import { EntityType } from '@/types/entityTypes';
+import { Entity } from '@/types/entity';
+import { defaultEntityRegistrations } from '@/registry/defaultEntityRegistrations';
+import { APP_ROUTES } from '@/config/routes';
+import { generatePath } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 /**
- * Hook for working with different entity types in a consistent way
+ * Custom hook that provides access to the entity registry.
+ * This allows us to dynamically render different entities based on their type
+ * without needing to add conditional logic throughout the app.
  */
-export function useEntityRegistry() {
-  /**
-   * Convert any supported entity to the generic Entity interface
-   */
-  const toEntity = useCallback((entity: any, entityType: EntityType): Entity | null => {
-    if (!entity) return null;
-    
-    switch (entityType) {
-      case EntityType.PERSON:
-        return profileToEntity(entity as ProfileWithDetails);
-      case EntityType.ORGANIZATION:
-        return organizationToEntity(entity as OrganizationWithLocation);
-      case EntityType.EVENT:
-        return eventToEntity(entity as EventWithDetails);
-      case EntityType.CHAT:
-        return chatChannelToEntity(entity as ChatChannelWithDetails);
-      case EntityType.HUB:
-        return hubToEntity(entity as HubWithDetails);
-      default:
-        console.warn(`Unsupported entity type: ${entityType}`);
-        return null;
-    }
-  }, []);
-  
-  /**
-   * Get the label for an entity type
-   */
-  const getEntityTypeLabel = useCallback((type: EntityType): string => {
-    switch (type) {
-      case EntityType.PERSON:
-        return "Person";
-      case EntityType.ORGANIZATION:
-        return "Organization";
-      case EntityType.EVENT:
-        return "Event";
-      case EntityType.CHAT:
-        return "Chat Channel";
-      case EntityType.HUB:
-        return "Hub";
-      default:
-        return "Unknown";
-    }
-  }, []);
-  
-  /**
-   * Get the plural form of an entity type label
-   */
-  const getEntityTypePlural = useCallback((type: EntityType): string => {
-    switch (type) {
-      case EntityType.PERSON:
-        return "People";
-      case EntityType.ORGANIZATION:
-        return "Organizations";
-      case EntityType.EVENT:
-        return "Events";
-      case EntityType.CHAT:
-        return "Chat Channels";
-      case EntityType.HUB:
-        return "Hubs";
-      default:
-        return "Items";
-    }
-  }, []);
+export const useEntityRegistry = () => {
+  const registry = useMemo(() => defaultEntityRegistrations, []);
 
   /**
-   * Check if an entity is of a specific type
+   * Gets the URL for an entity
    */
-  const isEntityType = useCallback((entity: Entity, type: EntityType): boolean => {
-    return entity.entityType === type;
-  }, []);
-  
-  /**
-   * Filter entities by type
-   */
-  const filterEntitiesByType = useCallback((entities: Entity[], type: EntityType): Entity[] => {
-    return entities.filter(entity => entity.entityType === type);
-  }, []);
-  
-  /**
-   * Get the URL for an entity
-   */
-  const getEntityUrl = useCallback((entity: Entity): string => {
-    switch (entity.entityType) {
-      case EntityType.PERSON:
-        return `/profile/${entity.id}`;
-      case EntityType.ORGANIZATION:
-        return `/organizations/${entity.id}`;
-      case EntityType.EVENT:
-        return `/events/${entity.id}`;
-      case EntityType.CHAT:
-        return `/admin/chat/channels/${entity.id}/edit`;
-      case EntityType.HUB:
-        return `/hubs/${entity.id}`;
-      default:
-        return "/";
+  const getEntityUrl = (entity: Entity): string => {
+    const registration = registry[entity.entityType];
+    
+    if (!registration) {
+      logger.warn(`No registration found for entity type: ${entity.entityType}`);
+      return '/';
     }
-  }, []);
-  
-  /**
-   * Get the icon for an entity type
-   */
-  const getEntityIcon = useCallback((type: EntityType): React.ReactNode => {
-    switch (type) {
-      case EntityType.PERSON:
-        return <Users className="h-3 w-3" />;
-      case EntityType.ORGANIZATION:
-        return <Building2 className="h-3 w-3" />;
-      case EntityType.EVENT:
-        return <Calendar className="h-3 w-3" />;
-      case EntityType.CHAT:
-        return <MessageSquare className="h-3 w-3" />;
-      case EntityType.HUB:
-        return <Layers className="h-3 w-3" />;
-      default:
-        return null;
+    
+    // Generate the path using the configuration
+    try {
+      // For EVENT type, we need to use eventId as the parameter key to match APP_ROUTES.EVENT_DETAIL
+      if (entity.entityType === EntityType.EVENT) {
+        return generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: entity.id });
+      }
+      
+      // For PROFILE type, use profileId as the parameter key
+      if (entity.entityType === EntityType.PROFILE) {
+        return generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: entity.id });
+      }
+      
+      // For ORGANIZATION type
+      if (entity.entityType === EntityType.ORGANIZATION) {
+        return generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: entity.id });
+      }
+      
+      // For HUB type
+      if (entity.entityType === EntityType.HUB) {
+        return generatePath(APP_ROUTES.HUB_DETAIL, { hubId: entity.id });
+      }
+      
+      logger.warn(`No URL pattern defined for entity type: ${entity.entityType}`);
+      return '/';
+    } catch (e) {
+      logger.error('Error generating entity URL:', e);
+      return '/';
     }
-  }, []);
-  
+  };
+
   /**
-   * Get the avatar fallback for an entity
+   * Gets the icon for an entity type
    */
-  const getEntityAvatarFallback = useCallback((entity: Entity): string => {
-    if (!entity.name) return "?";
-    return entity.name.substring(0, 2).toUpperCase();
-  }, []);
-  
+  const getEntityIcon = (entityType: EntityType) => {
+    const registration = registry[entityType];
+    return registration ? registration.icon : null;
+  };
+
+  /**
+   * Gets the label for an entity type
+   */
+  const getEntityTypeLabel = (entityType: EntityType): string => {
+    const registration = registry[entityType];
+    return registration ? registration.label : 'Unknown';
+  };
+
+  /**
+   * Gets the avatar fallback for an entity
+   */
+  const getEntityAvatarFallback = (entity: Entity): string => {
+    if (!entity.name) return '??';
+    
+    // Split by spaces and get first letters
+    return entity.name
+      .split(' ')
+      .slice(0, 2)
+      .map(word => word.charAt(0).toUpperCase())
+      .join('');
+  };
+
   return {
-    toEntity,
-    getEntityTypeLabel,
-    getEntityTypePlural,
-    isEntityType,
-    filterEntitiesByType,
     getEntityUrl,
     getEntityIcon,
-    getEntityAvatarFallback
+    getEntityTypeLabel,
+    getEntityAvatarFallback,
   };
-}
+};

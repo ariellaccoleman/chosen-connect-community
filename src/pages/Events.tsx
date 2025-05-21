@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
 import { useEvents } from "@/hooks/events";
@@ -10,6 +10,7 @@ import { EventWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
 import TagList from "@/components/tags/TagList";
 import EventCardRegistrationButton from "@/components/events/EventCardRegistrationButton";
+import { APP_ROUTES } from "@/config/routes";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
@@ -52,7 +53,9 @@ const Events: React.FC = () => {
   };
 
   const handleViewEvent = (eventId: string) => {
-    navigate(`/events/${eventId}`);
+    // Use generatePath to correctly generate the event detail URL with the eventId parameter
+    const eventUrl = generatePath(APP_ROUTES.EVENT_DETAIL, { eventId });
+    navigate(eventUrl);
   };
 
   return (
