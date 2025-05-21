@@ -1,132 +1,76 @@
 
-import React from "react";
-import { EntityType } from "../types/entityTypes";
-import { entityRegistry } from "./entityRegistry";
-import { User, Building, Calendar, Layers } from "lucide-react";
+import React from 'react';
+import { EntityType } from '@/types/entityTypes';
+import { EntityRegistration } from '@/types/entityRegistry';
 import { 
-  profileToEntity, 
-  organizationToEntity, 
-  eventToEntity,
-  hubToEntity 
-} from "../types/entity";
-import { APP_ROUTES } from "@/config/routes";
-import { generatePath } from "react-router-dom";
+  Users, Building, Calendar, MessageCircle, 
+  FolderKanban, FileText, MessageSquare 
+} from 'lucide-react';
 
-// Register Person entity type
-entityRegistry.register({
-  type: EntityType.PERSON,
-  converter: {
-    toEntity: profileToEntity
+/**
+ * Default entity registrations for core entity types.
+ * This provides configuration for each entity type across the app.
+ */
+const defaultRegistrations: Record<EntityType, EntityRegistration> = {
+  [EntityType.PERSON]: {
+    type: EntityType.PERSON,
+    icon: <Users className="h-4 w-4" />,
+    label: 'Person',
+    pluralLabel: 'People',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/community'
   },
-  behavior: {
-    getDetailUrl: (id) => generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: id }),
-    getCreateUrl: () => APP_ROUTES.PROFILE_EDIT,
-    getEditUrl: (id) => generatePath(APP_ROUTES.PROFILE_EDIT, { profileId: id }),
-    getListUrl: () => APP_ROUTES.COMMUNITY,
-    getIcon: () => <User className="h-4 w-4" />,
-    getTypeLabel: () => "Person",
-    getSingularName: () => "person",
-    getPluralName: () => "people",
-    getDisplayName: (entity) => entity.name,
-    getFallbackInitials: (entity) => {
-      if (!entity.name) return "?";
-      return entity.name
-        .split(" ")
-        .map(part => part[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    }
-  }
-});
-
-// Register Organization entity type
-entityRegistry.register({
-  type: EntityType.ORGANIZATION,
-  converter: {
-    toEntity: organizationToEntity
+  
+  [EntityType.ORGANIZATION]: {
+    type: EntityType.ORGANIZATION,
+    icon: <Building className="h-4 w-4" />,
+    label: 'Organization',
+    pluralLabel: 'Organizations',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/organizations'
   },
-  behavior: {
-    getDetailUrl: (id) => generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: id }),
-    getCreateUrl: () => APP_ROUTES.CREATE_ORGANIZATION,
-    getEditUrl: (id) => generatePath(APP_ROUTES.ORGANIZATION_EDIT, { orgId: id }),
-    getListUrl: () => APP_ROUTES.ORGANIZATIONS,
-    getIcon: () => <Building className="h-4 w-4" />,
-    getTypeLabel: () => "Organization",
-    getSingularName: () => "organization",
-    getPluralName: () => "organizations",
-    getDisplayName: (entity) => entity.name,
-    getFallbackInitials: (entity) => {
-      if (!entity.name) return "?";
-      return entity.name
-        .split(" ")
-        .map(part => part[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    }
-  }
-});
-
-// Register Event entity type
-entityRegistry.register({
-  type: EntityType.EVENT,
-  converter: {
-    toEntity: eventToEntity
+  
+  [EntityType.EVENT]: {
+    type: EntityType.EVENT,
+    icon: <Calendar className="h-4 w-4" />,
+    label: 'Event',
+    pluralLabel: 'Events',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/events'
   },
-  behavior: {
-    getDetailUrl: (id) => generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: id }),
-    getCreateUrl: () => APP_ROUTES.CREATE_EVENT,
-    getEditUrl: (id) => generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: id }),
-    getListUrl: () => APP_ROUTES.EVENTS,
-    getIcon: () => <Calendar className="h-4 w-4" />,
-    getTypeLabel: () => "Event",
-    getSingularName: () => "event",
-    getPluralName: () => "events",
-    getDisplayName: (entity) => entity.name,
-    getFallbackInitials: (entity) => {
-      if (!entity.name) return "?";
-      return entity.name
-        .split(" ")
-        .map(part => part[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    }
-  }
-});
-
-// Register Hub entity type
-entityRegistry.register({
-  type: EntityType.HUB,
-  converter: {
-    toEntity: hubToEntity
+  
+  [EntityType.GUIDE]: {
+    type: EntityType.GUIDE,
+    icon: <FileText className="h-4 w-4" />,
+    label: 'Guide',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/guides'
   },
-  behavior: {
-    getDetailUrl: (id) => generatePath(APP_ROUTES.HUB_DETAIL, { hubId: id }),
-    getCreateUrl: () => APP_ROUTES.ADMIN_HUBS, // Admins create hubs from the admin page
-    getEditUrl: (id) => generatePath(APP_ROUTES.ADMIN_HUBS), // No direct edit page yet
-    getListUrl: () => APP_ROUTES.HUBS,
-    getIcon: () => <Layers className="h-4 w-4" />,
-    getTypeLabel: () => "Hub",
-    getSingularName: () => "hub",
-    getPluralName: () => "hubs",
-    getDisplayName: (entity) => entity.name,
-    getFallbackInitials: (entity) => {
-      if (!entity.name) return "?";
-      return entity.name
-        .split(" ")
-        .map(part => part[0])
-        .join("")
-        .toUpperCase()
-        .substring(0, 2);
-    }
+  
+  [EntityType.CHAT]: {
+    type: EntityType.CHAT,
+    icon: <MessageCircle className="h-4 w-4" />,
+    label: 'Chat',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/chat'
+  },
+  
+  [EntityType.HUB]: {
+    type: EntityType.HUB,
+    icon: <FolderKanban className="h-4 w-4" />,
+    label: 'Hub',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/hubs'
+  },
+  
+  [EntityType.POST]: {
+    type: EntityType.POST,
+    icon: <MessageSquare className="h-4 w-4" />,
+    label: 'Post',
+    pluralLabel: 'Posts',
+    avatarFallback: (name) => name?.charAt(0) || '?',
+    defaultRoute: '/feed'
   }
-});
+};
 
-// Export a function to initialize all default registrations
-export function initializeDefaultEntityRegistrations(): void {
-  // This function is intentionally empty as the registrations 
-  // happen when the module is imported
-  console.log("Default entity types registered");
-}
+export default defaultRegistrations;
