@@ -1,4 +1,3 @@
-
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   postsApi, 
@@ -22,10 +21,14 @@ const COMMENT_LIKES_KEY = "comment-likes";
  * Hook to fetch all posts with details (author info, likes, comments, tags)
  */
 export const usePosts = () => {
-  return useQuery({
+  const result = useQuery({
     queryKey: [POSTS_KEY],
     queryFn: () => postsApi.getPostsWithDetails()
   });
+  
+  console.log("usePosts hook result:", result);
+  
+  return result;
 };
 
 /**

@@ -1,4 +1,3 @@
-
 import { createApiFactory } from "@/api/core/factory";
 import { extendApiOperations } from "@/api/core/apiExtension";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,7 +69,7 @@ function formatAuthor(authorData: any) {
   const author = authorData || {};
   return {
     id: author.id || '',
-    name: `${author.first_name || ''} ${author.last_name || ''}`.trim(),
+    name: `${author.first_name || ''} ${author.last_name || ''}`.trim() || 'Unknown User',
     avatar: author.avatar_url || undefined
   };
 }
@@ -82,6 +81,8 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
     // Get posts with author details, likes count, comments count and tags
     async getPostsWithDetails(): Promise<ApiResponse<Post[]>> {
       try {
+        console.log("Fetching posts with details...");
+        
         const { data, error } = await supabase
           .from("posts")
           .select(`
@@ -96,7 +97,12 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           `)
           .order("created_at", { ascending: false });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Error fetching posts:", error);
+          throw error;
+        }
+        
+        console.log("Raw posts data:", data);
 
         const formattedPosts = data?.map(post => {
           // Format the author data using our helper function
@@ -118,9 +124,12 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
             tags
           };
         });
-
+        
+        console.log("Formatted posts:", formattedPosts);
+        
         return createSuccessResponse(formattedPosts || []);
       } catch (error) {
+        console.error("Error in getPostsWithDetails:", error);
         return createErrorResponse(error);
       }
     },

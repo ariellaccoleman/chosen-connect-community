@@ -12,6 +12,9 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   // Use our posts hook to fetch real data
   const { data: postsResponse, isLoading, error } = usePosts();
   
+  // Add console logs to debug the data we're receiving
+  console.log("Posts response:", postsResponse);
+  
   // Extract posts from response and handle error state
   const posts = postsResponse?.data || [];
   
@@ -19,6 +22,8 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   const filteredPosts = selectedTagId
     ? posts.filter(post => post.tags?.some(tag => tag.id === selectedTagId))
     : posts;
+
+  console.log("Filtered posts:", filteredPosts);
 
   if (isLoading) {
     return (

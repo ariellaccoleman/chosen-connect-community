@@ -15,6 +15,8 @@ const Feed: React.FC = () => {
   const { data: tagsResponse } = useSelectionTags(EntityType.POST);
   const tags = tagsResponse?.data || [];
   const { user } = useAuth();
+  
+  console.log("Feed page rendered, auth user:", user);
 
   const handleTagSelect = (tagId: string | null) => {
     setSelectedTagId(tagId);
