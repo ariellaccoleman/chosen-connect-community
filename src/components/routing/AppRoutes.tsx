@@ -1,4 +1,3 @@
-
 import { Routes, Route } from 'react-router-dom';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -33,6 +32,10 @@ import AdminChatChannels from '@/pages/AdminChatChannels';
 import CreateChatChannel from '@/pages/CreateChatChannel';
 import EditChatChannel from '@/pages/EditChatChannel';
 
+// Hubs Routes
+import Hubs from "@/pages/Hubs";
+import AdminHubs from "@/pages/AdminHubs";
+
 // Route Guards
 import PublicRoute from './PublicRoute';
 import ProtectedRoute from './ProtectedRoute';
@@ -51,6 +54,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
+      
+      {/* Hubs Routes */}
+      <Route path="/hubs" element={<Hubs />} />
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -76,18 +82,17 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.CHAT_CHANNEL} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       
       {/* Admin Routes */}
-      <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
-      <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
-      
-      {/* Admin Chat Channel Routes */}
-      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
-      <Route path={APP_ROUTES.CREATE_CHAT_CHANNEL} element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
-      <Route path={APP_ROUTES.EDIT_CHAT_CHANNEL} element={<AdminRoute><EditChatChannel /></AdminRoute>} />
-      
+      <Route element={<AdminRoute />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/tags" element={<AdminTags />} />
+        <Route path="/admin/tests" element={<AdminTestReports />} />
+        <Route path="/admin/test/:id" element={<AdminTestRunDetail />} />
+        <Route path="/admin/chat/channels" element={<AdminChatChannels />} />
+        <Route path="/admin/chat/channels/create" element={<CreateChatChannel />} />
+        <Route path="/admin/chat/channels/edit/:id" element={<EditChatChannel />} />
+        <Route path="/admin/hubs" element={<AdminHubs />} />
+      </Route>
+
       {/* Not Found */}
       <Route path="*" element={<NotFound />} />
     </Routes>

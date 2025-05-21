@@ -1,4 +1,3 @@
-
 // Re-export all types from their respective files
 export * from './location';
 export * from './profile';
@@ -7,6 +6,7 @@ export * from './common';
 export * from './event';
 export * from './entity';
 export * from './entityTypes';
+export * from './hub';
 
 /**
  * Organization form values used in create/edit forms
