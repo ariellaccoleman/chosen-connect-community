@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,26 +13,35 @@ import OrganizationConnectionsHeader from "@/components/organizations/Organizati
 import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
+import { logger } from "@/utils/logger";
 
 const ManageOrganizationConnections = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
+  
+  // Log page load for debugging
+  useEffect(() => {
+    logger.info("ManageOrganizationConnections - Component mounted", {
+      userId: user?.id,
+      path: window.location.pathname
+    });
+  }, [user]);
+  
+  const { data: relationshipsResponse, isLoading: relationshipsLoading } = useUserOrganizationRelationships(user?.id);
   const relationships = relationshipsResponse?.data || [];
-  const relationshipsLoading = false; // Simplified for now
   
   const [activeTab, setActiveTab] = useState("all");
   const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
   const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
   
   // Get organizations for the connect dialog
-  const { data: allOrganizationsResponse } = useOrganizations();
+  const { data: allOrganizationsResponse, isLoading: isLoadingOrgs } = useOrganizations();
   const allOrganizations = allOrganizationsResponse?.data || [];
-  const isLoadingOrgs = false; // Simplified for now
   const addRelationship = useAddOrganizationRelationship();
 
   useEffect(() => {
     if (!loading && !user) {
+      logger.info("ManageOrganizationConnections - No user, redirecting to auth");
       navigate("/auth");
     }
   }, [user, loading, navigate]);
@@ -66,7 +76,8 @@ const ManageOrganizationConnections = () => {
       toast.success("Organization connection added successfully");
       setIsConnectDialogOpen(false);
     } catch (error) {
-      console.error("Error adding organization connection:", error);
+      logger.error("Error adding organization connection:", error);
+      toast.error("Failed to add organization connection");
     }
   };
 

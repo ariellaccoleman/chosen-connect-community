@@ -15,7 +15,7 @@ import {
 } from "@/components/organizations/edit";
 
 const OrganizationEdit = () => {
-  // Get the orgId from URL parameters - fix: use 'id' instead of 'orgId' to match route definition
+  // Get the id from URL parameters - matching route definition
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -62,7 +62,7 @@ const OrganizationEdit = () => {
     }
   }, [organization, isLoading, error, organizationData]);
   
-  // Check if user is admin - use id parameter instead of orgId
+  // Check if user is admin - use id parameter
   const { 
     data: isOrgAdmin = false, 
     isLoading: adminCheckLoading 

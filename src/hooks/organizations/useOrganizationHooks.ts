@@ -1,3 +1,4 @@
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { organizationApi } from '@/api/organizations/organizationApiFactory';
@@ -36,6 +37,7 @@ export const useOrganizations = () => {
   return useQuery<ApiResponse<OrganizationWithLocation[]>, Error>({
     queryKey: ["organizations"],
     queryFn: () => organizationApi.getAll(),
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
@@ -100,7 +102,8 @@ export const useUserOrganizationRelationships = (profileId?: string) => {
       }
       return organizationRelationshipsApi.getUserOrganizationRelationships(profileId);
     },
-    enabled: !!profileId
+    enabled: !!profileId,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
 
@@ -132,6 +135,7 @@ export const useCreateOrganizationWithRelationships = () => {
       if (response.data) {
         // Invalidate queries to refresh data
         queryClient.invalidateQueries({ queryKey: ["organizations"] });
+        queryClient.invalidateQueries({ queryKey: ["organization-relationships"] });
         toast.success("Organization created successfully!");
       }
       return response.data?.id;

@@ -14,11 +14,17 @@ import TagFilter from "@/components/filters/TagFilter";
 import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
+import { logger } from "@/utils/logger";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
   const { data: organizationsResponse, isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Log page load for debugging
+  logger.info("Organizations - Component mounted", {
+    path: window.location.pathname
+  });
   
   // Extract organizations from the response
   const organizations = organizationsResponse?.data || [];
@@ -147,4 +153,3 @@ const OrganizationCard = ({
 };
 
 export default OrganizationsList;
-
