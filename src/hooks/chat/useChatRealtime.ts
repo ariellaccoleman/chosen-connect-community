@@ -60,9 +60,11 @@ const useRealtimeSubscription = (
       ? ['chatMessages', entityId]
       : ['threadMessages', entityId];
     
-    // Subscribe to changes - FIX: The correct method chain for Supabase channels
-    const channel = supabase
-      .channel(`${subscriptionType}-${entityId}`)
+    // Fixed Supabase channel subscription format
+    const channelName = `${subscriptionType}-${entityId}`;
+    const channel = supabase.channel(channelName);
+    
+    channel
       .on('postgres_changes', filter, (payload) => {
         logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
         
