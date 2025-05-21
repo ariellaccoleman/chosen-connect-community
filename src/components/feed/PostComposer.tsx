@@ -10,14 +10,17 @@ import { Image, Video, Send, Tag } from "lucide-react";
 import TagSelector from "@/components/tags/TagSelector";
 import { EntityType } from "@/types/entityTypes";
 import { Tag as TagType } from "@/utils/tags/types";
+import { useCreatePost } from "@/hooks/posts";
 
 const PostComposer: React.FC = () => {
   const [postContent, setPostContent] = useState("");
   const [showTagSelector, setShowTagSelector] = useState(false);
   const [selectedTags, setSelectedTags] = useState<TagType[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
   const { data: profileData } = useCurrentProfile();
   const profile = profileData?.data;
+  const createPostMutation = useCreatePost();
 
   const handlePostContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPostContent(e.target.value);
@@ -34,11 +37,24 @@ const PostComposer: React.FC = () => {
     setSelectedTags(selectedTags.filter(tag => tag.id !== tagId));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Post submitted:", postContent, "with tags:", selectedTags);
-    setPostContent("");
-    setSelectedTags([]);
+    if (!postContent.trim() || isSubmitting) return;
+    
+    setIsSubmitting(true);
+    try {
+      await createPostMutation.mutateAsync({
+        content: postContent,
+        has_media: false,
+        tag_ids: selectedTags.map(tag => tag.id)
+      });
+      
+      // Reset form after successful submission
+      setPostContent("");
+      setSelectedTags([]);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const getInitials = () => {
@@ -68,6 +84,7 @@ const PostComposer: React.FC = () => {
                 className="resize-none mb-3 min-h-[100px]"
                 value={postContent}
                 onChange={handlePostContentChange}
+                disabled={isSubmitting}
               />
               
               {/* Display selected tags */}
@@ -81,6 +98,7 @@ const PostComposer: React.FC = () => {
                       >
                         <span>{tag.name}</span>
                         <button 
+                          type="button"
                           onClick={() => handleRemoveTag(tag.id)}
                           className="ml-1 text-blue-700 hover:text-blue-900"
                         >
@@ -127,10 +145,22 @@ const PostComposer: React.FC = () => {
                 <Button 
                   type="submit" 
                   className="bg-chosen-blue hover:bg-chosen-navy"
-                  disabled={!postContent.trim()}
+                  disabled={!postContent.trim() || isSubmitting}
                 >
-                  <Send className="h-4 w-4 mr-2" />
-                  Post
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Posting...
+                    </span>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4 mr-2" />
+                      Post
+                    </>
+                  )}
                 </Button>
               </div>
             </div>

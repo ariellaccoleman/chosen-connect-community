@@ -42,11 +42,12 @@ export const usePost = (postId: string) => {
 /**
  * Hook to fetch comments for a specific post
  */
-export const usePostComments = (postId: string) => {
+export const usePostComments = (postId: string, options = {}) => {
   return useQuery({
     queryKey: [COMMENTS_KEY, postId],
     queryFn: () => commentsApi.getCommentsForPost(postId),
-    enabled: !!postId
+    enabled: !!postId,
+    ...options
   });
 };
 

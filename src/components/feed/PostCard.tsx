@@ -8,39 +8,16 @@ import { Heart, MessageSquare, Send } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-
-interface Tag {
-  id: string;
-  name: string;
-  color?: string;
-}
-
-interface Author {
-  id: string;
-  name: string;
-  avatar?: string;
-  title?: string;
-}
-
-interface Comment {
-  id: string;
-  author: Author;
-  content: string;
-  timestamp: Date;
-  likes: number;
-}
-
-interface Post {
-  id: string;
-  author: Author;
-  content: string;
-  timestamp: Date;
-  image?: string;
-  likes: number;
-  comments: number;
-  tags?: Tag[];
-  commentsList?: Comment[];
-}
+import { Post, PostComment } from "@/types/post";
+import { 
+  useCreateComment, 
+  useHasLikedPost, 
+  usePostComments, 
+  useTogglePostLike,
+  useToggleCommentLike,
+  useHasLikedComment
+} from "@/hooks/posts";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface PostCardProps {
   post: Post;
@@ -50,43 +27,50 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
   
-  // Mock comments data if not provided
-  const commentsData = post.commentsList || [
-    {
-      id: `comment-1-${post.id}`,
-      author: {
-        id: "user4",
-        name: "Emma Thompson",
-        avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        title: "UX Designer"
-      },
-      content: "Great insight! Thanks for sharing this.",
-      timestamp: new Date(Date.now() - 3600000),
-      likes: 3
-    },
-    {
-      id: `comment-2-${post.id}`,
-      author: {
-        id: "user5",
-        name: "Michael Chen",
-        avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80",
-        title: "Product Manager"
-      },
-      content: "I've been thinking about this recently. Would love to discuss further.",
-      timestamp: new Date(Date.now() - 7200000),
-      likes: 1
-    }
-  ];
+  // Load comments when comment section is shown
+  const { 
+    data: commentsResponse,
+    isLoading: commentsLoading 
+  } = usePostComments(post.id, { enabled: showComments });
   
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  // Check if user has liked this post
+  const { data: hasLikedResponse } = useHasLikedPost(post.id);
+  
+  // Get mutation to toggle like
+  const toggleLikeMutation = useTogglePostLike(post.id);
+  
+  // Get mutation to create comment
+  const createCommentMutation = useCreateComment(post.id);
+  
+  // Extract comments from response
+  const comments = commentsResponse?.data || [];
+  
+  // Determine if user has liked the post
+  const hasLiked = hasLikedResponse?.data || false;
+  
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting comment:", commentText);
-    // In a real app, you would add the comment to the database here
-    setCommentText("");
+    if (!commentText.trim()) return;
+    
+    try {
+      await createCommentMutation.mutateAsync({
+        post_id: post.id,
+        content: commentText
+      });
+      
+      // Clear comment text after submission
+      setCommentText("");
+    } catch (error) {
+      console.error("Failed to submit comment:", error);
+    }
   };
   
   const toggleComments = () => {
     setShowComments(!showComments);
+  };
+  
+  const handleToggleLike = () => {
+    toggleLikeMutation.mutate();
   };
   
   return (
@@ -96,16 +80,16 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         <div className="p-4 flex items-start">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
-              <AvatarImage src={post.author.avatar} alt={post.author.name} />
+              <AvatarImage src={post.author?.avatar} alt={post.author?.name} />
               <AvatarFallback className="bg-chosen-blue text-white">
-                {post.author.name.charAt(0)}
+                {post.author?.name?.charAt(0) || '?'}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-medium text-sm">{post.author.name}</h3>
-              <p className="text-xs text-gray-500">{post.author.title}</p>
+              <h3 className="font-medium text-sm">{post.author?.name || 'Unknown'}</h3>
+              <p className="text-xs text-gray-500">{post.author?.title || ''}</p>
               <p className="text-xs text-gray-400">
-                {formatDistanceToNow(post.timestamp)} ago
+                {post.created_at ? formatDistanceToNow(new Date(post.created_at)) + ' ago' : ''}
               </p>
             </div>
           </div>
@@ -127,30 +111,24 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         )}
         
-        {/* Post image (if available) */}
-        {post.image && (
-          <div className="w-full">
-            <img 
-              src={post.image} 
-              alt="Post attachment" 
-              className="w-full object-cover max-h-96"
-            />
-          </div>
-        )}
-        
         {/* Post stats */}
         <div className="px-4 py-2 flex justify-between items-center text-xs text-gray-500">
-          <span>{post.likes} likes</span>
-          <span>{post.comments} comments</span>
+          <span>{post.likes_count || 0} likes</span>
+          <span>{post.comments_count || 0} comments</span>
         </div>
         
         <Separator />
         
         {/* Action buttons */}
         <CardFooter className="px-2 py-1 flex justify-between">
-          <Button variant="ghost" size="sm" className="flex-1 text-gray-600">
-            <Heart className="h-4 w-4 mr-2" />
-            Like
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`flex-1 ${hasLiked ? 'text-red-600' : 'text-gray-600'}`}
+            onClick={handleToggleLike}
+          >
+            <Heart className={`h-4 w-4 mr-2 ${hasLiked ? 'fill-current' : ''}`} />
+            {hasLiked ? 'Liked' : 'Like'}
           </Button>
           <Button 
             variant="ghost" 
@@ -179,49 +157,50 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
                   className="min-h-[60px] text-sm resize-none mb-2"
                   value={commentText}
                   onChange={(e) => setCommentText(e.target.value)}
+                  disabled={createCommentMutation.isPending}
                 />
                 <div className="flex justify-end">
                   <Button 
                     type="submit" 
                     size="sm"
                     className="bg-chosen-blue hover:bg-chosen-navy"
-                    disabled={!commentText.trim()}
+                    disabled={!commentText.trim() || createCommentMutation.isPending}
                   >
-                    <Send className="h-4 w-4 mr-1" />
-                    Post
+                    {createCommentMutation.isPending ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Posting...
+                      </span>
+                    ) : (
+                      <>
+                        <Send className="h-4 w-4 mr-1" />
+                        Post
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>
             </form>
             
             {/* Comment list */}
-            {commentsData.length > 0 ? (
+            {commentsLoading ? (
               <div className="space-y-4">
-                {commentsData.map((comment) => (
-                  <div key={comment.id} className="flex space-x-2">
-                    <Avatar className="h-8 w-8">
-                      <AvatarImage src={comment.author.avatar} alt={comment.author.name} />
-                      <AvatarFallback className="bg-chosen-blue text-white">
-                        {comment.author.name.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
+                {[1, 2].map((i) => (
+                  <div key={i} className="flex space-x-2">
+                    <Skeleton className="h-8 w-8 rounded-full" />
                     <div className="flex-1">
-                      <div className="bg-white p-3 rounded-lg shadow-sm">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm">{comment.author.name}</h4>
-                          <p className="text-xs text-gray-400">
-                            {formatDistanceToNow(comment.timestamp)} ago
-                          </p>
-                        </div>
-                        <p className="text-sm mt-1">{comment.content}</p>
-                      </div>
-                      <div className="flex items-center space-x-4 mt-1 ml-2">
-                        <button className="text-xs text-gray-500 hover:text-gray-700">Like</button>
-                        <button className="text-xs text-gray-500 hover:text-gray-700">Reply</button>
-                        <span className="text-xs text-gray-500">{comment.likes} likes</span>
-                      </div>
+                      <Skeleton className="h-20 w-full rounded-lg" />
                     </div>
                   </div>
+                ))}
+              </div>
+            ) : comments.length > 0 ? (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <CommentItem key={comment.id} comment={comment} postId={post.id} />
                 ))}
               </div>
             ) : (
@@ -233,6 +212,54 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
         )}
       </CardContent>
     </Card>
+  );
+};
+
+// Extract comment item to a separate component for better organization
+interface CommentItemProps {
+  comment: PostComment;
+  postId: string;
+}
+
+const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
+  const { data: hasLikedResponse } = useHasLikedComment(comment.id);
+  const toggleLikeMutation = useToggleCommentLike(comment.id, postId);
+  
+  const hasLiked = hasLikedResponse?.data || false;
+  
+  const handleToggleLike = () => {
+    toggleLikeMutation.mutate();
+  };
+  
+  return (
+    <div className="flex space-x-2">
+      <Avatar className="h-8 w-8">
+        <AvatarImage src={comment.author?.avatar} alt={comment.author?.name} />
+        <AvatarFallback className="bg-chosen-blue text-white">
+          {comment.author?.name?.charAt(0) || '?'}
+        </AvatarFallback>
+      </Avatar>
+      <div className="flex-1">
+        <div className="bg-white p-3 rounded-lg shadow-sm">
+          <div className="flex items-center justify-between">
+            <h4 className="font-medium text-sm">{comment.author?.name}</h4>
+            <p className="text-xs text-gray-400">
+              {comment.timestamp ? formatDistanceToNow(new Date(comment.timestamp)) + ' ago' : ''}
+            </p>
+          </div>
+          <p className="text-sm mt-1">{comment.content}</p>
+        </div>
+        <div className="flex items-center space-x-4 mt-1 ml-2">
+          <button 
+            className={`text-xs ${hasLiked ? 'text-red-600' : 'text-gray-500'} hover:text-gray-700`}
+            onClick={handleToggleLike}
+          >
+            {hasLiked ? 'Liked' : 'Like'}
+          </button>
+          <span className="text-xs text-gray-500">{comment.likes || 0} likes</span>
+        </div>
+      </div>
+    </div>
   );
 };
 
