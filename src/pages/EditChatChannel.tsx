@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function EditChatChannel() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { data: channel, isLoading } = useChatChannelById(id);
+  const { data: channelResponse, isLoading } = useChatChannelById(id);
   const updateMutation = useUpdateChatChannel();
   
   const handleUpdateChannel = (formData: ChatChannelUpdate) => {
@@ -50,6 +50,9 @@ export default function EditChatChannel() {
     );
   }
   
+  // Properly extract the channel data from the API response
+  const channel = channelResponse?.data;
+  
   if (!channel) {
     return (
       <div className="container mx-auto py-6">
@@ -67,11 +70,8 @@ export default function EditChatChannel() {
     );
   }
   
-  // Extract the actual channel data
-  const channelData = channel?.data as ChatChannel || channel as ChatChannel;
-  
   // Log the channel data to make sure we have the correct properties
-  logger.info('Channel data for form:', channelData);
+  logger.info('Channel data for form:', channel);
   
   return (
     <div className="container mx-auto py-6">
@@ -90,7 +90,7 @@ export default function EditChatChannel() {
         <ChatChannelForm 
           onSubmit={handleUpdateChannel}
           isSubmitting={updateMutation.isPending}
-          defaultValues={channelData}
+          defaultValues={channel}
           isEditMode={true}
           existingChannelId={id}
         />
