@@ -68,9 +68,9 @@ const PostCarousel: React.FC<PostCarouselProps> = ({ tagId }) => {
       <Carousel className="w-full">
         <CarouselContent className="-ml-4 overflow-visible">
           {sortedPosts.map(post => (
-            <CarouselItem key={`post-${post.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3 pr-4">
+            <CarouselItem key={`post-${post.id}`} className="pl-4 md:basis-3/5 lg:basis-2/5 pr-4">
               <div className="h-full">
-                <PostCard post={post} isCompact={true} />
+                <PostCard post={post} />
               </div>
             </CarouselItem>
           ))}

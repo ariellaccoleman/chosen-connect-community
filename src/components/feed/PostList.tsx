@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import PostCard from "./PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -88,7 +87,7 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   return (
     <div className="space-y-4">
       {filteredPosts.map(post => (
-        <PostCard key={post.id} post={post} isCompact={false} />
+        <PostCard key={post.id} post={post} />
       ))}
     </div>
   );
