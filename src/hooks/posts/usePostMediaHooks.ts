@@ -2,7 +2,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { postMediaApi } from "@/api/posts";
 import { CreatePostMediaPayload } from "@/types/post";
-import { showErrorToast } from "@/api/core";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/use-toast";
 
@@ -48,8 +47,8 @@ export const useAddPostMedia = () => {
     onError: (error) => {
       logger.error("Error adding media to post:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to add media'),
+        description: error instanceof Error ? error.message : 'Failed to add media',
+        variant: "destructive"
       });
     }
   });
@@ -78,8 +77,8 @@ export const useDeletePostMedia = () => {
     onError: (error) => {
       logger.error("Error deleting media:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to delete media'),
+        description: error instanceof Error ? error.message : 'Failed to delete media',
+        variant: "destructive"
       });
     }
   });

@@ -14,11 +14,11 @@ import { Badge } from '@/components/ui/badge';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
-  const { data: hubResponse, isLoading, error } = useHub(hubId);
+  const { data: hubData, isLoading, error } = useHub(hubId);
   const [activeTab, setActiveTab] = useState<string>('all');
   
   // Extract hub from the response
-  const hub = hubResponse?.data;
+  const hub = hubData?.data;
   
   // Use the entity feed hook to get entities filtered by the hub's tag
   const {

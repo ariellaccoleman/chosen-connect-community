@@ -2,7 +2,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
 import { useChannelMessagePreviews } from '@/hooks/chat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { APP_ROUTES } from '@/config/routes';
@@ -14,6 +13,7 @@ interface ChannelPreviewProps {
 }
 
 const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
+  // Convert limit to string if needed by the hook
   const { data: channels = [], isLoading } = useChannelMessagePreviews(limit, channelTagId);
   
   if (isLoading) {
@@ -73,7 +73,7 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {channels.map((channel) => (
+          {channels.map((channel: any) => (
             <Link 
               key={channel.id} 
               to={`${APP_ROUTES.CHAT}/${channel.id}`}
@@ -81,7 +81,7 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
             >
               <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{channel.name}</h3>
+                  <h3 className="font-medium">{channel.name || 'Unnamed channel'}</h3>
                   {channel.unread_count > 0 && (
                     <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">
                       {channel.unread_count}
@@ -97,11 +97,11 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
                         <span className="font-medium mr-1">
                           {channel.last_message.user_name || 'Unknown'}:
                         </span>
-                        {ChatMessageFactory.getPreviewText(channel.last_message)}
+                        {channel.last_message.message || 'New message'}
                       </div>
                     </div>
                     <div className="text-xs text-muted-foreground mt-1">
-                      {channel.last_active_time}
+                      {channel.last_active_time || 'Just now'}
                     </div>
                   </>
                 )}

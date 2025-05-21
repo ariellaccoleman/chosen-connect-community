@@ -2,8 +2,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { postApi } from "@/api/posts";
 import { useAuth } from "@/hooks/useAuth";
-import { CreatePostPayload, PostWithAuthor } from "@/types/post";
-import { showErrorToast } from "@/api/core";
+import { CreatePostPayload } from "@/types/post";
 import { toast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
 
@@ -100,8 +99,8 @@ export const useCreatePost = () => {
     onError: (error) => {
       logger.error("Error creating post:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to create post'),
+        description: error instanceof Error ? error.message : 'Failed to create post',
+        variant: "destructive"
       });
     }
   });
@@ -132,8 +131,8 @@ export const useDeletePost = () => {
     onError: (error) => {
       logger.error("Error deleting post:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to delete post'),
+        description: error instanceof Error ? error.message : 'Failed to delete post',
+        variant: "destructive"
       });
     }
   });

@@ -4,7 +4,6 @@ import { postCommentApi } from "@/api/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/use-toast";
-import { showErrorToast } from "@/api/core";
 
 /**
  * Hook to fetch comments for a specific post
@@ -56,8 +55,8 @@ export const useCreateComment = () => {
     onError: (error) => {
       logger.error("Error creating comment:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to create comment'),
+        description: error instanceof Error ? error.message : 'Failed to create comment',
+        variant: "destructive"
       });
     }
   });
@@ -88,8 +87,8 @@ export const useDeleteComment = () => {
     onError: (error) => {
       logger.error("Error deleting comment:", error);
       toast({
-        variant: "destructive",
-        description: showErrorToast(error, 'Failed to delete comment'),
+        description: error instanceof Error ? error.message : 'Failed to delete comment',
+        variant: "destructive"
       });
     }
   });

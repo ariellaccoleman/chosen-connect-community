@@ -1,5 +1,6 @@
 
 import { ApiResponse, createApiFactory } from "@/api/core";
+import { supabase } from "@/integrations/supabase/client";
 import { Post, PostWithAuthor, CreatePostPayload } from "@/types/post";
 
 /**
@@ -28,8 +29,8 @@ export function createPostApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    // Use the provided api client to make the query
-    const { data, error, status } = await api.supabase
+    // Use the Supabase client directly
+    const { data, error, status } = await supabase
       .from('posts')
       .select(query)
       .order('created_at', { ascending: false });
@@ -60,8 +61,8 @@ export function createPostApi() {
       post_media(*)
     `;
 
-    // Use the provided api client to make the query
-    const { data, error } = await api.supabase
+    // Use the Supabase client directly
+    const { data, error } = await supabase
       .from('posts')
       .select(query)
       .eq('id', id)
@@ -98,7 +99,7 @@ export function createPostApi() {
    */
   const getPostsByTag = async (tagId: string): Promise<ApiResponse<PostWithAuthor[]>> => {
     // Get post IDs first from tag assignments
-    const { data: tagAssignments, error: assignmentsError } = await api.supabase
+    const { data: tagAssignments, error: assignmentsError } = await supabase
       .from('tag_assignments')
       .select('target_id')
       .eq('tag_id', tagId)
@@ -124,7 +125,7 @@ export function createPostApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    const { data, error } = await api.supabase
+    const { data, error } = await supabase
       .from('posts')
       .select(query)
       .in('id', postIds)

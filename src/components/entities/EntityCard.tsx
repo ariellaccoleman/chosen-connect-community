@@ -46,6 +46,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
       return location;
     }
     
+    // Handle location object with properties
     return location.formatted_location || location.full_name || location.city;
   };
 
@@ -97,7 +98,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
         {/* Tags */}
         {showTags && entity.tags && entity.tags.length > 0 && (
           <div className="mt-4">
-            {Array.isArray(entity.tags) && <TagList tagIds={entity.tags} />}
+            <TagList tagIds={entity.tags as string[]} />
           </div>
         )}
       </div>

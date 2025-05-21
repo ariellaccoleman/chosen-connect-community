@@ -1,5 +1,6 @@
 
 import { ApiResponse, createApiFactory } from "@/api/core";
+import { supabase } from "@/integrations/supabase/client";
 import { PostComment, CreateCommentPayload } from "@/types/post";
 
 /**
@@ -26,7 +27,7 @@ export function createPostCommentApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    const { data, error } = await api.supabase
+    const { data, error } = await supabase
       .from('post_comments')
       .select(query)
       .eq('post_id', postId)
@@ -59,7 +60,7 @@ export function createPostCommentApi() {
    * Delete a comment
    */
   const deleteComment = async (commentId: string): Promise<ApiResponse<null>> => {
-    const { error } = await api.supabase
+    const { error } = await supabase
       .from('post_comments')
       .delete()
       .eq('id', commentId);
@@ -84,7 +85,7 @@ export function createPostCommentApi() {
         posts!post_id(author_id)
       `;
       
-      const { data, error } = await api.supabase
+      const { data, error } = await supabase
         .from('post_comments')
         .select(query)
         .eq('id', commentId)
@@ -109,7 +110,7 @@ export function createPostCommentApi() {
    */
   const getCommentCount = async (postId: string): Promise<number> => {
     try {
-      const { data, error } = await api.supabase
+      const { data, error } = await supabase
         .from('post_comments')
         .select('count')
         .eq('post_id', postId)
