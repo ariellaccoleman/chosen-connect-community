@@ -74,8 +74,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
   
   // Format likes and comments count with proper pluralization
-  const likesText = post.likes_count === 1 ? "1 like" : `${post.likes_count || 0} likes`;
-  const commentsText = post.comments_count === 1 ? "1 comment" : `${post.comments_count || 0} comments`;
+  // Fix: Only show count when it's greater than 0
+  const likesCount = post.likes_count || 0;
+  const commentsCount = post.comments_count || 0;
+  const likesText = likesCount === 0 ? "0 likes" : likesCount === 1 ? "1 like" : `${likesCount} likes`;
+  const commentsText = commentsCount === 0 ? "0 comments" : commentsCount === 1 ? "1 comment" : `${commentsCount} comments`;
   
   return (
     <Card className="overflow-hidden">
@@ -236,7 +239,8 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
   };
   
   // Format comment likes with proper pluralization
-  const likesText = comment.likes === 1 ? "1 like" : `${comment.likes || 0} likes`;
+  const likesCount = comment.likes || 0;
+  const likesText = likesCount === 0 ? "0 likes" : likesCount === 1 ? "1 like" : `${likesCount} likes`;
   
   return (
     <div className="flex space-x-2">
