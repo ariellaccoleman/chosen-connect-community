@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -21,7 +22,7 @@ export function useSelectionTags(entityType?: EntityType) {
     queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
       try {
-        // Use the shared fetchSelectionTags function from tagOperations
+        // Use the updated fetchSelectionTags function that uses the new views
         const tags = await fetchSelectionTags({
           targetType: entityType,
           skipCache: false
@@ -31,14 +32,7 @@ export function useSelectionTags(entityType?: EntityType) {
         
         return {
           status: 'success',
-          data: tags.filter(tag => {
-            // If no entityType specified, return all tags
-            if (!entityType) return true;
-            
-            // Otherwise only return tags associated with this entity type
-            // This is a client-side safety filter in case the API didn't correctly filter
-            return tag.entity_types?.includes(entityType) || !tag.entity_types || tag.entity_types.length === 0;
-          })
+          data: tags
         };
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);
@@ -58,10 +52,10 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
     queryFn: async () => {
       if (!tagId) return [];
       
-      // Fetch tag assignments for the given tag ID and optional entity type
+      // Use the new entity_tag_assignments_view for better performance
       const { data, error } = await apiClient.query(client => 
         client
-          .from("tag_assignments")
+          .from("entity_tag_assignments_view")
           .select("*")
           .eq("tag_id", tagId)
           .then(res => {
@@ -130,8 +124,21 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
     queryFn: async () => {
       if (!entityId) return { status: 'success', data: [] };
       
-      const { getEntityTags } = await import("@/api/tags/entityTagsApi");
-      return getEntityTags(entityId, entityType);
+      // Use the entity_tag_assignments_view for more efficient queries
+      return apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from("entity_tag_assignments_view")
+          .select("*")
+          .eq("target_id", entityId)
+          .eq("target_type", entityType);
+        
+        if (error) throw error;
+        
+        return { 
+          status: 'success', 
+          data: data || [] 
+        };
+      });
     },
     enabled: !!entityId
   });

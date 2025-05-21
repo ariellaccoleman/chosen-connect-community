@@ -22,60 +22,77 @@ export const getFilterTags = async (options: {
     try {
       logger.debug("getFilterTags called with options:", options);
       
-      // If we're filtering by target type, use an optimized query
+      // Use the new filtered_entity_tags_view for more efficient querying
+      let query = `
+        SELECT DISTINCT t.*
+        FROM filtered_entity_tags_view t
+        WHERE 1=1
+      `;
+      
+      const params: any[] = [];
+      let paramIndex = 1;
+      
+      // Add filters based on options
       if (options.targetType) {
-        // Direct join query for better performance when filtering by target type
-        const joinQuery = `
-          SELECT DISTINCT t.*
-          FROM tags t
-          INNER JOIN tag_assignments ta ON t.id = ta.tag_id
-          WHERE ta.target_type = '${options.targetType}'
-          ${options.createdBy ? `AND t.created_by = '${options.createdBy}'` : ''}
-          ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
-          ORDER BY t.name
-        `;
-        
-        try {
-          const { data, error } = await typedRpc(
-            client,
-            'query_tags', 
-            { query_text: joinQuery }
-          );
-          
-          if (error) {
-            logger.warn("Error in query_tags RPC:", error);
-            throw error;
-          }
-          
-          logger.debug(`getFilterTags found ${data?.length || 0} tags`);
-          return createSuccessResponse(data || []);
-        } catch (rpcError) {
-          logger.warn("RPC query failed, falling back to direct query:", rpcError);
-          // Fall back to direct query if RPC fails
-        }
+        query += ` AND t.entity_type = $${paramIndex++}`;
+        params.push(options.targetType);
       }
       
-      // For non-targetType queries or as a fallback, use the standard approach
-      let query = client.from('tags').select('*');
-      
-      // Apply filters
       if (options.createdBy) {
-        query = query.eq('created_by', options.createdBy);
+        query += ` AND t.created_by = $${paramIndex++}`;
+        params.push(options.createdBy);
       }
       
       if (options.searchQuery) {
-        query = query.ilike('name', `%${options.searchQuery}%`);
+        query += ` AND t.name ILIKE $${paramIndex++}`;
+        params.push(`%${options.searchQuery}%`);
       }
       
-      const { data, error } = await query.order('name');
+      // Add ordering
+      query += ` ORDER BY t.name`;
       
-      if (error) {
-        logger.error("Error in direct tags query:", error);
-        throw error;
+      try {
+        const { data, error } = await typedRpc(
+          client,
+          'query_tags', 
+          { query_text: query, params: params }
+        );
+        
+        if (error) {
+          logger.warn("Error in query_tags RPC:", error);
+          throw error;
+        }
+        
+        logger.debug(`getFilterTags found ${data?.length || 0} tags`);
+        return createSuccessResponse(data || []);
+      } catch (rpcError) {
+        logger.warn("RPC query failed, falling back to direct query:", rpcError);
+        
+        // Fall back to querying the filtered_entity_tags_view directly if RPC fails
+        let fallbackQuery = client.from('filtered_entity_tags_view').select('*');
+        
+        if (options.targetType) {
+          fallbackQuery = fallbackQuery.eq('entity_type', options.targetType);
+        }
+        
+        if (options.createdBy) {
+          fallbackQuery = fallbackQuery.eq('created_by', options.createdBy);
+        }
+        
+        if (options.searchQuery) {
+          fallbackQuery = fallbackQuery.ilike('name', `%${options.searchQuery}%`);
+        }
+        
+        const { data, error } = await fallbackQuery.order('name');
+        
+        if (error) {
+          logger.error("Error in direct filtered_entity_tags_view query:", error);
+          throw error;
+        }
+        
+        logger.debug(`getFilterTags fallback query found ${data?.length || 0} tags`);
+        return createSuccessResponse(data || []);
       }
-      
-      logger.debug(`getFilterTags direct query found ${data?.length || 0} tags`);
-      return createSuccessResponse(data || []);
     } catch (err) {
       logger.error("Error in getFilterTags", err);
       return createSuccessResponse([]);
@@ -84,7 +101,7 @@ export const getFilterTags = async (options: {
 };
 
 /**
- * Get tags for selection purposes - returns both entity-specific tags and general tags
+ * Get tags for selection purposes - returns all tags with their entity types
  * Used for typeaheads and selector components
  */
 export const getSelectionTags = async (options: {
@@ -97,141 +114,132 @@ export const getSelectionTags = async (options: {
     try {
       logger.debug("getSelectionTags called with options:", options);
       
-      // First check if the tag_entity_types table exists by trying a simple query
-      let tableExists = true;
-      try {
-        const { data: tableCheck, error: testError } = await client.rpc('query_tags', { 
-          query_text: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'tag_entity_types')"
-        });
+      // Use our new all_tags_with_entity_types_view for efficient querying
+      let query;
+      
+      if (options.targetType) {
+        // If target type is specified, get tags that are either specific to this entity type 
+        // or don't have any entity type associations
+        query = `
+          SELECT *
+          FROM all_tags_with_entity_types_view
+          WHERE $1 = ANY(entity_types) OR array_length(entity_types, 1) IS NULL
+        `;
         
-        if (testError || !tableCheck || tableCheck.length === 0) {
-          tableExists = false;
-          logger.warn("tag_entity_types table check failed:", testError || "No data returned");
+        if (options.searchQuery) {
+          query += ` AND name ILIKE $2`;
+          
+          try {
+            const { data, error } = await typedRpc(
+              client,
+              'query_tags', 
+              { 
+                query_text: query, 
+                params: [options.targetType, `%${options.searchQuery}%`] 
+              }
+            );
+            
+            if (error) throw error;
+            logger.debug(`getSelectionTags found ${data?.length || 0} tags with entity type filter`);
+            return createSuccessResponse(data || []);
+          } catch (e) {
+            logger.warn("Entity-specific RPC query failed:", e);
+          }
+        } else {
+          try {
+            const { data, error } = await typedRpc(
+              client,
+              'query_tags', 
+              { 
+                query_text: query, 
+                params: [options.targetType] 
+              }
+            );
+            
+            if (error) throw error;
+            logger.debug(`getSelectionTags found ${data?.length || 0} tags with entity type filter`);
+            return createSuccessResponse(data || []);
+          } catch (e) {
+            logger.warn("Entity-specific RPC query failed:", e);
+          }
         }
-      } catch (checkError) {
-        tableExists = false;
-        logger.warn("Error checking tag_entity_types table existence:", checkError);
-      }
-        
-      if (!tableExists) {
-        logger.warn("tag_entity_types table doesn't exist or is not accessible");
-        
-        // If table doesn't exist, fall back to a simpler query
-        const { data, error } = await client
-          .from('tags')
-          .select('*')
-          .order('name');
-
-        if (error) throw error;
-        
-        logger.debug(`getSelectionTags fallback found ${data?.length || 0} tags`);
-        return createSuccessResponse(data || []);
       }
       
-      // If table exists and we have an entity type, try to get tags specifically for that entity type
-      if (options.targetType) {
-        // Updated query that properly uses tag_entity_types to filter by entity type
-        // Get all tags that either:
-        // 1. Have an explicit association with this entity type
-        // 2. Don't have any entity type associations at all (general tags)
-        const query = `
-          WITH 
-          entity_specific_tags AS (
-            SELECT t.*, ARRAY_AGG(tet.entity_type) as entity_types
-            FROM tags t
-            JOIN tag_entity_types tet ON t.id = tet.tag_id
-            WHERE tet.entity_type = '${options.targetType}'
-            ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
-            GROUP BY t.id
-          ),
-          general_tags AS (
-            SELECT t.*, ARRAY[]::text[] as entity_types
-            FROM tags t
-            WHERE t.id NOT IN (
-              SELECT DISTINCT tag_id FROM tag_entity_types
-            )
-            ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
-          )
-          SELECT * FROM entity_specific_tags
-          UNION ALL
-          SELECT * FROM general_tags
-          ORDER BY name
-        `;
-
-        try {
-          const { data, error } = await typedRpc(
-            client,
-            'query_tags', 
-            { query_text: query }
-          );
-          
-          if (error) {
-            logger.warn("Error in entity type-specific query_tags RPC:", error);
-            throw error;
-          }
-          
-          if (data && data.length > 0) {
-            logger.debug(`getSelectionTags entity-specific query found ${data.length} tags`);
-            return createSuccessResponse(data);
-          } else {
-            logger.warn("Entity-specific tag query returned no results, falling back to all tags");
-          }
-        } catch (rpcError) {
-          logger.warn("Entity-specific RPC query failed, falling back to all tags:", rpcError);
-        }
-      }
-
-      // Fall back to getting all tags if no entity type specified or if the specific query failed
-      // Also attempt to include entity_types information
-      const query = `
-        SELECT t.*, 
-          (
-            SELECT ARRAY_AGG(tet.entity_type)
-            FROM tag_entity_types tet
-            WHERE tet.tag_id = t.id
-          ) as entity_types
-        FROM tags t
-        ${options.searchQuery ? `WHERE t.name ILIKE '%${options.searchQuery}%'` : ''}
-        ORDER BY t.name
+      // If the above didn't return or targetType wasn't specified, get all tags
+      query = `
+        SELECT *
+        FROM all_tags_with_entity_types_view
+        WHERE 1=1
       `;
+      
+      const params: any[] = [];
+      let paramIndex = 1;
+      
+      if (options.searchQuery) {
+        query += ` AND name ILIKE $${paramIndex++}`;
+        params.push(`%${options.searchQuery}%`);
+      }
+      
+      if (options.createdBy) {
+        query += ` AND created_by = $${paramIndex++}`;
+        params.push(options.createdBy);
+      }
+      
+      query += ` ORDER BY name`;
       
       try {
         const { data, error } = await typedRpc(
           client,
           'query_tags', 
-          { query_text: query }
+          { query_text: query, params }
         );
         
-        if (error) {
-          logger.warn("Error in fallback query with entity_types:", error);
-          // If this fails, fall back to simple query
-          const { data: simpleData, error: simpleError } = await client
-            .from('tags')
-            .select('*')
-            .order('name');
-        
-          if (simpleError) throw simpleError;
-          
-          return createSuccessResponse(simpleData || []);
-        }
-        
-        logger.debug(`getSelectionTags with entity_types query found ${data?.length || 0} tags`);
+        if (error) throw error;
+        logger.debug(`getSelectionTags found ${data?.length || 0} tags with standard query`);
         return createSuccessResponse(data || []);
       } catch (e) {
-        // Final fallback to simple query
+        // Final fallback to direct query
+        logger.warn("Standard RPC query failed, falling back to direct query:", e);
+        
+        // Note: We can't query entity_types directly in a normal query with the current setup
+        // since it's an array type. We'll need to add them after fetching.
         const { data, error } = await client
           .from('tags')
           .select('*')
           .order('name');
-      
+        
         if (error) throw error;
         
-        logger.debug(`getSelectionTags simple fallback found ${data?.length || 0} tags`);
+        // Fetch entity types for each tag
+        if (data && data.length > 0) {
+          const tagIds = data.map(tag => tag.id);
+          const { data: entityTypesData, error: entityTypesError } = await client
+            .from('tag_entity_types')
+            .select('tag_id, entity_type')
+            .in('tag_id', tagIds);
+          
+          if (!entityTypesError && entityTypesData) {
+            // Create a map of tag_id -> entity_types
+            const entityTypeMap = new Map<string, string[]>();
+            entityTypesData.forEach(item => {
+              const types = entityTypeMap.get(item.tag_id) || [];
+              types.push(item.entity_type);
+              entityTypeMap.set(item.tag_id, types);
+            });
+            
+            // Add entity_types to each tag
+            data.forEach(tag => {
+              tag.entity_types = entityTypeMap.get(tag.id) || [];
+            });
+          }
+        }
+        
+        logger.debug(`getSelectionTags direct query found ${data?.length || 0} tags`);
         return createSuccessResponse(data || []);
       }
     } catch (err) {
       logger.error("Error in getSelectionTags:", err);
-      // Return empty list rather than error to prevent UI from breaking
+      // Always return empty array rather than error to prevent UI from breaking
       return createSuccessResponse([]);
     }
   });

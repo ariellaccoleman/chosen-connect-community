@@ -384,6 +384,27 @@ export type Database = {
             foreignKeyName: "events_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "tags"
             referencedColumns: ["id"]
           },
@@ -487,6 +508,27 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hubs_tag_id_fkey"
             columns: ["tag_id"]
@@ -983,6 +1025,27 @@ export type Database = {
             foreignKeyName: "tag_assignments_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "tags"
             referencedColumns: ["id"]
           },
@@ -1011,6 +1074,27 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tag_entity_types_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_entity_types_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_entity_types_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tag_entity_types_tag_id_fkey"
             columns: ["tag_id"]
@@ -1153,6 +1237,18 @@ export type Database = {
       }
     }
     Views: {
+      all_tags_with_entity_types_view: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          entity_types: string[] | null
+          id: string | null
+          name: string | null
+          updated_at: string | null
+        }
+        Relationships: []
+      }
       chat_reply_counts: {
         Row: {
           count: number | null
@@ -1164,6 +1260,64 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entity_tag_assignments_view: {
+        Row: {
+          created_at: string | null
+          entity_types: string[] | null
+          id: string | null
+          tag_created_by: string | null
+          tag_description: string | null
+          tag_id: string | null
+          tag_name: string | null
+          target_id: string | null
+          target_type: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["tag_created_by"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["tag_created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1212,7 +1366,55 @@ export type Database = {
             foreignKeyName: "events_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      filtered_entity_tags_view: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          entity_type: string | null
+          id: string | null
+          name: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1230,6 +1432,27 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "filtered_entity_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "orphaned_tags_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tag_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hubs_tag_id_fkey"
             columns: ["tag_id"]
@@ -1264,6 +1487,51 @@ export type Database = {
           },
         ]
       }
+      orphaned_tags_view: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          entity_types: string[] | null
+          id: string | null
+          name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          entity_types?: never
+          id?: string | null
+          name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          description?: string | null
+          entity_types?: never
+          id?: string | null
+          name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people_with_tags: {
         Row: {
           assigned_tag_id: string | null
@@ -1292,6 +1560,33 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tag_entity_types_view: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          description: string | null
+          entity_types: string[] | null
+          id: string | null
+          name: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

@@ -63,104 +63,19 @@ export const fetchSelectionTags = async (options: {
     
     logger.debug(`fetchSelectionTags: Getting tags for target type: ${validOptions.targetType || 'all'}`);
     
-    // First try the optimized selection tags API
-    try {
-      const response = await getSelectionTags(validOptions);
-      if (response.status === 'success' && response.data && response.data.length > 0) {
-        logger.debug(`fetchSelectionTags: Found ${response.data.length} tags via getSelectionTags`);
-        
-        // Add entity_types property to each tag if it doesn't exist
-        const tagsWithEntityTypes = response.data.map(tag => {
-          if (!tag.entity_types && validOptions.targetType) {
-            return {
-              ...tag,
-              entity_types: [validOptions.targetType]
-            };
-          }
-          return tag;
-        });
-        
-        return tagsWithEntityTypes;
-      }
-    } catch (optimizedError) {
-      logger.warn("Optimized tag selection query failed, falling back to standard approach:", optimizedError);
-    }
-    
-    // Fallback to getting all tags if the specialized query fails
-    logger.debug("fetchSelectionTags: Falling back to getAllTags");
-    const allTagsResponse = await getAllTags();
-    
-    if (allTagsResponse.status !== 'success' || !allTagsResponse.data) {
-      logger.error("Error fetching all tags:", allTagsResponse.error);
+    // Use the new view-based API
+    const response = await getSelectionTags(validOptions);
+    if (response.status !== 'success' || !response.data) {
+      logger.error("Error fetching selection tags:", response.error);
       return [];
     }
     
-    let tags = allTagsResponse.data;
-    logger.debug(`fetchSelectionTags: Found ${tags.length} tags via fallback method`);
-    
-    // If entity type is specified, we need to check which tags are associated with it
-    if (validOptions.targetType) {
-      try {
-        // Fetch tag-entity associations
-        const { data: entityAssociations, error } = await apiClient.query(client => 
-          client
-            .from("tag_entity_types")
-            .select("tag_id, entity_type")
-            .eq("entity_type", validOptions.targetType)
-        );
-        
-        if (!error && entityAssociations) {
-          const tagIds = entityAssociations.map(assoc => assoc.tag_id);
-          logger.debug(`fetchSelectionTags: Found ${tagIds.length} tags associated with ${validOptions.targetType}`);
-          
-          // We want both tags specifically associated with this entity type
-          // and tags that aren't associated with any entity type (general tags)
-          const tagEntityMap = new Map<string, string[]>();
-          entityAssociations.forEach(assoc => {
-            const entityTypes = tagEntityMap.get(assoc.tag_id) || [];
-            entityTypes.push(assoc.entity_type);
-            tagEntityMap.set(assoc.tag_id, entityTypes);
-          });
-          
-          // Add entity_types field to each tag
-          tags = tags.map(tag => ({
-            ...tag,
-            entity_types: tagEntityMap.get(tag.id) || []
-          }));
-        }
-      } catch (e) {
-        logger.error("Error fetching tag entity associations:", e);
-      }
-    }
-    
-    return tags;
+    logger.debug(`fetchSelectionTags: Found ${response.data.length} tags`);
+    return response.data;
   } catch (error) {
     logger.error("Error in fetchSelectionTags:", error);
     // Always return empty array on error to prevent UI from breaking
     return [];
-  }
-};
-
-// Import getAllTags function to use in the fallback case
-const getAllTags = async (): Promise<{ status: string, data: Tag[], error?: any }> => {
-  try {
-    const { data, error } = await apiClient.query(client => 
-      client.from("tags").select("*").order("name")
-    );
-    
-    if (error) throw error;
-    
-    return {
-      status: 'success',
-      data: data || []
-    };
-  } catch (error) {
-    logger.error("Error in getAllTags:", error);
-    return { 
-      status: 'error', 
-      data: [],
-      error 
-    };
   }
 };
 
