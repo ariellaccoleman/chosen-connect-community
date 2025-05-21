@@ -35,16 +35,18 @@ const MessageFeed: React.FC = () => {
         <h2 className="font-medium">Messages</h2>
       </div>
       
-      {/* Message list - using our new shared component */}
-      <MessageList
-        messages={messages}
-        isLoading={messagesLoading}
-        error={messagesError}
-        onMessageSelect={handleMessageSelect}
-        selectedMessageId={selectedMessage?.id}
-        onScroll={(isNearBottom) => setAutoScrollMessages(isNearBottom)}
-        autoScroll={autoScrollMessages}
-      />
+      {/* Message list - using our shared component */}
+      <div className="flex-1 overflow-hidden">
+        <MessageList
+          messages={messages}
+          isLoading={messagesLoading}
+          error={messagesError}
+          onMessageSelect={handleMessageSelect}
+          selectedMessageId={selectedMessage?.id}
+          onScroll={(isNearBottom) => setAutoScrollMessages(isNearBottom)}
+          autoScroll={autoScrollMessages}
+        />
+      </div>
       
       {/* Message input */}
       {user && channelId && (

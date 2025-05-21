@@ -34,7 +34,7 @@ const ChatContent = () => {
   return (
     <>
       {/* Main Message Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${isMobile && isThreadOpen ? 'hidden' : ''}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden h-full ${isMobile && isThreadOpen ? 'hidden' : ''}`}>
         {isValidChannelId(channelId) ? (
           <MessageFeed />
         ) : (
@@ -53,7 +53,7 @@ const ChatContent = () => {
       
       {/* Thread Panel (conditional) */}
       {isThreadOpen && selectedMessage && (
-        <div className={`${isMobile ? 'w-full' : 'hidden md:flex w-80 lg:w-96'} border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex-col overflow-hidden`}>
+        <div className={`${isMobile ? 'w-full' : 'hidden md:flex w-80 lg:w-96'} border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex-col overflow-hidden h-full`}>
           <ThreadPanel />
         </div>
       )}
@@ -147,14 +147,14 @@ const ChatPageContent = () => {
       
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <div className="hidden sm:flex sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
+        <div className="hidden sm:flex sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto h-full">
           <ChatSidebar selectedChannelId={channelId || null} onSelectChannel={handleChannelSelect} />
         </div>
       )}
       
       {/* Only render chat content if authenticated */}
       {isAuthenticated && (
-        <div className="flex flex-1 flex-col sm:flex-row">
+        <div className="flex flex-1 flex-col sm:flex-row h-full overflow-hidden">
           <ChatProvider>
             <ChatContent />
           </ChatProvider>

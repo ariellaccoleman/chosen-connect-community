@@ -68,7 +68,7 @@ const MessageList: React.FC<MessageListProps> = ({
   return (
     <div 
       ref={listRef}
-      className="flex-1 overflow-y-auto p-4"
+      className="h-full overflow-y-auto p-4"
       onScroll={handleScroll}
     >
       {isLoading ? (
