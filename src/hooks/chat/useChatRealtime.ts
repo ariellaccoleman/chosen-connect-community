@@ -7,8 +7,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
-import { RealtimeFilter, RealtimeCallback } from '@/types/supabase';
 
 /**
  * Helper function to validate if a string is a valid UUID
@@ -25,6 +23,28 @@ interface RealtimeOptions {
   onNewMessage?: (message: ChatMessageWithAuthor) => void;
   notifyUser?: boolean;
 }
+
+/**
+ * Type definitions for Supabase realtime
+ */
+type RealtimePostgresChangesFilter = {
+  event: 'INSERT' | 'UPDATE' | 'DELETE' | '*';
+  schema: string;
+  table: string;
+  filter?: string;
+};
+
+type RealtimePostgresChangesPayload<T> = {
+  schema: string;
+  table: string;
+  commit_timestamp: string;
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
+  new: T;
+  old: T;
+  errors: any;
+};
+
+type RealtimeChannelCallback<T> = (payload: RealtimePostgresChangesPayload<T>) => void;
 
 /**
  * Base hook for setting up real-time subscriptions
@@ -53,7 +73,7 @@ const useRealtimeSubscription = (
     logger.info(`[REAL-TIME] Setting up subscription for ${subscriptionType}: ${entityId}`);
     
     // Set up the appropriate filter based on subscription type
-    const filter: RealtimeFilter = subscriptionType === 'channel' 
+    const filter: RealtimePostgresChangesFilter = subscriptionType === 'channel' 
       ? { 
           event: 'INSERT', 
           schema: 'public', 
@@ -80,7 +100,7 @@ const useRealtimeSubscription = (
     const subscription = channel.on(
       'postgres_changes', 
       filter,
-      ((payload) => {
+      ((payload: RealtimePostgresChangesPayload<any>) => {
         logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
         
         // Process the message
@@ -107,7 +127,7 @@ const useRealtimeSubscription = (
             ? 'New message received' 
             : 'New reply in thread');
         }
-      }) as RealtimeCallback<ChatMessageWithAuthor>
+      }) as RealtimeChannelCallback<ChatMessageWithAuthor>
     )
     .subscribe((status) => {
       logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);

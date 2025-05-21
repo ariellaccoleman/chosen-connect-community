@@ -1,33 +1,10 @@
 
-import { Link, useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile } from "@/hooks/profiles";
-import UserAvatar from "./UserAvatar";
-import { useTheme } from "@/contexts/ThemeContext";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-} from "@/components/ui/dropdown-menu";
 
 const DesktopNav = () => {
-  const navigate = useNavigate();
-  const { user, signOut } = useAuth();
-  const { data: profileData } = useCurrentProfile();
-  const { theme, setTheme } = useTheme();
+  const { user } = useAuth();
   
-  const isAdmin = user?.user_metadata?.role === "admin";
-  const profile = profileData?.data;
-
   // Only render navigation links without user menu
   const NavigationLinks = () => {
     if (user) {

@@ -6,7 +6,7 @@ import NavbarLogo from "./navigation/NavbarLogo";
 import DesktopNav from "./navigation/DesktopNav";
 import MobileNav from "./navigation/MobileNav";
 import { Button } from "@/components/ui/button";
-import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon } from "lucide-react";
+import { LogOut, User, ShieldCheck, Sun, Moon, SunMoon, BookOpen } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/profiles";
 import UserAvatar from "./navigation/UserAvatar";
@@ -65,8 +65,8 @@ const Navbar = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>Edit Profile</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/community-guide")}>
-                <User className="mr-2 h-4 w-4" />
+              <DropdownMenuItem onClick={() => navigate("/community/guide")}>
+                <BookOpen className="mr-2 h-4 w-4" />
                 <span>Community Guide</span>
               </DropdownMenuItem>
               

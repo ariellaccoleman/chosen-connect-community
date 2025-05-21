@@ -7,19 +7,24 @@ export const APP_ROUTES = {
   ABOUT: '/about',
   AUTH: '/auth',
   DASHBOARD: '/dashboard',
+  
+  // Profile routes
   PROFILE_EDIT: '/profile/edit',
   PROFILE_VIEW: '/profile/:id',
+  MANAGE_ORGANIZATIONS: '/profile/organizations',
+  
+  // Organization routes
   ORGANIZATIONS: '/organizations',
   ORGANIZATION_DETAIL: '/organizations/:id',
   ORGANIZATION_EDIT: '/organizations/:id/edit',
   CREATE_ORGANIZATION: '/organizations/create',
-  MANAGE_ORGANIZATIONS: '/profile/organizations',
   
-  // Community routes (updated to follow organization pattern)
+  // Community routes
   COMMUNITY: '/community',
   COMMUNITY_PROFILE: '/community/:id',
   COMMUNITY_GUIDE: '/community/guide',
   
+  // Event routes
   EVENTS: '/events',
   EVENT_DETAIL: '/events/:id',
   CREATE_EVENT: '/events/create',

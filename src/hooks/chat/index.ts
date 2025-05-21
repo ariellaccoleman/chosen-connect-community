@@ -2,9 +2,14 @@
 /**
  * Chat hook exports 
  */
-// Export the factory-based hooks
-export * from './useChatChannels';
-export * from './useChatRealtime';
+// Export context hooks
 export * from './useChat';
+
+// Export realtime hooks 
+export * from './useChatRealtime';
+
+// Export message hooks
 export * from './useChatMessageFactory';
 
+// Export channel hooks
+export * from './useChatChannels';

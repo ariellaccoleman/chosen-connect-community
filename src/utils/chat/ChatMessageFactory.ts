@@ -1,83 +1,95 @@
 
-import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
+import { ChatMessageWithAuthor } from '@/types/chat';
 import { formatRelativeTime } from '@/utils/formatters/timeFormatters';
-import { logger } from '@/utils/logger';
-import { logTimestampDebugInfo } from './timeUtils';
+import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 /**
- * Chat Message Factory
- * 
- * Handles consistent creation and transformation of chat messages
+ * Factory for standardizing chat messages throughout the application
  */
 export class ChatMessageFactory {
   /**
-   * Creates a standardized message with author from API response
+   * Create a standardized ChatMessageWithAuthor object from raw data
    */
-  static createMessageWithAuthor(message: any): ChatMessageWithAuthor {
-    // Format author information if available
-    const authorData = message.author ? {
-      id: message.author.id,
-      first_name: message.author.first_name || '',
-      last_name: message.author.last_name || '',
-      avatar_url: message.author.avatar_url || null,
-      full_name: this.formatAuthorName(message.author)
-    } : undefined;
+  static createMessageWithAuthor(data: any): ChatMessageWithAuthor {
+    if (!data) {
+      throw new Error('Cannot create message from null or undefined data');
+    }
+
+    // Extract author data
+    let author = null;
+    if (data.author) {
+      author = {
+        id: data.author.id,
+        first_name: data.author.first_name,
+        last_name: data.author.last_name,
+        avatar_url: data.author.avatar_url,
+        // Add computed full name
+        full_name: this.formatAuthorName(data.author)
+      };
+    }
     
-    // Pre-format the timestamp consistently
-    const formattedTime = formatRelativeTime(message.created_at);
-    
-    // Log timestamp debugging information
-    logTimestampDebugInfo(message.id, message.created_at, formattedTime);
-    
-    // Create a standardized message object
-    return {
-      id: message.id,
-      channel_id: message.channel_id,
-      parent_id: message.parent_id,
-      user_id: message.user_id,
-      message: message.message,
-      created_at: message.created_at,
-      updated_at: message.updated_at || message.created_at,
-      reply_count: message.reply_count || 0,
-      formatted_time: formattedTime,
-      author: authorData
+    // Build the final message object
+    const message: ChatMessageWithAuthor = {
+      id: data.id,
+      channel_id: data.channel_id,
+      parent_id: data.parent_id,
+      user_id: data.user_id,
+      message: data.message,
+      created_at: data.created_at,
+      updated_at: data.updated_at || data.created_at,
+      author,
+      reply_count: data.reply_count || 0,
+      // Add formatted time
+      formatted_time: formatRelativeTime(data.created_at)
     };
+    
+    return message;
   }
   
   /**
-   * Format author's full name consistently
+   * Create a message from a Supabase realtime payload
+   */
+  static processRealtimeMessage(payload: RealtimePostgresChangesPayload<any>): ChatMessageWithAuthor {
+    const data = payload.new;
+    
+    // For realtime messages, we don't have the author data yet
+    // so we create a minimal message object
+    const message: ChatMessageWithAuthor = {
+      id: data.id,
+      channel_id: data.channel_id,
+      parent_id: data.parent_id,
+      user_id: data.user_id,
+      message: data.message,
+      created_at: data.created_at,
+      updated_at: data.updated_at || data.created_at,
+      reply_count: 0,
+      formatted_time: formatRelativeTime(data.created_at)
+    };
+    
+    return message;
+  }
+  
+  /**
+   * Format a user's full name for display
    */
   static formatAuthorName(author: any): string {
-    if (!author) return 'Anonymous';
+    if (!author) return 'Unknown User';
     
     const firstName = author.first_name || '';
     const lastName = author.last_name || '';
-    const fullName = [firstName, lastName].filter(Boolean).join(' ');
     
-    return fullName || 'Anonymous';
-  }
-  
-  /**
-   * Process a real-time message update
-   * Similar to createMessageWithAuthor but handles real-time payloads
-   */
-  static processRealtimeMessage(payload: any): ChatMessageWithAuthor {
-    if (!payload || !payload.new) {
-      logger.error('[CHAT FACTORY] Invalid realtime payload received');
-      return {} as ChatMessageWithAuthor;
+    if (firstName && lastName) {
+      return `${firstName} ${lastName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else {
+      return 'Anonymous';
     }
-    
-    const message = payload.new;
-    return this.createMessageWithAuthor(message);
   }
 }
 
-// Export a simpler function for backward compatibility
-export function processChatMessage(message: any, includeAuthor = true): ChatMessageWithAuthor {
-  return ChatMessageFactory.createMessageWithAuthor(message);
-}
-
-// Export the author name formatter for backward compatibility
-export function formatAuthorName(author: any): string {
-  return ChatMessageFactory.formatAuthorName(author);
-}
+// Export helpers for direct use
+export const processChatMessage = ChatMessageFactory.processRealtimeMessage.bind(ChatMessageFactory);
+export const formatAuthorName = ChatMessageFactory.formatAuthorName.bind(ChatMessageFactory);
