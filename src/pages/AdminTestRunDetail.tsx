@@ -286,13 +286,13 @@ const AdminTestRunDetail = () => {
                     All Tests ({testResults?.length || 0})
                   </TabsTrigger>
                   <TabsTrigger value="failed">
-                    Failed ({testResults?.filter(r => r.status === 'failed').length || 0})
+                    Failed ({testResults && testResults.filter ? testResults.filter(r => r.status === 'failed').length : 0})
                   </TabsTrigger>
                   <TabsTrigger value="passed">
-                    Passed ({testResults?.filter(r => r.status === 'passed').length || 0})
+                    Passed ({testResults && testResults.filter ? testResults.filter(r => r.status === 'passed').length : 0})
                   </TabsTrigger>
                   <TabsTrigger value="skipped">
-                    Skipped ({testResults?.filter(r => r.status === 'skipped').length || 0})
+                    Skipped ({testResults && testResults.filter ? testResults.filter(r => r.status === 'skipped').length : 0})
                   </TabsTrigger>
                 </TabsList>
               </div>
@@ -303,18 +303,18 @@ const AdminTestRunDetail = () => {
                     <Accordion type="multiple" className="w-full">
                       {Object.entries(
                         groupTestResultsBySuite(filteredResults)
-                      ).map(([suite, results]) => (
+                      ).map(([suite, results]: [string, any[]]) => (
                         <AccordionItem key={suite} value={suite}>
                           <AccordionTrigger className="px-4">
                             <div className="flex items-center justify-between w-full pr-4">
                               <span>{suite}</span>
                               <div className="flex space-x-2">
                                 <Badge variant="outline" className="bg-green-100 text-green-800">
-                                  {results.filter(r => r.status === 'passed').length} Passed
+                                  {results && results.filter ? results.filter(r => r.status === 'passed').length : 0} Passed
                                 </Badge>
-                                {results.some(r => r.status === 'failed') && (
+                                {results && results.some && results.some(r => r.status === 'failed') && (
                                   <Badge variant="outline" className="bg-red-100 text-red-800">
-                                    {results.filter(r => r.status === 'failed').length} Failed
+                                    {results && results.filter ? results.filter(r => r.status === 'failed').length : 0} Failed
                                   </Badge>
                                 )}
                               </div>
@@ -330,9 +330,9 @@ const AdminTestRunDetail = () => {
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {results.map((result) => (
+                                {results && results.map ? results.map((result) => (
                                   <TestResultRow key={result.id} result={result} />
-                                ))}
+                                )) : null}
                               </TableBody>
                             </Table>
                           </AccordionContent>
@@ -348,8 +348,6 @@ const AdminTestRunDetail = () => {
               </TabsContent>
             </Tabs>
           </Card>
-          
-          {/* We no longer need the Failed Tests Details section since each row is now expandable */}
         </>
       ) : (
         <div className="flex flex-col items-center justify-center py-12">

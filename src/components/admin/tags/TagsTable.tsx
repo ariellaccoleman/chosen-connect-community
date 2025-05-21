@@ -12,7 +12,7 @@ import {
 import { Tag } from "@/utils/tags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home, HomeX } from "lucide-react";
+import { Home } from "lucide-react";
 
 interface TagsTableProps {
   tags: Tag[];
@@ -75,7 +75,7 @@ const TagsTable = ({
                         disabled={isProcessingTag}
                         onClick={() => onRemoveHub(tag.id)}
                       >
-                        <HomeX className="h-4 w-4 mr-2" />
+                        <Home className="h-4 w-4 mr-2" />
                         {isProcessingTag ? 'Processing...' : 'Remove Hub'}
                       </Button>
                     ) : (

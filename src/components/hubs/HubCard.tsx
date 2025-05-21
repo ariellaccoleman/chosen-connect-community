@@ -7,9 +7,15 @@ import { HubWithDetails } from '@/types';
 
 interface HubCardProps {
   hub: HubWithDetails;
+  isAdmin?: boolean;
+  onToggleFeatured?: (id: string, isFeatured: boolean) => void;
 }
 
-const HubCard: React.FC<HubCardProps> = ({ hub }) => {
+const HubCard: React.FC<HubCardProps> = ({ 
+  hub,
+  isAdmin = false,
+  onToggleFeatured
+}) => {
   return (
     <Link to={`/hubs/${hub.id}`}>
       <Card className="h-full transition-shadow hover:shadow-md">
