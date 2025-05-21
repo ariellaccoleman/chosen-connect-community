@@ -6,6 +6,7 @@ import ChatChannelForm from '@/components/admin/chat/ChatChannelForm';
 import { ChatChannel, ChatChannelUpdate } from '@/types/chat';
 import { logger } from '@/utils/logger';
 import { Skeleton } from '@/components/ui/skeleton';
+import ChatChannelTagManager from '@/components/admin/chat/ChatChannelTagManager';
 
 export default function EditChatChannel() {
   const { id } = useParams<{ id: string }>();
@@ -90,6 +91,13 @@ export default function EditChatChannel() {
           isEditMode={true}
           existingChannelId={id}
         />
+        
+        {/* Tag Manager */}
+        {id && (
+          <div className="mt-8 border-t pt-6">
+            <ChatChannelTagManager channelId={id} />
+          </div>
+        )}
       </div>
     </div>
   );
