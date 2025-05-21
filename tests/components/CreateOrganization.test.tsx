@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import CreateOrganization from '@/pages/CreateOrganization';
@@ -56,8 +57,9 @@ describe('CreateOrganization Component', () => {
     // Mock unauthenticated state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
-      loading: false,
-      authenticated: false
+      loading: false, // Important: Set loading to false so the component doesn't show skeleton
+      authenticated: false,
+      isAuthenticated: false // Add this to match the actual hook return value
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -75,8 +77,9 @@ describe('CreateOrganization Component', () => {
     // Mock loading state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
-      loading: true,
-      authenticated: false
+      loading: true, 
+      authenticated: false,
+      isAuthenticated: false // Add this to match the actual hook
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -94,7 +97,8 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true
+      authenticated: true,
+      isAuthenticated: true // Add this to match the actual hook
     }));
     
     // Mock organization creation hook
@@ -107,9 +111,10 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Check for form elements
+    // Check for form elements - updated to match the actual component implementation
     expect(screen.getByText('Create New Organization')).toBeInTheDocument();
-    expect(screen.getByLabelText(/Organization Name/i)).toBeInTheDocument();
+    // Use getByRole instead of getByLabelText for more reliable selection
+    expect(screen.getByLabelText(/Organization Name\*/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Website URL/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Create Organization/i })).toBeInTheDocument();
@@ -120,7 +125,8 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true
+      authenticated: true,
+      isAuthenticated: true // Add this to match the actual hook
     }));
     
     // Mock successful mutation response
@@ -136,8 +142,8 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Fill out the form
-    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+    // Fill out the form - updated to match the actual component implementation
+    fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
       target: { value: 'Test Organization' }
     });
     
@@ -149,8 +155,10 @@ describe('CreateOrganization Component', () => {
       target: { value: 'https://test.org' }
     });
     
-    // Submit the form
-    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
+    // Submit the form - find button with exact role and name
+    const submitButton = screen.getByRole('button', { name: /Create Organization/i });
+    expect(submitButton).toBeInTheDocument();
+    fireEvent.click(submitButton);
     
     // Verify mutation was called with correct data
     await waitFor(() => {
@@ -173,7 +181,8 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true
+      authenticated: true,
+      isAuthenticated: true // Add this to match the actual hook
     }));
     
     // Mock organization creation hook
@@ -187,15 +196,16 @@ describe('CreateOrganization Component', () => {
     render(<CreateOrganization />, { wrapper: Wrapper });
     
     // Submit form without required fields
-    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
+    const submitButton = screen.getByRole('button', { name: /Create Organization/i });
+    fireEvent.click(submitButton);
     
-    // Check for validation messages
+    // Check for validation messages - updated to match actual validation messages
     await waitFor(() => {
       expect(screen.getByText(/Organization name must be at least 2 characters/i)).toBeInTheDocument();
     });
     
     // Enter invalid URL
-    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+    fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
       target: { value: 'Test Organization' }
     });
     
@@ -204,9 +214,9 @@ describe('CreateOrganization Component', () => {
     });
     
     // Submit form again
-    fireEvent.click(screen.getByRole('button', { name: /Create Organization/i }));
+    fireEvent.click(submitButton);
     
-    // Check for URL validation message
+    // Check for URL validation message - updated to match actual validation message
     await waitFor(() => {
       expect(screen.getByText(/Please enter a valid URL/i)).toBeInTheDocument();
     });
@@ -220,20 +230,21 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true
+      authenticated: true,
+      isAuthenticated: true // Add this to match the actual hook
     }));
     
     // Mock pending mutation state
     jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
-      isPending: true,
+      isPending: true, // Important: Set isPending to true
       isError: false,
       isSuccess: false
     } as any));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Check for loading state
+    // Check for loading state - the button should now display "Creating..."
     expect(screen.getByText('Creating...')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
@@ -243,7 +254,8 @@ describe('CreateOrganization Component', () => {
     const authHookSpy = jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true
+      authenticated: true,
+      isAuthenticated: true // Add this to match the actual hook
     }));
     
     // Mock organization creation hook
@@ -253,7 +265,8 @@ describe('CreateOrganization Component', () => {
         authHookSpy.mockImplementation(() => ({
           user: null,
           loading: false,
-          authenticated: false
+          authenticated: false,
+          isAuthenticated: false // Add this to match the actual hook
         }));
         // Continue with a delayed response to give time for state to update
         await new Promise(resolve => setTimeout(resolve, 10));
@@ -267,7 +280,7 @@ describe('CreateOrganization Component', () => {
     render(<CreateOrganization />, { wrapper: Wrapper });
     
     // Fill out the form
-    fireEvent.change(screen.getByLabelText(/Organization Name/i), {
+    fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
       target: { value: 'Test Organization' }
     });
     
