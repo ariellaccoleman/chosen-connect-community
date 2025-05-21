@@ -74,11 +74,11 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
   };
   
   // Format likes and comments count with proper pluralization
-  // Fix: Only show count when it's greater than 0
+  // Only show count when it's greater than 0
   const likesCount = post.likes_count || 0;
   const commentsCount = post.comments_count || 0;
-  const likesText = likesCount === 0 ? "0 likes" : likesCount === 1 ? "1 like" : `${likesCount} likes`;
-  const commentsText = commentsCount === 0 ? "0 comments" : commentsCount === 1 ? "1 comment" : `${commentsCount} comments`;
+  const likesText = likesCount === 1 ? "1 like" : likesCount > 1 ? `${likesCount} likes` : "";
+  const commentsText = commentsCount === 1 ? "1 comment" : commentsCount > 1 ? `${commentsCount} comments` : "";
   
   return (
     <Card className="overflow-hidden">
@@ -118,11 +118,14 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         )}
         
-        {/* Post stats - Updated with proper pluralization */}
-        <div className="px-4 py-2 flex justify-between items-center text-xs text-gray-500">
-          <span>{likesText}</span>
-          <span>{commentsText}</span>
-        </div>
+        {/* Post stats - Only show when counts are greater than 0 */}
+        {(likesText || commentsText) && (
+          <div className="px-4 py-2 flex justify-between items-center text-xs text-gray-500">
+            {likesText && <span>{likesText}</span>}
+            {!likesText && commentsText && <span></span>} {/* Empty span for flex layout when only comments exist */}
+            {commentsText && <span>{commentsText}</span>}
+          </div>
+        )}
         
         <Separator />
         
