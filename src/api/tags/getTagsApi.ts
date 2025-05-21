@@ -130,26 +130,32 @@ export const getSelectionTags = async (options: {
       
       // If table exists and we have an entity type, try to get tags specifically for that entity type
       if (options.targetType) {
+        // Updated query that properly uses tag_entity_types to filter by entity type
+        // Get all tags that either:
+        // 1. Have an explicit association with this entity type
+        // 2. Don't have any entity type associations at all (general tags)
         const query = `
-          WITH entity_type_tags AS (
-            SELECT tag_id 
-            FROM tag_entity_types 
-            WHERE entity_type = '${options.targetType}'
+          WITH 
+          entity_specific_tags AS (
+            SELECT t.*, ARRAY_AGG(tet.entity_type) as entity_types
+            FROM tags t
+            JOIN tag_entity_types tet ON t.id = tet.tag_id
+            WHERE tet.entity_type = '${options.targetType}'
+            ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
+            GROUP BY t.id
           ),
-          all_entity_type_tags AS (
-            SELECT DISTINCT tag_id 
-            FROM tag_entity_types
-          )
-          SELECT t.* 
-          FROM tags t
-          WHERE 
-            ${options.createdBy ? `t.created_by = '${options.createdBy}' AND` : ''}
-            ${options.searchQuery ? `t.name ILIKE '%${options.searchQuery}%' AND` : ''}
-            (
-              t.id IN (SELECT tag_id FROM entity_type_tags) 
-              OR t.id NOT IN (SELECT tag_id FROM all_entity_type_tags)
+          general_tags AS (
+            SELECT t.*, ARRAY[]::text[] as entity_types
+            FROM tags t
+            WHERE t.id NOT IN (
+              SELECT DISTINCT tag_id FROM tag_entity_types
             )
-          ORDER BY t.name
+            ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
+          )
+          SELECT * FROM entity_specific_tags
+          UNION ALL
+          SELECT * FROM general_tags
+          ORDER BY name
         `;
 
         try {
@@ -176,17 +182,56 @@ export const getSelectionTags = async (options: {
       }
 
       // Fall back to getting all tags if no entity type specified or if the specific query failed
-      const { data, error } = await client
-        .from('tags')
-        .select('*')
-        .order('name');
+      // Also attempt to include entity_types information
+      const query = `
+        SELECT t.*, 
+          (
+            SELECT ARRAY_AGG(tet.entity_type)
+            FROM tag_entity_types tet
+            WHERE tet.tag_id = t.id
+          ) as entity_types
+        FROM tags t
+        ${options.searchQuery ? `WHERE t.name ILIKE '%${options.searchQuery}%'` : ''}
+        ORDER BY t.name
+      `;
       
-      if (error) throw error;
+      try {
+        const { data, error } = await typedRpc(
+          client,
+          'query_tags', 
+          { query_text: query }
+        );
+        
+        if (error) {
+          logger.warn("Error in fallback query with entity_types:", error);
+          // If this fails, fall back to simple query
+          const { data: simpleData, error: simpleError } = await client
+            .from('tags')
+            .select('*')
+            .order('name');
+        
+          if (simpleError) throw simpleError;
+          
+          return createSuccessResponse(simpleData || []);
+        }
+        
+        logger.debug(`getSelectionTags with entity_types query found ${data?.length || 0} tags`);
+        return createSuccessResponse(data || []);
+      } catch (e) {
+        // Final fallback to simple query
+        const { data, error } = await client
+          .from('tags')
+          .select('*')
+          .order('name');
       
-      logger.debug(`getSelectionTags all tags query found ${data?.length || 0} tags`);
-      return createSuccessResponse(data || []);
+        if (error) throw error;
+        
+        logger.debug(`getSelectionTags simple fallback found ${data?.length || 0} tags`);
+        return createSuccessResponse(data || []);
+      }
     } catch (err) {
       logger.error("Error in getSelectionTags:", err);
+      // Return empty list rather than error to prevent UI from breaking
       return createSuccessResponse([]);
     }
   });

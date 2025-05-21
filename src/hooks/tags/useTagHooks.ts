@@ -31,13 +31,21 @@ export function useSelectionTags(entityType?: EntityType) {
         
         return {
           status: 'success',
-          data: tags
+          data: tags.filter(tag => {
+            // If no entityType specified, return all tags
+            if (!entityType) return true;
+            
+            // Otherwise only return tags associated with this entity type
+            // This is a client-side safety filter in case the API didn't correctly filter
+            return tag.entity_types?.includes(entityType) || !tag.entity_types || tag.entity_types.length === 0;
+          })
         };
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);
         throw error;
       }
-    }
+    },
+    staleTime: 30000 // Cache for 30 seconds
   });
 }
 
