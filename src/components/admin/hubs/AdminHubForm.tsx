@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { TagSelector } from '@/components/tags/TagSelector';
+import TagSelector from '@/components/tags/TagSelector'; // Fixed import
 import { HubFormValues } from '@/types/hub';
 
 interface AdminHubFormProps {

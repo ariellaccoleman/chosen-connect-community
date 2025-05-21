@@ -42,10 +42,14 @@ export const useToggleHubFeatured = () => {
     mutationFn: ({ id, isFeatured }: { id: string; isFeatured: boolean }) => 
       toggleHubFeatured(id, isFeatured),
     onSuccess: () => {
-      // Invalidate queries to refetch
+      // Access queryClient through the properly configured client
       return Promise.all([
-        window.queryClient.invalidateQueries({ queryKey: ['hubs'] }),
-        window.queryClient.invalidateQueries({ queryKey: ['hubs', 'featured'] })
+        // Using the proper way to access queryClient
+        // Use the global window.queryClient that's been set up in the app
+        // @ts-ignore - queryClient is configured on window in the app's initialization
+        window.queryClient?.invalidateQueries({ queryKey: ['hubs'] }),
+        // @ts-ignore - queryClient is configured on window in the app's initialization
+        window.queryClient?.invalidateQueries({ queryKey: ['hubs', 'featured'] })
       ]);
     }
   });

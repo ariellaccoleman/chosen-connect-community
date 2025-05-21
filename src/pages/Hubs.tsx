@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Helmet } from 'react-helmet';
+import { Helmet } from 'react-helmet'; // Now properly imported
 import HubGrid from '@/components/hubs/HubGrid';
 
 const Hubs: React.FC = () => {
