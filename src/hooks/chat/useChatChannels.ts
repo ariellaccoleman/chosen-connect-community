@@ -6,6 +6,8 @@ import { chatChannelsApi, getChatChannelWithDetails, updateChannelTags } from '@
 import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
+import { EntityType } from '@/types/entityTypes';
+import { TagAssignment } from '@/utils/tags/types';
 
 // Create standard CRUD hooks using the factory
 const chatChannelHooks = createQueryHooks(
@@ -150,7 +152,7 @@ export function useChatChannelsByTag(tagId: string | null | undefined) {
       }
       
       // Filter channels by the ones that have tag assignments matching the tag ID
-      const channelIds = tagAssignments.map(ta => ta.target_id);
+      const channelIds = tagAssignments.map((ta: any) => ta.target_id);
       const filteredChannels = channelsResult.data.filter(
         channel => channelIds.includes(channel.id)
       );

@@ -1,11 +1,9 @@
 
-/**
- * Chat channel type
- */
-export type ChatChannelType = 'group' | 'announcement';
+import { Profile } from "./profile";
+import { TagAssignment } from "@/utils/tags/types";
 
 /**
- * Base chat channel model
+ * Chat channel basic interface
  */
 export interface ChatChannel {
   id: string;
@@ -15,83 +13,35 @@ export interface ChatChannel {
   created_at: string;
   updated_at: string;
   created_by: string | null;
-  channel_type: ChatChannelType;
+  channel_type: 'group' | 'announcement';
+  tag_assignments?: TagAssignment[]; // Add this property
 }
 
 /**
- * Chat channel create model
+ * Chat channel with additional details
+ */
+export interface ChatChannelWithDetails extends ChatChannel {
+  created_by_profile: Profile | null;
+  tag_assignments: TagAssignment[];
+}
+
+/**
+ * Chat channel create payload
  */
 export interface ChatChannelCreate {
-  name: string;
+  name?: string;
   description?: string;
-  is_public: boolean;
-  channel_type: ChatChannelType;
+  is_public?: boolean;
   created_by?: string;
+  channel_type?: 'group' | 'announcement';
 }
 
 /**
- * Chat channel update model
+ * Chat channel update payload
  */
 export interface ChatChannelUpdate {
   name?: string;
   description?: string;
   is_public?: boolean;
-  channel_type?: ChatChannelType;
-}
-
-/**
- * Chat channel with details
- */
-export interface ChatChannelWithDetails extends ChatChannel {
-  created_by_profile?: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-  } | null;
-  tag_assignments?: any[];
-}
-
-/**
- * Base chat message model
- */
-export interface ChatMessage {
-  id: string;
-  channel_id: string;
-  parent_id: string | null;
-  user_id: string | null;
-  message: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-/**
- * Chat message with author details
- */
-export interface ChatMessageWithAuthor extends ChatMessage {
-  author?: {
-    id: string;
-    first_name: string | null;
-    last_name: string | null;
-    avatar_url: string | null;
-    full_name?: string;
-  } | null;
-  reply_count?: number;
-  formatted_time?: string; // Added formatted display time
-}
-
-/**
- * Chat message create model
- */
-export interface ChatMessageCreate {
-  channel_id: string;
-  message: string;
-  parent_id?: string | null;
-}
-
-/**
- * Chat message update model (if needed in future)
- */
-export interface ChatMessageUpdate {
-  message?: string;
+  channel_type?: 'group' | 'announcement';
 }
