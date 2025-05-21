@@ -12,6 +12,8 @@ import { EntityType } from "@/types/entityTypes";
 import { Tag as TagType } from "@/utils/tags/types";
 import { useCreatePost } from "@/hooks/posts";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 const PostComposer: React.FC = () => {
   const [postContent, setPostContent] = useState("");

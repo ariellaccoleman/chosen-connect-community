@@ -4,80 +4,77 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 /**
- * Ensures that all tags used with a specific entity type have the proper entity_type association
- * This is useful for fixing existing tags that might have been created without proper entity type associations
+ * Ensures that all tags assigned to a certain entity type
+ * are properly registered in the tag_entity_types table
  */
-export async function fixTagEntityAssociations(entityType: EntityType): Promise<void> {
+export const fixTagEntityAssociations = async (entityType: EntityType): Promise<boolean> => {
   try {
     logger.info(`Fixing tag entity associations for ${entityType}`);
     
-    // 1. Get all tag assignments for this entity type
-    const { data: assignments, error: assignmentsError } = await supabase
+    // First, get all tag assignments for this entity type
+    const { data: assignments, error: fetchError } = await supabase
       .from("tag_assignments")
       .select("tag_id")
       .eq("target_type", entityType);
       
-    if (assignmentsError) {
-      logger.error(`Error fetching tag assignments for ${entityType}:`, assignmentsError);
-      return;
+    if (fetchError) {
+      logger.error(`Error fetching tag assignments for ${entityType}:`, fetchError);
+      return false;
     }
     
     if (!assignments || assignments.length === 0) {
       logger.info(`No tag assignments found for ${entityType}`);
-      return;
+      return true; // Nothing to fix
     }
     
-    // Get all the unique tag IDs used with this entity type
-    const tagIds = Array.from(new Set(assignments.map(assignment => assignment.tag_id)));
-    logger.info(`Found ${tagIds.length} unique tags used with ${entityType}`);
+    logger.info(`Found ${assignments.length} tag assignments for ${entityType}`);
     
-    // 2. For each tag, ensure there's an entry in tag_entity_types
+    // Use a Set to remove duplicates
+    const tagIds = [...new Set(assignments.map(a => a.tag_id))];
+    
+    logger.info(`Processing ${tagIds.length} unique tags for ${entityType}`);
+    
+    // For each tag, ensure it's properly associated with this entity type
     for (const tagId of tagIds) {
-      await ensureTagEntityType(tagId, entityType);
+      try {
+        // Check if association already exists
+        const { data: existing, error: checkError } = await supabase
+          .from("tag_entity_types")
+          .select("id")
+          .eq("tag_id", tagId)
+          .eq("entity_type", entityType);
+          
+        if (checkError) {
+          logger.error(`Error checking tag entity type for tag ${tagId}:`, checkError);
+          continue;
+        }
+        
+        // If association doesn't exist, create it
+        if (!existing || existing.length === 0) {
+          const { error: insertError } = await supabase
+            .from("tag_entity_types")
+            .insert({
+              tag_id: tagId,
+              entity_type: entityType
+            });
+            
+          if (insertError) {
+            logger.error(`Error inserting tag entity type for tag ${tagId}:`, insertError);
+          } else {
+            logger.info(`Added entity type ${entityType} to tag ${tagId}`);
+          }
+        } else {
+          logger.debug(`Tag ${tagId} already associated with ${entityType}`);
+        }
+      } catch (tagError) {
+        logger.error(`Error processing tag ${tagId}:`, tagError);
+      }
     }
     
     logger.info(`Completed fixing tag entity associations for ${entityType}`);
+    return true;
   } catch (error) {
     logger.error(`Error in fixTagEntityAssociations for ${entityType}:`, error);
+    return false;
   }
-}
-
-/**
- * Ensures a specific tag has the proper entity_type association
- */
-export async function ensureTagEntityType(tagId: string, entityType: EntityType): Promise<void> {
-  try {
-    // Check if the entity type association already exists
-    const { data, error } = await supabase
-      .from("tag_entity_types")
-      .select()
-      .eq("tag_id", tagId)
-      .eq("entity_type", entityType)
-      .maybeSingle();
-      
-    if (error) {
-      logger.error(`Error checking tag entity type for ${tagId}:`, error);
-      return;
-    }
-    
-    // If association doesn't exist, create it
-    if (!data) {
-      logger.info(`Creating association for tag ${tagId} with ${entityType}`);
-      
-      const { error: insertError } = await supabase
-        .from("tag_entity_types")
-        .insert({
-          tag_id: tagId,
-          entity_type: entityType
-        });
-        
-      if (insertError) {
-        logger.error(`Error creating tag entity type for ${tagId}:`, insertError);
-      }
-    } else {
-      logger.debug(`Association already exists for tag ${tagId} with ${entityType}`);
-    }
-  } catch (error) {
-    logger.error(`Error in ensureTagEntityType for ${tagId}:`, error);
-  }
-}
+};

@@ -19,6 +19,8 @@ export const assignTag = async (
       logger.error(`Invalid entity type: ${entityType}`);
       return false;
     }
+    
+    logger.debug(`Assigning tag ${tagId} to ${entityType} ${entityId}`);
 
     // First check if this assignment already exists to prevent duplicates
     const { data: existingAssignments, error: checkError } = await supabase
@@ -46,6 +48,27 @@ export const assignTag = async (
       if (error) {
         logger.error("Error assigning tag:", error);
         return false;
+      }
+      
+      // Also ensure that the tag is properly associated with this entity type
+      // in the tag_entity_types table
+      try {
+        const { error: typeError } = await supabase
+          .from("tag_entity_types")
+          .upsert({
+            tag_id: tagId,
+            entity_type: entityType.toString()
+          }, {
+            onConflict: 'tag_id,entity_type'
+          });
+          
+        if (typeError) {
+          logger.warn("Error updating tag entity type:", typeError);
+          // Continue anyway, this is not critical
+        }
+      } catch (typeErr) {
+        logger.warn("Failed to update tag entity types:", typeErr);
+        // This shouldn't prevent the tag assignment from working
       }
       
       logger.info(`Tag ${tagId} assigned to ${entityType} ${entityId}`);

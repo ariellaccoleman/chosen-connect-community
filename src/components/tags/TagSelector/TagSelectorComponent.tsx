@@ -84,12 +84,14 @@ const TagSelectorComponent = ({
   const loadTagsBasedOnSearch = async () => {
     setIsLoading(true);
     try {
+      logger.debug(`Loading tags for entity type: ${targetType}`);
       const fetchedTags = await fetchSelectionTags({ 
         searchQuery: searchValue,
         targetType,
         skipCache: true // Always skip cache since we're having issues
       });
       
+      logger.debug("Fetched tags:", fetchedTags);
       setTags(fetchedTags);
     } catch (err) {
       logger.error("Error fetching tags:", err);

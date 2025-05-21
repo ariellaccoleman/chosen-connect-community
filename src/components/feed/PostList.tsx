@@ -6,6 +6,7 @@ import { usePosts } from "@/hooks/posts";
 import { logger } from "@/utils/logger";
 import { fixTagEntityAssociations } from "@/utils/tags/fixTagEntityTypes";
 import { EntityType } from "@/types/entityTypes";
+import { toast } from "sonner";
 
 interface PostListProps {
   selectedTagId: string | null;
@@ -19,6 +20,7 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   useEffect(() => {
     const fixTags = async () => {
       try {
+        logger.info("Fixing tag entity associations for POST entity type");
         // Run the fix function for post entity type
         await fixTagEntityAssociations(EntityType.POST);
         // After fixing, refetch posts to get updated data
@@ -39,12 +41,21 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   
   // Filter posts by selected tag if a tag is selected
   const filteredPosts = selectedTagId
-    ? posts.filter(post => post.tags?.some(tag => tag.id === selectedTagId))
+    ? posts.filter(post => {
+        const hasTags = Array.isArray(post.tags) && post.tags.length > 0;
+        if (!hasTags) return false;
+        
+        return post.tags.some(tag => tag.id === selectedTagId);
+      })
     : posts;
 
-  logger.debug("Filtered posts:", filteredPosts);
   logger.debug("Selected tag ID:", selectedTagId);
-  logger.debug("Posts with tags:", posts.map(p => ({ id: p.id, tags: p.tags })));
+  logger.debug("Filtered posts:", filteredPosts.length);
+  logger.debug("Posts with tags:", posts.map(p => ({ 
+    id: p.id,
+    content: p.content?.substring(0, 20) + "...",
+    tags: p.tags 
+  })));
 
   if (isLoading) {
     return (

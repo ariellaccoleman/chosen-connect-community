@@ -86,14 +86,12 @@ export const getSelectionTags = async (options: {
 } = {}): Promise<ApiResponse<Tag[]>> => {
   return apiClient.query(async (client) => {
     try {
-      // First check if the tag_entity_types table exists using a simpler query
-      const { data: schemaCheck, error: schemaError } = await client
-        .from('pg_tables')
-        .select('tablename')
-        .eq('tablename', 'tag_entity_types')
-        .eq('schemaname', 'public');
+      // First check if the tag_entity_types table exists by trying a simple query
+      const { error: testError } = await client.rpc('query_tags', { 
+        query_text: "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'tag_entity_types')"
+      });
         
-      const tableExists = schemaCheck && schemaCheck.length > 0;
+      const tableExists = !testError;
       
       if (!tableExists) {
         logger.warn("tag_entity_types table doesn't exist, falling back to tag_assignments for filtering");
