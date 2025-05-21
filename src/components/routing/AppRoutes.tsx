@@ -66,7 +66,7 @@ const AppRoutes = () => {
       
       {/* Community Routes */}
       <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.COMMUNITY_PROFILE} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
       
       {/* Event Routes */}
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
