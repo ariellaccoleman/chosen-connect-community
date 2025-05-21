@@ -30,8 +30,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
  */
 const CreateOrganization = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
-  const [componentReady, setComponentReady] = useState(false);
+  const { user, loading, initialized } = useAuth();
   const createOrganization = useCreateOrganizationWithRelationships();
 
   const form = useForm<OrganizationFormValues>({
@@ -43,25 +42,15 @@ const CreateOrganization = () => {
     },
   });
   
-  // Ensure component is fully mounted before displaying content
-  useEffect(() => {
-    // Small delay to ensure auth state is stable
-    const timer = setTimeout(() => {
-      setComponentReady(true);
-    }, 100);
-    
-    return () => clearTimeout(timer);
-  }, []);
-  
   // Log authentication state for debugging
   logger.info("CreateOrganization page rendering", { 
     userAuthenticated: !!user, 
     loading,
-    componentReady
+    initialized
   });
   
-  // If still loading auth state or component isn't ready, show loading state
-  if (loading || !componentReady) {
+  // If still loading auth state, show loading state
+  if (loading || !initialized) {
     return (
       <DashboardLayout>
         <div className="container mx-auto py-6 max-w-3xl">
