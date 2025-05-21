@@ -86,8 +86,8 @@ const AppRoutes = () => {
       <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
       <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_REPORTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_RUN_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_HUBS} element={<AdminRoute><AdminHubs /></AdminRoute>} />
       
       {/* Admin Chat Channel Routes */}

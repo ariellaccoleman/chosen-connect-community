@@ -46,8 +46,8 @@ export const APP_ROUTES = {
   CREATE_CHAT_CHANNEL: "/admin/chat/channels/create",
   EDIT_CHAT_CHANNEL: "/admin/chat/channels/:channelId/edit",
   TEST_DATA_GENERATOR: "/admin/test-data",
-  TEST_REPORTS: "/admin/test-reports", // Changed from "/admin/tests" to match the route config
-  ADMIN_TESTS: "/admin/test-reports", // Changed to be consistent with TEST_REPORTS
+  TEST_REPORTS: "/admin/test-reports",
+  ADMIN_TESTS: "/admin/test-reports",
   TEST_RUN_DETAIL: "/admin/test-reports/:testRunId",
   ADMIN_TEST_DETAIL: "/admin/test-reports/:testRunId",
   ADMIN_HUBS: "/admin/hubs"

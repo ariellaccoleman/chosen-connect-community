@@ -24,6 +24,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from "sonner";
+import { APP_ROUTES } from '@/config/routes';
 
 const AdminTestReports = () => {
   const navigate = useNavigate();
@@ -71,7 +72,8 @@ const AdminTestReports = () => {
   }, [testRuns]);
 
   const handleRowClick = (testRunId: string) => {
-    navigate(`/admin/tests/${testRunId}`);
+    // Fix the navigation to use APP_ROUTES
+    navigate(`${APP_ROUTES.ADMIN_TEST_DETAIL.replace(':testRunId', testRunId)}`);
   };
 
   const renderStatusIcon = (status: string) => {

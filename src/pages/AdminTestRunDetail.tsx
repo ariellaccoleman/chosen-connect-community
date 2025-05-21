@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -46,6 +45,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 import { toast } from "sonner";
+import { APP_ROUTES } from '@/config/routes';
 
 // Collapsible test result row component
 const TestResultRow = ({ result }) => {
@@ -198,7 +198,7 @@ const AdminTestRunDetail = () => {
           variant="outline" 
           size="sm" 
           className="mr-4"
-          onClick={() => navigate('/admin/tests')}
+          onClick={() => navigate(APP_ROUTES.TEST_REPORTS)}
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Reports
@@ -358,7 +358,7 @@ const AdminTestRunDetail = () => {
           </p>
           <Button 
             variant="default" 
-            onClick={() => navigate('/admin/tests')}
+            onClick={() => navigate(APP_ROUTES.TEST_REPORTS)}
           >
             Back to Test Reports
           </Button>
