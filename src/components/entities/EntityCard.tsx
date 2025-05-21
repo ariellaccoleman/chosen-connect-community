@@ -36,7 +36,6 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     
   // Generate URL and log it for debugging
   const entityUrl = getEntityUrl(entity);
-  const entityTypeLabel = getEntityTypeLabel(entity.entityType);
   logger.debug(`EntityCard: Generated URL for ${entity.entityType} ${entity.id}: ${entityUrl}`);
 
   return (
@@ -58,7 +57,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
               <h3 className="font-semibold text-lg pr-2">{entity.name}</h3>
               <Badge variant="outline" className="flex-shrink-0 flex items-center gap-1">
                 {getEntityIcon(entity.entityType)}
-                <span>{entityTypeLabel}</span>
+                <span>{getEntityTypeLabel(entity.entityType)}</span>
               </Badge>
             </div>
             
