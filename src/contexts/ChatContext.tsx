@@ -49,7 +49,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setIsThreadOpen(!isThreadOpen);
     }
     
-    if (!isThreadOpen && !open) {
+    // Only reset selected message when closing the thread
+    if (isThreadOpen && open === false) {
       setSelectedMessage(null);
     }
   };

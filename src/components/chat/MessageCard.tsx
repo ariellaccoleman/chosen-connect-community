@@ -43,11 +43,17 @@ const MessageCard: React.FC<MessageCardProps> = ({
     location_id: null
   } : null;
 
+  // Add clear visual indication that the message is clickable when onClick is provided
+  const cursorClass = onClick ? 'cursor-pointer' : '';
+  const hoverClass = onClick ? 'hover:bg-gray-100 dark:hover:bg-gray-800' : '';
+  const selectedClass = isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : '';
+
   return (
     <div 
-      className={`p-3 rounded-md ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : 'hover:bg-gray-100 dark:hover:bg-gray-800'} 
-        ${onClick ? 'cursor-pointer' : ''}`}
+      className={`p-3 rounded-md transition-colors ${selectedClass} ${hoverClass} ${cursorClass}`}
       onClick={onClick}
+      role={onClick ? "button" : undefined}
+      aria-selected={isSelected}
     >
       <div className="flex items-start space-x-3">
         <UserAvatar 
@@ -75,6 +81,13 @@ const MessageCard: React.FC<MessageCardProps> = ({
             >
               <MessageSquare size={14} className="mr-1" />
               {message.reply_count} {message.reply_count === 1 ? 'reply' : 'replies'}
+            </div>
+          )}
+          
+          {onClick && !message.reply_count && (
+            <div className="mt-2 text-xs flex items-center text-gray-500 dark:text-gray-400">
+              <MessageSquare size={14} className="mr-1" />
+              Reply in thread
             </div>
           )}
         </div>

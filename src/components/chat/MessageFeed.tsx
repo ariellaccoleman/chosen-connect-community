@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useChatContext } from '@/contexts/ChatContext';
 import { useTimestampRefresh } from '@/hooks/useTimestampRefresh';
+import { ChatMessageWithAuthor } from '@/types/chat';
 
 const MessageFeed: React.FC = () => {
   const { user } = useAuth();
@@ -17,11 +18,18 @@ const MessageFeed: React.FC = () => {
     messagesError,
     setSelectedMessage,
     selectedMessage,
+    toggleThread,
     setAutoScrollMessages,
     autoScrollMessages,
   } = useChatContext();
   
   const { refreshTimestamps } = useTimestampRefresh();
+  
+  // Handle message selection and open thread panel
+  const handleMessageSelect = (message: ChatMessageWithAuthor) => {
+    setSelectedMessage(message);
+    toggleThread(true);
+  };
   
   return (
     <div className="flex flex-col h-full bg-white dark:bg-gray-900">
@@ -38,7 +46,7 @@ const MessageFeed: React.FC = () => {
         messages={messages}
         isLoading={messagesLoading}
         error={messagesError}
-        onMessageSelect={setSelectedMessage}
+        onMessageSelect={handleMessageSelect}
         selectedMessageId={selectedMessage?.id}
         onScroll={(isNearBottom) => setAutoScrollMessages(isNearBottom)}
         autoScroll={autoScrollMessages}

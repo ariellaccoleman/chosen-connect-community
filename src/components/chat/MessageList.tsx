@@ -1,5 +1,5 @@
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import MessageCard from './MessageCard';
 import { Skeleton } from '@/components/ui/skeleton';

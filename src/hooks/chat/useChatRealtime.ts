@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -51,19 +52,14 @@ const useRealtimeSubscription = (
     logger.info(`[REAL-TIME] Setting up subscription for ${subscriptionType}: ${entityId}`);
     
     // Set up the appropriate filter based on subscription type
-    const filter = subscriptionType === 'channel' 
-      ? { 
-          event: 'INSERT' as const, 
-          schema: 'public' as const, 
-          table: 'chats' as const, 
-          filter: `channel_id=eq.${entityId}` 
-        }
-      : { 
-          event: 'INSERT' as const, 
-          schema: 'public' as const, 
-          table: 'chats' as const, 
-          filter: `parent_id=eq.${entityId}` 
-        };
+    const filter = {
+      event: 'INSERT' as const, 
+      schema: 'public' as const, 
+      table: 'chats' as const, 
+      filter: subscriptionType === 'channel' 
+        ? `channel_id=eq.${entityId}` 
+        : `parent_id=eq.${entityId}`
+    };
       
     // Create appropriate query key
     const queryKey = subscriptionType === 'channel' 
@@ -75,45 +71,46 @@ const useRealtimeSubscription = (
     const channel = supabase.channel(channelName);
     
     // Subscribe to changes with correct Supabase v2 syntax
-    const subscription = channel.on(
-      'postgres_changes' as const,
-      filter,
-      (payload: RealtimePostgresInsertPayload<ChatMessageWithAuthor>) => {
-        logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
-        
-        // Process the message
-        const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
-        logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
-        
-        // Handle thread-specific updates
-        if (subscriptionType === 'channel' && processedMessage.parent_id) {
-          // Update reply count for parent message
-          updateParentMessageReplyCount(queryClient, processedMessage);
+    channel
+      .on(
+        'postgres_changes',
+        filter,
+        (payload: RealtimePostgresInsertPayload<ChatMessageWithAuthor>) => {
+          logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
+          
+          // Process the message
+          const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
+          logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
+          
+          // Handle thread-specific updates
+          if (subscriptionType === 'channel' && processedMessage.parent_id) {
+            // Update reply count for parent message
+            updateParentMessageReplyCount(queryClient, processedMessage);
+          }
+          
+          // Invalidate queries to refresh the data
+          queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
+          
+          // Execute callback if provided
+          if (onNewMessage) {
+            onNewMessage(processedMessage);
+          }
+          
+          // Show notification if not from current user
+          if (notifyUser && processedMessage.user_id !== user.id) {
+            toast.info(subscriptionType === 'channel' 
+              ? 'New message received' 
+              : 'New reply in thread');
+          }
         }
-        
-        // Invalidate queries to refresh the data
-        queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
-        
-        // Execute callback if provided
-        if (onNewMessage) {
-          onNewMessage(processedMessage);
+      )
+      .subscribe((status) => {
+        logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
+        if (status === 'CHANNEL_ERROR') {
+          logger.error(`[REAL-TIME] Error subscribing to ${subscriptionType} updates`);
+          toast.error('Error connecting to updates. Please refresh the page.');
         }
-        
-        // Show notification if not from current user
-        if (notifyUser && processedMessage.user_id !== user.id) {
-          toast.info(subscriptionType === 'channel' 
-            ? 'New message received' 
-            : 'New reply in thread');
-        }
-      }
-    )
-    .subscribe((status) => {
-      logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
-      if (status === 'CHANNEL_ERROR') {
-        logger.error(`[REAL-TIME] Error subscribing to ${subscriptionType} updates`);
-        toast.error('Error connecting to updates. Please refresh the page.');
-      }
-    });
+      });
       
     // Cleanup on unmount
     return () => {
