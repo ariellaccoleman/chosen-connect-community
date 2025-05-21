@@ -24,16 +24,16 @@ const Feed: React.FC = () => {
 
   return (
     <Layout>
-      <div className="container py-8 max-w-3xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">Feed</h1>
+      <div className="container py-4 sm:py-8 px-4 sm:px-6 max-w-3xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">Feed</h1>
         
         {/* Post composer - only show when logged in */}
         {user ? (
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <PostComposer />
           </div>
         ) : (
-          <div className="mb-6 bg-gray-50 p-4 rounded-lg text-center">
+          <div className="mb-4 sm:mb-6 bg-gray-50 p-4 rounded-lg text-center">
             <p className="mb-3 text-gray-600">Sign in to create posts and interact with the community</p>
             <Button asChild className="bg-chosen-blue hover:bg-chosen-navy">
               <a href="/auth">
@@ -45,7 +45,7 @@ const Feed: React.FC = () => {
         )}
         
         {/* Tag filter */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={handleTagSelect}

@@ -11,6 +11,7 @@ import TagSelector from "@/components/tags/TagSelector";
 import { EntityType } from "@/types/entityTypes";
 import { Tag as TagType } from "@/utils/tags/types";
 import { useCreatePost } from "@/hooks/posts";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const PostComposer: React.FC = () => {
   const [postContent, setPostContent] = useState("");
@@ -21,6 +22,7 @@ const PostComposer: React.FC = () => {
   const { data: profileData } = useCurrentProfile();
   const profile = profileData?.data;
   const createPostMutation = useCreatePost();
+  const isMobile = useIsMobile();
 
   const handlePostContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPostContent(e.target.value);
@@ -70,18 +72,18 @@ const PostComposer: React.FC = () => {
     <Card>
       <CardContent className="pt-6">
         <form onSubmit={handleSubmit}>
-          <div className="flex items-start space-x-4">
-            <Avatar className="h-10 w-10">
+          <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+            <Avatar className="h-10 w-10 shrink-0">
               <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "User"} />
               <AvatarFallback className="bg-chosen-blue text-white">
                 {getInitials()}
               </AvatarFallback>
             </Avatar>
             
-            <div className="flex-1">
+            <div className="flex-1 w-full min-w-0">
               <Textarea
                 placeholder="What's on your mind?"
-                className="resize-none mb-3 min-h-[100px]"
+                className="resize-none mb-3 min-h-[100px] w-full"
                 value={postContent}
                 onChange={handlePostContentChange}
                 disabled={isSubmitting}
@@ -120,25 +122,25 @@ const PostComposer: React.FC = () => {
                 </div>
               )}
               
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Button type="button" variant="ghost" size="sm" className="text-gray-600">
-                    <Image className="h-5 w-5 mr-1" />
-                    Photo
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1">
+                  <Button type="button" variant="ghost" size={isMobile ? "sm" : "default"} className="text-gray-600">
+                    <Image className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Photo</span>
                   </Button>
-                  <Button type="button" variant="ghost" size="sm" className="text-gray-600">
-                    <Video className="h-5 w-5 mr-1" />
-                    Video
+                  <Button type="button" variant="ghost" size={isMobile ? "sm" : "default"} className="text-gray-600">
+                    <Video className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Video</span>
                   </Button>
                   <Button 
                     type="button" 
                     variant="ghost" 
-                    size="sm" 
+                    size={isMobile ? "sm" : "default"}
                     className="text-gray-600"
                     onClick={() => setShowTagSelector(!showTagSelector)}
                   >
-                    <Tag className="h-5 w-5 mr-1" />
-                    Tag
+                    <Tag className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Tag</span>
                   </Button>
                 </div>
                 
@@ -146,6 +148,7 @@ const PostComposer: React.FC = () => {
                   type="submit" 
                   className="bg-chosen-blue hover:bg-chosen-navy"
                   disabled={!postContent.trim() || isSubmitting}
+                  size={isMobile ? "sm" : "default"}
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">
@@ -153,12 +156,13 @@ const PostComposer: React.FC = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      Posting...
+                      <span className="hidden sm:inline">Posting...</span>
+                      <span className="sm:hidden">...</span>
                     </span>
                   ) : (
                     <>
-                      <Send className="h-4 w-4 mr-2" />
-                      Post
+                      <Send className="h-4 w-4 sm:mr-2" />
+                      <span className="hidden sm:inline">Post</span>
                     </>
                   )}
                 </Button>
