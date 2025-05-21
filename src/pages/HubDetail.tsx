@@ -43,7 +43,7 @@ const HubDetail = () => {
   // Get chat channels associated with this hub's tag
   const { data: chatChannels = [], isLoading: chatChannelsLoading } = useChatChannelsByTag(hub?.tag_id);
   
-  // Use the entity feed hook for each entity type with the proper tag_id
+  // Use the improved entity feed hook for each entity type with the proper tag_id
   const { 
     entities: people, 
     isLoading: peopleLoading 

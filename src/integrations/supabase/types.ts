@@ -63,6 +63,13 @@ export type Database = {
             foreignKeyName: "chat_channels_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -109,6 +116,13 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
             referencedColumns: ["id"]
           },
           {
@@ -183,6 +197,13 @@ export type Database = {
             foreignKeyName: "dm_participants_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dm_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -219,6 +240,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "event_participants_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
@@ -252,6 +287,20 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_registrations_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
             referencedColumns: ["id"]
           },
           {
@@ -310,6 +359,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "events_host_id_fkey"
             columns: ["host_id"]
@@ -386,6 +442,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "guides_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "guides_author_id_fkey"
             columns: ["author_id"]
@@ -536,6 +599,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "org_relationships_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_relationships_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "org_relationships_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: false
@@ -581,6 +658,20 @@ export type Database = {
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_admins_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_admins_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
             referencedColumns: ["id"]
           },
           {
@@ -665,6 +756,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "post_comments_author_id_fkey"
             columns: ["author_id"]
@@ -771,6 +869,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "posts_author_id_fkey"
             columns: ["author_id"]
@@ -948,6 +1053,13 @@ export type Database = {
             foreignKeyName: "tags_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1059,6 +1171,62 @@ export type Database = {
           },
         ]
       }
+      events_with_tags: {
+        Row: {
+          assigned_tag_id: string | null
+          created_at: string | null
+          description: string | null
+          end_time: string | null
+          host_id: string | null
+          id: string | null
+          is_paid: boolean | null
+          is_virtual: boolean | null
+          location_id: string | null
+          price: number | null
+          start_time: string | null
+          tag_id: string | null
+          tag_name: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_host_id_fkey"
+            columns: ["host_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["assigned_tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hub_details: {
         Row: {
           created_at: string | null
@@ -1075,6 +1243,77 @@ export type Database = {
           {
             foreignKeyName: "hubs_tag_id_fkey"
             columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organizations_with_tags: {
+        Row: {
+          assigned_tag_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string | null
+          is_verified: boolean | null
+          location_id: string | null
+          logo_api_url: string | null
+          logo_url: string | null
+          name: string | null
+          tag_name: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organizations_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["assigned_tag_id"]
+            isOneToOne: false
+            referencedRelation: "tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      people_with_tags: {
+        Row: {
+          assigned_tag_id: string | null
+          avatar_url: string | null
+          bio: string | null
+          company: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          headline: string | null
+          id: string | null
+          is_approved: boolean | null
+          last_name: string | null
+          linkedin_url: string | null
+          location_id: string | null
+          membership_tier: Database["public"]["Enums"]["pricing_tier"] | null
+          tag_name: string | null
+          timezone: string | null
+          twitter_url: string | null
+          updated_at: string | null
+          website_url: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["assigned_tag_id"]
             isOneToOne: false
             referencedRelation: "tags"
             referencedColumns: ["id"]
