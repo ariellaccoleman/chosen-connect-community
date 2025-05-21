@@ -52,15 +52,13 @@ describe('CreateOrganization Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     
-    // Setup the default auth mock - authenticated and not loading
-    // Use a simplified mock that only includes the properties the component actually uses
+    // Default auth state: authenticated
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
-      loading: false,
-      isAuthenticated: true
+      loading: false
     }));
     
-    // Setup the default organization mutation mock
+    // Default organization creation mock
     jest.spyOn(hooks, 'useCreateOrganizationWithRelationships').mockImplementation(() => ({
       mutateAsync: mockMutateAsync,
       isPending: false,
@@ -70,11 +68,10 @@ describe('CreateOrganization Component', () => {
   });
 
   test('redirects unauthenticated users to auth page with correct state', () => {
-    // Mock unauthenticated state with simplified mock
+    // Mock unauthenticated state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
-      loading: false,
-      isAuthenticated: false
+      loading: false
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -89,11 +86,10 @@ describe('CreateOrganization Component', () => {
   });
 
   test('shows loading skeleton while checking authentication', () => {
-    // Mock loading state with simplified mock
+    // Mock loading state
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
-      loading: true,
-      isAuthenticated: false
+      loading: true
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -111,7 +107,7 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Check for form elements - updated to match the actual component implementation
+    // Check for form elements
     expect(screen.getByText('Create New Organization')).toBeInTheDocument();
     expect(screen.getByLabelText(/Organization Name\*/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/Description/i)).toBeInTheDocument();
@@ -127,7 +123,7 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Fill out the form - updated to match the actual component implementation
+    // Fill out the form
     fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
       target: { value: 'Test Organization' }
     });
@@ -169,7 +165,7 @@ describe('CreateOrganization Component', () => {
     const submitButton = screen.getByRole('button', { name: /Create Organization/i });
     fireEvent.click(submitButton);
     
-    // Check for validation messages - updated to match actual validation messages
+    // Check for validation messages
     await waitFor(() => {
       expect(screen.getByText(/Organization name must be at least 2 characters/i)).toBeInTheDocument();
     });
@@ -186,7 +182,7 @@ describe('CreateOrganization Component', () => {
     // Submit form again
     fireEvent.click(submitButton);
     
-    // Check for URL validation message - updated to match actual validation message
+    // Check for URL validation message
     await waitFor(() => {
       expect(screen.getByText(/Please enter a valid URL/i)).toBeInTheDocument();
     });
@@ -206,7 +202,7 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
-    // Check for loading state - the button should now display "Creating..."
+    // Check for loading state - the button should display "Creating..."
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
 
@@ -220,8 +216,7 @@ describe('CreateOrganization Component', () => {
         // Simulate user becoming unauthenticated during the submission
         authHookSpy.mockImplementation(() => ({
           user: null,
-          loading: false,
-          isAuthenticated: false
+          loading: false
         }));
         // Force a re-render with the new auth state
         await new Promise(resolve => setTimeout(resolve, 10));
