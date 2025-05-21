@@ -31,7 +31,7 @@ const AdminDashboard = () => {
         </Button>
         
         <Button asChild variant="ghost" className="w-full justify-start">
-          <Link to="/admin/tests" className="flex items-center">
+          <Link to={APP_ROUTES.TEST_REPORTS} className="flex items-center">
             <ClipboardList className="mr-2 h-4 w-4" />
             Test Reports
           </Link>
