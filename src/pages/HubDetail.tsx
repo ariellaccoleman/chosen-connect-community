@@ -43,7 +43,7 @@ const HubDetail = () => {
   // Get chat channels associated with this hub's tag
   const { data: chatChannels = [], isLoading: chatChannelsLoading } = useChatChannelsByTag(hub?.tag_id);
   
-  // Use the entity feed hook for each entity type
+  // Use the entity feed hook for each entity type with the proper tag_id
   const { 
     entities: people, 
     isLoading: peopleLoading 
@@ -103,7 +103,8 @@ const HubDetail = () => {
   logger.debug(`Hub ${hub.name} has entities: ${hasEntities}`, {
     peopleCount: people.length,
     organizationsCount: organizations.length,
-    eventsCount: events.length
+    eventsCount: events.length,
+    tagId: hub?.tag_id
   });
 
   return (
@@ -126,26 +127,32 @@ const HubDetail = () => {
           />
           
           {/* Render individual entity carousels */}
-          <EntityCarousel 
-            title="People"
-            entities={people}
-            isLoading={peopleLoading}
-            icon={<Users className="h-5 w-5" />}
-          />
+          {people.length > 0 && (
+            <EntityCarousel 
+              title="People"
+              entities={people}
+              isLoading={peopleLoading}
+              icon={<Users className="h-5 w-5" />}
+            />
+          )}
           
-          <EntityCarousel 
-            title="Organizations"
-            entities={organizations}
-            isLoading={organizationsLoading}
-            icon={<Building2 className="h-5 w-5" />}
-          />
+          {organizations.length > 0 && (
+            <EntityCarousel 
+              title="Organizations"
+              entities={organizations}
+              isLoading={organizationsLoading}
+              icon={<Building2 className="h-5 w-5" />}
+            />
+          )}
           
-          <EntityCarousel 
-            title="Events"
-            entities={events}
-            isLoading={eventsLoading}
-            icon={<Calendar className="h-5 w-5" />}
-          />
+          {events.length > 0 && (
+            <EntityCarousel 
+              title="Events"
+              entities={events}
+              isLoading={eventsLoading}
+              icon={<Calendar className="h-5 w-5" />}
+            />
+          )}
           
           {/* Show message if no entities found */}
           {!peopleLoading && !organizationsLoading && !eventsLoading && !hasEntities && (

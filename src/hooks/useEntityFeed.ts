@@ -46,42 +46,91 @@ export const useEntityFeed = ({
             switch (type) {
               case EntityType.PERSON:
                 logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
-                const { data: profiles } = await profileApi.getAll({ 
-                  filters: { 
-                    ...(tagId ? { tag_id: tagId } : {}),
-                    ...(filterByUserId ? { user_id: filterByUserId } : {})
-                  },
-                  limit
-                });
                 
-                logger.debug(`EntityFeed: Received ${profiles?.length || 0} profiles`);
-                items = profiles || [];
+                // For people, we need to filter by tag_assignments if tagId is provided
+                if (tagId) {
+                  const { data: profiles } = await profileApi.getAll({ 
+                    params: {
+                      select: '*',
+                      ...(tagId ? { 
+                        // Use tag_assignments filtering for profiles
+                        'tag_assignments.tag_id': `eq.${tagId}`,
+                        'tag_assignments.target_type': 'eq.person' 
+                      } : {})
+                    },
+                    ...(filterByUserId ? { filters: { user_id: filterByUserId } } : {}),
+                    limit
+                  });
+                  
+                  items = profiles || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} profiles with tag filter`);
+                } else {
+                  // Regular fetch without tag filtering
+                  const { data: profiles } = await profileApi.getAll({ 
+                    ...(filterByUserId ? { filters: { user_id: filterByUserId } } : {}),
+                    limit
+                  });
+                  items = profiles || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} profiles without tag filter`);
+                }
                 break;
                 
               case EntityType.ORGANIZATION:
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
-                const { data: orgs } = await organizationApi.getAll({ 
-                  filters: { 
-                    ...(tagId ? { tag_id: tagId } : {})
-                  },
-                  limit
-                });
                 
-                logger.debug(`EntityFeed: Received ${orgs?.length || 0} organizations`);
-                items = orgs || [];
+                // For organizations, filter by tag_assignments if tagId is provided
+                if (tagId) {
+                  const { data: orgs } = await organizationApi.getAll({ 
+                    params: {
+                      select: '*',
+                      ...(tagId ? { 
+                        // Use tag_assignments filtering for organizations
+                        'tag_assignments.tag_id': `eq.${tagId}`,
+                        'tag_assignments.target_type': 'eq.organization' 
+                      } : {})
+                    },
+                    limit
+                  });
+                  
+                  items = orgs || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} organizations with tag filter`);
+                } else {
+                  // Regular fetch without tag filtering
+                  const { data: orgs } = await organizationApi.getAll({ 
+                    limit
+                  });
+                  items = orgs || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} organizations without tag filter`);
+                }
                 break;
                 
               case EntityType.EVENT:
                 logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
-                const { data: events } = await eventApi.getAll({ 
-                  filters: { 
-                    ...(tagId ? { tag_id: tagId } : {})
-                  },
-                  limit
-                });
                 
-                logger.debug(`EntityFeed: Received ${events?.length || 0} events`);
-                items = events || [];
+                // For events, filter by tag_assignments if tagId is provided
+                if (tagId) {
+                  const { data: events } = await eventApi.getAll({ 
+                    params: {
+                      select: '*',
+                      ...(tagId ? { 
+                        // Use tag_assignments filtering for events
+                        'tag_assignments.tag_id': `eq.${tagId}`,
+                        'tag_assignments.target_type': 'eq.event' 
+                      } : {})
+                    },
+                    limit
+                  });
+                  
+                  items = events || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} events with tag filter`);
+                } else {
+                  // Regular fetch without tag filtering
+                  const { data: events } = await eventApi.getAll({ 
+                    limit
+                  });
+                  items = events || [];
+                  logger.debug(`EntityFeed: Received ${items?.length || 0} events without tag filter`);
+                }
                 break;
                 
               default:
@@ -90,12 +139,14 @@ export const useEntityFeed = ({
             }
             
             // Log the structure of first item to help debug conversion issues
-            if (items.length > 0) {
+            if (items && items.length > 0) {
               logger.debug(`Sample ${type} item structure:`, JSON.stringify(items[0]).substring(0, 200) + "...");
+            } else {
+              logger.debug(`No ${type} items found for the given filters`);
             }
             
             // Convert each item to an Entity and add to results
-            items.forEach(item => {
+            items.forEach((item: any) => {
               const entity = toEntity(item, type);
               if (entity) {
                 logger.debug(`EntityFeed: Converted ${type} to entity`, {
@@ -105,7 +156,7 @@ export const useEntityFeed = ({
                 });
                 allEntities.push(entity);
               } else {
-                logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { item });
+                logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
               }
             });
           } catch (e) {
