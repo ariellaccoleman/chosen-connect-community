@@ -65,10 +65,9 @@ const useRealtimeSubscription = (
     const channel = supabase.channel(channelName);
     
     // Subscribe to changes with correct Supabase v2 syntax
-    // The key fix here: We need to pass a single object as the second parameter
     channel.on(
-      'postgres_changes', // This is the channel type
-      filter, // This is the filter configuration object
+      'postgres_changes', 
+      filter, 
       (payload) => {
         logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
         
