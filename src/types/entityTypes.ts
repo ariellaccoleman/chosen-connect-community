@@ -8,14 +8,13 @@ export enum EntityType {
   EVENT = 'event',
   GUIDE = 'guide',
   CHAT = 'chat',
-  HUB = 'hub',
-  POST = 'post'
+  HUB = 'hub'
 }
 
 /**
  * Type for target type used in tag assignments - must match EntityType
  */
-export type TargetType = 'person' | 'organization' | 'event' | 'guide' | 'chat' | 'hub' | 'post';
+export type TargetType = 'person' | 'organization' | 'event' | 'guide' | 'chat' | 'hub';
 
 /**
  * Function to check if a string is a valid EntityType

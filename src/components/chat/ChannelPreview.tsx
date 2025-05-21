@@ -1,64 +1,72 @@
 
 import React from 'react';
-import { formatRelativeTime } from '@/utils/formatters';
+import { ChatChannel } from '@/types/chat';
+import { useChannelMessagePreviews } from '@/hooks/chat/useChannelMessagePreviews';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { APP_ROUTES } from '@/config/routes';
+import { formatRelativeTime } from '@/utils/formatters/timeFormatters';
 
 interface ChannelPreviewProps {
-  id: string;
-  name: string;
-  description?: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
-  unreadCount?: number;
-  isActive?: boolean;
-  onClick?: () => void;
+  channel: ChatChannel;
+  maxMessages?: number;
 }
 
-const ChannelPreview: React.FC<ChannelPreviewProps> = ({
-  id,
-  name,
-  description,
-  lastMessage,
-  lastMessageTime,
-  unreadCount = 0,
-  isActive = false,
-  onClick,
-}) => {
-  return (
-    <Link
-      to={`${APP_ROUTES.CHAT}/${id}`}
-      className={`block p-3 rounded-lg mb-2 transition-colors ${
-        isActive ? 'bg-accent' : 'hover:bg-accent/50'
-      }`}
-      onClick={onClick}
-    >
-      <div className="flex justify-between items-start">
-        <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm truncate">{name}</h3>
-          {description && (
-            <p className="text-muted-foreground text-xs truncate">{description}</p>
-          )}
-          {lastMessage && (
-            <p className="text-sm truncate mt-1 text-muted-foreground">
-              {lastMessage}
-            </p>
-          )}
-        </div>
-        <div className="flex flex-col items-end ml-2">
-          {lastMessageTime && (
-            <span className="text-xs text-muted-foreground">
-              {formatRelativeTime(new Date(lastMessageTime).toISOString())}
-            </span>
-          )}
-          {unreadCount > 0 && (
-            <span className="bg-primary text-primary-foreground text-xs rounded-full px-2 py-0.5 mt-1">
-              {unreadCount}
-            </span>
-          )}
-        </div>
+/**
+ * Component to display a preview of recent messages in a chat channel
+ */
+const ChannelPreview: React.FC<ChannelPreviewProps> = ({ channel, maxMessages = 3 }) => {
+  const { data: messages = [], isLoading } = useChannelMessagePreviews(channel.id, maxMessages);
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-2 mt-3">
+        {Array(2).fill(0).map((_, i) => (
+          <div key={i} className="flex gap-2">
+            <Skeleton className="h-6 w-6 rounded-full" />
+            <Skeleton className="h-4 flex-1" />
+          </div>
+        ))}
       </div>
-    </Link>
+    );
+  }
+  
+  return (
+    <div className="mt-3 space-y-4">
+      {messages.length > 0 ? (
+        <div className="space-y-2">
+          {messages.map(message => (
+            <div key={message.id} className="text-sm">
+              <div className="flex items-start gap-2">
+                <span className="font-semibold truncate max-w-[30%]">
+                  {message.author?.full_name || 'Anonymous'}:
+                </span>
+                <span className="text-muted-foreground line-clamp-1 flex-1">
+                  {message.message}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="text-sm text-muted-foreground">
+          No messages yet. Be the first to start a conversation!
+        </div>
+      )}
+      
+      <Button 
+        size="sm" 
+        className="w-full mt-2" 
+        variant="outline" 
+        asChild
+      >
+        <Link to={`/chat/${channel.id}`} className="flex items-center justify-center gap-2">
+          <MessageCircle className="w-4 h-4" />
+          Join the Conversation
+        </Link>
+      </Button>
+    </div>
   );
 };
 

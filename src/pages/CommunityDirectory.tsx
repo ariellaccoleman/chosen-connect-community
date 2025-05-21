@@ -1,71 +1,72 @@
 
-import React, { useState } from 'react';
-import { useCommunityProfiles } from '@/hooks/profiles';
-import { Helmet } from 'react-helmet';
-import { Skeleton } from '@/components/ui/skeleton';
-import ProfileGrid from '@/components/community/ProfileGrid';
-import TagFilter from '@/components/filters/TagFilter';
-import { useSelectionTags } from '@/hooks/tags';
-import { EntityType } from '@/types/entityTypes';
+import { useState } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/profiles";
+import { useCommunityProfiles } from "@/hooks/profiles";
+import CommunitySearch from "@/components/community/CommunitySearch";
+import ProfileGrid from "@/components/community/ProfileGrid";
+import { toast } from "@/components/ui/sonner";
+import { Card, CardContent } from "@/components/ui/card";
+import TagFilter from "@/components/filters/TagFilter";
+import { EntityType } from "@/types/entityTypes";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 
 const CommunityDirectory = () => {
-  const [selectedTagId, setSelectedTagId] = useState<string>('');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const { data: profiles = [], isLoading } = useCommunityProfiles({ tagId: selectedTagId || undefined });
-  const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(EntityType.PERSON);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const { user } = useAuth();
+  
+  // Use the consolidated tag hooks
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
+  
+  // Use the current user's profile separately to ensure we always display it
+  const { data: currentUserProfile } = useCurrentProfile();
+
+  // Fetch all community profiles with proper filter object
+  const { data: profiles, isLoading, error } = useCommunityProfiles({ 
+    search: searchQuery,
+    isApproved: true,
+    tagId: selectedTagId
+  });
+
+  // Display error message if profile loading fails
+  if (error) {
+    console.error("Error loading community profiles:", error);
+    toast.error("Failed to load community members. Please try again.");
+  }
+
+  // Extract tags from the response
   const tags = tagsResponse?.data || [];
 
-  // Handle tag selection
-  const handleSelectTag = (tagId: string) => {
-    setSelectedTagId(tagId);
-  };
+  // No need to combine and deduplicate profiles anymore, just use what's returned
+  const allProfiles = profiles || [];
 
   return (
-    <div className="container mx-auto py-8">
-      <Helmet>
-        <title>Community Directory | CHOSEN</title>
-      </Helmet>
+    <div className="container max-w-6xl px-4 py-8">
+      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+        Community Directory
+      </h1>
 
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0">Community Directory</h1>
-        <div className="w-full md:w-72">
-          <TagFilter
-            selectedTagId={selectedTagId}
-            onSelectTag={handleSelectTag}
-            tags={tags}
-            isLoading={tagsLoading}
-          />
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-40" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-72" />
-            ))}
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
+            </div>
+            <div className="md:w-64">
+              <TagFilter
+                selectedTagId={selectedTagId}
+                onTagSelect={setSelectedTagId}
+                tags={tags}
+                isLoading={isTagsLoading}
+              />
+            </div>
           </div>
-        </div>
-      ) : profiles.length > 0 ? (
-        <ProfileGrid 
-          profiles={profiles} 
-          isLoading={isLoading} 
-          searchQuery={searchQuery}
-        />
-      ) : (
-        <div className="text-center py-10">
-          <p className="text-xl text-gray-500">No profiles found</p>
-          {selectedTagId && (
-            <button 
-              onClick={() => setSelectedTagId('')}
-              className="mt-4 text-blue-500 hover:text-blue-700"
-            >
-              Clear tag filter
-            </button>
-          )}
-        </div>
-      )}
+        </CardContent>
+      </Card>
+
+      <ProfileGrid profiles={allProfiles} isLoading={isLoading} searchQuery={searchQuery} />
     </div>
   );
 };

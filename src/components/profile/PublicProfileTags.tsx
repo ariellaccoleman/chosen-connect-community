@@ -1,3 +1,4 @@
+
 import React from "react";
 import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
 import TagList from "@/components/tags/TagList";
@@ -19,7 +20,10 @@ const PublicProfileTags = ({ profileId }: PublicProfileTagsProps) => {
   return (
     <div className="mt-4">
       <h3 className="text-lg font-semibold mb-2">Tags</h3>
-      <TagList tagAssignments={tagAssignments} />
+      <TagList 
+        tagAssignments={tagAssignments || []} 
+        currentEntityType={EntityType.PERSON}
+      />
     </div>
   );
 };

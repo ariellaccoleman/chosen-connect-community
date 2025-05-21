@@ -1,105 +1,142 @@
 
-import { Entity, EntityBase } from './entityRegistry';
-import { Event } from './event';
-import { Organization } from './organization';
-import { Profile } from './profile';
-import { Hub } from './hub';
-import { EntityType } from './entityTypes';
+import { EntityType } from "./entityTypes";
+import { LocationWithDetails } from "./location";
+import { ProfileWithDetails } from "./profile";
+import { OrganizationWithLocation } from "./organization";
+import { EventWithDetails } from "./event";
+import { TagAssignment } from "@/utils/tags/types";
+import { ChatChannelWithDetails } from './chat';
+import { HubWithDetails } from "./hub";
 
 /**
- * Base entity properties all entity types share
+ * Base entity interface that all entity types should implement
  */
 export interface BaseEntity {
   id: string;
-  name: string;
-  description?: string;
-  image_url?: string;
   created_at?: string;
   updated_at?: string;
+  tags?: TagAssignment[];
 }
 
 /**
- * Convert a profile to a generic entity
+ * Interface for generic entity data with additional metadata
  */
-export const profileToEntity = (profile: Profile): Entity => {
+export interface Entity extends BaseEntity {
+  entityType: EntityType;
+  name: string;
+  description?: string;
+  imageUrl?: string | null;
+  location?: LocationWithDetails | null;
+  url?: string | null;
+}
+
+/**
+ * Convert a ProfileWithDetails to the generic Entity interface
+ */
+export function profileToEntity(profile: ProfileWithDetails): Entity {
   return {
-    id: profile.id || '',
-    type: EntityType.PERSON,
+    id: profile.id,
+    entityType: EntityType.PERSON,
     name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-    description: profile.bio || '',
-    imageUrl: profile.avatar_url || '',
-    url: `/profile/${profile.id}`,
-    createdAt: profile.created_at,
-    updatedAt: profile.updated_at,
-    data: profile,
+    description: profile.bio || undefined,
+    imageUrl: profile.avatar_url,
+    location: profile.location,
+    url: profile.website_url || undefined,
+    created_at: profile.created_at,
+    updated_at: profile.updated_at,
+    tags: profile.tags
   };
-};
+}
 
 /**
- * Convert an organization to a generic entity
+ * Convert an OrganizationWithLocation to the generic Entity interface
  */
-export const organizationToEntity = (org: Organization): Entity => {
+export function organizationToEntity(organization: OrganizationWithLocation): Entity {
   return {
-    id: org.id || '',
-    type: EntityType.ORGANIZATION,
-    name: org.name || '',
-    description: org.description || '',
-    imageUrl: org.logo_url || '',
-    url: `/organizations/${org.id}`,
-    createdAt: org.created_at,
-    updatedAt: org.updated_at,
-    data: org,
+    id: organization.id,
+    entityType: EntityType.ORGANIZATION,
+    name: organization.name,
+    description: organization.description || undefined,
+    imageUrl: organization.logo_url,
+    location: organization.location,
+    url: organization.website_url || undefined,
+    created_at: organization.created_at,
+    updated_at: organization.updated_at,
+    tags: organization.tags
   };
-};
+}
 
 /**
- * Convert an event to a generic entity
+ * Convert an EventWithDetails to the generic Entity interface
  */
-export const eventToEntity = (event: Event): Entity => {
+export function eventToEntity(event: EventWithDetails): Entity {
   return {
-    id: event.id || '',
-    type: EntityType.EVENT,
+    id: event.id,
+    entityType: EntityType.EVENT,
     name: event.title || '',
-    description: event.description || '',
-    imageUrl: '', // Handle missing image_url property
-    url: `/events/${event.id}`,
-    createdAt: event.created_at,
-    updatedAt: event.updated_at,
-    data: event,
+    description: event.description || undefined,
+    location: event.location,
+    created_at: event.created_at,
+    updated_at: event.updated_at,
+    tags: event.tags
   };
-};
+}
 
 /**
- * Convert a hub to a generic entity
+ * Convert a chat channel to an entity
  */
-export const hubToEntity = (hub: Hub): Entity => {
+export function chatChannelToEntity(channel: ChatChannelWithDetails): Entity {
   return {
-    id: hub.id || '',
-    type: EntityType.HUB,
-    name: hub.name || '',
-    description: hub.description || '',
-    imageUrl: '', // Handle missing image_url property
-    url: `/hubs/${hub.id}`,
-    createdAt: hub.created_at,
-    updatedAt: hub.updated_at,
-    data: hub,
+    id: channel.id,
+    name: channel.name || 'Unnamed Channel',
+    description: channel.channel_type || 'group',
+    imageUrl: null,
+    entityType: EntityType.CHAT,
+    created_at: channel.created_at,
+    updated_at: channel.updated_at,
+    tags: channel.tag_assignments
   };
-};
+}
 
 /**
- * Generic function to convert any supported entity type to a unified Entity object
+ * Convert a hub to an entity
  */
-export const toEntity = (item: any, type: EntityType): Entity => {
-  switch (type) {
-    case EntityType.PERSON:
-      return profileToEntity(item);
-    case EntityType.ORGANIZATION:
-      return organizationToEntity(item);
-    case EntityType.EVENT:
-      return eventToEntity(item);
-    case EntityType.HUB:
-      return hubToEntity(item);
-    default:
-      throw new Error(`Unsupported entity type: ${type}`);
-  }
-};
+export function hubToEntity(hub: HubWithDetails): Entity {
+  return {
+    id: hub.id,
+    name: hub.name,
+    description: hub.description || undefined,
+    imageUrl: null, // Hubs don't have images yet
+    entityType: EntityType.HUB,
+    created_at: hub.created_at,
+    updated_at: hub.updated_at,
+    tags: hub.tag ? [{ 
+      id: '', 
+      tag_id: hub.tag.id, 
+      target_id: hub.id, 
+      target_type: 'hub', 
+      created_at: hub.created_at || '', 
+      updated_at: hub.updated_at || '',
+      tag: {
+        id: hub.tag.id,
+        name: hub.tag.name,
+        description: hub.tag.description,
+        type: null, // Add the missing fields
+        created_by: null,
+        created_at: hub.created_at || '',
+        updated_at: hub.updated_at || ''
+      }
+    }] : []
+  };
+}
+
+/**
+ * @deprecated Use the entity registry's toEntity method instead
+ * Convert an entity of any type to the generic Entity interface
+ */
+export function toEntity(entity: any, entityType: EntityType): Entity | null {
+  // Import dynamically to prevent circular dependency
+  const { useEntityRegistry } = require("@/hooks/useEntityRegistry");
+  const { toEntity } = useEntityRegistry();
+  return toEntity(entity, entityType);
+}

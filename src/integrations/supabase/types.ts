@@ -610,118 +610,6 @@ export type Database = {
           },
         ]
       }
-      post_comments: {
-        Row: {
-          author_id: string
-          content: string
-          created_at: string
-          id: string
-          post_id: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          content: string
-          created_at?: string
-          id?: string
-          post_id: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          content?: string
-          created_at?: string
-          id?: string
-          post_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_comments_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      post_media: {
-        Row: {
-          created_at: string
-          id: string
-          media_type: Database["public"]["Enums"]["post_media_type"]
-          post_id: string
-          updated_at: string
-          url: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          media_type: Database["public"]["Enums"]["post_media_type"]
-          post_id: string
-          updated_at?: string
-          url: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          media_type?: Database["public"]["Enums"]["post_media_type"]
-          post_id?: string
-          updated_at?: string
-          url?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "post_media_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts: {
-        Row: {
-          author_id: string
-          content: string
-          created_at: string
-          has_media: boolean
-          id: string
-          updated_at: string
-        }
-        Insert: {
-          author_id: string
-          content: string
-          created_at?: string
-          has_media?: boolean
-          id?: string
-          updated_at?: string
-        }
-        Update: {
-          author_id?: string
-          content?: string
-          created_at?: string
-          has_media?: boolean
-          id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1053,7 +941,6 @@ export type Database = {
     Enums: {
       chat_channel_type: "group" | "dm"
       org_connection_type: "current" | "former" | "connected_insider"
-      post_media_type: "image" | "video" | "link"
       pricing_tier: "free" | "community" | "pro" | "partner"
       test_run_status: "success" | "failure" | "in_progress"
       test_status: "passed" | "failed" | "skipped"
@@ -1174,7 +1061,6 @@ export const Constants = {
     Enums: {
       chat_channel_type: ["group", "dm"],
       org_connection_type: ["current", "former", "connected_insider"],
-      post_media_type: ["image", "video", "link"],
       pricing_tier: ["free", "community", "pro", "partner"],
       test_run_status: ["success", "failure", "in_progress"],
       test_status: ["passed", "failed", "skipped"],

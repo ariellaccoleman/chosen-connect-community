@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Entity } from "@/types/entityRegistry";
+import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -38,18 +38,6 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   const entityUrl = getEntityUrl(entity);
   logger.debug(`EntityCard: Generated URL for ${entity.entityType} ${entity.id}: ${entityUrl}`);
 
-  // Function to format location display
-  const formatLocation = (location: any) => {
-    if (!location) return null;
-    
-    if (typeof location === 'string') {
-      return location;
-    }
-    
-    // Handle location object with properties
-    return location.formatted_location || location.full_name || location.city;
-  };
-
   return (
     <Link to={entityUrl} className="block">
       <div className={`bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow ${className}`}>
@@ -81,7 +69,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
             {entity.location && (
               <div className="flex items-center mt-2 text-sm text-gray-500">
                 <MapPin className="h-3.5 w-3.5 mr-1" />
-                <span>{formatLocation(entity.location)}</span>
+                <span>{entity.location.formatted_location || entity.location.full_name}</span>
               </div>
             )}
             
@@ -98,7 +86,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
         {/* Tags */}
         {showTags && entity.tags && entity.tags.length > 0 && (
           <div className="mt-4">
-            <TagList tagIds={entity.tags as string[]} />
+            <TagList tagAssignments={entity.tags} />
           </div>
         )}
       </div>

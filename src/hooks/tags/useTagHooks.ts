@@ -1,200 +1,184 @@
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tagsApi } from '@/api/tags/tagsApi';
-import { assignTag, removeTagAssignment } from '@/api/tags/assignmentApi';
-import { getEntityTags, getEntitiesWithTag } from '@/api/tags/entityTagsApi';
-import { EntityType, isValidEntityType } from '@/types/entityTypes';
-import { logger } from '@/utils/logger';
-import { toast } from 'sonner';
-import { Tag } from '@/types/tag';
+import { useCallback } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  tagsApi, 
+  getAllTags, 
+  createTag, 
+  updateTag,
+  deleteTag
+} from "@/api/tags";
+import { Tag, TagAssignment } from "@/utils/tags/types";
+import { EntityType } from "@/types/entityTypes";
+import { apiClient } from "@/api/core/apiClient";
+import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
 
 /**
- * Hook to fetch tags for selection dropdowns
+ * Hook to fetch tags for selection lists
  */
-export const useSelectionTags = (entityType?: EntityType) => {
+export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
-    queryKey: ['tags', 'selection', entityType],
+    queryKey: ["tags", entityType],
     queryFn: async () => {
-      const response = await tagsApi.getAll({
-        filters: entityType ? { entityType } : {},
-        orderBy: 'name'
-      });
-      return response;
+      // If entityType is provided, filter tags by type
+      if (entityType) {
+        const response = await tagsApi.getAll({
+          filters: { type: entityType }
+        });
+        return response;
+      }
+      
+      // Otherwise, get all tags
+      return getAllTags();
     }
   });
-};
+}
 
 /**
- * Hook to fetch available tags based on search query
+ * Hook to filter entities by a selected tag
  */
-export const useAvailableTags = (searchQuery: string, entityType?: EntityType) => {
+export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
   return useQuery({
-    queryKey: ['tags', 'search', searchQuery, entityType],
+    queryKey: ["tag-assignments", tagId, entityType],
     queryFn: async () => {
-      const response = await tagsApi.getAll({
-        filters: { 
-          ...(searchQuery ? { searchQuery } : {}),
-          ...(entityType ? { entityType } : {})
-        },
-        orderBy: 'name'
-      });
-      return response.data || [];
-    },
-    enabled: searchQuery.length >= 2 || searchQuery === ''
-  });
-};
-
-/**
- * Hook to fetch entity tags by ID
- */
-export const useEntityTags = (entityId: string, entityType?: EntityType) => {
-  return useQuery({
-    queryKey: ['entityTags', entityId, entityType],
-    queryFn: async () => {
-      if (!entityId) return { data: [] };
+      if (!tagId) return [];
       
-      const response = await getEntityTags(entityId, entityType as EntityType);
-      return response;
+      // Fetch tag assignments for the given tag ID and optional entity type
+      const { data, error } = await apiClient.query(client => 
+        client
+          .from("tag_assignments")
+          .select("*")
+          .eq("tag_id", tagId)
+          .then(res => {
+            // Filter by entity type if provided
+            if (entityType && res.data) {
+              return {
+                ...res,
+                data: res.data.filter(item => item.target_type === entityType)
+              };
+            }
+            return res;
+          })
+      );
+      
+      if (error) throw error;
+      return data as TagAssignment[];
+    },
+    enabled: !!tagId // Only run query if tagId is provided
+  });
+}
+
+/**
+ * Hook for CRUD operations on tags
+ */
+export function useTagCrudMutations() {
+  const queryClient = useQueryClient();
+  
+  const createTagMutation = useMutation({
+    mutationFn: createTag,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    }
+  });
+  
+  const updateTagMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => updateTag(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    }
+  });
+  
+  const deleteTagMutation = useMutation({
+    mutationFn: deleteTag,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    }
+  });
+  
+  return {
+    createTag: createTagMutation.mutate,
+    updateTag: updateTagMutation.mutate,
+    deleteTag: deleteTagMutation.mutate,
+    isCreating: createTagMutation.isPending,
+    isUpdating: updateTagMutation.isPending,
+    isDeleting: deleteTagMutation.isPending,
+    error: createTagMutation.error || updateTagMutation.error || deleteTagMutation.error
+  };
+}
+
+/**
+ * Hook to fetch tags for a specific entity
+ */
+export function useEntityTags(entityId: string, entityType: EntityType) {
+  return useQuery({
+    queryKey: ["entity", entityId, "tags"],
+    queryFn: async () => {
+      if (!entityId) return { status: 'success', data: [] };
+      
+      const { getEntityTags } = await import("@/api/tags/entityTagsApi");
+      return getEntityTags(entityId, entityType);
     },
     enabled: !!entityId
   });
-};
+}
 
 /**
- * Hook to filter entities by tag
+ * Hook for tag assignment operations
  */
-export const useFilterByTag = (tagId: string | null, entityType?: EntityType) => {
-  return useQuery({
-    queryKey: ['tagAssignments', tagId, entityType],
-    queryFn: async () => {
-      if (!tagId) return { data: [] };
-      
-      const response = await getEntitiesWithTag(tagId, entityType);
-      return response;
-    },
-    enabled: !!tagId
-  });
-};
-
-/**
- * Hooks for tag assignment mutations (assign/unassign)
- */
-export const useTagAssignmentMutations = () => {
+export function useTagAssignmentMutations() {
   const queryClient = useQueryClient();
   
-  // Assign a tag to an entity
   const assignTagMutation = useMutation({
     mutationFn: async ({ 
       tagId, 
       entityId, 
       entityType 
     }: { 
-      tagId: string; 
-      entityId: string; 
+      tagId: string, 
+      entityId: string, 
       entityType: EntityType 
     }) => {
-      if (!isValidEntityType(entityType)) {
-        throw new Error(`Invalid entity type: ${entityType}`);
-      }
-      
-      const response = await assignTag(tagId, entityId, entityType);
-      return response.data;
+      return assignTag(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['entityTags', variables.entityId] });
-      queryClient.invalidateQueries({ queryKey: ['entities', variables.entityType] });
-      toast.success('Tag assigned successfully');
-    },
-    onError: (error) => {
-      logger.error('Error assigning tag:', error);
-      toast.error(`Failed to assign tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      queryClient.invalidateQueries({ queryKey: ["entity", variables.entityId, "tags"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
-
-  // Remove a tag assignment
-  const removeTagAssignmentMutation = useMutation({
+  
+  const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      const response = await removeTagAssignment(assignmentId);
-      return response;
+      return removeTagAssignment(assignmentId);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['entityTags'] });
-      toast.success('Tag removed successfully');
-    },
-    onError: (error) => {
-      logger.error('Error unassigning tag:', error);
-      toast.error(`Failed to remove tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      queryClient.invalidateQueries({ queryKey: ["entity"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
-
+  
   return {
-    assignTag: assignTagMutation.mutateAsync,
-    removeTagAssignment: removeTagAssignmentMutation.mutateAsync,
+    assignTag: assignTagMutation.mutate,
+    removeTagAssignment: removeTagMutation.mutate,
     isAssigning: assignTagMutation.isPending,
-    isRemoving: removeTagAssignmentMutation.isPending
+    isRemoving: removeTagMutation.isPending,
+    error: assignTagMutation.error || removeTagMutation.error
   };
-};
+}
 
 /**
- * Hook for tag CRUD operations
+ * Deprecated: Use useFilterByTag instead
+ * @deprecated Use useFilterByTag instead
  */
-export const useTagCrudMutations = () => {
-  const queryClient = useQueryClient();
-  
-  // Create a new tag
-  const createTagMutation = useMutation({
-    mutationFn: async (tagData: any) => {
-      const response = await tagsApi.create(tagData);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
-    },
-    onError: (error) => {
-      logger.error('Error creating tag:', error);
-      throw error;
-    }
-  });
+export function useFilterTags(tagId: string | null, entityType?: EntityType) {
+  console.warn('useFilterTags is deprecated, use useFilterByTag instead');
+  return useFilterByTag(tagId, entityType);
+}
 
-  // Update a tag
-  const updateTagMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await tagsApi.update(id, data);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
-    },
-    onError: (error) => {
-      logger.error('Error updating tag:', error);
-      throw error;
-    }
-  });
-
-  // Delete a tag
-  const deleteTagMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const response = await tagsApi.delete(id);
-      return response.data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tags'] });
-    },
-    onError: (error) => {
-      logger.error('Error deleting tag:', error);
-      throw error;
-    }
-  });
-
-  return {
-    createTag: createTagMutation.mutateAsync,
-    updateTag: updateTagMutation.mutateAsync,
-    deleteTag: deleteTagMutation.mutateAsync,
-    isCreating: createTagMutation.isPending,
-    isUpdating: updateTagMutation.isPending,
-    isDeleting: deleteTagMutation.isPending
-  };
-};
-
-// Backward compatibility alias
-export { useSelectionTags as useTags };
+/**
+ * Deprecated: Use useSelectionTags instead
+ * @deprecated Use useSelectionTags instead
+ */
+export function useTags(entityType?: EntityType) {
+  console.warn('useTags is deprecated, use useSelectionTags instead');
+  return useSelectionTags(entityType);
+}

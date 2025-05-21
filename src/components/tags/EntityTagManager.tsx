@@ -1,127 +1,143 @@
 
-import React, { useState, useCallback } from 'react';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useAvailableTags } from '@/hooks/tags/useTagHooks';
-import { Tag } from '@/types/tag';
-import { EntityType } from '@/types/entityTypes';
-import TagList from './TagList';
-import { toast } from 'sonner';
-import { logger } from '@/utils/logger';
+import React, { useEffect } from "react";
+import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagHooks";
+import TagList from "./TagList";
+import { Skeleton } from "@/components/ui/skeleton";
+import TagSelector from "./TagSelector";
+import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
+import { toast } from "sonner";
 
-export interface EntityTagManagerProps {
+interface EntityTagManagerProps {
   entityId: string;
   entityType: EntityType;
-  existingTagAssignments?: any[];
-  onTagAssignment?: (tagId: string) => Promise<void>;
-  onTagUnassignment?: (assignmentId: string) => Promise<void>;
   isAdmin?: boolean;
   isEditing?: boolean;
+  onFinishEditing?: () => void;
   onTagSuccess?: () => void;
   onTagError?: (error: Error) => void;
 }
 
-/**
- * Manages tags for a specific entity
- */
-const EntityTagManager: React.FC<EntityTagManagerProps> = ({
+const EntityTagManager = ({
   entityId,
   entityType,
-  existingTagAssignments = [],
-  onTagAssignment,
-  onTagUnassignment,
-  isAdmin,
-  isEditing,
+  isAdmin = false,
+  isEditing = false,
+  onFinishEditing,
   onTagSuccess,
-  onTagError,
-}) => {
-  const [inputValue, setInputValue] = useState('');
-  const [isAdding, setIsAdding] = useState(false);
-  const [isRemoving, setIsRemoving] = useState(false);
-  const debouncedInputValue = useDebounce(inputValue, 300);
+  onTagError
+}: EntityTagManagerProps) => {
+  const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
+  const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
-  // Fetch available tags based on the debounced input value
-  const { data: availableTags = [], isLoading: isTagsLoading } = useAvailableTags(
-    debouncedInputValue,
-    entityType
-  );
+  // Extract the actual assignments from the API response
+  const tagAssignments = tagAssignmentsResponse?.data || [];
   
-  // Handler to add a tag to the entity
-  const handleAddTag = useCallback(async (tag: Tag) => {
-    if (!onTagAssignment) return;
-    
-    setIsAdding(true);
-    try {
-      await onTagAssignment(tag.id);
-      setInputValue('');
-      toast.success(`Tag "${tag.name}" assigned successfully`);
-      if (onTagSuccess) onTagSuccess();
-    } catch (error) {
-      logger.error('Error assigning tag:', error);
-      toast.error('Failed to assign tag');
-      if (onTagError && error instanceof Error) onTagError(error);
-    } finally {
-      setIsAdding(false);
-    }
-  }, [onTagAssignment, onTagSuccess, onTagError]);
-  
-  // Handler to remove a tag from the entity
-  const handleRemove = useCallback(async (assignmentId: string) => {
-    if (!onTagUnassignment) return;
-    
-    setIsRemoving(true);
-    try {
-      await onTagUnassignment(assignmentId);
-      toast.success("Tag removed successfully");
-    } catch (error) {
-      logger.error('Error unassigning tag:', error);
-      toast.error('Failed to unassign tag');
-    } finally {
-      setIsRemoving(false);
-    }
-  }, [onTagUnassignment]);
-  
-  // Filter out tags that are already assigned to the entity
-  const tagAssignments = existingTagAssignments || [];
-  const assignedTagIds = tagAssignments.map(assignment => assignment.tag_id);
-  const unassignedTags = availableTags.filter(tag => !assignedTagIds.includes(tag.id));
+  // Log component mounting and props for debugging
+  useEffect(() => {
+    logger.info(`EntityTagManager mounted for ${entityType} ${entityId}`, {
+      entityId,
+      entityType,
+      isAdmin,
+      isEditing,
+      assignmentsCount: tagAssignments.length
+    });
+  }, [entityId, entityType, isAdmin, isEditing, tagAssignments.length]);
 
-  return (
-    <div className="space-y-4">
-      <div>
-        <Label htmlFor="tag-input">Add Tags</Label>
-        <div className="flex items-center space-x-2 mt-2">
-          <Input
-            id="tag-input"
-            type="text"
-            placeholder="Search for tags..."
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            disabled={isAdding}
-          />
-          {unassignedTags.length > 0 && (
-            <Button
-              type="button"
-              onClick={() => handleAddTag(unassignedTags[0])}
-              disabled={isAdding || isTagsLoading}
-            >
-              {isAdding || isTagsLoading ? 'Adding...' : 'Add Tag'}
-            </Button>
-          )}
-        </div>
+  // If there was an error loading the tags, show an error message with retry option
+  if (isError) {
+    return (
+      <div className="p-4 border border-red-200 rounded-md bg-red-50">
+        <p className="text-red-700 mb-2">Failed to load tags: {error instanceof Error ? error.message : 'Unknown error'}</p>
+        <button 
+          className="text-red-700 underline" 
+          onClick={() => refetch()}
+        >
+          Retry
+        </button>
       </div>
+    );
+  }
+  
+  const handleAddTag = async (tag) => {
+    if (!tag || !tag.id) {
+      toast.error("Invalid tag selected");
+      return;
+    }
+
+    logger.info("Assigning tag to entity:", { tagId: tag.id, entityId, entityType });
+    
+    try {
+      await assignTag({ 
+        tagId: tag.id, 
+        entityId, 
+        entityType 
+      });
       
-      <div>
-        <Label>Current Tags</Label>
+      // Call success callback if provided
+      if (onTagSuccess) {
+        onTagSuccess();
+      }
+    } catch (error) {
+      logger.error("Error assigning tag:", error);
+      
+      // Call error callback if provided
+      if (onTagError && error instanceof Error) {
+        onTagError(error);
+      }
+    }
+  };
+  
+  const handleRemoveTag = async (assignmentId: string) => {
+    try {
+      await removeTagAssignment(assignmentId);
+      
+      // Call success callback if provided
+      if (onTagSuccess) {
+        onTagSuccess();
+      }
+    } catch (error) {
+      logger.error("Error removing tag:", error);
+      
+      // Call error callback if provided
+      if (onTagError && error instanceof Error) {
+        onTagError(error);
+      }
+    }
+  };
+  
+  if (isLoading) {
+    return <Skeleton className="h-12 w-full" />;
+  }
+  
+  return (
+    <div>
+      {isEditing ? (
+        <div>
+          <div className="mb-4">
+            <TagSelector
+              targetType={entityType}
+              onTagSelected={handleAddTag}
+              isAdmin={isAdmin}
+            />
+            {isAssigning && <p className="text-sm text-muted-foreground mt-1">Adding tag...</p>}
+          </div>
+          
+          <TagList 
+            tagAssignments={tagAssignments} 
+            onRemove={isAdmin ? handleRemoveTag : undefined}
+            currentEntityType={entityType}
+            isRemoving={isRemoving}
+          />
+        </div>
+      ) : (
         <TagList 
-          tagAssignments={tagAssignments}
+          tagAssignments={tagAssignments} 
+          onRemove={isAdmin ? handleRemoveTag : undefined}
           currentEntityType={entityType}
           isRemoving={isRemoving}
-          onRemove={handleRemove}
         />
-      </div>
+      )}
     </div>
   );
 };

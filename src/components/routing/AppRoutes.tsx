@@ -1,3 +1,4 @@
+
 import { Routes, Route } from 'react-router-dom';
 import { APP_ROUTES } from '@/config/routes';
 
@@ -45,64 +46,57 @@ import CreateEvent from '@/pages/CreateEvent';
 import Events from '@/pages/Events';
 import EventDetail from '@/pages/EventDetail';
 
-// Add Feed import
-import Feed from '@/pages/Feed';
-
 const AppRoutes = () => {
   return (
     <Routes>
-      {/* Public routes */}
+      {/* Public Routes */}
       <Route path={APP_ROUTES.HOME} element={<Index />} />
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
-      
-      {/* Feed page */}
-      <Route path={APP_ROUTES.FEED} element={<Feed />} />
-      
-      {/* Profile routes */}
-      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProfileView />} />
-      <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.MANAGE_CONNECTIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
-      
-      {/* Community routes */}
-      <Route path={APP_ROUTES.COMMUNITY} element={<CommunityDirectory />} />
       <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
       
-      {/* Event routes */}
-      <Route path={APP_ROUTES.EVENTS} element={<Events />} />
-      <Route path={APP_ROUTES.EVENT_DETAILS} element={<EventDetail />} />
-      <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
-      
-      {/* Organization routes */}
-      <Route path={APP_ROUTES.ORGANIZATIONS} element={<Organizations />} />
-      <Route path={APP_ROUTES.ORGANIZATION_DETAILS} element={<OrganizationDetail />} />
-      <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
+      {/* Protected Routes */}
+      <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATIONS} element={<ProtectedRoute><Organizations /></ProtectedRoute>} />
       <Route path={APP_ROUTES.CREATE_ORGANIZATION} element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
       
-      {/* Hub routes */}
-      <Route path={APP_ROUTES.HUBS} element={<Hubs />} />
-      <Route path={APP_ROUTES.HUB_DETAILS} element={<HubDetail />} />
+      {/* Community Routes */}
+      <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
       
-      {/* Chat routes */}
+      {/* Event Routes */}
+      <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.EVENT_DETAIL} element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
+      
+      {/* Hub Routes */}
+      <Route path="/hubs" element={<Hubs />} />
+      <Route path="/hubs/:hubId" element={<HubDetail />} />
+      
+      {/* Chat Routes */}
       <Route path={APP_ROUTES.CHAT} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path={APP_ROUTES.CHAT_CHANNEL} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       
-      {/* Dashboard */}
-      <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      
-      {/* Admin routes */}
+      {/* Admin Routes */}
       <Route path={APP_ROUTES.ADMIN_DASHBOARD} element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+      <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TAGS} element={<AdminRoute><AdminTags /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TEST_REPORTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_TEST_RUN_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNEL_CREATE} element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNEL_EDIT} element={<AdminRoute><EditChatChannel /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_REPORTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
+      <Route path={APP_ROUTES.TEST_RUN_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_HUBS} element={<AdminRoute><AdminHubs /></AdminRoute>} />
       
-      {/* 404 page */}
-      <Route path={APP_ROUTES.NOT_FOUND} element={<NotFound />} />
+      {/* Admin Chat Channel Routes */}
+      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
+      <Route path={APP_ROUTES.CREATE_CHAT_CHANNEL} element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
+      <Route path={APP_ROUTES.EDIT_CHAT_CHANNEL} element={<AdminRoute><EditChatChannel /></AdminRoute>} />
+      
+      {/* Not Found */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 };

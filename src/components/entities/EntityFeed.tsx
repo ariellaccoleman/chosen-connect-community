@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
@@ -99,10 +100,11 @@ const EntityFeed = ({
         
         {showTagFilter && !tagId && ( // Only show tag filter if not using a fixed tagId
           <TagFilter
-            selectedTagId={selectedTagId || ""}
-            onSelectTag={setSelectedTagId}
+            selectedTagId={selectedTagId}
+            onTagSelect={setSelectedTagId}
             tags={tags}
             isLoading={tagsLoading}
+            targetType={activeTab !== "all" ? activeTab : undefined}
           />
         )}
       </div>

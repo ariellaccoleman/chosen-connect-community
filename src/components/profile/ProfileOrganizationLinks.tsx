@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
@@ -25,8 +26,6 @@ import { formatOrganizationRelationships, filterAvailableOrganizations } from "@
 import { logger } from "@/utils/logger";
 import { APP_ROUTES } from "@/config/routes";
 import { Button } from "@/components/ui/button";
-import React from 'react';
-import { Link } from 'react-router-dom';
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -72,7 +71,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   
   // Navigate to manage organizations page
   const handleManageOrganizations = () => {
-    navigate(APP_ROUTES.ORGANIZATIONS);
+    navigate(APP_ROUTES.MANAGE_ORGANIZATIONS);
   };
 
   return (
