@@ -9,7 +9,6 @@ import {
   FormItem, 
   FormLabel
 } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface EventDateTimeSectionProps {
@@ -19,6 +18,9 @@ interface EventDateTimeSectionProps {
 const EventDateTimeSection = ({ control }: EventDateTimeSectionProps) => {
   // List of minute options in 15-minute increments
   const minuteOptions = [0, 15, 30, 45];
+  
+  // Create array of hour options 1-24
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i + 1);
   
   return (
     <div className="space-y-6">
@@ -39,53 +41,68 @@ const EventDateTimeSection = ({ control }: EventDateTimeSectionProps) => {
           required={true}
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          name="duration_hours"
-          control={control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Hours</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number" 
-                  min={0}
-                  max={24}
-                  className="w-24"
-                  {...field}
-                  onChange={e => field.onChange(parseInt(e.target.value) || 0)}
-                  value={field.value || 0}
-                />
-              </FormControl>
-            </FormItem>
-          )}
-        />
-        <FormField
-          name="duration_minutes"
-          control={control}
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Minutes</FormLabel>
-              <Select
-                onValueChange={(value) => field.onChange(parseInt(value))}
-                value={field.value?.toString() || "0"}
-              >
-                <FormControl>
-                  <SelectTrigger className="w-24">
-                    <SelectValue placeholder="Minutes" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {minuteOptions.map((minute) => (
-                    <SelectItem key={minute} value={minute.toString()}>
-                      {minute}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </FormItem>
-          )}
-        />
+      
+      <div>
+        <FormLabel>Duration</FormLabel>
+        <div className="flex items-center gap-3 mt-2">
+          <div className="flex items-center gap-2">
+            <FormField
+              name="duration_hours"
+              control={control}
+              render={({ field }) => (
+                <FormItem className="space-y-0">
+                  <Select
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    value={field.value?.toString() || "1"}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Hours" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {hourOptions.map((hour) => (
+                        <SelectItem key={hour} value={hour.toString()}>
+                          {hour}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <span className="text-sm font-medium">hours</span>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <FormField
+              name="duration_minutes"
+              control={control}
+              render={({ field }) => (
+                <FormItem className="space-y-0">
+                  <Select
+                    onValueChange={(value) => field.onChange(parseInt(value))}
+                    value={field.value?.toString() || "0"}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-16">
+                        <SelectValue placeholder="Min" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {minuteOptions.map((minute) => (
+                        <SelectItem key={minute} value={minute.toString()}>
+                          {minute}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )}
+            />
+            <span className="text-sm font-medium">minutes</span>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import EventDateTimeSection from "./EventDateTimeSection";
 import EventLocationSection from "./EventLocationSection";
 import EventPriceSection from "./EventPriceSection";
 import { CreateEventInput, EventWithDetails } from "@/types";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface CreateEventFormProps {
   onSubmit: (eventInput: CreateEventInput) => Promise<void>;
@@ -90,42 +90,55 @@ const CreateEventForm = ({
   const handleFormSubmit = async (values: CreateEventFormValues) => {
     logger.info("CreateEventForm handleFormSubmit called with values:", values);
     
-    // Calculate start and end timestamps
-    const startDateTime = `${values.start_date}T${values.start_time}`;
-    logger.info("Start date time:", startDateTime);
-    
-    // Calculate end time by adding duration to start time
-    const startDate = new Date(startDateTime);
-    const endDate = new Date(startDate.getTime());
-    endDate.setHours(endDate.getHours() + (values.duration_hours || 0));
-    endDate.setMinutes(endDate.getMinutes() + (values.duration_minutes || 0));
-    
-    logger.info("Calculated dates:", { 
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString() 
-    });
+    try {
+      // Ensure values.start_date is a string in format 'YYYY-MM-DD'
+      const dateString = values.start_date;
+      const timeString = values.start_time;
+      
+      // Create a Date object from the combined date and time strings
+      const startDateTime = parse(
+        `${dateString} ${timeString}`, 
+        'yyyy-MM-dd HH:mm', 
+        new Date()
+      );
+      
+      logger.info("Parsed start date time:", startDateTime);
+      
+      // Calculate end time by adding duration
+      const endDateTime = new Date(startDateTime);
+      endDateTime.setHours(endDateTime.getHours() + (values.duration_hours || 0));
+      endDateTime.setMinutes(endDateTime.getMinutes() + (values.duration_minutes || 0));
+      
+      logger.info("Calculated dates:", { 
+        startDate: startDateTime.toISOString(),
+        endDate: endDateTime.toISOString() 
+      });
 
-    // If event is not paid, ensure price is null
-    const finalPrice = values.is_paid ? values.price : null;
+      // If event is not paid, ensure price is null
+      const finalPrice = values.is_paid ? values.price : null;
 
-    // If event is virtual, ensure location_id is null
-    const finalLocationId = values.is_virtual ? null : values.location_id;
+      // If event is virtual, ensure location_id is null
+      const finalLocationId = values.is_virtual ? null : values.location_id;
 
-    // Convert form values to CreateEventInput
-    const eventInput: CreateEventInput = {
-      title: values.title,
-      description: values.description || "",
-      start_time: startDate.toISOString(),
-      end_time: endDate.toISOString(),
-      is_virtual: values.is_virtual,
-      location_id: finalLocationId,
-      is_paid: values.is_paid,
-      price: finalPrice,
-    };
+      // Convert form values to CreateEventInput
+      const eventInput: CreateEventInput = {
+        title: values.title,
+        description: values.description || "",
+        start_time: startDateTime.toISOString(),
+        end_time: endDateTime.toISOString(),
+        is_virtual: values.is_virtual,
+        location_id: finalLocationId,
+        is_paid: values.is_paid,
+        price: finalPrice,
+      };
 
-    logger.info("Submitting event to API:", eventInput);
-    
-    await onSubmit(eventInput);
+      logger.info("Submitting event to API:", eventInput);
+      
+      await onSubmit(eventInput);
+    } catch (error) {
+      logger.error("Error processing form data:", error);
+      throw error;
+    }
   };
 
   return (

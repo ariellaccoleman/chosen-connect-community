@@ -26,7 +26,10 @@ export const useEventMutations = () => {
         ? await extendedEventApi.createEventWithTags(event, hostId, tagIds)
         : await extendedEventApi.create({ ...event, host_id: hostId } as any);
       
-      if (result.error) throw result.error;
+      if (result.error) {
+        logger.error("API returned error:", result.error);
+        throw new Error(result.error.message || "Failed to create event");
+      }
       return result.data;
     },
     onSuccess: () => {
@@ -47,7 +50,10 @@ export const useEventMutations = () => {
     }) => {
       logger.info("Updating event", { eventId, eventData });
       const result = await extendedEventApi.update(eventId, eventData);
-      if (result.error) throw result.error;
+      if (result.error) {
+        logger.error("API returned error:", result.error);
+        throw new Error(result.error.message || "Failed to update event");
+      }
       return result.data;
     },
     onSuccess: (data) => {
@@ -66,7 +72,10 @@ export const useEventMutations = () => {
     mutationFn: async (eventId: string) => {
       logger.info("Deleting event", { eventId });
       const result = await extendedEventApi.delete(eventId);
-      if (result.error) throw result.error;
+      if (result.error) {
+        logger.error("API returned error:", result.error);
+        throw new Error(result.error.message || "Failed to delete event");
+      }
       return eventId;
     },
     onSuccess: (eventId) => {

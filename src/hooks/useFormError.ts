@@ -20,9 +20,18 @@ export const useFormError = () => {
 
     if (err instanceof Error) {
       message = err.message;
-    } else if (typeof err === 'object' && err !== null && 'message' in err) {
-      // This handles ApiError type or any object with a message property
-      message = (err as ApiError).message;
+    } else if (typeof err === 'object' && err !== null) {
+      if ('message' in err) {
+        // This handles ApiError type or any object with a message property
+        message = String((err as ApiError).message);
+      } else {
+        // Try to stringify the object for better debugging
+        try {
+          message = `Error: ${JSON.stringify(err)}`;
+        } catch (e) {
+          message = 'An error occurred (object cannot be stringified)';
+        }
+      }
     } else if (typeof err === 'string') {
       message = err;
     } else {
