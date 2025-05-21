@@ -369,28 +369,22 @@ export type Database = {
       hubs: {
         Row: {
           created_at: string | null
-          description: string | null
           id: string
           is_featured: boolean | null
-          name: string
           tag_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          description?: string | null
           id?: string
           is_featured?: boolean | null
-          name?: string
           tag_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          description?: string | null
           id?: string
           is_featured?: boolean | null
-          name?: string
           tag_id?: string | null
           updated_at?: string | null
         }
@@ -885,28 +879,6 @@ export type Database = {
             columns: ["parent_id"]
             isOneToOne: false
             referencedRelation: "chats"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      hub_details: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          id: string | null
-          is_featured: boolean | null
-          name: string | null
-          tag_description: string | null
-          tag_id: string | null
-          tag_name: string | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "hubs_tag_id_fkey"
-            columns: ["tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
             referencedColumns: ["id"]
           },
         ]

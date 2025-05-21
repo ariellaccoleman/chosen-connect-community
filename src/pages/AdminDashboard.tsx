@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Tag, ClipboardList, MessageSquare, Layout } from "lucide-react";
+import { Tag, ClipboardList, MessageSquare } from "lucide-react";
 
 const AdminDashboard = () => {
   const { isAdmin } = useAuth();
@@ -26,13 +26,6 @@ const AdminDashboard = () => {
           <Link to="/admin/tags" className="flex items-center">
             <Tag className="mr-2 h-4 w-4" />
             Manage Tags
-          </Link>
-        </Button>
-        
-        <Button asChild variant="ghost" className="w-full justify-start">
-          <Link to="/admin/hubs" className="flex items-center">
-            <Layout className="mr-2 h-4 w-4" />
-            Manage Hubs
           </Link>
         </Button>
         

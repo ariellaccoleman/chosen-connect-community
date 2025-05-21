@@ -1,3 +1,4 @@
+
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -110,13 +111,6 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             onClick={onClose}
           >
             Community
-          </Link>
-          <Link 
-            to="/hubs" 
-            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
-            onClick={onClose}
-          >
-            Hubs
           </Link>
           <button 
             onClick={() => {
