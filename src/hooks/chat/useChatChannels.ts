@@ -3,7 +3,7 @@ import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '../core/factory/queryHookFactory';
 import { chatChannelsApi, getChatChannelWithDetails, updateChannelTags } from '@/api/chat';
-import { ChatChannel, ChatChannelCreate, ChatChannelWithDetails } from '@/types/chat';
+import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 

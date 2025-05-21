@@ -917,6 +917,10 @@ export type Database = {
         Args: { cache_key: string }
         Returns: Json
       }
+      is_site_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       query_tags: {
         Args: { query_text: string }
         Returns: {
