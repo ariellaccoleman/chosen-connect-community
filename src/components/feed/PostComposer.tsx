@@ -54,6 +54,10 @@ const PostComposer: React.FC = () => {
       // Reset form after successful submission
       setPostContent("");
       setSelectedTags([]);
+      toast.success("Post created successfully!");
+    } catch (error) {
+      logger.error("Failed to create post:", error);
+      toast.error("Failed to create post. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

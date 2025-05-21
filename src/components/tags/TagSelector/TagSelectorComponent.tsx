@@ -4,12 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tag, fetchSelectionTags, invalidateTagCache } from "@/utils/tags";
+import { Tag, fetchSelectionTags } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
-import { fixTagEntityAssociations } from "@/utils/tags/fixTagEntityTypes";
 import { logger } from "@/utils/logger";
+import { toast } from "sonner";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -33,25 +33,7 @@ const TagSelectorComponent = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const { user } = useAuth();
-  const [isFixingTags, setIsFixingTags] = useState(false);
-
-  // Run fix for tag entity associations the first time component mounts
-  useEffect(() => {
-    const runFix = async () => {
-      try {
-        setIsFixingTags(true);
-        await fixTagEntityAssociations(targetType);
-        // Force refresh of tag cache after fixing
-        await invalidateTagCache(targetType);
-      } catch (err) {
-        logger.error("Error running tag entity fix:", err);
-      } finally {
-        setIsFixingTags(false);
-      }
-    };
-
-    runFix();
-  }, [targetType]);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Load tags when search criteria changes or when popover opens
   useEffect(() => {
@@ -59,7 +41,7 @@ const TagSelectorComponent = ({
       loadTagsWithDebounce();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue, targetType, isAdmin, user?.id, open, isFixingTags]);
+  }, [searchValue, targetType, isAdmin, user?.id, open]);
 
   // Find and set the selected tag when currentSelectedTagId changes
   useEffect(() => {
@@ -90,11 +72,6 @@ const TagSelectorComponent = ({
    */
   const loadTagsWithDebounce = () => {
     const timeoutId = setTimeout(async () => {
-      // Only refresh cache when opening the popover with no search
-      if (searchValue === "" && open) {
-        await refreshTagCache();
-      }
-
       await loadTagsBasedOnSearch();
     }, 300);
     
@@ -102,30 +79,24 @@ const TagSelectorComponent = ({
   };
 
   /**
-   * Try to refresh the tag cache
-   */
-  const refreshTagCache = async () => {
-    try {
-      await invalidateTagCache(targetType);
-    } catch (err) {
-      logger.error("Failed to invalidate tag cache:", err);
-    }
-  };
-
-  /**
    * Load tags based on search criteria
    */
   const loadTagsBasedOnSearch = async () => {
+    setIsLoading(true);
     try {
       const fetchedTags = await fetchSelectionTags({ 
         searchQuery: searchValue,
         targetType,
-        skipCache: searchValue === "" // Skip cache for initial load
+        skipCache: true // Always skip cache since we're having issues
       });
+      
       setTags(fetchedTags);
     } catch (err) {
       logger.error("Error fetching tags:", err);
+      toast.error("Failed to load tags. Please try again.");
       setTags([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -145,11 +116,12 @@ const TagSelectorComponent = ({
    * Handle tag creation success
    */
   const handleTagCreated = (tag: Tag) => {
-    // Force cache invalidation when a new tag is created
-    invalidateTagCache(targetType);
     setSelectedTag(tag);
     // Call the parent's onTagSelected callback
     onTagSelected(tag);
+    
+    // Reload tags to include the new one
+    loadTagsBasedOnSearch();
   };
 
   /**
@@ -195,7 +167,7 @@ const TagSelectorComponent = ({
             onTagSelected={handleTagSelection}
             handleOpenCreateDialog={handleOpenCreateDialog}
             user={user}
-            isLoading={isFixingTags}
+            isLoading={isLoading}
           />
         </PopoverContent>
       </Popover>

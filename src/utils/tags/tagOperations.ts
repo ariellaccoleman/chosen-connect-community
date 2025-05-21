@@ -7,6 +7,7 @@ import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from
 import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
@@ -21,19 +22,20 @@ export const fetchFilterTags = async (options: {
     
     // Convert string to EntityType if needed
     if (validOptions.targetType && !isValidEntityType(validOptions.targetType)) {
-      console.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
+      logger.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
       validOptions.targetType = undefined;
     }
     
     const response = await getFilterTags(validOptions);
     if (response.status !== 'success' || !response.data) {
-      console.error("Error fetching filter tags:", response.error);
+      logger.error("Error fetching filter tags:", response.error);
       return [];
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error in fetchFilterTags:", error);
+    logger.error("Error in fetchFilterTags:", error);
+    // Return empty array on error to prevent UI from breaking
     return [];
   }
 };
@@ -52,28 +54,26 @@ export const fetchSelectionTags = async (options: {
     
     // Convert string to EntityType if needed
     if (validOptions.targetType && !isValidEntityType(validOptions.targetType)) {
-      console.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
+      logger.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
       validOptions.targetType = undefined;
     }
     
     const response = await getSelectionTags(validOptions);
     if (response.status !== 'success' || !response.data) {
-      console.error("Error fetching selection tags:", response.error);
+      logger.error("Error fetching selection tags:", response.error);
       return [];
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error in fetchSelectionTags:", error);
+    logger.error("Error in fetchSelectionTags:", error);
+    // Always return empty array on error to prevent UI from breaking
     return [];
   }
 };
 
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
-
-// No longer defining fetchEntityTags here - it's defined in tagAssignments.ts
-// We'll import it from there when needed
 
 // Find or create a tag
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
@@ -87,13 +87,13 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
     const response = await apiFindOrCreateTag(tagData);
     
     if (response.status !== 'success' || !response.data) {
-      console.error("Error finding or creating tag:", response.error);
+      logger.error("Error finding or creating tag:", response.error);
       return null;
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error finding or creating tag:", error);
+    logger.error("Error finding or creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
   }
 };
@@ -106,21 +106,22 @@ export const updateTagEntityType = async (
   try {
     // Validate entity type
     if (!isValidEntityType(entityType)) {
-      console.error(`Invalid entity type: ${entityType}`);
+      logger.error(`Invalid entity type: ${entityType}`);
       return false;
     }
     
     const response = await apiUpdateTagEntityType(tagId, entityType);
     
     if (response.status !== 'success') {
-      console.error("Error updating tag entity type:", response.error);
+      logger.error("Error updating tag entity type:", response.error);
       return false;
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error updating tag entity type:", error);
-    throw error; // Re-throw to let the mutation handler deal with it
+    logger.error("Error updating tag entity type:", error);
+    // Return false instead of throwing to avoid breaking the UI
+    return false;
   }
 };
 
@@ -136,13 +137,13 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
     const response = await apiCreateTag(tagData);
     
     if (response.status !== 'success' || !response.data) {
-      console.error("Error creating tag:", response.error);
+      logger.error("Error creating tag:", response.error);
       return null;
     }
     
     return response.data;
   } catch (error) {
-    console.error("Error creating tag:", error);
+    logger.error("Error creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
   }
 };
@@ -170,7 +171,7 @@ export const updateTag = async (
     
     return await response.json();
   } catch (error) {
-    console.error("Error updating tag:", error);
+    logger.error("Error updating tag:", error);
     return null;
   }
 };
@@ -188,7 +189,7 @@ export const deleteTag = async (tagId: string): Promise<boolean> => {
     
     return true;
   } catch (error) {
-    console.error("Error deleting tag:", error);
+    logger.error("Error deleting tag:", error);
     return false;
   }
 };
