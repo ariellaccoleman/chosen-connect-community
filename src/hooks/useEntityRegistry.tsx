@@ -6,7 +6,7 @@ import { APP_ROUTES } from '@/config/routes';
 import { generatePath } from 'react-router-dom';
 import { logger } from '@/utils/logger';
 
-// Import from registry without relying on defaultEntityRegistrations export
+// Import entity registry
 import { entityRegistry } from '@/registry';
 
 /**
@@ -21,37 +21,32 @@ export const useEntityRegistry = () => {
    * Gets the URL for an entity
    */
   const getEntityUrl = (entity: Entity): string => {
-    const registration = registry[entity.entityType];
-    
-    if (!registration) {
-      logger.warn(`No registration found for entity type: ${entity.entityType}`);
+    if (!entity || !entity.entityType) {
+      logger.warn('Invalid entity or missing entity type');
       return '/';
     }
     
-    // Generate the path using the configuration
     try {
-      // For EVENT type, we need to use eventId as the parameter key to match APP_ROUTES.EVENT_DETAIL
-      if (entity.entityType === EntityType.EVENT) {
-        return generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: entity.id });
+      switch (entity.entityType) {
+        case EntityType.EVENT:
+          return generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: entity.id });
+          
+        case EntityType.PERSON:
+          return generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: entity.id });
+          
+        case EntityType.ORGANIZATION:
+          return generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: entity.id });
+          
+        case EntityType.HUB:
+          return generatePath(APP_ROUTES.HUB_DETAIL, { hubId: entity.id });
+          
+        case EntityType.CHAT:
+          return generatePath(APP_ROUTES.CHAT_CHANNEL, { channelId: entity.id });
+          
+        default:
+          logger.warn(`No URL pattern defined for entity type: ${entity.entityType}`);
+          return '/';
       }
-      
-      // For PERSON type (formerly PROFILE), use profileId as the parameter key
-      if (entity.entityType === EntityType.PERSON) {
-        return generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: entity.id });
-      }
-      
-      // For ORGANIZATION type
-      if (entity.entityType === EntityType.ORGANIZATION) {
-        return generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: entity.id });
-      }
-      
-      // For HUB type
-      if (entity.entityType === EntityType.HUB) {
-        return generatePath(APP_ROUTES.HUB_DETAIL, { hubId: entity.id });
-      }
-      
-      logger.warn(`No URL pattern defined for entity type: ${entity.entityType}`);
-      return '/';
     } catch (e) {
       logger.error('Error generating entity URL:', e);
       return '/';

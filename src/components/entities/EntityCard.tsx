@@ -9,6 +9,7 @@ import { MapPin, Calendar } from "lucide-react";
 import TagList from "../tags/TagList";
 import { format } from "date-fns";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
+import { logger } from "@/utils/logger";
 
 interface EntityCardProps {
   entity: Entity;
@@ -32,9 +33,13 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   const formattedDate = entity.entityType === EntityType.EVENT && entity.created_at
     ? format(new Date(entity.created_at), "MMM d, yyyy")
     : null;
+    
+  // Generate URL and log it for debugging
+  const entityUrl = getEntityUrl(entity);
+  logger.debug(`EntityCard: Generated URL for ${entity.entityType} ${entity.id}: ${entityUrl}`);
 
   return (
-    <Link to={getEntityUrl(entity)} className="block">
+    <Link to={entityUrl} className="block">
       <div className={`bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow ${className}`}>
         <div className="flex items-start gap-4">
           {/* Avatar/Image */}
@@ -47,7 +52,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           
           {/* Content */}
           <div className="flex-1">
-            {/* Header with title and badge - Modified for right-aligned badge */}
+            {/* Header with title and badge */}
             <div className="flex items-start justify-between">
               <h3 className="font-semibold text-lg pr-2">{entity.name}</h3>
               <Badge variant="outline" className="flex-shrink-0 flex items-center gap-1">
