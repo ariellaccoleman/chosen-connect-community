@@ -146,8 +146,8 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Fix: Use type assertion to avoid TypeScript circular reference issues
-                    const entity = toEntity(item as any, type);
+                    // Use entityRegistry's toEntity method with explicit type casting
+                    const entity = toEntity(item, type);
                     if (entity) {
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
                         id: entity.id,
