@@ -64,35 +64,40 @@ const useRealtimeSubscription = (
     const channelName = `${subscriptionType}-${entityId}`;
     const channel = supabase.channel(channelName);
     
+    // Subscribe to changes with correct Supabase syntax
     channel
-      .on('postgres_changes', filter, (payload) => {
-        logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
-        
-        // Process the message
-        const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
-        logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
-        
-        // Handle thread-specific updates
-        if (subscriptionType === 'channel' && processedMessage.parent_id) {
-          // Update reply count for parent message
-          updateParentMessageReplyCount(queryClient, processedMessage);
+      .on(
+        'postgres_changes', 
+        filter, 
+        (payload) => {
+          logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
+          
+          // Process the message
+          const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
+          logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
+          
+          // Handle thread-specific updates
+          if (subscriptionType === 'channel' && processedMessage.parent_id) {
+            // Update reply count for parent message
+            updateParentMessageReplyCount(queryClient, processedMessage);
+          }
+          
+          // Invalidate queries to refresh the data
+          queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
+          
+          // Execute callback if provided
+          if (onNewMessage) {
+            onNewMessage(processedMessage);
+          }
+          
+          // Show notification if not from current user
+          if (notifyUser && processedMessage.user_id !== user.id) {
+            toast.info(subscriptionType === 'channel' 
+              ? 'New message received' 
+              : 'New reply in thread');
+          }
         }
-        
-        // Invalidate queries to refresh the data
-        queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
-        
-        // Execute callback if provided
-        if (onNewMessage) {
-          onNewMessage(processedMessage);
-        }
-        
-        // Show notification if not from current user
-        if (notifyUser && processedMessage.user_id !== user.id) {
-          toast.info(subscriptionType === 'channel' 
-            ? 'New message received' 
-            : 'New reply in thread');
-        }
-      })
+      )
       .subscribe((status) => {
         logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
         if (status === 'CHANNEL_ERROR') {
