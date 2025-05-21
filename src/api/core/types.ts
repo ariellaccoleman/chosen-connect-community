@@ -1,4 +1,3 @@
-
 import { ApiError } from "./errorHandler";
 
 /**
@@ -11,6 +10,7 @@ export interface ListParams {
   sortBy?: string;
   sortDirection?: 'asc' | 'desc';
   filters?: Record<string, any>;
+  query?: string; // Added this property to support custom SQL queries
 }
 
 /**

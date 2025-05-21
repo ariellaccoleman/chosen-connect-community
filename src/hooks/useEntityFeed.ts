@@ -53,14 +53,16 @@ export const useEntityFeed = ({
                     filters: {
                       ...(filterByUserId ? { user_id: filterByUserId } : {}),
                     },
-                    query: tagId 
-                      ? `select distinct on (p.id) p.* from profiles p
-                         inner join tag_assignments ta 
-                         on p.id = ta.target_id 
-                         where ta.target_type = 'person' 
-                         and ta.tag_id = '${tagId}'
-                         limit ${limit}`
-                      : undefined
+                    // Use the SQL query parameter to filter by tag
+                    ...(tagId ? {
+                      query: `select distinct on (p.id) p.* from profiles p
+                             inner join tag_assignments ta 
+                             on p.id = ta.target_id 
+                             where ta.target_type = 'person' 
+                             and ta.tag_id = '${tagId}'
+                             limit ${limit}`
+                    } : {}),
+                    limit: tagId ? undefined : limit
                   });
                   
                   items = profiles || [];
@@ -83,14 +85,16 @@ export const useEntityFeed = ({
                   // Fetch organizations with tag filtering
                   const { data: orgs } = await organizationApi.getAll({ 
                     filters: {},
-                    query: tagId 
-                      ? `select distinct on (o.id) o.* from organizations o
-                         inner join tag_assignments ta 
-                         on o.id = ta.target_id 
-                         where ta.target_type = 'organization' 
-                         and ta.tag_id = '${tagId}'
-                         limit ${limit}`
-                      : undefined
+                    // Use the SQL query parameter to filter by tag
+                    ...(tagId ? {
+                      query: `select distinct on (o.id) o.* from organizations o
+                             inner join tag_assignments ta 
+                             on o.id = ta.target_id 
+                             where ta.target_type = 'organization' 
+                             and ta.tag_id = '${tagId}'
+                             limit ${limit}`
+                    } : {}),
+                    limit: tagId ? undefined : limit
                   });
                   
                   items = orgs || [];
@@ -112,14 +116,16 @@ export const useEntityFeed = ({
                   // Fetch events with tag filtering
                   const { data: events } = await eventApi.getAll({ 
                     filters: {},
-                    query: tagId 
-                      ? `select distinct on (e.id) e.* from events e
-                         inner join tag_assignments ta 
-                         on e.id = ta.target_id 
-                         where ta.target_type = 'event' 
-                         and ta.tag_id = '${tagId}'
-                         limit ${limit}`
-                      : undefined
+                    // Use the SQL query parameter to filter by tag
+                    ...(tagId ? {
+                      query: `select distinct on (e.id) e.* from events e
+                             inner join tag_assignments ta 
+                             on e.id = ta.target_id 
+                             where ta.target_type = 'event' 
+                             and ta.tag_id = '${tagId}'
+                             limit ${limit}`
+                    } : {}),
+                    limit: tagId ? undefined : limit
                   });
                   
                   items = events || [];
