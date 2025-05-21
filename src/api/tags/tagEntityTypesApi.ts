@@ -1,6 +1,6 @@
-
 import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { logger } from "@/utils/logger";
 
 /**
  * Associate a tag with an entity type
@@ -11,33 +11,48 @@ export const updateTagEntityType = async (
   entityType: string
 ): Promise<ApiResponse<boolean>> => {
   return apiClient.query(async (client) => {
-    // Check if this entity type already exists for this tag
-    const { data: existingType, error: checkError } = await client
-      .from('tag_entity_types')
-      .select('id')
-      .eq('tag_id', tagId)
-      .eq('entity_type', entityType)
-      .maybeSingle();
-      
-    if (checkError) throw checkError;
-    
-    // If entity type doesn't exist for this tag, add it
-    if (!existingType) {
-      const { error: insertError } = await client
+    try {
+      // Check if this entity type already exists for this tag
+      const { data: existingType, error: checkError } = await client
         .from('tag_entity_types')
-        .insert({
-          tag_id: tagId,
-          entity_type: entityType
-        });
+        .select('id')
+        .eq('tag_id', tagId)
+        .eq('entity_type', entityType)
+        .maybeSingle();
         
-      if (insertError) throw insertError;
+      if (checkError) {
+        logger.error(`Failed to check tag entity type: ${checkError.message}`);
+        throw checkError;
+      }
       
-      console.log(`Added entity type ${entityType} to tag ${tagId}`);
-    } else {
-      console.log(`Entity type ${entityType} already exists for tag ${tagId}`);
+      // If entity type doesn't exist for this tag, add it
+      if (!existingType) {
+        const { error: insertError } = await client
+          .from('tag_entity_types')
+          .insert({
+            tag_id: tagId,
+            entity_type: entityType
+          });
+          
+        if (insertError) {
+          logger.error(`Failed to create tag entity type: ${insertError.message}`, {
+            details: insertError,
+            tagId,
+            entityType
+          });
+          throw insertError;
+        }
+        
+        logger.info(`Added entity type ${entityType} to tag ${tagId}`);
+      } else {
+        logger.debug(`Entity type ${entityType} already exists for tag ${tagId}`);
+      }
+      
+      return createSuccessResponse(true);
+    } catch (error) {
+      logger.error(`Error in updateTagEntityType: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
     }
-    
-    return createSuccessResponse(true);
   });
 };
 
@@ -69,7 +84,7 @@ export const removeTagEntityTypeIfUnused = async (
         
       if (removeError) throw removeError;
       
-      console.log(`Removed entity type ${entityType} from tag ${tagId}`);
+      logger.info(`Removed entity type ${entityType} from tag ${tagId}`);
     }
     
     return createSuccessResponse(true);

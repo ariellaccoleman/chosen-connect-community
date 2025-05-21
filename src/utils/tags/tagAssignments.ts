@@ -1,4 +1,3 @@
-
 import { apiClient } from "@/api/core/apiClient";
 import { ApiResponse, createSuccessResponse } from "@/api/core/errorHandler";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
@@ -50,7 +49,7 @@ export const assignTag = async (
       return {
         status: 'error',
         error: { message: `Invalid entity type: ${entityType}`, code: 'invalid_entity_type' },
-        data: null // Add the missing data property
+        data: null
       };
     }
     
@@ -58,10 +57,7 @@ export const assignTag = async (
     
     // Call the API function for tag assignment
     const { assignTag: assignTagApi } = await import("@/api/tags/assignmentApi");
-    const response = await assignTagApi(tagId, entityId, entityType);
-    
-    // Pass through the entire response including any errors
-    return response;
+    return await assignTagApi(tagId, entityId, entityType);
   } catch (error) {
     logger.error("Error in assignTag:", error);
     return {
@@ -70,7 +66,7 @@ export const assignTag = async (
         message: error instanceof Error ? error.message : "Unknown error assigning tag",
         code: 'exception'
       },
-      data: null // Add the missing data property
+      data: null
     };
   }
 };
@@ -82,10 +78,7 @@ export const removeTagAssignment = async (assignmentId: string): Promise<ApiResp
   try {
     // Call the API function for removing tag assignment
     const { removeTagAssignment: removeTagAssignmentApi } = await import("@/api/tags/assignmentApi");
-    const response = await removeTagAssignmentApi(assignmentId);
-    
-    // Pass through the entire response including any errors
-    return response;
+    return await removeTagAssignmentApi(assignmentId);
   } catch (error) {
     logger.error("Error in removeTagAssignment:", error);
     return {
@@ -94,7 +87,7 @@ export const removeTagAssignment = async (assignmentId: string): Promise<ApiResp
         message: error instanceof Error ? error.message : "Unknown error removing tag assignment",
         code: 'exception'
       },
-      data: null // Add the missing data property
+      data: null
     };
   }
 };

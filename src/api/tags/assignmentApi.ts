@@ -43,14 +43,43 @@ export const assignTag = async (
       }
       
       // Step 1: Update tag_entity_types to ensure this tag is associated with this entity type
-      const entityTypeResponse = await updateTagEntityType(tagId, entityType);
+      // First check if this association already exists to avoid redundant operations
+      const { data: existingType, error: checkError } = await client
+        .from('tag_entity_types')
+        .select('id')
+        .eq('tag_id', tagId)
+        .eq('entity_type', entityType)
+        .maybeSingle();
+        
+      if (checkError) {
+        logger.error(`Failed to check existing tag entity type: ${checkError.message}`);
+        // Continue despite this error, will attempt to create it
+      }
       
-      if (entityTypeResponse.status !== 'success') {
-        logger.error(`Failed to update tag entity type: ${entityTypeResponse.error?.message}`);
-        return createErrorResponse(entityTypeResponse.error || {
-          message: "Failed to update tag entity type",
-          code: "update_tag_entity_type_failed"
-        });
+      // If no existing association is found, create it
+      if (!existingType) {
+        const { error: insertError } = await client
+          .from('tag_entity_types')
+          .insert({
+            tag_id: tagId,
+            entity_type: entityType
+          });
+
+        if (insertError) {
+          logger.error(`Failed to create tag entity type: ${insertError.message}`, {
+            tagId,
+            entityType,
+            details: insertError
+          });
+          return createErrorResponse({
+            message: `Failed to associate tag with entity type: ${insertError.message}`,
+            code: "tag_entity_type_error"
+          });
+        }
+        
+        logger.info(`Created tag entity type association: tag ${tagId} with type ${entityType}`);
+      } else {
+        logger.info(`Tag entity type association already exists for tag ${tagId} and type ${entityType}`);
       }
       
       // Step 2: Create the tag assignment
