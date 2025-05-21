@@ -64,47 +64,47 @@ const useRealtimeSubscription = (
     const channelName = `${subscriptionType}-${entityId}`;
     const channel = supabase.channel(channelName);
     
-    // Subscribe to changes with correct Supabase syntax
-    channel
-      .on(
-        'postgres_changes', 
-        filter, 
-        (payload) => {
-          logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
-          
-          // Process the message
-          const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
-          logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
-          
-          // Handle thread-specific updates
-          if (subscriptionType === 'channel' && processedMessage.parent_id) {
-            // Update reply count for parent message
-            updateParentMessageReplyCount(queryClient, processedMessage);
-          }
-          
-          // Invalidate queries to refresh the data
-          queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
-          
-          // Execute callback if provided
-          if (onNewMessage) {
-            onNewMessage(processedMessage);
-          }
-          
-          // Show notification if not from current user
-          if (notifyUser && processedMessage.user_id !== user.id) {
-            toast.info(subscriptionType === 'channel' 
-              ? 'New message received' 
-              : 'New reply in thread');
-          }
+    // Subscribe to changes with correct Supabase v2 syntax
+    // The key fix here: We need to pass a single object as the second parameter
+    channel.on(
+      'postgres_changes', // This is the channel type
+      filter, // This is the filter configuration object
+      (payload) => {
+        logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
+        
+        // Process the message
+        const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
+        logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
+        
+        // Handle thread-specific updates
+        if (subscriptionType === 'channel' && processedMessage.parent_id) {
+          // Update reply count for parent message
+          updateParentMessageReplyCount(queryClient, processedMessage);
         }
-      )
-      .subscribe((status) => {
-        logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
-        if (status === 'CHANNEL_ERROR') {
-          logger.error(`[REAL-TIME] Error subscribing to ${subscriptionType} updates`);
-          toast.error('Error connecting to updates. Please refresh the page.');
+        
+        // Invalidate queries to refresh the data
+        queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
+        
+        // Execute callback if provided
+        if (onNewMessage) {
+          onNewMessage(processedMessage);
         }
-      });
+        
+        // Show notification if not from current user
+        if (notifyUser && processedMessage.user_id !== user.id) {
+          toast.info(subscriptionType === 'channel' 
+            ? 'New message received' 
+            : 'New reply in thread');
+        }
+      }
+    )
+    .subscribe((status) => {
+      logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
+      if (status === 'CHANNEL_ERROR') {
+        logger.error(`[REAL-TIME] Error subscribing to ${subscriptionType} updates`);
+        toast.error('Error connecting to updates. Please refresh the page.');
+      }
+    });
       
     // Cleanup on unmount
     return () => {
