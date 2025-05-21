@@ -83,17 +83,17 @@ const HubDetail = () => {
           </Button>
         </div>
         
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold mb-2">{hub.name} Hub</h1>
           {hub.description && (
             <p className="text-muted-foreground">{hub.description}</p>
           )}
         </div>
         
-        <div className="space-y-12">
+        <div className="space-y-8">
           {/* Display Chat Channels if available */}
           {chatChannels.length > 0 && (
-            <div className="mb-8">
+            <div>
               <h2 className="text-2xl font-bold mb-4">Chat Channels</h2>
               
               <Carousel className="w-full">
@@ -133,7 +133,7 @@ const HubDetail = () => {
             if (typeEntities.length === 0) return null;
             
             return (
-              <div key={type} className="mb-8">
+              <div key={type}>
                 <h2 className="text-2xl font-bold mb-4">{getEntityTypePlural(type)}</h2>
                 
                 <Carousel className="w-full">
