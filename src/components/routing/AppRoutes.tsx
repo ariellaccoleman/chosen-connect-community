@@ -50,7 +50,6 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.HOME} element={<Index />} />
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
-      <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -61,9 +60,13 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
       <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
       
-      {/* Directory alias for Community route */}
+      {/* Community Routes */}
+      <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY_DIRECTORY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
+      
+      {/* Legacy directory route - redirect handled by CommunityDirectory component */}
       <Route path="/directory" element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
       
       {/* Event Routes */}

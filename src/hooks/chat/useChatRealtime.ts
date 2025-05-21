@@ -1,3 +1,4 @@
+
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useQueryClient } from '@tanstack/react-query';
@@ -77,7 +78,7 @@ const useRealtimeSubscription = (
     
     // Subscribe to changes with correct Supabase v2 syntax
     const subscription = channel.on(
-      'postgres_changes',
+      'postgres_changes', 
       filter,
       ((payload) => {
         logger.info(`[REAL-TIME] New ${subscriptionType} message received`);

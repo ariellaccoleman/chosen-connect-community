@@ -15,7 +15,8 @@ export const APP_ROUTES = {
   CREATE_ORGANIZATION: '/organizations/create',
   MANAGE_ORGANIZATIONS: '/profile/organizations',
   COMMUNITY: '/community',
-  COMMUNITY_GUIDE: '/community-guide',
+  COMMUNITY_DIRECTORY: '/community/directory',
+  COMMUNITY_GUIDE: '/community/guide',
   
   EVENTS: '/events',
   EVENT_DETAIL: '/events/:id',

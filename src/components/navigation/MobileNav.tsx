@@ -48,6 +48,14 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Edit Profile
           </Link>
           
+          <Link 
+            to="/community-guide" 
+            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+            onClick={onClose}
+          >
+            Community Guide
+          </Link>
+          
           <div className="px-3 py-2">
             <p className="text-gray-700 dark:text-gray-200 font-medium mb-2">Theme</p>
             <div className="flex space-x-2">
@@ -77,6 +85,13 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           )}
           
           <Link 
+            to="/chat" 
+            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+            onClick={onClose}
+          >
+            Chat
+          </Link>
+          <Link 
             to="/organizations" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
@@ -91,25 +106,11 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Events
           </Link>
           <Link 
-            to="/chat" 
-            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
-            onClick={onClose}
-          >
-            Chat
-          </Link>
-          <Link 
-            to="/directory" 
+            to="/community" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >
             Community Directory
-          </Link>
-          <Link 
-            to="/community-guide" 
-            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
-            onClick={onClose}
-          >
-            Community Guide
           </Link>
           <button 
             onClick={() => {

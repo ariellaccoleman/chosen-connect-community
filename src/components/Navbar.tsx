@@ -65,6 +65,10 @@ const Navbar = () => {
                 <User className="mr-2 h-4 w-4" />
                 <span>Edit Profile</span>
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/community-guide")}>
+                <User className="mr-2 h-4 w-4" />
+                <span>Community Guide</span>
+              </DropdownMenuItem>
               
               <DropdownMenuSub>
                 <DropdownMenuSubTrigger>
