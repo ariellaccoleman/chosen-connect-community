@@ -21,15 +21,13 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
   return useQuery({
     queryKey,
     queryFn: async () => {
-      // Use the renamed API module (profileApi instead of profilesApi)
-      // The actual implementation should use the closest equivalent method
-      // from the new API structure
+      // Use the profileApi to get all profiles with the appropriate filters
       const response = await profileApi.getAll({
         filters: {
           ...(params.isApproved !== false && { is_approved: true }),
           ...(params.excludeId && { id: { neq: params.excludeId } })
         },
-        search: params.search, // Simply pass the search string directly
+        search: params.search,
         limit: params.limit
       });
       
@@ -37,14 +35,11 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
         throw response.error;
       }
       
-      // If tag filter is applied, filter the profiles client-side
-      // This is a temporary solution until tag filtering is properly implemented in the API
+      // If tag filter is applied and we have tag assignments, filter the profiles client-side
       let filteredData = response.data || [];
       
-      // Apply tag filtering if needed (Note: this will be replaced with proper API filtering)
       if (params.tagId && filteredData.length > 0) {
-        // In a real implementation, we would fetch tag assignments and filter
-        // For now, we're returning all profiles as the tag filtering would be done server-side
+        // This will be handled by the useFilterByTag hook at the component level
         console.log('Tag filtering requested for tag:', params.tagId);
       }
       

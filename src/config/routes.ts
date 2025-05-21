@@ -14,8 +14,10 @@ export const APP_ROUTES = {
   ORGANIZATION_EDIT: '/organizations/:id/edit',
   CREATE_ORGANIZATION: '/organizations/create',
   MANAGE_ORGANIZATIONS: '/profile/organizations',
+  
+  // Community routes (updated to follow organization pattern)
   COMMUNITY: '/community',
-  COMMUNITY_DIRECTORY: '/community/directory',
+  COMMUNITY_PROFILE: '/community/:id',
   COMMUNITY_GUIDE: '/community/guide',
   
   EVENTS: '/events',

@@ -50,6 +50,7 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.HOME} element={<Index />} />
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -61,13 +62,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
       <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       
-      {/* Community Routes */}
+      {/* Community Routes - Updated to match organization pattern */}
       <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.COMMUNITY_DIRECTORY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
-      
-      {/* Legacy directory route - redirect handled by CommunityDirectory component */}
-      <Route path="/directory" element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.COMMUNITY_PROFILE} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
       
       {/* Event Routes */}
       <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />

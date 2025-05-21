@@ -14,8 +14,8 @@ interface ProfileCardProps {
 }
 
 const ProfileCard = ({ profile }: ProfileCardProps) => {
-  // Generate the correct profile view URL using the APP_ROUTES constant
-  const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
+  // Generate the correct community profile URL using the APP_ROUTES constant
+  const profileUrl = generatePath(APP_ROUTES.COMMUNITY_PROFILE, { id: profile.id });
 
   return (
     <Link to={profileUrl} className="block">

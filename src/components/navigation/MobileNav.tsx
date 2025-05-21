@@ -49,7 +49,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           </Link>
           
           <Link 
-            to="/community-guide" 
+            to="/community/guide" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >
@@ -110,7 +110,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >
-            Community Directory
+            Community
           </Link>
           <button 
             onClick={() => {
@@ -162,7 +162,7 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           About
         </Link>
         <Link 
-          to="/community-guide" 
+          to="/community/guide" 
           className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
           onClick={onClose}
         >
