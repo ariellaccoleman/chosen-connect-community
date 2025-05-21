@@ -4,7 +4,6 @@ import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
-import { entityRegistry } from "@/registry";
 
 /**
  * Custom hook to fetch entities of specified types, optionally filtered by tag
@@ -144,14 +143,14 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Convert item to entity based on entity type
+                    // Convert item to entity based on entity type - EXPLICITLY set the entityType
                     let entity: Entity | null = null;
 
                     switch (type) {
                       case EntityType.PERSON:
                         entity = {
                           id: item.id,
-                          entityType: EntityType.PERSON,
+                          entityType: EntityType.PERSON, // Explicit string value
                           name: `${item.first_name || ''} ${item.last_name || ''}`.trim(),
                           description: item.headline || item.bio,
                           imageUrl: item.avatar_url,
@@ -182,7 +181,7 @@ export const useEntityFeed = ({
                       case EntityType.ORGANIZATION:
                         entity = {
                           id: item.id,
-                          entityType: EntityType.ORGANIZATION,
+                          entityType: EntityType.ORGANIZATION, // Explicit string value
                           name: item.name,
                           description: item.description,
                           imageUrl: item.logo_url || item.logo_api_url,
@@ -213,7 +212,7 @@ export const useEntityFeed = ({
                       case EntityType.EVENT:
                         entity = {
                           id: item.id,
-                          entityType: EntityType.EVENT,
+                          entityType: EntityType.EVENT, // Explicit string value
                           name: item.title || '',
                           description: item.description,
                           location: item.location,
@@ -263,6 +262,18 @@ export const useEntityFeed = ({
       );
       
       logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
+      
+      // Log a sample of the final entities to verify types
+      if (allEntities.length > 0) {
+        logger.debug(`EntityFeed: Sample of entities being returned:`, 
+          allEntities.slice(0, 2).map(e => ({
+            id: e.id,
+            entityType: e.entityType,
+            name: e.name
+          }))
+        );
+      }
+      
       return allEntities;
     },
     enabled: entityTypes.length > 0,

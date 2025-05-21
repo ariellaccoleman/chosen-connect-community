@@ -6,8 +6,8 @@ import { APP_ROUTES } from '@/config/routes';
 import { generatePath } from 'react-router-dom';
 import { logger } from '@/utils/logger';
 
-// Import entity registry
-import { entityRegistry } from '@/registry';
+// Import from registry/defaultEntityRegistrations instead of the registry
+import defaultRegistrations from '@/registry/defaultEntityRegistrations';
 
 /**
  * Custom hook that provides access to the entity registry.
@@ -15,7 +15,7 @@ import { entityRegistry } from '@/registry';
  * without needing to add conditional logic throughout the app.
  */
 export const useEntityRegistry = () => {
-  const registry = useMemo(() => entityRegistry, []);
+  const registry = useMemo(() => defaultRegistrations, []);
 
   /**
    * Gets the URL for an entity
@@ -69,9 +69,12 @@ export const useEntityRegistry = () => {
    * Gets the label for an entity type
    */
   const getEntityTypeLabel = (entityType: EntityType): string => {
-    const registration = registry[entityType];
+    // Access directly from defaultRegistrations instead of through the registry
+    const registration = defaultRegistrations[entityType];
     if (!registration) {
-      logger.error(`No registration found for entity type: ${entityType}`);
+      logger.error(`No registration found for entity type: ${entityType}`, { 
+        availableTypes: Object.keys(defaultRegistrations) 
+      });
       return 'Unknown';
     }
     return registration.label;
@@ -81,7 +84,8 @@ export const useEntityRegistry = () => {
    * Gets the plural label for an entity type
    */
   const getEntityTypePlural = (entityType: EntityType): string => {
-    const registration = registry[entityType];
+    // Access directly from defaultRegistrations instead of through the registry
+    const registration = defaultRegistrations[entityType];
     if (!registration) {
       logger.error(`No registration found for entity type: ${entityType}`);
       return 'Unknown';

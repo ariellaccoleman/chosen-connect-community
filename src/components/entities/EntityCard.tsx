@@ -35,8 +35,8 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     return null;
   }
 
-  // Debug entity data
-  logger.debug(`EntityCard: Rendering entity`, {
+  // Debug entity data and registry access
+  logger.debug(`EntityCard: Rendering entity with type "${entity.entityType}"`, {
     id: entity.id,
     entityType: entity.entityType,
     name: entity.name
@@ -53,8 +53,14 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   // Make sure we have a valid entity type
   const entityTypeLabel = getEntityTypeLabel(entity.entityType);
   
+  // Debug the entity type label resolution
+  logger.debug(`EntityCard: Entity type "${entity.entityType}" resolved to label "${entityTypeLabel}"`);
+  
   if (entityTypeLabel === 'Unknown') {
-    logger.error(`EntityCard: Unknown entity type for entity: ${entity.id}, type: ${entity.entityType}`);
+    logger.error(`EntityCard: Unknown entity type for entity: ${entity.id}, type: ${entity.entityType}`, {
+      availableEntityTypes: Object.values(EntityType),
+      entityTypeValue: entity.entityType
+    });
   }
 
   return (
