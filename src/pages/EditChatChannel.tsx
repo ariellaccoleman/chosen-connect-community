@@ -90,7 +90,7 @@ export default function EditChatChannel() {
         <ChatChannelForm 
           onSubmit={handleUpdateChannel}
           isSubmitting={updateMutation.isPending}
-          defaultValues={channel}
+          defaultValues={channel as ChatChannel}
           isEditMode={true}
           existingChannelId={id}
         />

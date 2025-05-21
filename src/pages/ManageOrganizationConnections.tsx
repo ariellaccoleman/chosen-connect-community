@@ -79,7 +79,7 @@ const ManageOrganizationConnections = () => {
         {/* Connection dialog */}
         <OrganizationConnectionDialog 
           isOpen={isDialogOpen}
-          onOpenChange={handleCloseDialog}
+          onOpenChange={setIsDialogOpen}
           organizations={availableOrganizations}
           isLoading={organizationsLoading}
           userId={user?.id}
