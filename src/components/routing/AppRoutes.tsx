@@ -70,18 +70,18 @@ const AppRoutes = () => {
       
       {/* Event routes */}
       <Route path={APP_ROUTES.EVENTS} element={<Events />} />
-      <Route path={APP_ROUTES.EVENT_DETAIL} element={<EventDetail />} />
-      <Route path={APP_ROUTES.EVENT_CREATE} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.EVENT_DETAILS} element={<EventDetail />} />
+      <Route path={APP_ROUTES.CREATE_EVENT} element={<ProtectedRoute><CreateEvent /></ProtectedRoute>} />
       
       {/* Organization routes */}
       <Route path={APP_ROUTES.ORGANIZATIONS} element={<Organizations />} />
-      <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<OrganizationDetail />} />
+      <Route path={APP_ROUTES.ORGANIZATION_DETAILS} element={<OrganizationDetail />} />
       <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
       <Route path={APP_ROUTES.CREATE_ORGANIZATION} element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
       
       {/* Hub routes */}
       <Route path={APP_ROUTES.HUBS} element={<Hubs />} />
-      <Route path={APP_ROUTES.HUB_DETAIL} element={<HubDetail />} />
+      <Route path={APP_ROUTES.HUB_DETAILS} element={<HubDetail />} />
       
       {/* Chat routes */}
       <Route path={APP_ROUTES.CHAT} element={<ProtectedRoute><Chat /></ProtectedRoute>} />

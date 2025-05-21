@@ -11,12 +11,12 @@ import TagList from './TagList';
 import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
-interface EntityTagManagerProps {
+export interface EntityTagManagerProps {
   entityId: string;
-  currentEntityType: EntityType;
+  entityType: EntityType;
   existingTagAssignments?: any[];
-  onTagAssignment: (tagId: string) => Promise<void>;
-  onTagUnassignment: (assignmentId: string) => Promise<void>;
+  onTagAssignment?: (tagId: string) => Promise<void>;
+  onTagUnassignment?: (assignmentId: string) => Promise<void>;
   isAdmin?: boolean;
   isEditing?: boolean;
   onTagSuccess?: () => void;
@@ -28,7 +28,7 @@ interface EntityTagManagerProps {
  */
 const EntityTagManager: React.FC<EntityTagManagerProps> = ({
   entityId,
-  currentEntityType,
+  entityType,
   existingTagAssignments = [],
   onTagAssignment,
   onTagUnassignment,
@@ -45,11 +45,13 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
   // Fetch available tags based on the debounced input value
   const { data: availableTags = [], isLoading: isTagsLoading } = useAvailableTags(
     debouncedInputValue,
-    currentEntityType
+    entityType
   );
   
   // Handler to add a tag to the entity
   const handleAddTag = useCallback(async (tag: Tag) => {
+    if (!onTagAssignment) return;
+    
     setIsAdding(true);
     try {
       await onTagAssignment(tag.id);
@@ -67,6 +69,8 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
   
   // Handler to remove a tag from the entity
   const handleRemove = useCallback(async (assignmentId: string) => {
+    if (!onTagUnassignment) return;
+    
     setIsRemoving(true);
     try {
       await onTagUnassignment(assignmentId);
@@ -112,8 +116,8 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
       <div>
         <Label>Current Tags</Label>
         <TagList 
-          tagAssignments={tagAssignments} 
-          currentEntityType={currentEntityType}
+          tagAssignments={tagAssignments}
+          currentEntityType={entityType}
           isRemoving={isRemoving}
           onRemove={handleRemove}
         />

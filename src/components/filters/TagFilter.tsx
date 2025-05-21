@@ -1,13 +1,26 @@
+
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export interface TagFilterProps {
   selectedTagId: string;
   onSelectTag: (tagId: string) => void;
-  availableTags: any[];
+  tags?: any[];
+  availableTags?: any[];
+  isLoading?: boolean;
+  targetType?: string;
 }
 
-const TagFilter = ({ selectedTagId, onSelectTag, availableTags }: TagFilterProps) => {
+const TagFilter = ({ 
+  selectedTagId, 
+  onSelectTag, 
+  availableTags = [], 
+  tags = [],
+  isLoading = false
+}: TagFilterProps) => {
+  // Use either tags or availableTags, whichever is provided
+  const tagOptions = tags.length > 0 ? tags : availableTags;
+  
   return (
     <Select value={selectedTagId} onValueChange={onSelectTag}>
       <SelectTrigger className="w-full">
@@ -15,7 +28,7 @@ const TagFilter = ({ selectedTagId, onSelectTag, availableTags }: TagFilterProps
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="">All Tags</SelectItem>
-        {availableTags.map((tag) => (
+        {tagOptions.map((tag) => (
           <SelectItem key={tag.id} value={tag.id}>
             {tag.name}
           </SelectItem>

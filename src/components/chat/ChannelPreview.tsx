@@ -24,7 +24,7 @@ interface ChannelPreviewData {
 }
 
 const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
-  // Convert limit to number if it's a string
+  // Convert limit to number if it's a string, then to string for the API
   const limitNum = typeof limit === 'string' ? parseInt(limit) : limit;
   
   // Use the hook with the proper limit type
