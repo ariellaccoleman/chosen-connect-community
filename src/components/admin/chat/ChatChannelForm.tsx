@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FormWrapper } from '@/components/common/form/FormWrapper';
 import { Textarea } from '@/components/ui/textarea';
 import { ChatChannelCreate, ChatChannelType } from '@/types/chat';
-import EntityTagManager from '@/components/tags/EntityTagManager';
 import { EntityType } from '@/types/entityTypes';
 import { logger } from '@/utils/logger';
+import { useSelectionTags } from '@/hooks/tags';
+import { Tag } from '@/utils/tags/types';
 
 const channelFormSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters'),
@@ -30,6 +31,8 @@ interface ChatChannelFormProps {
   defaultValues?: Partial<ChatChannelFormValues>;
   isEditMode?: boolean;
   existingChannelId?: string;
+  initialTagIds?: string[];
+  onTagsChange?: (tagIds: string[]) => void;
 }
 
 export default function ChatChannelForm({
@@ -37,8 +40,23 @@ export default function ChatChannelForm({
   isSubmitting = false,
   defaultValues,
   isEditMode = false,
-  existingChannelId
+  existingChannelId,
+  initialTagIds = [],
+  onTagsChange
 }: ChatChannelFormProps) {
+  // Get available tags for chat entities
+  const { data: tagsResponse } = useSelectionTags(EntityType.CHAT);
+  const availableTags = tagsResponse?.data || [];
+  
+  // Track selected tags
+  const [selectedTags, setSelectedTags] = useState<string[]>(initialTagIds);
+  
+  useEffect(() => {
+    if (initialTagIds?.length > 0) {
+      setSelectedTags(initialTagIds);
+    }
+  }, [initialTagIds]);
+  
   // Log the default values to check they are correctly passed
   logger.info('ChatChannelForm defaultValues:', defaultValues);
   
@@ -52,8 +70,21 @@ export default function ChatChannelForm({
     },
   });
   
-  // Log the form values after initialization
-  logger.info('Form values after initialization:', form.getValues());
+  // Handle tag selection change
+  const handleTagToggle = (tagId: string) => {
+    setSelectedTags(prev => {
+      const newSelection = prev.includes(tagId)
+        ? prev.filter(id => id !== tagId)
+        : [...prev, tagId];
+        
+      // Notify parent component about tag changes
+      if (onTagsChange) {
+        onTagsChange(newSelection);
+      }
+      
+      return newSelection;
+    });
+  };
   
   const handleSubmitForm = (values: ChatChannelFormValues) => {
     onSubmit({
@@ -145,12 +176,28 @@ export default function ChatChannelForm({
         <div className="space-y-2">
           <FormLabel>Channel Tags</FormLabel>
           <div className="border border-gray-200 dark:border-gray-700 rounded-md p-4 bg-gray-50 dark:bg-gray-800">
-            <EntityTagManager
-              entityId={existingChannelId}
-              entityType={EntityType.CHAT}
-              isAdmin={true}
-              isEditing={true}
-            />
+            {availableTags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableTags.map((tag: Tag) => (
+                  <div 
+                    key={tag.id}
+                    onClick={() => handleTagToggle(tag.id)}
+                    className={`px-3 py-1 rounded-full cursor-pointer transition-colors ${
+                      selectedTags.includes(tag.id) 
+                        ? 'bg-primary text-white' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {tag.name}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No tags available for chat channels</p>
+            )}
+            <p className="text-xs text-muted-foreground mt-2">
+              Click on tags to select or deselect them
+            </p>
           </div>
         </div>
       )}
