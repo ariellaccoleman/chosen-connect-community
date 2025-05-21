@@ -175,13 +175,19 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
     async createPostWithTags(data: CreatePostRequest): Promise<ApiResponse<Post>> {
       try {
         logger.info("Creating post with tags:", data);
+        const userId = (await supabase.auth.getUser()).data.user?.id;
         
-        // Create the post
+        if (!userId) {
+          logger.error("No authenticated user found when creating post");
+          throw new Error("User authentication required");
+        }
+        
+        // Step 1: Create the post
         const { data: post, error } = await supabase
           .from("posts")
           .insert({
             content: data.content,
-            author_id: (await supabase.auth.getUser()).data.user?.id,
+            author_id: userId,
             has_media: data.has_media
           })
           .select()
@@ -192,33 +198,78 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           throw error;
         }
 
-        // Assign tags if provided
+        logger.info("Post created successfully:", { postId: post.id });
+
+        // Step 2: Assign tags if provided (only if post was created successfully)
         if (data.tag_ids && data.tag_ids.length > 0 && post) {
           logger.info("Creating tag assignments for post", { 
             postId: post.id,
             tagIds: data.tag_ids
           });
           
-          // Create tag assignments
+          // First ensure all tags are associated with the POST entity type
+          for (const tagId of data.tag_ids) {
+            logger.info(`Ensuring tag ${tagId} is associated with POST entity type`);
+            try {
+              // Check if tag entity type already exists
+              const { data: existingEntityType, error: checkError } = await supabase
+                .from("tag_entity_types")
+                .select("id")
+                .eq("tag_id", tagId)
+                .eq("entity_type", EntityType.POST)
+                .maybeSingle();
+                
+              if (checkError) {
+                logger.error("Error checking tag entity type:", checkError);
+                // Continue despite error
+              }
+              
+              // If no association exists, create it
+              if (!existingEntityType) {
+                logger.info(`Creating tag entity type for tag ${tagId}`);
+                const { error: createError } = await supabase
+                  .from("tag_entity_types")
+                  .insert({
+                    tag_id: tagId,
+                    entity_type: EntityType.POST
+                  });
+                  
+                if (createError) {
+                  logger.error("Error creating tag entity type:", createError);
+                  // Continue despite error
+                } else {
+                  logger.info(`Tag entity type created for tag ${tagId}`);
+                }
+              } else {
+                logger.info(`Tag ${tagId} already associated with POST entity type`);
+              }
+            } catch (error) {
+              logger.error(`Error ensuring tag entity type for tag ${tagId}:`, error);
+              // Continue to next tag despite error
+            }
+          }
+          
+          // Now create tag assignments
           const tagAssignments = data.tag_ids.map(tagId => ({
             target_id: post.id,
             tag_id: tagId,
             target_type: EntityType.POST
           }));
 
-          const { error: tagError } = await supabase
+          logger.info("Inserting tag assignments:", tagAssignments);
+          const { data: tagData, error: tagError } = await supabase
             .from("tag_assignments")
-            .insert(tagAssignments);
+            .insert(tagAssignments)
+            .select();
 
           if (tagError) {
             logger.error("Error creating tag assignments:", tagError);
-            throw tagError;
+            // Don't fail the whole operation, just log the error
+          } else {
+            logger.info("Tag assignments created successfully:", tagData);
           }
-          
-          // For each tag, ensure it's associated with the POST entity type
-          for (const tagId of data.tag_ids) {
-            await ensureTagEntityType(tagId, EntityType.POST);
-          }
+        } else {
+          logger.info("No tags to assign for this post");
         }
 
         return createSuccessResponse(post);
@@ -294,6 +345,7 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
 );
 
 // Helper function to ensure a tag is associated with an entity type
+// This function is now unused as we integrated its logic directly into createPostWithTags
 async function ensureTagEntityType(tagId: string, entityType: EntityType): Promise<void> {
   try {
     logger.info(`Ensuring tag ${tagId} is associated with entity type ${entityType}`);

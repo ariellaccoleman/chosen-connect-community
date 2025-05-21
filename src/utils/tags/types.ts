@@ -40,7 +40,6 @@ export interface TagEntityType {
 
 /**
  * Map of entity types to their human-readable names
- * This was previously missing and causing the build error
  */
 export const ENTITY_TYPE_MAP = {
   [EntityType.PERSON]: "Person",
