@@ -16,6 +16,7 @@ interface EntityFeedProps {
   limit?: number;
   className?: string;
   emptyMessage?: string;
+  tagId?: string; // Added tagId prop to match what's being passed in HubDetail.tsx
 }
 
 /**
@@ -28,7 +29,8 @@ const EntityFeed = ({
   showTagFilter = true,
   limit,
   className = "",
-  emptyMessage = "No items found"
+  emptyMessage = "No items found",
+  tagId // Add the tagId prop to destructuring
 }: EntityFeedProps) => {
   const [activeTab, setActiveTab] = useState<"all" | EntityType>("all");
   const { 
@@ -47,7 +49,8 @@ const EntityFeed = ({
   );
   
   // Get tag assignments using our filter-by-tag hook
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  // If tagId is provided from props, use it as the default selected tag
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   const { data: tagAssignments = [] } = useFilterByTag(
     selectedTagId,
     activeTab !== "all" ? activeTab : undefined
@@ -88,7 +91,7 @@ const EntityFeed = ({
           </Tabs>
         )}
         
-        {showTagFilter && (
+        {showTagFilter && !tagId && ( // Only show tag filter if not using a fixed tagId
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={setSelectedTagId}
