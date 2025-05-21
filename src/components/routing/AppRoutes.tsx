@@ -58,14 +58,13 @@ const AppRoutes = () => {
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.PROFILE_VIEW} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATIONS} element={<ProtectedRoute><Organizations /></ProtectedRoute>} />
       <Route path={APP_ROUTES.CREATE_ORGANIZATION} element={<ProtectedRoute><CreateOrganization /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATION_DETAIL} element={<ProtectedRoute><OrganizationDetail /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATION_EDIT} element={<ProtectedRoute><OrganizationEdit /></ProtectedRoute>} />
-      <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       
-      {/* Community Routes - Updated to match organization pattern */}
+      {/* Community Routes */}
       <Route path={APP_ROUTES.COMMUNITY} element={<ProtectedRoute><CommunityDirectory /></ProtectedRoute>} />
       <Route path={APP_ROUTES.COMMUNITY_PROFILE} element={<ProtectedRoute><ProfileView /></ProtectedRoute>} />
       

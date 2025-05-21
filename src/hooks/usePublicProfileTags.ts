@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TagAssignment } from '@/utils/tags';
 import { EntityType } from '@/types/entityTypes';
+import { logger } from '@/utils/logger';
 
 // Type that includes the tag details joined from the tags table
 export interface TagAssignmentWithDetails extends TagAssignment {
@@ -22,7 +23,12 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
   return useQuery({
     queryKey: ['profile-tags', profileId],
     queryFn: async (): Promise<TagAssignmentWithDetails[]> => {
-      if (!profileId) return [];
+      if (!profileId) {
+        logger.warn('usePublicProfileTags: No profileId provided');
+        return [];
+      }
+      
+      logger.info(`usePublicProfileTags: Fetching tags for profile ${profileId}`);
       
       const { data, error } = await supabase
         .from('tag_assignments')
@@ -34,10 +40,11 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
         .eq('target_type', EntityType.PERSON);
       
       if (error) {
-        console.error('Error fetching profile tags:', error);
+        logger.error(`usePublicProfileTags: Error fetching tags for profile ${profileId}:`, error);
         return [];
       }
       
+      logger.info(`usePublicProfileTags: Found ${data?.length || 0} tags for profile ${profileId}`);
       return data || [] as TagAssignmentWithDetails[];
     },
     enabled: !!profileId,

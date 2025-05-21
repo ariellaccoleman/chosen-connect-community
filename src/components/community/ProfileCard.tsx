@@ -8,6 +8,7 @@ import { Link } from "react-router-dom";
 import TagList from "../tags/TagList";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from 'react-router-dom';
+import { logger } from '@/utils/logger';
 
 interface ProfileCardProps {
   profile: ProfileWithDetails;
@@ -16,6 +17,9 @@ interface ProfileCardProps {
 const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Generate the correct community profile URL using the APP_ROUTES constant
   const profileUrl = generatePath(APP_ROUTES.COMMUNITY_PROFILE, { id: profile.id });
+  
+  // Log the generated URL for debugging
+  logger.debug(`ProfileCard: Generated URL for profile ${profile.id}: ${profileUrl}`);
 
   return (
     <Link to={profileUrl} className="block">

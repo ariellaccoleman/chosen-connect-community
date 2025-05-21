@@ -11,10 +11,16 @@ import PublicProfileTags from "@/components/profile/PublicProfileTags";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 const ProfileView = () => {
-  const { profileId } = useParams<{ profileId: string }>();
+  // Get profileId from URL params - ensure we use the right parameter name
+  // The route is defined as /community/:id in APP_ROUTES.COMMUNITY_PROFILE
+  const { id: profileId } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  
+  // Log the extracted profileId for debugging
+  logger.info(`ProfileView: Rendering profile with ID: ${profileId}`);
   
   const { 
     data: profile, 
@@ -34,7 +40,7 @@ const ProfileView = () => {
 
   useEffect(() => {
     if (profileError) {
-      console.error("Error loading profile:", profileError);
+      logger.error("Error loading profile:", profileError);
       toast.error("Failed to load profile information.");
     }
   }, [profileError]);
