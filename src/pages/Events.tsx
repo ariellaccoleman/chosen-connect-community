@@ -1,8 +1,7 @@
-
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink, Filter } from "lucide-react";
 import { useEvents } from "@/hooks/events";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,15 +10,27 @@ import { logger } from "@/utils/logger";
 import TagList from "@/components/tags/TagList";
 import EventCardRegistrationButton from "@/components/events/EventCardRegistrationButton";
 import { APP_ROUTES } from "@/config/routes";
+import TagFilter from "@/components/filters/TagFilter";
+import { EntityType } from "@/types/entityTypes";
+import { useSelectionTags } from "@/hooks/tags";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { data: events = [], isLoading, error, refetch } = useEvents();
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.EVENT);
+  
+  // Extract tags from the response
+  const tags = tagsResponse?.data || [];
   
   useEffect(() => {
     logger.info("Events page mounted");
     logger.info("Events data:", { count: events.length, events });
-  }, [events.length]);
+    
+    if (selectedTagIds.length > 0) {
+      logger.debug("Filtering events by tags:", selectedTagIds);
+    }
+  }, [events.length, selectedTagIds]);
 
   const formatEventDate = (dateString: string) => {
     try {
@@ -58,6 +69,13 @@ const Events: React.FC = () => {
     navigate(eventUrl);
   };
 
+  // Filter events based on selected tags
+  const filteredEvents = selectedTagIds.length > 0
+    ? events.filter(event => 
+        event.tags && event.tags.some(tag => selectedTagIds.includes(tag.tag_id))
+      )
+    : events;
+
   return (
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
@@ -82,6 +100,17 @@ const Events: React.FC = () => {
       </div>
       
       <div className="bg-white rounded-lg shadow p-6">
+        <div className="mb-6 w-full md:max-w-xs">
+          <TagFilter
+            selectedTagIds={selectedTagIds}
+            onTagsSelect={setSelectedTagIds}
+            tags={tags}
+            isLoading={isTagsLoading}
+            label="Filter Events by Tags"
+            targetType={EntityType.EVENT}
+          />
+        </div>
+        
         {isLoading ? (
           <div className="space-y-4">
             <Skeleton className="h-48 w-full rounded-lg" />
@@ -102,20 +131,35 @@ const Events: React.FC = () => {
               Try Again
             </Button>
           </div>
-        ) : events.length === 0 ? (
+        ) : filteredEvents.length === 0 ? (
           <div>
-            <p className="text-gray-500 mb-6">Your events will appear here. Refresh to check for new events.</p>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 h-48 flex items-center justify-center">
-                <p className="text-gray-400 text-center">No events found.</p>
-              </div>
-            </div>
+            <p className="text-gray-500 mb-6">
+              {selectedTagIds.length > 0 
+                ? "No events match your selected tag filters. Try selecting different tags or clear the filters."
+                : "Your events will appear here. Refresh to check for new events."
+              }
+            </p>
+            {selectedTagIds.length > 0 && (
+              <Button 
+                variant="outline" 
+                onClick={() => setSelectedTagIds([])}
+                className="flex items-center gap-2"
+              >
+                <Filter className="h-4 w-4" />
+                Clear Filters
+              </Button>
+            )}
           </div>
         ) : (
           <>
-            <p className="text-sm text-gray-500 mb-4">Found {events.length} event(s)</p>
+            <p className="text-sm text-gray-500 mb-4">
+              {selectedTagIds.length > 0 
+                ? `Found ${filteredEvents.length} matching event(s)`
+                : `Found ${filteredEvents.length} event(s)`
+              }
+            </p>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <div 
                   key={event.id} 
                   className="relative bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
