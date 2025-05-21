@@ -6,7 +6,7 @@ import { useHub } from '@/hooks/hubs';
 import { EntityType } from '@/types/entityTypes';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, MessageSquare } from 'lucide-react';
+import { ArrowLeft, MessageSquare, Calendar, Users, Building2 } from 'lucide-react';
 import {
   Carousel,
   CarouselContent,
@@ -14,17 +14,19 @@ import {
   CarouselNext,
   CarouselPrevious
 } from '@/components/ui/carousel';
-import { useEntityRegistry } from '@/hooks/useEntityRegistry';
+import { useEntityFeed } from '@/hooks/useEntityFeed';
 import { useChatChannelsByTag } from '@/hooks/chat/useChatChannels';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import ChannelPreview from '@/components/chat/ChannelPreview';
-import EntityFeed from '@/components/entities/EntityFeed';
+import EntityList from '@/components/entities/EntityList';
+import { useEntityRegistry } from '@/hooks/useEntityRegistry';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
   const navigate = useNavigate();
   const { data: hubResponse, isLoading, error } = useHub(hubId);
   const hub = hubResponse?.data;
+  const { getEntityTypeLabel } = useEntityRegistry();
 
   // If there's an error or no hub found, redirect to the hubs page
   useEffect(() => {
@@ -35,6 +37,34 @@ const HubDetail = () => {
 
   // Get chat channels associated with this hub's tag
   const { data: chatChannels = [], isLoading: chatChannelsLoading } = useChatChannelsByTag(hub?.tag_id);
+  
+  // Use the entity feed hook for each entity type
+  const { 
+    entities: people, 
+    isLoading: peopleLoading 
+  } = useEntityFeed({
+    entityTypes: [EntityType.PERSON],
+    tagId: hub?.tag_id,
+    limit: 6
+  });
+  
+  const { 
+    entities: organizations, 
+    isLoading: organizationsLoading 
+  } = useEntityFeed({
+    entityTypes: [EntityType.ORGANIZATION],
+    tagId: hub?.tag_id,
+    limit: 6
+  });
+  
+  const { 
+    entities: events, 
+    isLoading: eventsLoading 
+  } = useEntityFeed({
+    entityTypes: [EntityType.EVENT],
+    tagId: hub?.tag_id,
+    limit: 6
+  });
 
   if (isLoading) {
     return (
@@ -49,6 +79,52 @@ const HubDetail = () => {
   }
 
   if (!hub) return null; // Will redirect from the useEffect
+
+  // Helper function to render an entity carousel
+  const renderEntityCarousel = (title, entities, isLoading, icon) => {
+    if (isLoading) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <Skeleton key={i} className="h-48 w-full" />
+          ))}
+        </div>
+      );
+    }
+    
+    if (entities.length === 0) {
+      return null;
+    }
+    
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold mb-4 flex items-center">
+          {icon}
+          <span className="ml-2">{title}</span>
+        </h2>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {entities.map(entity => (
+              <CarouselItem key={`entity-${entity.id}`} className="md:basis-1/2 lg:basis-1/3">
+                <EntityList 
+                  entities={[entity]} 
+                  isLoading={false} 
+                  showTags={true}
+                  className="h-full"
+                />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {entities.length > 2 && (
+            <div className="flex justify-end mt-4">
+              <CarouselPrevious className="relative static mr-2 -left-0 translate-y-0" />
+              <CarouselNext className="relative static -right-0 translate-y-0" />
+            </div>
+          )}
+        </Carousel>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -75,8 +151,11 @@ const HubDetail = () => {
         <div className="space-y-8">
           {/* Display Chat Channels if available */}
           {chatChannels.length > 0 && (
-            <div>
-              <h2 className="text-2xl font-bold mb-4">Chat Channels</h2>
+            <div className="mb-8">
+              <h2 className="text-2xl font-bold mb-4 flex items-center">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                <span>Chat Channels</span>
+              </h2>
               
               <Carousel className="w-full">
                 <CarouselContent>
@@ -99,32 +178,26 @@ const HubDetail = () => {
                     </CarouselItem>
                   ))}
                 </CarouselContent>
-                <div className="flex justify-end mt-4">
-                  <CarouselPrevious className="relative static mr-2 -left-0 translate-y-0" />
-                  <CarouselNext className="relative static -right-0 translate-y-0" />
-                </div>
+                {chatChannels.length > 2 && (
+                  <div className="flex justify-end mt-4">
+                    <CarouselPrevious className="relative static mr-2 -left-0 translate-y-0" />
+                    <CarouselNext className="relative static -right-0 translate-y-0" />
+                  </div>
+                )}
               </Carousel>
             </div>
           )}
           
-          {/* Use the EntityFeed component to display related entities */}
-          <div>
-            <EntityFeed 
-              title="Related Content" 
-              tagId={hub.tag_id || undefined}
-              showTabs={true}
-              showTagFilter={false}
-              excludeEntityTypes={[EntityType.HUB]} // Don't show other hubs in this feed
-              emptyMessage={`No content associated with ${hub.name} yet`}
-            />
-          </div>
+          {/* Render individual entity carousels */}
+          {renderEntityCarousel("People", people, peopleLoading, <Users className="h-5 w-5" />)}
+          {renderEntityCarousel("Organizations", organizations, organizationsLoading, <Building2 className="h-5 w-5" />)}
+          {renderEntityCarousel("Events", events, eventsLoading, <Calendar className="h-5 w-5" />)}
           
-          {/* Loading state for entities */}
-          {chatChannelsLoading && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-48 w-full" />
-              ))}
+          {/* Show message if no entities found */}
+          {!peopleLoading && !organizationsLoading && !eventsLoading && 
+           people.length === 0 && organizations.length === 0 && events.length === 0 && (
+            <div className="text-center p-8 bg-gray-50 border border-gray-200 rounded-lg">
+              <p className="text-gray-500">No content associated with {hub.name} yet</p>
             </div>
           )}
         </div>
