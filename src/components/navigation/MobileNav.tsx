@@ -1,4 +1,3 @@
-
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -85,6 +84,13 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
           )}
           
           <Link 
+            to="/feed" 
+            className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
+            onClick={onClose}
+          >
+            Feed
+          </Link>
+          <Link 
             to="/chat" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
@@ -92,11 +98,11 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Chat
           </Link>
           <Link 
-            to="/organizations" 
+            to="/hubs" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >
-            Organizations
+            Hubs
           </Link>
           <Link 
             to="/events" 
@@ -113,11 +119,11 @@ const MobileNav = ({ isOpen, onClose }: MobileNavProps) => {
             Community
           </Link>
           <Link 
-            to="/hubs" 
+            to="/organizations" 
             className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue block px-3 py-2 rounded-md text-base font-medium"
             onClick={onClose}
           >
-            Hubs
+            Organizations
           </Link>
           <button 
             onClick={() => {

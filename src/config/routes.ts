@@ -12,6 +12,9 @@ export const APP_ROUTES = {
   DASHBOARD: "/dashboard",
   NOT_FOUND: "*",
   
+  // Feed Route
+  FEED: "/feed",
+  
   // Community Routes
   COMMUNITY: "/community",
   PROFILE_VIEW: "/profile/:profileId",

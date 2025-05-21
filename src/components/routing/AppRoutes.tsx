@@ -22,6 +22,7 @@ import CommunityDirectory from '@/pages/CommunityDirectory';
 import TestDataGenerator from '@/pages/TestDataGenerator';
 import Hubs from '@/pages/Hubs';
 import HubDetail from '@/pages/HubDetail';
+import Feed from '@/pages/Feed';
 
 // Chat Routes
 import Chat from '@/pages/Chat';
@@ -57,6 +58,7 @@ const AppRoutes = () => {
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path={APP_ROUTES.FEED} element={<ProtectedRoute><Feed /></ProtectedRoute>} />
       <Route path={APP_ROUTES.PROFILE_EDIT} element={<ProtectedRoute><ProfileEdit /></ProtectedRoute>} />
       <Route path={APP_ROUTES.MANAGE_ORGANIZATIONS} element={<ProtectedRoute><ManageOrganizationConnections /></ProtectedRoute>} />
       <Route path={APP_ROUTES.ORGANIZATIONS} element={<ProtectedRoute><Organizations /></ProtectedRoute>} />

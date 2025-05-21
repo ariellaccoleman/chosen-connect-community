@@ -10,11 +10,12 @@ const DesktopNav = () => {
     if (user) {
       return (
         <div className="flex items-center space-x-8">
+          <Link to="/feed" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Feed</Link>
           <Link to="/chat" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Chat</Link>
-          <Link to="/organizations" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Organizations</Link>
+          <Link to="/hubs" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Hubs</Link>
           <Link to="/events" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Events</Link>
           <Link to="/community" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Community</Link>
-          <Link to="/hubs" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Hubs</Link>
+          <Link to="/organizations" className="text-gray-700 dark:text-gray-200 hover:text-chosen-blue dark:hover:text-chosen-blue font-medium">Organizations</Link>
         </div>
       );
     }
