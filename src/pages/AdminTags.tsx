@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Use consolidated tag hooks

@@ -1,90 +1,105 @@
-/**
- * Entity interface
- * Represents a common interface for different entity types
- */
 
+import { Entity, EntityBase } from './entityRegistry';
+import { Event } from './event';
+import { Organization } from './organization';
+import { Profile } from './profile';
+import { Hub } from './hub';
 import { EntityType } from './entityTypes';
-import { Post } from './post';
 
 /**
- * Entity interface
- * Represents a common interface for different entity types
+ * Base entity properties all entity types share
  */
-export interface Entity {
+export interface BaseEntity {
   id: string;
-  entityType: EntityType;
   name: string;
   description?: string;
-  location?: string;
-  imageUrl?: string | null;
-  tags?: string[];
+  image_url?: string;
   created_at?: string;
+  updated_at?: string;
 }
 
 /**
- * Convert a data object to an entity
+ * Convert a profile to a generic entity
  */
-export const toEntity = (data: any, entityType: EntityType): Entity | null => {
-  if (!data) return null;
-  
-  const baseEntity: Entity = {
-    id: data.id,
-    entityType,
-    name: '',
-    created_at: data.created_at,
+export const profileToEntity = (profile: Profile): Entity => {
+  return {
+    id: profile.id || '',
+    type: EntityType.PERSON,
+    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
+    description: profile.bio || '',
+    imageUrl: profile.avatar_url || '',
+    url: `/profile/${profile.id}`,
+    createdAt: profile.created_at,
+    updatedAt: profile.updated_at,
+    data: profile,
   };
-  
-  switch (entityType) {
-    case EntityType.EVENT:
-      return {
-        ...baseEntity,
-        name: data.title,
-        description: data.description,
-        location: data.location,
-        imageUrl: data.image_url || null,
-        tags: data.tags,
-      };
-    
+};
+
+/**
+ * Convert an organization to a generic entity
+ */
+export const organizationToEntity = (org: Organization): Entity => {
+  return {
+    id: org.id || '',
+    type: EntityType.ORGANIZATION,
+    name: org.name || '',
+    description: org.description || '',
+    imageUrl: org.logo_url || '',
+    url: `/organizations/${org.id}`,
+    createdAt: org.created_at,
+    updatedAt: org.updated_at,
+    data: org,
+  };
+};
+
+/**
+ * Convert an event to a generic entity
+ */
+export const eventToEntity = (event: Event): Entity => {
+  return {
+    id: event.id || '',
+    type: EntityType.EVENT,
+    name: event.title || '',
+    description: event.description || '',
+    imageUrl: event.image_url || '',
+    url: `/events/${event.id}`,
+    createdAt: event.created_at,
+    updatedAt: event.updated_at,
+    data: event,
+  };
+};
+
+/**
+ * Convert a hub to a generic entity
+ */
+export const hubToEntity = (hub: Hub): Entity => {
+  return {
+    id: hub.id || '',
+    type: EntityType.HUB,
+    name: hub.name || '',
+    description: hub.description || '',
+    imageUrl: hub.image_url || '',
+    url: `/hubs/${hub.id}`,
+    createdAt: hub.created_at,
+    updatedAt: hub.updated_at,
+    data: hub,
+  };
+};
+
+/**
+ * Generic function to convert any supported entity type to a unified Entity object
+ */
+export const toEntity = (item: any, type: EntityType): Entity => {
+  switch (type) {
     case EntityType.PERSON:
-      return {
-        ...baseEntity,
-        name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
-        description: data.headline || data.bio,
-        location: data.location,
-        imageUrl: data.avatar_url || null,
-        tags: data.tags,
-      };
-      
+      return profileToEntity(item);
     case EntityType.ORGANIZATION:
-      return {
-        ...baseEntity,
-        name: data.name,
-        description: data.description,
-        location: data.location,
-        imageUrl: data.logo_url || data.logo_api_url || null,
-        tags: data.tags,
-      };
-      
+      return organizationToEntity(item);
+    case EntityType.EVENT:
+      return eventToEntity(item);
     case EntityType.HUB:
-      return {
-        ...baseEntity,
-        name: data.name,
-        description: data.description,
-        imageUrl: null, // Hubs don't have images currently
-        tags: data.tags,
-      };
-      
-    case EntityType.POST:
-      return {
-        ...baseEntity,
-        name: `Post by ${data.author?.first_name || 'Unknown'} ${data.author?.last_name || ''}`.trim(),
-        description: data.content,
-        imageUrl: data.media && data.media.length > 0 ? 
-          data.media.find(m => m.media_type === 'image')?.url || null : null,
-        tags: data.tags,
-      };
-      
+      return hubToEntity(item);
     default:
-      return null;
+      throw new Error(`Unsupported entity type: ${type}`);
   }
 };

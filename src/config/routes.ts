@@ -24,12 +24,14 @@ export const APP_ROUTES = {
   GUIDE_DETAILS: '/guides/:guideId',
   HUBS: '/hubs',
   HUB_DETAILS: '/hubs/:hubId',
+  HUB_DETAIL: '/hubs/:hubId', // Alias for consistency
   CHAT: '/chat',
   CHAT_CHANNEL: '/chat/:channelId',
   ADMIN_DASHBOARD: '/admin',
   ADMIN_TAGS: '/admin/tags',
   ADMIN_CHAT_CHANNELS: '/admin/chat-channels',
   ADMIN_TEST_REPORTS: '/admin/test-reports',
+  TEST_REPORTS: '/admin/test-reports', // Alias for backward compatibility
   ADMIN_TEST_RUN_DETAIL: '/admin/test-reports/:testRunId',
   ADMIN_TEST_DETAIL: '/admin/test-reports/:testRunId', // Alias for consistency
   ADMIN_DATA_GENERATOR: '/admin/data-generator',

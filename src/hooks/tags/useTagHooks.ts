@@ -1,6 +1,8 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { tagsApi, assignmentApi, entityTagsApi } from '@/api/tags';
+import { tagsApi } from '@/api/tags/tagsApi';
+import { assignTag, removeTagAssignment } from '@/api/tags/assignmentApi';
+import { getEntityTags, getEntitiesWithTag } from '@/api/tags/entityTagsApi';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
@@ -12,7 +14,10 @@ export const useSelectionTags = (entityType?: EntityType) => {
   return useQuery({
     queryKey: ['tags', 'selection', entityType],
     queryFn: async () => {
-      const response = await tagsApi.getTags(entityType);
+      const response = await tagsApi.getAll({ 
+        entityType,
+        orderBy: 'name'
+      });
       return response;
     }
   });
@@ -25,7 +30,11 @@ export const useAvailableTags = (searchQuery: string, entityType?: EntityType) =
   return useQuery({
     queryKey: ['tags', 'search', searchQuery, entityType],
     queryFn: async () => {
-      const response = await tagsApi.searchTags(searchQuery, entityType);
+      const response = await tagsApi.getAll({
+        searchQuery,
+        entityType,
+        orderBy: 'name'
+      });
       return response.data || [];
     },
     enabled: searchQuery.length >= 2 || searchQuery === ''
@@ -41,7 +50,7 @@ export const useEntityTags = (entityId: string, entityType?: EntityType) => {
     queryFn: async () => {
       if (!entityId) return [];
       
-      const response = await entityTagsApi.getTagsByEntityId(entityId, entityType as EntityType);
+      const response = await getEntityTags(entityId, entityType as EntityType);
       return response;
     },
     enabled: !!entityId
@@ -57,7 +66,7 @@ export const useFilterByTag = (tagId: string | null, entityType?: EntityType) =>
     queryFn: async () => {
       if (!tagId) return [];
       
-      const response = await assignmentApi.getAssignmentsByTagId(tagId, entityType);
+      const response = await getEntitiesWithTag(tagId, entityType);
       return response.data || [];
     },
     enabled: !!tagId
@@ -65,28 +74,32 @@ export const useFilterByTag = (tagId: string | null, entityType?: EntityType) =>
 };
 
 /**
- * Hook to assign a tag to an entity
+ * Hooks for tag assignment mutations (assign/unassign)
  */
-export const useAssignTag = (entityType: EntityType) => {
+export const useTagAssignmentMutations = () => {
   const queryClient = useQueryClient();
   
-  return useMutation({
-    mutationFn: async ({ entityId, tagId }: { entityId: string, tagId: string }) => {
+  // Assign a tag to an entity
+  const assignTagMutation = useMutation({
+    mutationFn: async ({ 
+      tagId, 
+      entityId, 
+      entityType 
+    }: { 
+      tagId: string; 
+      entityId: string; 
+      entityType: EntityType 
+    }) => {
       if (!isValidEntityType(entityType)) {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      const response = await assignmentApi.assignTag({
-        tag_id: tagId,
-        target_id: entityId,
-        target_type: entityType
-      });
-      
+      const response = await assignTag(tagId, entityId, entityType);
       return response.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['entityTags', variables.entityId] });
-      queryClient.invalidateQueries({ queryKey: ['entities', entityType] });
+      queryClient.invalidateQueries({ queryKey: ['entities', variables.entityType] });
       toast.success('Tag assigned successfully');
     },
     onError: (error) => {
@@ -94,22 +107,15 @@ export const useAssignTag = (entityType: EntityType) => {
       toast.error(`Failed to assign tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
-};
 
-/**
- * Hook to unassign a tag from an entity
- */
-export const useUnassignTag = (entityType: EntityType) => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
+  // Remove a tag assignment
+  const removeTagAssignmentMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      const response = await assignmentApi.unassignTag(assignmentId);
+      const response = await removeTagAssignment(assignmentId);
       return response;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['entityTags'] });
-      queryClient.invalidateQueries({ queryKey: ['entities', entityType] });
       toast.success('Tag removed successfully');
     },
     onError: (error) => {
@@ -117,6 +123,74 @@ export const useUnassignTag = (entityType: EntityType) => {
       toast.error(`Failed to remove tag: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
+
+  return {
+    assignTag: assignTagMutation.mutateAsync,
+    removeTagAssignment: removeTagAssignmentMutation.mutateAsync,
+    isAssigning: assignTagMutation.isPending,
+    isRemoving: removeTagAssignmentMutation.isPending
+  };
+};
+
+/**
+ * Hook for tag CRUD operations
+ */
+export const useTagCrudMutations = () => {
+  const queryClient = useQueryClient();
+  
+  // Create a new tag
+  const createTagMutation = useMutation({
+    mutationFn: async (tagData: any) => {
+      const response = await tagsApi.create(tagData);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (error) => {
+      logger.error('Error creating tag:', error);
+      throw error;
+    }
+  });
+
+  // Update a tag
+  const updateTagMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const response = await tagsApi.update(id, data);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (error) => {
+      logger.error('Error updating tag:', error);
+      throw error;
+    }
+  });
+
+  // Delete a tag
+  const deleteTagMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const response = await tagsApi.delete(id);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tags'] });
+    },
+    onError: (error) => {
+      logger.error('Error deleting tag:', error);
+      throw error;
+    }
+  });
+
+  return {
+    createTag: createTagMutation.mutateAsync,
+    updateTag: updateTagMutation.mutateAsync,
+    deleteTag: deleteTagMutation.mutateAsync,
+    isCreating: createTagMutation.isPending,
+    isUpdating: updateTagMutation.isPending,
+    isDeleting: deleteTagMutation.isPending
+  };
 };
 
 // Backward compatibility alias
