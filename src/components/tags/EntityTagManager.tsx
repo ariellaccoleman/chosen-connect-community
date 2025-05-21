@@ -1,3 +1,4 @@
+
 import React, { useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagHooks";
 import TagList from "./TagList";
@@ -15,6 +16,7 @@ interface EntityTagManagerProps {
   onFinishEditing?: () => void;
   onTagSuccess?: () => void;
   onTagError?: (error: Error) => void;
+  className?: string; // Added className prop
 }
 
 const EntityTagManager = ({
@@ -24,7 +26,8 @@ const EntityTagManager = ({
   isEditing = false,
   onFinishEditing,
   onTagSuccess,
-  onTagError
+  onTagError,
+  className = "" // Default to empty string
 }: EntityTagManagerProps) => {
   const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
@@ -110,7 +113,7 @@ const EntityTagManager = ({
   }
   
   return (
-    <div>
+    <div className={className}>
       {isEditing ? (
         <div>
           <div className="mb-4">
@@ -126,6 +129,7 @@ const EntityTagManager = ({
             tagAssignments={tagAssignments} 
             onRemove={isAdmin ? handleRemoveTag : undefined}
             isRemoving={isRemoving}
+            className="mt-2"
           />
         </div>
       ) : (
@@ -133,6 +137,7 @@ const EntityTagManager = ({
           tagAssignments={tagAssignments} 
           onRemove={isAdmin ? handleRemoveTag : undefined}
           isRemoving={isRemoving}
+          className={className}
         />
       )}
     </div>

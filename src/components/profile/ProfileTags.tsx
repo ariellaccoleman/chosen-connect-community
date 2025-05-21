@@ -24,6 +24,7 @@ const ProfileTags = ({ profileId, isAdmin = false }: ProfileTagsProps) => {
           entityType={EntityType.PERSON}
           isAdmin={isAdmin}
           isEditing={true} // Always show in editing mode since we're on the edit page
+          className="flex-wrap gap-2"
         />
       </CardContent>
     </Card>

@@ -43,7 +43,7 @@ const TagList: React.FC<TagListProps> = ({
   const hiddenCount = max && tagAssignments.length > max ? tagAssignments.length - max : 0;
 
   return (
-    <div className={className}>
+    <div className={`flex flex-wrap gap-2 ${className}`}>
       {displayedTags.map((assignment) => {
         // Handle both tag access patterns (nested tag object or direct properties)
         const tagName = assignment.tag ? assignment.tag.name : undefined;
@@ -58,7 +58,7 @@ const TagList: React.FC<TagListProps> = ({
           <Badge 
             key={assignment.id || assignment.tag_id} 
             variant="secondary"
-            className="text-xs py-1 mr-2 mb-2 flex items-center"
+            className="text-xs py-1 px-2 inline-flex items-center"
           >
             {tagName}
             {onRemove && (
