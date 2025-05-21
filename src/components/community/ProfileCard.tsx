@@ -24,7 +24,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
 
   return (
     <Link to={profileUrl} className="block">
-      <div className="bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow">
+      <div className="bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-50 shadow rounded-lg p-6 hover:shadow-md transition-shadow">
         <div className="flex flex-col md:flex-row md:gap-6">
           {/* Left Column - Avatar and basic info */}
           <div className="flex items-start space-x-4 md:w-1/2">

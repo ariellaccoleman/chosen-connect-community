@@ -44,7 +44,7 @@ const CommunityDirectory = () => {
 
   return (
     <div className="container max-w-6xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 mb-6">
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
         Community Directory
       </h1>
 

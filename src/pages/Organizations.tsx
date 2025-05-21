@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { useOrganizations } from "@/hooks/organizations";
@@ -66,7 +67,7 @@ const OrganizationsList = () => {
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <h1 className="text-3xl font-bold font-heading">Organizations</h1>
+        <h1 className="text-3xl font-bold font-heading text-gray-900 dark:text-white">Organizations</h1>
         <Button 
           onClick={() => navigate(APP_ROUTES.MANAGE_ORGANIZATIONS)} 
           className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
@@ -111,7 +112,7 @@ const OrganizationsList = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500">No organizations found matching your criteria</p>
+          <p className="text-gray-500 dark:text-gray-400">No organizations found matching your criteria</p>
         </div>
       )}
     </div>
@@ -143,14 +144,14 @@ const OrganizationCard = ({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold mb-1">{organization.name}</h3>
+            <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">{organization.name}</h3>
             {organization.location && (
-              <p className="text-sm text-gray-500 mb-2">{organization.location.formatted_location}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{organization.location.formatted_location}</p>
             )}
           </div>
         </div>
         {organization.description && (
-          <p className="mt-4 text-sm text-gray-600">{organization.description}</p>
+          <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">{organization.description}</p>
         )}
       </CardContent>
     </Card>

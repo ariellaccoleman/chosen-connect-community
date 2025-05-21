@@ -65,7 +65,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
 
   return (
     <Link to={entityUrl} className="block">
-      <div className={`bg-white shadow rounded-lg p-6 hover:shadow-md transition-shadow ${className}`}>
+      <div className={`bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-50 shadow rounded-lg p-6 hover:shadow-md transition-shadow ${className}`}>
         <div className="flex items-start gap-4">
           {/* Avatar/Image */}
           <Avatar className="h-12 w-12">
@@ -79,20 +79,20 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           <div className="flex-1">
             {/* Header with title and badge */}
             <div className="flex items-start justify-between">
-              <h3 className="font-semibold text-lg pr-2">{entity.name}</h3>
-              <Badge variant="outline" className="flex-shrink-0 flex items-center gap-1">
+              <h3 className="font-semibold text-lg pr-2 dark:text-white">{entity.name}</h3>
+              <Badge variant="outline" className="flex-shrink-0 flex items-center gap-1 dark:text-gray-200 dark:border-gray-600">
                 {getEntityIcon(entity.entityType)}
                 <span>{entityTypeLabel}</span>
               </Badge>
             </div>
             
             {entity.description && (
-              <p className="text-gray-600 mt-1">{entity.description}</p>
+              <p className="text-gray-600 mt-1 dark:text-gray-300">{entity.description}</p>
             )}
             
             {/* Location info */}
             {entity.location && (
-              <div className="flex items-center mt-2 text-sm text-gray-500">
+              <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-300">
                 <MapPin className="h-3.5 w-3.5 mr-1" />
                 <span>{entity.location.formatted_location || entity.location.full_name}</span>
               </div>
@@ -100,7 +100,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
             
             {/* Event date */}
             {formattedDate && (
-              <div className="flex items-center mt-2 text-sm text-gray-500">
+              <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-300">
                 <Calendar className="h-3.5 w-3.5 mr-1" />
                 <span>{formattedDate}</span>
               </div>

@@ -9,6 +9,8 @@ export const ProfileBio = ({ profile }: ProfileBioProps) => {
   if (!profile.bio) return null;
   
   return (
-    <p className="mt-4 text-sm text-gray-600">{profile.bio}</p>
+    <div className="mt-4">
+      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{profile.bio}</p>
+    </div>
   );
 };
