@@ -1,8 +1,7 @@
-
 import React from "react";
 import { EntityType } from "../types/entityTypes";
 import { entityRegistry } from "./entityRegistry";
-import { User, Building, Calendar, Layers } from "lucide-react";
+import { User, Building, Calendar, Layers, FileText, MessageSquare, Users, CalendarDays, Building2, Compass, FileCode } from "lucide-react";
 import { 
   profileToEntity, 
   organizationToEntity, 
@@ -130,3 +129,63 @@ export function initializeDefaultEntityRegistrations(): void {
   // happen when the module is imported
   console.log("Default entity types registered");
 }
+
+// Register default entity types
+export const defaultEntityRegistrations: EntityTypeDefinition[] = [
+  {
+    type: EntityType.PERSON,
+    label: 'Person',
+    pluralLabel: 'People',
+    icon: <Users className="h-4 w-4" />,
+    description: 'Community members and professionals',
+    baseRoute: '/profile'
+  },
+  {
+    type: EntityType.ORGANIZATION,
+    label: 'Organization',
+    pluralLabel: 'Organizations',
+    icon: <Building2 className="h-4 w-4" />,
+    description: 'Companies, non-profits, and other groups',
+    baseRoute: '/organizations'
+  },
+  {
+    type: EntityType.EVENT,
+    label: 'Event',
+    pluralLabel: 'Events',
+    icon: <CalendarDays className="h-4 w-4" />,
+    description: 'Meetups, conferences, and gatherings',
+    baseRoute: '/events'
+  },
+  {
+    type: EntityType.GUIDE,
+    label: 'Guide',
+    pluralLabel: 'Guides',
+    icon: <FileCode className="h-4 w-4" />,
+    description: 'Educational resources and tutorials',
+    baseRoute: '/guides'
+  },
+  {
+    type: EntityType.CHAT,
+    label: 'Chat',
+    pluralLabel: 'Chats',
+    icon: <MessageSquare className="h-4 w-4" />,
+    description: 'Conversations and discussions',
+    baseRoute: '/chat'
+  },
+  {
+    type: EntityType.HUB,
+    label: 'Hub',
+    pluralLabel: 'Hubs',
+    icon: <Compass className="h-4 w-4" />,
+    description: 'Topic-focused communities',
+    baseRoute: '/hubs'
+  },
+  {
+    type: EntityType.POST,
+    label: 'Post',
+    pluralLabel: 'Posts',
+    icon: <FileText className="h-4 w-4" />,
+    description: 'Community updates and discussions',
+    baseRoute: '/feed'
+  }
+];

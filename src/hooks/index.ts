@@ -1,25 +1,22 @@
-/**
- * Re-export hooks from their modular locations
- * @file Main hooks entry point providing easy access to all hooks
- */
+// Export authentication hooks
+export * from './useAuth';
 
-// Primary feature modules - use these modular imports going forward
-export * from './profiles';
-export * from './organizations';
-export * from './locations';
-export * from './tags';
+// Export core hooks
+export * from './useToast';
+export * from './useDebounce';
+export * from './useLocalStorage';
+export * from './useTheme';
+export * from './useEntityRegistry';
+export * from './useEntityFeed';
+
+// Export specific hook modules
+export * from './chat';
+export * from './core';
 export * from './events';
+export * from './hubs';
+export * from './locations';
+export * from './organizations';
+export * from './posts';
+export * from './profiles';
+export * from './tags';
 export * from './tests';
-
-// Entity-related hooks
-export * from "./useEntityRegistry";
-export * from "./useEntityFeed";
-
-/**
- * Note: All legacy exports have been removed.
- * Import hooks directly from their respective module folders:
- * 
- * - import { useSelectionTags } from '@/hooks/tags';
- * - import { useLocations } from '@/hooks/locations'; 
- * - import { useCurrentProfile } from '@/hooks/profiles';
- */

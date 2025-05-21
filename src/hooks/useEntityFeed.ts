@@ -8,6 +8,7 @@ import { useCommunityProfiles } from "@/hooks/profiles";
 import { useOrganizations } from "./organizations";
 import { useEntityRegistry } from "./useEntityRegistry";
 import { useHubs } from "./hubs";
+import { usePosts } from "./posts";
 
 interface UseEntityFeedOptions {
   entityTypes?: EntityType[];
@@ -31,6 +32,7 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeProfiles = entityTypes.includes(EntityType.PERSON);
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
   const includeHubs = entityTypes.includes(EntityType.HUB);
+  const includePosts = entityTypes.includes(EntityType.POST);
   
   // Fetch data for each entity type using factory hooks
   const { data: events = [], isLoading: eventsLoading } = useEvents(); 
@@ -47,6 +49,9 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   // Add hub data fetching
   const { data: hubsResponse, isLoading: hubsLoading } = useHubs();
   const hubs = hubsResponse?.data || [];
+  
+  // Add posts data fetching
+  const { data: posts = [], isLoading: postsLoading } = usePosts();
   
   // Use tag hooks
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
@@ -115,6 +120,14 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
           if (entity) allEntities.push(entity);
         });
       }
+
+      // Convert and add posts
+      if (includePosts) {
+        posts.forEach(post => {
+          const entity = toEntity(post, EntityType.POST);
+          if (entity) allEntities.push(entity);
+        });
+      }
       
       // Filter by tag if needed
       const filteredEntities = selectedTagId 
@@ -139,21 +152,24 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
     
-    setIsLoading(eventsLoading || profilesLoading || orgsLoading || hubsLoading);
+    setIsLoading(eventsLoading || profilesLoading || orgsLoading || hubsLoading || postsLoading);
   }, [
     events, 
     profiles, 
     organizations,
     hubs,
+    posts,
     eventsLoading, 
     profilesLoading, 
     orgsLoading,
     hubsLoading,
+    postsLoading,
     selectedTagId,
     includeEvents,
     includeProfiles,
     includeOrgs,
     includeHubs,
+    includePosts,
     options.limit,
     filterItemsByTag,
     toEntity,

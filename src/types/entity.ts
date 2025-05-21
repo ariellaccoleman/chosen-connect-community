@@ -1,142 +1,90 @@
+/**
+ * Entity interface
+ * Represents a common interface for different entity types
+ */
 
-import { EntityType } from "./entityTypes";
-import { LocationWithDetails } from "./location";
-import { ProfileWithDetails } from "./profile";
-import { OrganizationWithLocation } from "./organization";
-import { EventWithDetails } from "./event";
-import { TagAssignment } from "@/utils/tags/types";
-import { ChatChannelWithDetails } from './chat';
-import { HubWithDetails } from "./hub";
+import { EntityType } from './entityTypes';
+import { Post } from './post';
 
 /**
- * Base entity interface that all entity types should implement
+ * Entity interface
+ * Represents a common interface for different entity types
  */
-export interface BaseEntity {
+export interface Entity {
   id: string;
-  created_at?: string;
-  updated_at?: string;
-  tags?: TagAssignment[];
-}
-
-/**
- * Interface for generic entity data with additional metadata
- */
-export interface Entity extends BaseEntity {
   entityType: EntityType;
   name: string;
   description?: string;
+  location?: string;
   imageUrl?: string | null;
-  location?: LocationWithDetails | null;
-  url?: string | null;
+  tags?: string[];
+  created_at?: string;
 }
 
 /**
- * Convert a ProfileWithDetails to the generic Entity interface
+ * Convert a data object to an entity
  */
-export function profileToEntity(profile: ProfileWithDetails): Entity {
-  return {
-    id: profile.id,
-    entityType: EntityType.PERSON,
-    name: `${profile.first_name || ''} ${profile.last_name || ''}`.trim(),
-    description: profile.bio || undefined,
-    imageUrl: profile.avatar_url,
-    location: profile.location,
-    url: profile.website_url || undefined,
-    created_at: profile.created_at,
-    updated_at: profile.updated_at,
-    tags: profile.tags
+export const toEntity = (data: any, entityType: EntityType): Entity | null => {
+  if (!data) return null;
+  
+  const baseEntity: Entity = {
+    id: data.id,
+    entityType,
+    name: '',
+    created_at: data.created_at,
   };
-}
-
-/**
- * Convert an OrganizationWithLocation to the generic Entity interface
- */
-export function organizationToEntity(organization: OrganizationWithLocation): Entity {
-  return {
-    id: organization.id,
-    entityType: EntityType.ORGANIZATION,
-    name: organization.name,
-    description: organization.description || undefined,
-    imageUrl: organization.logo_url,
-    location: organization.location,
-    url: organization.website_url || undefined,
-    created_at: organization.created_at,
-    updated_at: organization.updated_at,
-    tags: organization.tags
-  };
-}
-
-/**
- * Convert an EventWithDetails to the generic Entity interface
- */
-export function eventToEntity(event: EventWithDetails): Entity {
-  return {
-    id: event.id,
-    entityType: EntityType.EVENT,
-    name: event.title || '',
-    description: event.description || undefined,
-    location: event.location,
-    created_at: event.created_at,
-    updated_at: event.updated_at,
-    tags: event.tags
-  };
-}
-
-/**
- * Convert a chat channel to an entity
- */
-export function chatChannelToEntity(channel: ChatChannelWithDetails): Entity {
-  return {
-    id: channel.id,
-    name: channel.name || 'Unnamed Channel',
-    description: channel.channel_type || 'group',
-    imageUrl: null,
-    entityType: EntityType.CHAT,
-    created_at: channel.created_at,
-    updated_at: channel.updated_at,
-    tags: channel.tag_assignments
-  };
-}
-
-/**
- * Convert a hub to an entity
- */
-export function hubToEntity(hub: HubWithDetails): Entity {
-  return {
-    id: hub.id,
-    name: hub.name,
-    description: hub.description || undefined,
-    imageUrl: null, // Hubs don't have images yet
-    entityType: EntityType.HUB,
-    created_at: hub.created_at,
-    updated_at: hub.updated_at,
-    tags: hub.tag ? [{ 
-      id: '', 
-      tag_id: hub.tag.id, 
-      target_id: hub.id, 
-      target_type: 'hub', 
-      created_at: hub.created_at || '', 
-      updated_at: hub.updated_at || '',
-      tag: {
-        id: hub.tag.id,
-        name: hub.tag.name,
-        description: hub.tag.description,
-        type: null, // Add the missing fields
-        created_by: null,
-        created_at: hub.created_at || '',
-        updated_at: hub.updated_at || ''
-      }
-    }] : []
-  };
-}
-
-/**
- * @deprecated Use the entity registry's toEntity method instead
- * Convert an entity of any type to the generic Entity interface
- */
-export function toEntity(entity: any, entityType: EntityType): Entity | null {
-  // Import dynamically to prevent circular dependency
-  const { useEntityRegistry } = require("@/hooks/useEntityRegistry");
-  const { toEntity } = useEntityRegistry();
-  return toEntity(entity, entityType);
-}
+  
+  switch (entityType) {
+    case EntityType.EVENT:
+      return {
+        ...baseEntity,
+        name: data.title,
+        description: data.description,
+        location: data.location,
+        imageUrl: data.image_url || null,
+        tags: data.tags,
+      };
+    
+    case EntityType.PERSON:
+      return {
+        ...baseEntity,
+        name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+        description: data.headline || data.bio,
+        location: data.location,
+        imageUrl: data.avatar_url || null,
+        tags: data.tags,
+      };
+      
+    case EntityType.ORGANIZATION:
+      return {
+        ...baseEntity,
+        name: data.name,
+        description: data.description,
+        location: data.location,
+        imageUrl: data.logo_url || data.logo_api_url || null,
+        tags: data.tags,
+      };
+      
+    case EntityType.HUB:
+      return {
+        ...baseEntity,
+        name: data.name,
+        description: data.description,
+        imageUrl: null, // Hubs don't have images currently
+        tags: data.tags,
+      };
+      
+    case EntityType.POST:
+      return {
+        ...baseEntity,
+        name: `Post by ${data.author?.first_name || 'Unknown'} ${data.author?.last_name || ''}`.trim(),
+        description: data.content,
+        imageUrl: data.media && data.media.length > 0 ? 
+          data.media.find(m => m.media_type === 'image')?.url || null : null,
+        tags: data.tags,
+      };
+      
+    default:
+      return null;
+  }
+};
