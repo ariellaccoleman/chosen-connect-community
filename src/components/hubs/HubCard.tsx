@@ -45,8 +45,9 @@ const HubCard: React.FC<HubCardProps> = ({
         </p>
       </CardContent>
       <CardFooter className="flex justify-between pt-2">
+        {/* Temporarily link to the hubs page until hub detail pages are implemented */}
         <Button asChild variant="default">
-          <Link to={`/hubs/${hub.id}`}>View Hub</Link>
+          <Link to="/hubs">View Hub</Link>
         </Button>
         
         {showAdminControls && onToggleFeatured && (
