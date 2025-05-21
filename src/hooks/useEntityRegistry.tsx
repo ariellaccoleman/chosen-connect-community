@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { EntityType } from '@/types/entityTypes';
 import { Entity } from '@/types/entityRegistry';
@@ -20,13 +21,13 @@ export const useEntityRegistry = () => {
    * Gets the URL for an entity
    */
   const getEntityUrl = (entity: Entity): string => {
-    if (!entity || !entity.entityType) {
+    if (!entity || !entity.type) {
       logger.warn('Invalid entity or missing entity type');
       return '/';
     }
     
     try {
-      switch (entity.entityType) {
+      switch (entity.type) {
         case EntityType.EVENT:
           return generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: entity.id });
           
@@ -43,7 +44,7 @@ export const useEntityRegistry = () => {
           return generatePath(APP_ROUTES.CHAT_CHANNEL, { channelId: entity.id });
           
         default:
-          logger.warn(`No URL pattern defined for entity type: ${entity.entityType}`);
+          logger.warn(`No URL pattern defined for entity type: ${entity.type}`);
           return '/';
       }
     } catch (e) {
@@ -98,7 +99,7 @@ export const useEntityRegistry = () => {
     
     const baseEntity: Entity = {
       id: data.id,
-      entityType,
+      type: entityType,
       name: '',
       created_at: data.created_at,
     };
@@ -139,7 +140,7 @@ export const useEntityRegistry = () => {
           ...baseEntity,
           name: data.name,
           description: data.description,
-          imageUrl: null, // Hubs don't have images currently
+          imageUrl: data.image_url || null, // Hubs don't have images currently
           tags: data.tags,
         };
         

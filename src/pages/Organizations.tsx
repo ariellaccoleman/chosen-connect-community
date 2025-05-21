@@ -1,99 +1,84 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Helmet } from 'react-helmet';
+import Layout from '@/components/layout/Layout';
 import { useOrganizations } from '@/hooks/organizations';
-import { useSelectionTags } from '@/hooks/tags';
-import { EntityType } from '@/types/entityTypes';
-import { APP_ROUTES } from '@/config/routes';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import OrganizationCard from '@/components/organizations/OrganizationCard';
-import TagFilter from '@/components/filters/TagFilter';
+import { PlusCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { APP_ROUTES } from '@/config/routes';
+import { useAuth } from '@/hooks/useAuth';
+import OrganizationCard from '@/components/organizations/OrganizationCard'; 
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Organizations = () => {
-  const [selectedTagId, setSelectedTagId] = useState<string>('');
+  const { user } = useAuth();
+  const [searchQuery, setSearchQuery] = useState('');
   
-  // Get tag data for filtering
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
-  const tags = tagsResponse?.data || [];
+  // Use the organizations hook - the hook accepts no arguments
+  const { data, isLoading, error } = useOrganizations();
   
-  // Get organization data with optional tag filter
-  const { data: organizationsResponse = [], isLoading } = useOrganizations({
-    tagId: selectedTagId || undefined
-  });
+  // Safely access the organizations data
+  const organizations = data?.data || [];
   
-  // Extract organizations array properly
-  const organizations = Array.isArray(organizationsResponse) 
-    ? organizationsResponse 
-    : organizationsResponse.data || [];
+  // Filter organizations based on search query
+  const filteredOrgs = organizations.filter(org => 
+    org.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="container mx-auto py-8">
-      <Helmet>
-        <title>Organizations | CHOSEN</title>
-      </Helmet>
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-        <h1 className="text-3xl font-bold mb-4 md:mb-0">Organizations</h1>
-        <div className="flex flex-col sm:flex-row w-full md:w-auto gap-4">
-          <div className="w-full sm:w-72">
-            <TagFilter
-              selectedTagId={selectedTagId}
-              onSelectTag={setSelectedTagId}
-              tags={tags}
-              isLoading={isTagsLoading}
-            />
-          </div>
-          <Link to={APP_ROUTES.CREATE_ORGANIZATION}>
-            <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" /> Create Organization
-            </Button>
-          </Link>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-64 rounded-lg" />
-          ))}
-        </div>
-      ) : organizations.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {organizations.map((org) => (
-            <OrganizationCard
-              key={org.id}
-              org={org}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <h3 className="text-xl font-medium mb-2">No organizations found</h3>
-          <p className="text-muted-foreground mb-6">
-            {selectedTagId 
-              ? 'No organizations found with the selected tag.'
-              : 'No organizations have been created yet.'}
-          </p>
-          {selectedTagId && (
-            <Button 
-              variant="outline" 
-              onClick={() => setSelectedTagId('')}
-              className="mr-4"
-            >
-              Clear filter
+    <Layout>
+      <div className="container py-6">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Organizations</h1>
+          {user && (
+            <Button asChild>
+              <Link to={APP_ROUTES.ORGANIZATION_CREATE}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Create Organization
+              </Link>
             </Button>
           )}
-          <Link to={APP_ROUTES.CREATE_ORGANIZATION}>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" /> Create Organization
-            </Button>
-          </Link>
         </div>
-      )}
-    </div>
+        
+        <div className="mb-6">
+          <input
+            type="text"
+            placeholder="Search organizations..."
+            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        
+        {isLoading ? (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {[...Array(6)].map((_, i) => (
+              <Skeleton key={i} className="h-48" />
+            ))}
+          </div>
+        ) : error ? (
+          <div className="text-center py-10">
+            <p className="text-red-600">Error loading organizations</p>
+            <p className="text-sm text-muted-foreground">{error.message}</p>
+          </div>
+        ) : organizations.length === 0 ? (
+          <div className="text-center py-10">
+            <p className="text-xl">No organizations found</p>
+            {user && (
+              <Button className="mt-4" asChild>
+                <Link to={APP_ROUTES.ORGANIZATION_CREATE}>Create your first organization</Link>
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredOrgs.map((organization) => (
+              <OrganizationCard key={organization.id} organization={organization} />
+            ))}
+          </div>
+        )}
+      </div>
+    </Layout>
   );
 };
 

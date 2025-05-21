@@ -1,9 +1,12 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { EntityType } from "@/types/entityTypes";
 import { Entity } from "@/types/entityRegistry";
 import { apiClient } from "@/api/core/apiClient";
 import { logger } from "@/utils/logger";
 import { useEntityRegistry } from "./useEntityRegistry";
+import { useState } from "react";
+import { useSelectionTags, useFilterByTag } from "./tags";
 
 interface EntityFeedOptions {
   entityTypes?: EntityType[];
@@ -28,8 +31,21 @@ export const useEntityFeed = ({
   sortDirection = 'desc'
 }: EntityFeedOptions) => {
   const { toEntity } = useEntityRegistry();
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId);
   
-  const queryKey = ['entityFeed', entityTypes, limit, tagId, userId, excludeIds, sortBy, sortDirection];
+  // Fetch tags for filtering
+  const { data: tagsResponse } = useSelectionTags(
+    entityTypes.length === 1 ? entityTypes[0] : undefined
+  );
+  const tags = tagsResponse?.data || [];
+  
+  // Add the useFilterByTag hook for entity filtering by tag
+  const { data: tagFilteredEntities = { data: [] } } = useFilterByTag(
+    selectedTagId,
+    entityTypes.length === 1 ? entityTypes[0] : undefined
+  );
+  
+  const queryKey = ['entityFeed', entityTypes, limit, selectedTagId, userId, excludeIds, sortBy, sortDirection];
   
   const { data, isLoading, error } = useQuery({
     queryKey,
@@ -37,44 +53,47 @@ export const useEntityFeed = ({
       logger.debug('Fetching entity feed with options:', {
         entityTypes,
         limit,
-        tagId,
+        tagId: selectedTagId,
         userId,
         excludeIds,
         sortBy,
         sortDirection
       });
       
+      // If we have a selected tag, return the filtered entities
+      if (selectedTagId && tagFilteredEntities.data.length > 0) {
+        return tagFilteredEntities.data;
+      }
+      
       // Fetch entities for each type
       const entityPromises = entityTypes.map(async (entityType) => {
         try {
           // Build query based on entity type
-          let query = apiClient.from(getTableForEntityType(entityType))
-            .select('*');
-          
-          // Apply tag filter if provided
-          if (tagId) {
-            query = query.eq('tag_id', tagId);
-          }
-          
-          // Apply user filter if provided
-          if (userId && hasUserField(entityType)) {
-            query = query.eq('user_id', userId);
-          }
-          
-          // Apply exclusions
-          if (excludeIds.length > 0) {
-            query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-          }
-          
-          // Apply sorting
-          query = query.order(sortBy, { ascending: sortDirection === 'asc' });
-          
-          // Apply limit if provided
-          if (limit) {
-            query = query.limit(limit);
-          }
-          
-          const { data, error } = await query;
+          const { data, error } = await apiClient.query(async (client) => {
+            let query = client
+              .from(getTableForEntityType(entityType))
+              .select('*');
+            
+            // Apply user filter if provided
+            if (userId && hasUserField(entityType)) {
+              query = query.eq('user_id', userId);
+            }
+            
+            // Apply exclusions
+            if (excludeIds.length > 0) {
+              query = query.not('id', 'in', `(${excludeIds.join(',')})`);
+            }
+            
+            // Apply sorting
+            query = query.order(sortBy, { ascending: sortDirection === 'asc' });
+            
+            // Apply limit if provided
+            if (limit) {
+              query = query.limit(limit);
+            }
+            
+            return query;
+          });
           
           if (error) {
             logger.error(`Error fetching ${entityType} entities:`, error);
@@ -128,7 +147,10 @@ export const useEntityFeed = ({
   return {
     entities: data || [],
     isLoading,
-    error
+    error,
+    selectedTagId,
+    setSelectedTagId,
+    tags
   };
 };
 
@@ -152,7 +174,7 @@ function getTableForEntityType(entityType: EntityType): string {
     case EntityType.GUIDE:
       return 'guides';
     default:
-      return entityType.toString();
+      return entityType as string;
   }
 }
 

@@ -11,7 +11,10 @@ import { EntityType } from '@/types/entityTypes';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
-  const { data: hub, isLoading } = useHub(hubId);
+  const { data, isLoading } = useHub(hubId);
+  
+  // Access the hub data safely
+  const hub = data?.data;
 
   if (isLoading) {
     return (

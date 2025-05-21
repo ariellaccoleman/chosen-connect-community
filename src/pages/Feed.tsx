@@ -79,9 +79,9 @@ const Feed = () => {
 
               <div className="w-full sm:w-64">
                 <TagFilter
-                  selectedTagId={selectedTagId}
+                  selectedTagId={selectedTagId || ''}
                   onSelectTag={setSelectedTagId}
-                  availableTags={tags}
+                  tags={tags}
                 />
               </div>
             </div>

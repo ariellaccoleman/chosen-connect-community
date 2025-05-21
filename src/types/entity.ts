@@ -61,7 +61,7 @@ export const eventToEntity = (event: Event): Entity => {
     type: EntityType.EVENT,
     name: event.title || '',
     description: event.description || '',
-    imageUrl: event.image_url || '',
+    imageUrl: '', // Handle missing image_url property
     url: `/events/${event.id}`,
     createdAt: event.created_at,
     updatedAt: event.updated_at,
@@ -78,7 +78,7 @@ export const hubToEntity = (hub: Hub): Entity => {
     type: EntityType.HUB,
     name: hub.name || '',
     description: hub.description || '',
-    imageUrl: hub.image_url || '',
+    imageUrl: '', // Handle missing image_url property
     url: `/hubs/${hub.id}`,
     createdAt: hub.created_at,
     updatedAt: hub.updated_at,

@@ -10,6 +10,7 @@ import { EntityType } from '@/types/entityTypes';
 
 const CommunityDirectory = () => {
   const [selectedTagId, setSelectedTagId] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const { data: profiles = [], isLoading } = useCommunityProfiles({ tagId: selectedTagId || undefined });
   const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(EntityType.PERSON);
   const tags = tagsResponse?.data || [];
@@ -49,8 +50,8 @@ const CommunityDirectory = () => {
       ) : profiles.length > 0 ? (
         <ProfileGrid 
           profiles={profiles} 
-          isLoading={false} 
-          searchQuery=""
+          isLoading={isLoading} 
+          searchQuery={searchQuery}
         />
       ) : (
         <div className="text-center py-10">

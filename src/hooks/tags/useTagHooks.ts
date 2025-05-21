@@ -15,8 +15,8 @@ export const useSelectionTags = (entityType?: EntityType) => {
   return useQuery({
     queryKey: ['tags', 'selection', entityType],
     queryFn: async () => {
-      const response = await tagsApi.getAll({ 
-        params: { entityType },
+      const response = await tagsApi.getAll({
+        filters: entityType ? { entityType } : {},
         orderBy: 'name'
       });
       return response;
@@ -32,7 +32,10 @@ export const useAvailableTags = (searchQuery: string, entityType?: EntityType) =
     queryKey: ['tags', 'search', searchQuery, entityType],
     queryFn: async () => {
       const response = await tagsApi.getAll({
-        params: { searchQuery, entityType },
+        filters: { 
+          ...(searchQuery ? { searchQuery } : {}),
+          ...(entityType ? { entityType } : {})
+        },
         orderBy: 'name'
       });
       return response.data || [];
@@ -64,10 +67,10 @@ export const useFilterByTag = (tagId: string | null, entityType?: EntityType) =>
   return useQuery({
     queryKey: ['tagAssignments', tagId, entityType],
     queryFn: async () => {
-      if (!tagId) return [];
+      if (!tagId) return { data: [] };
       
       const response = await getEntitiesWithTag(tagId, entityType);
-      return response.data || [];
+      return response;
     },
     enabled: !!tagId
   });
