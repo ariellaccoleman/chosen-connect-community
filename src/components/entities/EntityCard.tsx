@@ -29,6 +29,13 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     getEntityAvatarFallback 
   } = useEntityRegistry();
 
+  // Debug entity data
+  logger.debug(`EntityCard: Rendering entity`, {
+    id: entity.id,
+    entityType: entity.entityType,
+    name: entity.name
+  });
+
   // Format date if it's an event
   const formattedDate = entity.entityType === EntityType.EVENT && entity.created_at
     ? format(new Date(entity.created_at), "MMM d, yyyy")
@@ -36,7 +43,6 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     
   // Generate URL and log it for debugging
   const entityUrl = getEntityUrl(entity);
-  logger.debug(`EntityCard: Generated URL for ${entity.entityType} ${entity.id}: ${entityUrl}`);
   
   // Make sure we have a valid entity type
   const entityTypeLabel = getEntityTypeLabel(entity.entityType);

@@ -1,171 +1,107 @@
 
-import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterByTag, useSelectionTags } from "@/hooks/tags";
-import { useEvents } from "@/hooks/events";
-import { useCommunityProfiles } from "@/hooks/profiles";
-import { useOrganizations } from "./organizations";
-import { useEntityRegistry } from "./useEntityRegistry";
-import { useHubs } from "./hubs";
+import { useEntityRegistry } from "@/hooks/useEntityRegistry";
+import { logger } from "@/utils/logger";
 
-interface UseEntityFeedOptions {
-  entityTypes?: EntityType[];
+// Import needed APIs
+import { organizationsApi } from "@/api/organizations";
+import { eventsApi } from "@/api/events";
+import { profilesApi } from "@/api/profiles";
+
+interface UseEntityFeedProps {
+  entityTypes: EntityType[];
   tagId?: string | null;
   limit?: number;
-  searchQuery?: string;
+  filterByUserId?: string | null;
 }
 
 /**
- * Hook for fetching and filtering entities from multiple sources
+ * Custom hook to fetch entities of specified types, optionally filtered by tag
  */
-export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
-  const [entities, setEntities] = useState<Entity[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+export const useEntityFeed = ({
+  entityTypes,
+  tagId = null,
+  limit = 10,
+  filterByUserId = null,
+}: UseEntityFeedProps) => {
   const { toEntity } = useEntityRegistry();
   
-  const entityTypes = options.entityTypes || Object.values(EntityType);
-  const includeEvents = entityTypes.includes(EntityType.EVENT);
-  const includeProfiles = entityTypes.includes(EntityType.PERSON);
-  const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
-  const includeHubs = entityTypes.includes(EntityType.HUB);
-  
-  // Fetch data for each entity type using factory hooks
-  const { data: events = [], isLoading: eventsLoading } = useEvents(); 
-  
-  const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
-    search: options.searchQuery,
-    limit: options.limit,
-    tagId: options.tagId || selectedTagId
+  // This query fetches entities based on the provided entityTypes
+  const { data: entitiesData, isLoading, error } = useQuery({
+    queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId }],
+    queryFn: async () => {
+      const allEntities: Entity[] = [];
+      
+      // Conditionally fetch each entity type
+      await Promise.all(
+        entityTypes.map(async (type) => {
+          try {
+            let items = [];
+            
+            // Fetch the appropriate data based on entity type
+            switch (type) {
+              case EntityType.PERSON:
+                const { data: profiles } = await profilesApi.getAllProfiles({ 
+                  tagId, 
+                  limit, 
+                  filterByUserId 
+                });
+                items = profiles || [];
+                break;
+                
+              case EntityType.ORGANIZATION:
+                const { data: orgs } = await organizationsApi.getAllOrganizations({ 
+                  tagId, 
+                  limit
+                });
+                items = orgs || [];
+                break;
+                
+              case EntityType.EVENT:
+                const { data: events } = await eventsApi.getAllEvents({ 
+                  tagId, 
+                  limit
+                });
+                items = events || [];
+                break;
+                
+              // Add more cases as needed for other entity types
+              
+              default:
+                logger.warn(`Unsupported entity type: ${type}`);
+                return;
+            }
+            
+            // Convert each item to an Entity and add to results
+            items.forEach(item => {
+              const entity = toEntity(item, type);
+              if (entity) {
+                logger.debug(`EntityFeed: Converted ${type} to entity`, {
+                  id: entity.id,
+                  entityType: entity.entityType,
+                  name: entity.name
+                });
+                allEntities.push(entity);
+              }
+            });
+          } catch (e) {
+            logger.error(`Error fetching ${type} entities:`, e);
+          }
+        })
+      );
+      
+      return allEntities;
+    },
+    enabled: entityTypes.length > 0,
   });
   
-  const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
-  const organizations = organizationsResponse?.data || [];
-  
-  // Add hub data fetching
-  const { data: hubsResponse, isLoading: hubsLoading } = useHubs();
-  const hubs = hubsResponse?.data || [];
-  
-  // Use tag hooks
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
-  
-  // Use tag filtering
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId);
-  
-  // Extract tags from the response - ensuring we have an array
-  const tags = tagsResponse?.data || [];
-  
-  // If tagId is provided in options, set it as the selected tag
-  useEffect(() => {
-    if (options.tagId) {
-      setSelectedTagId(options.tagId);
-    }
-  }, [options.tagId]);
-  
-  // Filter items by tag using the assignments from useFilterTags
-  const filterItemsByTag = useMemo(() => {
-    return (items: Entity[]): Entity[] => {
-      if (!selectedTagId) return items;
-      
-      // If we have tag assignments, filter items by matching IDs
-      if (tagAssignments.length > 0) {
-        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
-        return items.filter(item => taggedIds.has(item.id));
-      }
-      
-      return [];
-    };
-  }, [selectedTagId, tagAssignments]);
-  
-  // Combine and convert entities
-  useEffect(() => {
-    const allEntities: Entity[] = [];
-    
-    try {
-      // Convert and add events
-      if (includeEvents) {
-        events.forEach(event => {
-          const entity = toEntity(event, EntityType.EVENT);
-          if (entity) allEntities.push(entity);
-        });
-      }
-      
-      // Convert and add profiles
-      if (includeProfiles) {
-        profiles.forEach(profile => {
-          const entity = toEntity(profile, EntityType.PERSON);
-          if (entity) allEntities.push(entity);
-        });
-      }
-      
-      // Convert and add organizations
-      if (includeOrgs) {
-        organizations.forEach(org => {
-          const entity = toEntity(org, EntityType.ORGANIZATION);
-          if (entity) allEntities.push(entity);
-        });
-      }
-      
-      // Convert and add hubs
-      if (includeHubs) {
-        hubs.forEach(hub => {
-          const entity = toEntity(hub, EntityType.HUB);
-          if (entity) allEntities.push(entity);
-        });
-      }
-      
-      // Filter by tag if needed
-      const filteredEntities = selectedTagId 
-        ? filterItemsByTag(allEntities)
-        : allEntities;
-      
-      // Sort entities by created_at (newest first)
-      const sortedEntities = filteredEntities.sort((a, b) => {
-        if (!a.created_at || !b.created_at) return 0;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      
-      // Limit the number of entities if specified
-      const limitedEntities = options.limit 
-        ? sortedEntities.slice(0, options.limit)
-        : sortedEntities;
-      
-      setEntities(limitedEntities);
-      setError(null);
-    } catch (err) {
-      console.error("Error processing entities:", err);
-      setError(err instanceof Error ? err : new Error(String(err)));
-    }
-    
-    setIsLoading(eventsLoading || profilesLoading || orgsLoading || hubsLoading);
-  }, [
-    events, 
-    profiles, 
-    organizations,
-    hubs,
-    eventsLoading, 
-    profilesLoading, 
-    orgsLoading,
-    hubsLoading,
-    selectedTagId,
-    includeEvents,
-    includeProfiles,
-    includeOrgs,
-    includeHubs,
-    options.limit,
-    filterItemsByTag,
-    toEntity,
-    tagAssignments
-  ]);
-  
   return {
-    entities,
-    isLoading: isLoading || isTagsLoading,
+    entities: entitiesData || [],
+    isLoading,
     error,
-    selectedTagId,
-    setSelectedTagId,
-    tags
   };
 };
+
+export default useEntityFeed;
