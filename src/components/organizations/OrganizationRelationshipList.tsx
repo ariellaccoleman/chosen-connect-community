@@ -13,15 +13,27 @@ import EditRelationshipDialog from "@/components/organizations/EditRelationshipD
 
 interface OrganizationRelationshipListProps {
   relationships: ProfileOrganizationRelationshipWithDetails[];
-  isLoading: boolean;
+  isLoading?: boolean;
+  onEditClick?: (relationship: ProfileOrganizationRelationshipWithDetails) => void;
+  emptyMessage?: string;
 }
 
 const OrganizationRelationshipList = ({ 
   relationships, 
-  isLoading 
+  isLoading = false,
+  onEditClick,
+  emptyMessage = "No organization connections"
 }: OrganizationRelationshipListProps) => {
   const [selectedForDelete, setSelectedForDelete] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
   const [selectedForEdit, setSelectedForEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
+  
+  const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
+    if (onEditClick) {
+      onEditClick(relationship);
+    } else {
+      setSelectedForEdit(relationship);
+    }
+  };
   
   if (isLoading) {
     return (
@@ -51,8 +63,7 @@ const OrganizationRelationshipList = ({
         <Building className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-4 text-lg font-medium">No organization connections</h3>
         <p className="mt-2 text-gray-500">
-          You don't have any connections to organizations yet. 
-          Add your first connection using the "Connect to Org" button above.
+          {emptyMessage}
         </p>
       </div>
     );
@@ -69,7 +80,7 @@ const OrganizationRelationshipList = ({
         <OrganizationGroup 
           title="Current" 
           relationships={currentOrgs}
-          onEdit={setSelectedForEdit}
+          onEdit={handleEditClick}
           onDelete={setSelectedForDelete}
         />
       )}
@@ -78,7 +89,7 @@ const OrganizationRelationshipList = ({
         <OrganizationGroup 
           title="Former" 
           relationships={formerOrgs}
-          onEdit={setSelectedForEdit}
+          onEdit={handleEditClick}
           onDelete={setSelectedForDelete}
         />
       )}
@@ -87,7 +98,7 @@ const OrganizationRelationshipList = ({
         <OrganizationGroup 
           title="Connected Insider" 
           relationships={connectedInsiderOrgs}
-          onEdit={setSelectedForEdit}
+          onEdit={handleEditClick}
           onDelete={setSelectedForDelete}
         />
       )}
@@ -103,9 +114,9 @@ const OrganizationRelationshipList = ({
       
       {selectedForDelete && (
         <DeleteRelationshipDialog
-          relationship={selectedForDelete}
-          isOpen={!!selectedForDelete}
-          onClose={() => setSelectedForDelete(null)}
+          organizationName={selectedForDelete.organization?.name}
+          relationshipId={selectedForDelete.id}
+          onDeleteSuccess={() => setSelectedForDelete(null)}
         />
       )}
     </div>

@@ -44,6 +44,10 @@ const ManageOrganizationConnections = () => {
     isLoading: relationshipsLoading || organizationsLoading
   });
 
+  const handleCloseDialog = () => {
+    setIsDialogOpen(false);
+  };
+
   return (
     <Layout>
       <div className="container py-8">
@@ -75,7 +79,7 @@ const ManageOrganizationConnections = () => {
         {/* Connection dialog */}
         <OrganizationConnectionDialog 
           isOpen={isDialogOpen}
-          onClose={() => setIsDialogOpen(false)}
+          onClose={handleCloseDialog}
           organizations={availableOrganizations}
           isLoading={organizationsLoading}
           userId={user?.id}
