@@ -23,11 +23,46 @@ const isValidChannelId = (id: string | null | undefined): boolean => {
   return uuidRegex.test(id);
 };
 
+// Wrapper component that uses ChatContext
+const ChatContent = () => {
+  const { isThreadOpen, selectedMessage } = useChatContext();
+  const { channelId } = useParams<{ channelId: string }>();
+  
+  return (
+    <>
+      {/* Main Message Area */}
+      <div className={`flex-1 flex flex-col overflow-hidden ${isThreadOpen ? 'hidden md:flex' : ''}`}>
+        {isValidChannelId(channelId) ? (
+          <MessageFeed />
+        ) : (
+          <div className="flex-1 flex items-center justify-center p-6 text-center bg-white dark:bg-gray-800">
+            <div>
+              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
+                Select a channel to start chatting
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Choose a channel from the sidebar
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+      
+      {/* Thread Panel (conditional) */}
+      {isThreadOpen && selectedMessage && (
+        <div className="w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col overflow-hidden">
+          <ThreadPanel />
+        </div>
+      )}
+    </>
+  );
+};
+
+// Authentication and setup component - doesn't use ChatContext
 const ChatPageContent = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, user, initialized } = useAuth();
-  const { isThreadOpen, selectedMessage } = useChatContext();
   
   // Authentication check
   useEffect(() => {
@@ -88,50 +123,22 @@ const ChatPageContent = () => {
         <ChatSidebar selectedChannelId={channelId || null} onSelectChannel={handleChannelSelect} />
       </div>
       
-      {/* Main Message Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${isThreadOpen ? 'hidden md:flex' : ''}`}>
-        {isValidChannelId(channelId) ? (
-          <MessageFeed />
-        ) : (
-          <div className="flex-1 flex items-center justify-center p-6 text-center bg-white dark:bg-gray-800">
-            <div>
-              <h3 className="text-lg font-medium text-gray-800 dark:text-gray-200">
-                Select a channel to start chatting
-              </h3>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Choose a channel from the sidebar
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-      
-      {/* Thread Panel (conditional) */}
-      {isThreadOpen && selectedMessage && (
-        <div className="w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col overflow-hidden">
-          <ThreadPanel />
-        </div>
+      {/* Only render chat content if authenticated */}
+      {isAuthenticated && (
+        <ChatProvider>
+          <ChatContent />
+        </ChatProvider>
       )}
     </div>
   );
 };
 
 const ChatPage = () => {
-  const { channelId } = useParams<{ channelId: string }>();
-  
-  return (
-    <ChatProvider>
-      <ChatPageContent />
-    </ChatProvider>
-  );
-};
-
-const Chat = () => {
   return (
     <ErrorBoundary name="ChatPage">
-      <ChatPage />
+      <ChatPageContent />
     </ErrorBoundary>
   );
 };
 
-export default Chat;
+export default ChatPage;
