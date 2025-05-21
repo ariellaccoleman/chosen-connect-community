@@ -73,6 +73,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     toggleLikeMutation.mutate();
   };
   
+  // Format likes and comments count with proper pluralization
+  const likesText = post.likes_count === 1 ? "1 like" : `${post.likes_count || 0} likes`;
+  const commentsText = post.comments_count === 1 ? "1 comment" : `${post.comments_count || 0} comments`;
+  
   return (
     <Card className="overflow-hidden">
       <CardContent className="p-0">
@@ -111,10 +115,10 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           </div>
         )}
         
-        {/* Post stats */}
+        {/* Post stats - Updated with proper pluralization */}
         <div className="px-4 py-2 flex justify-between items-center text-xs text-gray-500">
-          <span>{post.likes_count || 0} likes</span>
-          <span>{post.comments_count || 0} comments</span>
+          <span>{likesText}</span>
+          <span>{commentsText}</span>
         </div>
         
         <Separator />
@@ -231,6 +235,9 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
     toggleLikeMutation.mutate();
   };
   
+  // Format comment likes with proper pluralization
+  const likesText = comment.likes === 1 ? "1 like" : `${comment.likes || 0} likes`;
+  
   return (
     <div className="flex space-x-2">
       <Avatar className="h-8 w-8">
@@ -256,7 +263,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
           >
             {hasLiked ? 'Liked' : 'Like'}
           </button>
-          <span className="text-xs text-gray-500">{comment.likes || 0} likes</span>
+          <span className="text-xs text-gray-500">{likesText}</span>
         </div>
       </div>
     </div>

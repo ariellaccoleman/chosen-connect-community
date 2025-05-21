@@ -142,11 +142,15 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           // Format the author data using our helper function
           const author = formatAuthor(post.author);
 
+          // Fix initial count values to be 0 when null
+          const likesCount = post.post_likes?.length || 0;
+          const commentsCount = post.post_comments?.length || 0;
+
           return {
             ...post,
             author,
-            likes_count: post.post_likes?.length || 0,
-            comments_count: post.post_comments?.length || 0,
+            likes_count: likesCount,
+            comments_count: commentsCount,
             tags: tagsByPostId[post.id] || []
           };
         });

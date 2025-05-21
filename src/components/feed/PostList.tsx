@@ -1,8 +1,11 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import PostCard from "./PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePosts } from "@/hooks/posts";
+import { logger } from "@/utils/logger";
+import { fixTagEntityAssociations } from "@/utils/tags/fixTagEntityTypes";
+import { EntityType } from "@/types/entityTypes";
 
 interface PostListProps {
   selectedTagId: string | null;
@@ -10,10 +13,26 @@ interface PostListProps {
 
 const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   // Use our posts hook to fetch real data
-  const { data: postsResponse, isLoading, error } = usePosts();
+  const { data: postsResponse, isLoading, error, refetch } = usePosts();
+  
+  // Fix tag entity associations on component mount
+  useEffect(() => {
+    const fixTags = async () => {
+      try {
+        // Run the fix function for post entity type
+        await fixTagEntityAssociations(EntityType.POST);
+        // After fixing, refetch posts to get updated data
+        refetch();
+      } catch (err) {
+        logger.error("Error fixing tag associations:", err);
+      }
+    };
+    
+    fixTags();
+  }, [refetch]);
   
   // Add console logs to debug the data we're receiving
-  console.log("Posts response:", postsResponse);
+  logger.debug("Posts response:", postsResponse);
   
   // Extract posts from response and handle error state
   const posts = postsResponse?.data || [];
@@ -23,7 +42,9 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
     ? posts.filter(post => post.tags?.some(tag => tag.id === selectedTagId))
     : posts;
 
-  console.log("Filtered posts:", filteredPosts);
+  logger.debug("Filtered posts:", filteredPosts);
+  logger.debug("Selected tag ID:", selectedTagId);
+  logger.debug("Posts with tags:", posts.map(p => ({ id: p.id, tags: p.tags })));
 
   if (isLoading) {
     return (
