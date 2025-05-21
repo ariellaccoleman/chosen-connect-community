@@ -48,7 +48,7 @@ const ChannelPreview: React.FC<ChannelPreviewProps> = ({
         <div className="flex flex-col items-end ml-2">
           {lastMessageTime && (
             <span className="text-xs text-muted-foreground">
-              {formatRelativeTime(new Date(lastMessageTime).getTime())}
+              {formatRelativeTime(new Date(lastMessageTime).toISOString())}
             </span>
           )}
           {unreadCount > 0 && (

@@ -7,10 +7,11 @@ import { EntityType } from './entityTypes';
 export interface Tag {
   id: string;
   name: string;
-  description?: string;
-  type?: EntityType;
+  description?: string | null;
+  type?: EntityType | string | null;
   created_at?: string;
   updated_at?: string;
+  created_by?: string | null;
 }
 
 /**
@@ -20,7 +21,7 @@ export interface TagAssignment {
   id: string;
   tag_id: string;
   target_id: string;
-  target_type: EntityType;
+  target_type: EntityType | string;
   created_at?: string;
   updated_at?: string;
 }

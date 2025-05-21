@@ -81,7 +81,9 @@ interface ChatChannelRowProps {
 
 function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) {
   const { data: tagAssignmentsResponse } = useEntityTags(channel.id, EntityType.CHAT);
-  const tagAssignments = tagAssignmentsResponse?.data || [];
+  const tagAssignments = tagAssignmentsResponse ? 
+    (Array.isArray(tagAssignmentsResponse) ? tagAssignmentsResponse : tagAssignmentsResponse.data || []) 
+    : [];
   
   return (
     <TableRow key={channel.id}>

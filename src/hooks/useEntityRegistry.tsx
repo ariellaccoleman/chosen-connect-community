@@ -1,7 +1,6 @@
-
 import { useMemo } from 'react';
 import { EntityType } from '@/types/entityTypes';
-import { Entity } from '@/types/entity';
+import { Entity } from '@/types/entityRegistry';
 import { APP_ROUTES } from '@/config/routes';
 import { generatePath } from 'react-router-dom';
 import { logger } from '@/utils/logger';

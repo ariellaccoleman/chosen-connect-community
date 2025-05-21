@@ -6,6 +6,7 @@ import { getEntityTags, getEntitiesWithTag } from '@/api/tags/entityTagsApi';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
+import { Tag } from '@/types/tag';
 
 /**
  * Hook to fetch tags for selection dropdowns
@@ -15,7 +16,7 @@ export const useSelectionTags = (entityType?: EntityType) => {
     queryKey: ['tags', 'selection', entityType],
     queryFn: async () => {
       const response = await tagsApi.getAll({ 
-        entityType,
+        params: { entityType },
         orderBy: 'name'
       });
       return response;
@@ -31,8 +32,7 @@ export const useAvailableTags = (searchQuery: string, entityType?: EntityType) =
     queryKey: ['tags', 'search', searchQuery, entityType],
     queryFn: async () => {
       const response = await tagsApi.getAll({
-        searchQuery,
-        entityType,
+        params: { searchQuery, entityType },
         orderBy: 'name'
       });
       return response.data || [];
@@ -48,7 +48,7 @@ export const useEntityTags = (entityId: string, entityType?: EntityType) => {
   return useQuery({
     queryKey: ['entityTags', entityId, entityType],
     queryFn: async () => {
-      if (!entityId) return [];
+      if (!entityId) return { data: [] };
       
       const response = await getEntityTags(entityId, entityType as EntityType);
       return response;

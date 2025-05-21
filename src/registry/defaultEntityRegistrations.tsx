@@ -1,3 +1,4 @@
+
 import React from "react";
 import { EntityType } from "../types/entityTypes";
 import { entityRegistry } from "./entityRegistry";
@@ -10,13 +11,16 @@ import {
 } from "../types/entity";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from "react-router-dom";
+import { EntityTypeDefinition } from "@/types/entityRegistry";
 
 // Register Person entity type
 entityRegistry.register({
   type: EntityType.PERSON,
-  converter: {
-    toEntity: profileToEntity
-  },
+  name: "Person",
+  namePlural: "People",
+  icon: <User className="h-4 w-4" />,
+  detailRouteName: APP_ROUTES.PROFILE_VIEW,
+  convertToEntity: profileToEntity,
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: id }),
     getCreateUrl: () => APP_ROUTES.PROFILE_EDIT,
@@ -42,9 +46,11 @@ entityRegistry.register({
 // Register Organization entity type
 entityRegistry.register({
   type: EntityType.ORGANIZATION,
-  converter: {
-    toEntity: organizationToEntity
-  },
+  name: "Organization",
+  namePlural: "Organizations",
+  icon: <Building className="h-4 w-4" />,
+  detailRouteName: APP_ROUTES.ORGANIZATION_DETAIL,
+  convertToEntity: organizationToEntity,
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: id }),
     getCreateUrl: () => APP_ROUTES.CREATE_ORGANIZATION,
@@ -70,9 +76,11 @@ entityRegistry.register({
 // Register Event entity type
 entityRegistry.register({
   type: EntityType.EVENT,
-  converter: {
-    toEntity: eventToEntity
-  },
+  name: "Event",
+  namePlural: "Events",
+  icon: <Calendar className="h-4 w-4" />,
+  detailRouteName: APP_ROUTES.EVENT_DETAIL,
+  convertToEntity: eventToEntity,
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: id }),
     getCreateUrl: () => APP_ROUTES.CREATE_EVENT,
@@ -98,9 +106,11 @@ entityRegistry.register({
 // Register Hub entity type
 entityRegistry.register({
   type: EntityType.HUB,
-  converter: {
-    toEntity: hubToEntity
-  },
+  name: "Hub",
+  namePlural: "Hubs",
+  icon: <Layers className="h-4 w-4" />,
+  detailRouteName: APP_ROUTES.HUB_DETAIL,
+  convertToEntity: hubToEntity,
   behavior: {
     getDetailUrl: (id) => generatePath(APP_ROUTES.HUB_DETAIL, { hubId: id }),
     getCreateUrl: () => APP_ROUTES.ADMIN_HUBS, // Admins create hubs from the admin page
@@ -134,57 +144,85 @@ export function initializeDefaultEntityRegistrations(): void {
 export const defaultEntityRegistrations: EntityTypeDefinition[] = [
   {
     type: EntityType.PERSON,
+    name: 'Person',
+    namePlural: 'People',
+    icon: <Users className="h-4 w-4" />,
+    detailRouteName: '/profile',
+    convertToEntity: profileToEntity,
     label: 'Person',
     pluralLabel: 'People',
-    icon: <Users className="h-4 w-4" />,
     description: 'Community members and professionals',
     baseRoute: '/profile'
   },
   {
     type: EntityType.ORGANIZATION,
+    name: 'Organization',
+    namePlural: 'Organizations',
+    icon: <Building2 className="h-4 w-4" />,
+    detailRouteName: '/organizations',
+    convertToEntity: organizationToEntity,
     label: 'Organization',
     pluralLabel: 'Organizations',
-    icon: <Building2 className="h-4 w-4" />,
     description: 'Companies, non-profits, and other groups',
     baseRoute: '/organizations'
   },
   {
     type: EntityType.EVENT,
+    name: 'Event',
+    namePlural: 'Events',
+    icon: <CalendarDays className="h-4 w-4" />,
+    detailRouteName: '/events',
+    convertToEntity: eventToEntity,
     label: 'Event',
     pluralLabel: 'Events',
-    icon: <CalendarDays className="h-4 w-4" />,
     description: 'Meetups, conferences, and gatherings',
     baseRoute: '/events'
   },
   {
     type: EntityType.GUIDE,
+    name: 'Guide',
+    namePlural: 'Guides',
+    icon: <FileCode className="h-4 w-4" />,
+    detailRouteName: '/guides',
+    convertToEntity: (item) => ({ id: item.id, name: item.title, type: EntityType.GUIDE }),
     label: 'Guide',
     pluralLabel: 'Guides',
-    icon: <FileCode className="h-4 w-4" />,
     description: 'Educational resources and tutorials',
     baseRoute: '/guides'
   },
   {
     type: EntityType.CHAT,
+    name: 'Chat',
+    namePlural: 'Chats',
+    icon: <MessageSquare className="h-4 w-4" />,
+    detailRouteName: '/chat',
+    convertToEntity: (item) => ({ id: item.id, name: item.name, type: EntityType.CHAT }),
     label: 'Chat',
     pluralLabel: 'Chats',
-    icon: <MessageSquare className="h-4 w-4" />,
     description: 'Conversations and discussions',
     baseRoute: '/chat'
   },
   {
     type: EntityType.HUB,
+    name: 'Hub',
+    namePlural: 'Hubs',
+    icon: <Compass className="h-4 w-4" />,
+    detailRouteName: '/hubs',
+    convertToEntity: hubToEntity,
     label: 'Hub',
     pluralLabel: 'Hubs',
-    icon: <Compass className="h-4 w-4" />,
     description: 'Topic-focused communities',
     baseRoute: '/hubs'
   },
   {
     type: EntityType.POST,
+    name: 'Post',
+    namePlural: 'Posts',
+    icon: <FileText className="h-4 w-4" />,
+    detailRouteName: '/feed',
+    convertToEntity: (item) => ({ id: item.id, name: item.title || 'Post', type: EntityType.POST }),
     label: 'Post',
     pluralLabel: 'Posts',
-    icon: <FileText className="h-4 w-4" />,
     description: 'Community updates and discussions',
     baseRoute: '/feed'
   }

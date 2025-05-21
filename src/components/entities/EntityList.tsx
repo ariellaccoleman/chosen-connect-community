@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Entity } from "@/types/entity";
+import { Entity } from "@/types/entityRegistry";
 import EntityCard from "./EntityCard";
 import { Skeleton } from "@/components/ui/skeleton";
 

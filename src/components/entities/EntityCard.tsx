@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link } from "react-router-dom";
-import { Entity } from "@/types/entity";
+import { Entity } from "@/types/entityRegistry";
 import { EntityType } from "@/types/entityTypes";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";

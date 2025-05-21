@@ -12,6 +12,13 @@ export interface Entity {
   createdAt?: string;
   updatedAt?: string;
   data?: any;
+  // Legacy property names
+  entityType?: EntityType;
+  tags?: string[];
+  location?: any;
+  created_at?: string;
+  updated_at?: string;
+  image_url?: string;
   [key: string]: any;
 }
 
@@ -29,6 +36,26 @@ export interface EntityTypeDefinition {
   convertToEntity: (item: any) => Entity;
   isEnabled?: boolean;
   sortOrder?: number;
+  // Add properties used in defaultEntityRegistrations
+  label?: string;
+  pluralLabel?: string;
+  description?: string;
+  baseRoute?: string;
+  converter?: {
+    toEntity: (item: any) => Entity;
+  };
+  behavior?: {
+    getDetailUrl: (id: string) => string;
+    getCreateUrl: () => string;
+    getEditUrl: (id: string) => string;
+    getListUrl: () => string;
+    getIcon: () => ReactNode;
+    getTypeLabel: () => string;
+    getSingularName: () => string;
+    getPluralName: () => string;
+    getDisplayName: (entity: Entity) => string;
+    getFallbackInitials: (entity: Entity) => string;
+  };
 }
 
 export interface EntityRegistry {

@@ -16,13 +16,18 @@ const Organizations = () => {
   const [selectedTagId, setSelectedTagId] = useState<string>('');
   
   // Get tag data for filtering
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
+  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
   const tags = tagsResponse?.data || [];
   
   // Get organization data with optional tag filter
-  const { data: organizations = [], isLoading } = useOrganizations({
+  const { data: organizationsResponse = [], isLoading } = useOrganizations({
     tagId: selectedTagId || undefined
   });
+  
+  // Extract organizations array properly
+  const organizations = Array.isArray(organizationsResponse) 
+    ? organizationsResponse 
+    : organizationsResponse.data || [];
 
   return (
     <div className="container mx-auto py-8">
@@ -60,7 +65,7 @@ const Organizations = () => {
           {organizations.map((org) => (
             <OrganizationCard
               key={org.id}
-              organization={org}
+              org={org}
             />
           ))}
         </div>

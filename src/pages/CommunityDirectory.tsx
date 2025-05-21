@@ -47,7 +47,11 @@ const CommunityDirectory = () => {
           </div>
         </div>
       ) : profiles.length > 0 ? (
-        <ProfileGrid profiles={profiles} />
+        <ProfileGrid 
+          profiles={profiles} 
+          isLoading={false} 
+          searchQuery=""
+        />
       ) : (
         <div className="text-center py-10">
           <p className="text-xl text-gray-500">No profiles found</p>

@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Entity } from '@/types/entity';
+import { Entity } from '@/types/entityRegistry';
 import PostCard from './PostCard';
 import { usePost } from '@/hooks/posts';
 import { EntityType } from '@/types/entityTypes';
