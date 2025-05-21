@@ -25,19 +25,16 @@ export const useChannelMessages = (
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Validate channelId early - if it's null/undefined/"null"/"undefined", don't even try to fetch
+  // Validate channelId early
   const isValidChannelId = channelId && channelId !== 'null' && channelId !== 'undefined';
-
-  // Add detailed logging for debugging the channelId
-  logger.info(`[CODE PATH] useChannelMessages hook called for channelId: ${channelId} (valid: ${isValidChannelId})`);
 
   return useQuery({
     queryKey: ['chatMessages', channelId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
-      logger.info(`[QUERY PATH] Executing query function for channel ${channelId}`);
+      logger.info(`[QUERY] Executing query for channel ${channelId}`);
       
       if (!isAuthenticated || !user) {
-        logger.warn('[QUERY PATH] User is not authenticated for fetching messages');
+        logger.warn('[QUERY] User is not authenticated for fetching messages');
         return { 
           data: [], 
           error: { code: 'auth_required', message: 'Authentication required', details: null }, 
@@ -45,61 +42,28 @@ export const useChannelMessages = (
         };
       }
 
-      // Enhanced validation for channelId - don't attempt API call with invalid values
+      // Don't attempt API call with invalid values
       if (!isValidChannelId) {
-        logger.warn(`[QUERY PATH] Invalid channelId provided to useChannelMessages: "${channelId}", returning empty array`);
+        logger.warn(`[QUERY] Invalid channelId provided: "${channelId}", returning empty array`);
         return { data: [], error: null, status: 'success' };
       }
       
-      // Log for debugging
-      logger.info(`[QUERY PATH] Fetching messages for channel: ${channelId} (user: ${user.id})`);
-      logger.info(`[QUERY PATH] User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
-      
       // Call the API function to get channel messages
-      logger.info('[QUERY PATH] Calling getChannelMessages API function');
-      const response = await getChannelMessages(channelId, limit, offset);
-      
-      // Log the response
-      logger.info(`[QUERY PATH] API response status: ${response.status}`);
-      logger.info(`[QUERY PATH] Retrieved ${response.data?.length || 0} messages`);
-      
-      if (response.data && response.data.length > 0) {
-        // Log the first few messages for debugging
-        const sampleSize = Math.min(3, response.data.length);
-        logger.info(`[QUERY PATH] Sample of ${sampleSize} messages:`);
-        for (let i = 0; i < sampleSize; i++) {
-          const msg = response.data[i];
-          logger.info(`[QUERY PATH] Sample message ${i+1}: id=${msg.id}, raw=${msg.created_at}, formatted=${msg.formatted_time}`);
-        }
-      }
-      
-      return response;
+      return getChannelMessages(channelId, limit, offset);
     },
     // Only enable the query if we have both authentication and a valid channel ID
     enabled: isAuthenticated && !!user?.id && isValidChannelId,
-    // OPTIMIZATION: Remove polling since we have realtime subscriptions
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
-      logger.info(`[QUERY PATH] Channel messages response status: ${response.status}, messages: ${response.data?.length || 0}`);
       if (response.status === 'error') {
-        logger.error('[QUERY PATH] Error in channel messages response:', response.error);
+        logger.error('[QUERY] Error in channel messages response:', response.error);
         toast.error(response.error?.message || 'Failed to load messages');
         return [];
       }
-
-      // Log each message timestamp for debugging
-      if (response.data && response.data.length > 0) {
-        logger.info('[QUERY PATH] Message timestamps from API response:');
-        response.data.forEach(msg => {
-          logger.info(`[QUERY PATH] Message ${msg.id}: raw=${msg.created_at}, formatted=${msg.formatted_time}`);
-        });
-      }
-      
       return response.data || [];
     },
     meta: {
-      // Use meta for additional options
       errorHandler: (error: Error) => {
-        logger.error('[QUERY PATH] Query error in useChannelMessages:', error);
+        logger.error('[QUERY] Error in useChannelMessages:', error);
         queryClient.setQueryData(['chatMessages', channelId, offset, limit], []);
       }
     }
@@ -131,18 +95,11 @@ export const useSendMessage = () => {
         throw new Error('Invalid channel ID');
       }
       
-      logger.info(`Sending message to channel ${channelId}: ${message} (user: ${user.id})`);
-      const response = await sendChatMessage(channelId, message, user.id, parentId);
-      
-      if (response.status === 'error') {
-        logger.error('Error in sendChatMessage API call:', response.error);
-        throw new Error(response.error?.message || 'Failed to send message');
-      }
-      
-      return response;
+      logger.info(`Sending message to channel ${channelId}`);
+      return sendChatMessage(channelId, message, user.id, parentId);
     },
     onSuccess: (response, variables) => {
-      logger.info('Message sent successfully:', response);
+      logger.info('Message sent successfully');
       // Invalidate relevant queries to fetch fresh data
       const { channelId, parentId } = variables;
       
@@ -151,25 +108,6 @@ export const useSendMessage = () => {
         queryClient.invalidateQueries({ 
           queryKey: ['threadMessages', parentId] 
         });
-
-        // Also update the reply_count for the parent message in the channel messages
-        const messagesKey = ['chatMessages', channelId];
-        queryClient.setQueriesData(
-          { queryKey: messagesKey, exact: false },
-          (oldData: any) => {
-            // If no data, return as is
-            if (!oldData || !Array.isArray(oldData)) return oldData;
-            
-            // Find and update the parent message's reply count
-            return oldData.map((message: ChatMessageWithAuthor) => {
-              if (message.id === parentId) {
-                const currentCount = message.reply_count || 0;
-                return { ...message, reply_count: currentCount + 1 };
-              }
-              return message;
-            });
-          }
-        );
       } else {
         // If posting to channel, invalidate channel messages
         queryClient.invalidateQueries({ 
@@ -196,14 +134,12 @@ export const useThreadMessages = (
   
   // Validate messageId early
   const isValidMessageId = messageId && messageId !== 'null' && messageId !== 'undefined';
-  
-  logger.info(`useThreadMessages called with messageId: ${messageId}, isValid: ${isValidMessageId}`);
 
   return useQuery({
     queryKey: ['threadMessages', messageId, offset, limit],
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
       if (!isValidMessageId) {
-        logger.warn(`Invalid messageId provided to useThreadMessages: "${messageId}", returning empty array`);
+        logger.warn(`Invalid messageId provided: "${messageId}", returning empty array`);
         return { data: [], error: null, status: 'success' };
       }
 
@@ -216,13 +152,9 @@ export const useThreadMessages = (
         };
       }
 
-      logger.info(`Fetching thread replies for message: ${messageId} (user: ${user.id})`);
       return getThreadReplies(messageId, limit, offset);
     },
     enabled: isValidMessageId && isAuthenticated,
-    // OPTIMIZATION: Remove polling since we have realtime subscriptions
-    // This was causing duplicate fetches and network overhead
-    // refetchInterval: 10000, 
     select: (response: ApiResponse<ChatMessageWithAuthor[]>) => {
       if (response.status === 'error' && response.error) {
         toast.error('Failed to load thread replies');
@@ -234,20 +166,10 @@ export const useThreadMessages = (
   });
 };
 
-/**
- * Hook for sending a reply in a thread
- */
-export const useSendReply = () => {
-  const sendMessageMutation = useSendMessage();
-  
-  return {
-    ...sendMessageMutation,
-    mutate: ({ channelId, message, parentId }: {
-      channelId: string;
-      message: string;
-      parentId: string;
-    }) => {
-      return sendMessageMutation.mutate({ channelId, message, parentId });
-    }
-  };
+// Export a consolidated API
+export const chatMessageApi2 = {
+  getChannelMessages,
+  getThreadReplies,
+  sendChatMessage,
+  ...chatMessageApi
 };

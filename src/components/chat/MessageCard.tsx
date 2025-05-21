@@ -1,11 +1,10 @@
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import UserAvatar from '@/components/navigation/UserAvatar';
 import { MessageSquare } from 'lucide-react';
 import { MembershipTier, Profile } from '@/types/profile';
-import { formatRelativeTime } from '@/utils/formatters';
-import { logger } from '@/utils/logger';
+import { formatRelativeTime } from '@/utils/formatters/timeFormatters';
 
 interface MessageCardProps {
   message: ChatMessageWithAuthor;
@@ -20,22 +19,8 @@ const MessageCard: React.FC<MessageCardProps> = ({
   onClick, 
   showReplies = true 
 }) => {
-  // Get the timestamp information
-  const rawTimestamp = message.created_at;
-  // Use the pre-formatted time from processChatMessage if available, otherwise format it here
-  const formattedTime = message.formatted_time || formatRelativeTime(rawTimestamp);
-  
-  // Log the timezone information and timestamps once when the component renders
-  useEffect(() => {
-    const userTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    logger.info(
-      `[DISPLAY] MessageCard rendering message ID: ${message.id}\n` +
-      `Raw timestamp: ${rawTimestamp}\n` + 
-      `User timezone: ${userTimeZone}\n` +
-      `Pre-formatted time: ${message.formatted_time || 'none'}\n` +
-      `Displayed time: ${formattedTime}`
-    );
-  }, [message.id, rawTimestamp, message.formatted_time, formattedTime]);
+  // Use the pre-formatted time from the message if available, otherwise format it here
+  const formattedTime = message.formatted_time || formatRelativeTime(message.created_at);
 
   // Create a minimal profile object that works with UserAvatar
   const profileForAvatar: Profile | null = message.author ? {

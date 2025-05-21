@@ -6,7 +6,7 @@ import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { ChatMessageWithAuthor } from '@/types/chat';
-import { processChatMessage } from '@/utils/chat/messageUtils';
+import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
 
 /**
  * Helper function to validate if a string is a valid UUID
@@ -19,209 +19,139 @@ const isValidUUID = (id: string | null | undefined): boolean => {
   return uuidRegex.test(id);
 };
 
+interface RealtimeOptions {
+  onNewMessage?: (message: ChatMessageWithAuthor) => void;
+  notifyUser?: boolean;
+}
+
 /**
- * Hook to subscribe to real-time channel messages
+ * Base hook for setting up real-time subscriptions
  */
-export const useChannelMessagesRealtime = (channelId: string | null | undefined) => {
+const useRealtimeSubscription = (
+  subscriptionType: 'channel' | 'thread',
+  entityId: string | null | undefined,
+  options: RealtimeOptions = {}
+) => {
   const queryClient = useQueryClient();
   const { isAuthenticated, user } = useAuth();
+  const { onNewMessage, notifyUser = true } = options;
 
   useEffect(() => {
-    // Enhanced validation for channelId
-    if (!isValidUUID(channelId)) {
-      logger.info(`No valid channelId provided to useChannelMessagesRealtime: "${channelId}"`);
-      return; 
+    // Validate parameters
+    if (!isValidUUID(entityId)) {
+      logger.info(`No valid ${subscriptionType} ID provided: "${entityId}"`);
+      return;
     }
     
-    // Validate authentication
     if (!isAuthenticated || !user) {
-      logger.warn('User is not authenticated for real-time updates');
-      return; 
+      logger.warn(`User is not authenticated for ${subscriptionType} real-time updates`);
+      return;
     }
     
-    logger.info(`[CODE PATH] REAL-TIME: Setting up subscription for channel: ${channelId} (user: ${user.id})`);
+    logger.info(`[REAL-TIME] Setting up subscription for ${subscriptionType}: ${entityId}`);
     
-    // Subscribe to new messages in the channel
+    // Set up the appropriate filter based on subscription type
+    const filter = subscriptionType === 'channel' 
+      ? { event: 'INSERT', schema: 'public', table: 'chats', filter: `channel_id=eq.${entityId}` }
+      : { event: 'INSERT', schema: 'public', table: 'chats', filter: `parent_id=eq.${entityId}` };
+      
+    // Create appropriate query key
+    const queryKey = subscriptionType === 'channel' 
+      ? ['chatMessages', entityId]
+      : ['threadMessages', entityId];
+    
+    // Subscribe to changes
     const channel = supabase
-      .channel(`channel-${channelId}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'chats',
-          filter: `channel_id=eq.${channelId}` 
-        },
-        (payload) => {
-          logger.info('[CODE PATH] REAL-TIME: New channel message received:');
-          logger.info(`[REAL-TIME] Payload for message: ${JSON.stringify(payload.new?.id)}`);
-          
-          // Log timestamp for debugging
-          if (payload.new && payload.new.created_at) {
-            logger.info(`[REAL-TIME] Raw timestamp: ${payload.new.created_at}`);
-            logger.info(`[REAL-TIME] User timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
-          }
-          
-          // Process the new message with our utility for consistent timestamp handling
-          logger.info('[REAL-TIME] Processing message with processChatMessage');
-          const processedMessage = processChatMessage(payload.new, false); // false because we don't have author info yet
-          
-          // Log the processed message
-          logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
-          logger.info(`[REAL-TIME] Processed timestamp: ${processedMessage.created_at}`);
-          logger.info(`[REAL-TIME] Formatted timestamp: ${processedMessage.formatted_time}`);
-          
-          // Check if this is a reply to a thread
-          if (processedMessage.parent_id) {
-            // If it's a reply, we need to update the reply count for the parent message
-            const parentId = processedMessage.parent_id;
-            logger.info(`Updating reply count for parent message: ${parentId}`);
-            
-            // Get all message queries for this channel
-            const messagesKey = ['chatMessages', channelId];
-            
-            // Update the reply_count for the parent message in all matching queries
-            queryClient.setQueriesData(
-              { queryKey: messagesKey, exact: false },
-              (oldData: any) => {
-                // If no data or not an array, return as is
-                if (!oldData || !Array.isArray(oldData)) return oldData;
-                
-                // Find and update the parent message's reply count
-                return oldData.map((message: ChatMessageWithAuthor) => {
-                  if (message.id === parentId) {
-                    const currentCount = message.reply_count || 0;
-                    return { ...message, reply_count: currentCount + 1 };
-                  }
-                  return message;
-                });
-              }
-            );
-          }
-          
-          // Immediately invalidate and refetch the channel messages query
-          logger.info('[REAL-TIME] Invalidating and refetching channel messages');
-          queryClient.invalidateQueries({ 
-            queryKey: ['chatMessages', channelId],
-            refetchType: 'all' // Force refetch instead of just invalidating
-          });
-          
-          // Show toast notification for new messages not from current user
-          if (processedMessage.user_id !== user.id) {
-            toast.info('New message received');
-          }
+      .channel(`${subscriptionType}-${entityId}`)
+      .on('postgres_changes', filter, (payload) => {
+        logger.info(`[REAL-TIME] New ${subscriptionType} message received`);
+        
+        // Process the message
+        const processedMessage = ChatMessageFactory.processRealtimeMessage(payload);
+        logger.info(`[REAL-TIME] Processed message: ${processedMessage.id}`);
+        
+        // Handle thread-specific updates
+        if (subscriptionType === 'channel' && processedMessage.parent_id) {
+          // Update reply count for parent message
+          updateParentMessageReplyCount(queryClient, processedMessage);
         }
-      )
+        
+        // Invalidate queries to refresh the data
+        queryClient.invalidateQueries({ queryKey, refetchType: 'all' });
+        
+        // Execute callback if provided
+        if (onNewMessage) {
+          onNewMessage(processedMessage);
+        }
+        
+        // Show notification if not from current user
+        if (notifyUser && processedMessage.user_id !== user.id) {
+          toast.info(subscriptionType === 'channel' 
+            ? 'New message received' 
+            : 'New reply in thread');
+        }
+      })
       .subscribe((status) => {
-        logger.info(`[REAL-TIME] Channel subscription status: ${status}`);
-        if (status === 'SUBSCRIBED') {
-          logger.info('[REAL-TIME] Successfully subscribed to real-time updates for channel');
-        } else if (status === 'CHANNEL_ERROR') {
-          logger.error('[REAL-TIME] Error subscribing to real-time updates for channel', channelId);
-          toast.error('Error connecting to chat. Please refresh the page.');
+        logger.info(`[REAL-TIME] ${subscriptionType} subscription status: ${status}`);
+        if (status === 'CHANNEL_ERROR') {
+          logger.error(`[REAL-TIME] Error subscribing to ${subscriptionType} updates`);
+          toast.error('Error connecting to updates. Please refresh the page.');
         }
       });
       
     // Cleanup on unmount
     return () => {
-      logger.info(`[REAL-TIME] Cleaning up subscription for channel: ${channelId}`);
+      logger.info(`[REAL-TIME] Cleaning up subscription for ${subscriptionType}: ${entityId}`);
       supabase.removeChannel(channel);
     };
-  }, [channelId, queryClient, isAuthenticated, user]);
+  }, [entityId, queryClient, isAuthenticated, user, onNewMessage, notifyUser]);
+};
+
+/**
+ * Helper to update reply count for parent message
+ */
+const updateParentMessageReplyCount = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  message: ChatMessageWithAuthor
+) => {
+  if (!message.parent_id || !message.channel_id) return;
+  
+  const parentId = message.parent_id;
+  const messagesKey = ['chatMessages', message.channel_id];
+  
+  // Update the reply_count for the parent message in all matching queries
+  queryClient.setQueriesData(
+    { queryKey: messagesKey, exact: false },
+    (oldData: any) => {
+      if (!oldData || !Array.isArray(oldData)) return oldData;
+      
+      return oldData.map((msg: ChatMessageWithAuthor) => {
+        if (msg.id === parentId) {
+          const currentCount = msg.reply_count || 0;
+          return { ...msg, reply_count: currentCount + 1 };
+        }
+        return msg;
+      });
+    }
+  );
+};
+
+/**
+ * Hook to subscribe to real-time channel messages
+ */
+export const useChannelMessagesRealtime = (
+  channelId: string | null | undefined,
+  options: RealtimeOptions = {}
+) => {
+  return useRealtimeSubscription('channel', channelId, options);
 };
 
 /**
  * Hook to subscribe to real-time thread replies
  */
-export const useThreadRepliesRealtime = (parentId: string | null | undefined) => {
-  const queryClient = useQueryClient();
-  const { isAuthenticated, user } = useAuth();
-
-  useEffect(() => {
-    // Enhanced validation for parentId
-    if (!isValidUUID(parentId)) {
-      logger.info(`No valid parentId provided to useThreadRepliesRealtime: "${parentId}"`);
-      return;
-    }
-    
-    if (!isAuthenticated || !user) {
-      logger.warn('User is not authenticated for real-time thread updates');
-      return;
-    }
-    
-    logger.info(`Setting up real-time subscription for thread: ${parentId} (user: ${user.id})`);
-    
-    // Subscribe to new replies to the thread
-    const channel = supabase
-      .channel(`thread-${parentId}`)
-      .on(
-        'postgres_changes',
-        { 
-          event: 'INSERT', 
-          schema: 'public', 
-          table: 'chats',
-          filter: `parent_id=eq.${parentId}` 
-        },
-        (payload) => {
-          logger.info('Real-time: New thread reply received:', payload);
-          
-          // Log the timestamp for debugging
-          if (payload.new && payload.new.created_at) {
-            logger.info(`Real-time thread reply timestamp: ${payload.new.created_at}`);
-          }
-          
-          // Process the message with our utility for consistent handling
-          const processedMessage = processChatMessage(payload.new, false); // false because we don't have author info yet
-          
-          // Invalidate and refetch the thread messages query
-          queryClient.invalidateQueries({ 
-            queryKey: ['threadMessages', parentId],
-            refetchType: 'all'
-          });
-          
-          // Update the reply count for the parent message in channel messages queries
-          const channelId = processedMessage.channel_id;
-          if (channelId) {
-            // Get all message queries that might contain this channel's messages
-            const messagesKey = ['chatMessages', channelId];
-            
-            // Update the reply_count for the parent message
-            queryClient.setQueriesData(
-              { queryKey: messagesKey, exact: false },
-              (oldData: any) => {
-                // If no data, return as is
-                if (!oldData || !Array.isArray(oldData)) return oldData;
-                
-                // Find and update the parent message
-                return oldData.map((message: ChatMessageWithAuthor) => {
-                  if (message.id === parentId) {
-                    const currentCount = message.reply_count || 0;
-                    return { ...message, reply_count: currentCount + 1 };
-                  }
-                  return message;
-                });
-              }
-            );
-          }
-          
-          // Notify if message is from someone else
-          if (processedMessage.user_id !== user.id) {
-            toast.info('New reply in thread');
-          }
-        }
-      )
-      .subscribe((status) => {
-        logger.info(`Real-time thread subscription status: ${status}`);
-        if (status === 'CHANNEL_ERROR') {
-          logger.error('Error subscribing to real-time thread updates');
-          toast.error('Error connecting to thread updates');
-        }
-      });
-      
-    // Cleanup on unmount
-    return () => {
-      logger.info(`Cleaning up real-time subscription for thread: ${parentId}`);
-      supabase.removeChannel(channel);
-    };
-  }, [parentId, queryClient, isAuthenticated, user]);
+export const useThreadRepliesRealtime = (
+  parentId: string | null | undefined,
+  options: RealtimeOptions = {}
+) => {
+  return useRealtimeSubscription('thread', parentId, options);
 };
