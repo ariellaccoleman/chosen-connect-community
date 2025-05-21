@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tag, ClipboardList, MessageSquare, Star } from "lucide-react";
+import { APP_ROUTES } from "@/config/routes";
 
 const AdminDashboard = () => {
   const { isAdmin } = useAuth();
@@ -37,7 +38,7 @@ const AdminDashboard = () => {
         </Button>
         
         <Button asChild variant="ghost" className="w-full justify-start">
-          <Link to="/admin/chat/channels" className="flex items-center">
+          <Link to={APP_ROUTES.ADMIN_CHAT_CHANNELS} className="flex items-center">
             <MessageSquare className="mr-2 h-4 w-4" />
             Chat Channels
           </Link>
