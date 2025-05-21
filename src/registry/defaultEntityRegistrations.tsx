@@ -1,9 +1,20 @@
 
 import React from 'react';
 import { EntityType } from '@/types/entityTypes';
-import { EntityRegistration } from '@/types/entityRegistry';
 import { Users, Building, Calendar, MessageCircle, 
   FolderKanban, FileText, MessageSquare } from 'lucide-react';
+
+/**
+ * Interface for entity registration details
+ */
+export interface EntityRegistration {
+  type: EntityType;
+  icon: React.ReactNode;
+  label: string;
+  pluralLabel?: string;
+  avatarFallback: (name: string) => string;
+  defaultRoute: string;
+}
 
 /**
  * Default entity registrations for core entity types.

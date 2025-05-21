@@ -64,6 +64,17 @@ interface CommentLikesCustomOperations {
   hasLiked(commentId: string): Promise<ApiResponse<boolean>>;
 }
 
+// Helper function to format author data safely
+function formatAuthor(authorData: any) {
+  // Ensure authorData is an object
+  const author = authorData || {};
+  return {
+    id: author.id || '',
+    name: `${author.first_name || ''} ${author.last_name || ''}`.trim(),
+    avatar: author.avatar_url || undefined
+  };
+}
+
 // Extend posts API with custom operations
 export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial<Post>, PostsCustomOperations>(
   postsBaseApi,
@@ -88,18 +99,16 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
         if (error) throw error;
 
         const formattedPosts = data?.map(post => {
-          // Format the author data - ensure null check with default empty object
-          const authorData = post.author ? post.author : {};
-          const author = {
-            id: authorData.id || '',
-            name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
-            avatar: authorData.avatar_url
-          };
+          // Format the author data using our helper function
+          const author = formatAuthor(post.author);
 
           // Format tags with null check
-          const tags = post.tag_assignments && Array.isArray(post.tag_assignments) 
-            ? post.tag_assignments.map((assignment: any) => assignment.tags).filter(Boolean) 
-            : [];
+          let tags = [];
+          if (post.tag_assignments && Array.isArray(post.tag_assignments)) {
+            tags = post.tag_assignments
+              .map((assignment: any) => assignment.tags)
+              .filter(Boolean);
+          }
 
           return {
             ...post,
@@ -173,18 +182,16 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
 
         if (error) throw error;
 
-        // Format the author data with null check
-        const authorData = data.author ? data.author : {};
-        const author = {
-          id: authorData.id || '',
-          name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
-          avatar: authorData.avatar_url
-        };
+        // Format the author data with our helper function
+        const author = formatAuthor(data.author);
 
         // Format tags with null check
-        const tags = data.tag_assignments && Array.isArray(data.tag_assignments)
-          ? data.tag_assignments.map((assignment: any) => assignment.tags).filter(Boolean)
-          : [];
+        let tags = [];
+        if (data.tag_assignments && Array.isArray(data.tag_assignments)) {
+          tags = data.tag_assignments
+            .map((assignment: any) => assignment.tags)
+            .filter(Boolean);
+        }
 
         const formattedPost = {
           ...data,
@@ -222,13 +229,8 @@ export const commentsApi = extendApiOperations<PostComment, string, Partial<Post
         if (error) throw error;
 
         const formattedComments = data?.map(comment => {
-          // Format the author data with null check
-          const authorData = comment.author ? comment.author : {};
-          const author = {
-            id: authorData.id || '',
-            name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
-            avatar: authorData.avatar_url
-          };
+          // Format the author data with our helper function
+          const author = formatAuthor(comment.author);
 
           return {
             ...comment,
@@ -264,15 +266,12 @@ export const commentsApi = extendApiOperations<PostComment, string, Partial<Post
 
         if (error) throw error;
 
-        // Format the comment with null check
-        const authorData = comment.author ? comment.author : {};
+        // Format the comment with our helper function
+        const author = formatAuthor(comment.author);
+        
         const formattedComment = {
           ...comment,
-          author: {
-            id: authorData.id || '',
-            name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
-            avatar: authorData.avatar_url
-          },
+          author,
           likes: 0,
           timestamp: new Date(comment.created_at)
         };
