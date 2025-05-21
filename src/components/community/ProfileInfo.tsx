@@ -24,12 +24,12 @@ export const ProfileInfo = ({ profile }: ProfileInfoProps) => {
         )}
       </div>
       {profile.headline && (
-        <p className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+        <p className="text-sm text-gray-600 dark:text-gray-200 mb-1">
           {profile.headline}
         </p>
       )}
       {profile.location && (
-        <p className="text-xs text-gray-500 dark:text-gray-400">
+        <p className="text-xs text-gray-500 dark:text-gray-300">
           {profile.location.formatted_location}
         </p>
       )}

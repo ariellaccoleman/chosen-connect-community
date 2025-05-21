@@ -21,7 +21,7 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
   const isAdmin = profile.role === "admin";
 
   return (
-    <div className="bg-white shadow-sm rounded-lg p-6">
+    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6">
       <div className="flex flex-col md:flex-row gap-6">
         {/* Avatar with admin badge */}
         <div className="flex-shrink-0 relative">
@@ -50,7 +50,7 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
         {/* Profile details */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-gray-900">{profile.full_name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{profile.full_name}</h1>
             {isAdmin && (
               <Badge variant="success" className="flex items-center gap-1">
                 <ShieldCheck className="h-3 w-3" />
@@ -60,11 +60,11 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
           </div>
           
           {profile.headline && (
-            <p className="text-gray-600 mt-1">{profile.headline}</p>
+            <p className="text-gray-600 dark:text-gray-200 mt-1">{profile.headline}</p>
           )}
           
           {profile.location && (
-            <p className="text-gray-500 mt-1">
+            <p className="text-gray-500 dark:text-gray-300 mt-1">
               {profile.location.formatted_location}
             </p>
           )}
@@ -72,7 +72,7 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
           {/* Social links */}
           <div className="flex flex-wrap gap-3 mt-4">
             {profile.linkedin_url && (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
                 <a 
                   href={formatWebsiteUrl(profile.linkedin_url)} 
                   target="_blank" 
@@ -86,7 +86,7 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
             )}
             
             {profile.twitter_url && (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
                 <a 
                   href={formatWebsiteUrl(profile.twitter_url)} 
                   target="_blank" 
@@ -100,7 +100,7 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
             )}
             
             {profile.website_url && (
-              <Button variant="outline" size="sm" asChild>
+              <Button variant="outline" size="sm" asChild className="dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700">
                 <a 
                   href={formatWebsiteUrl(profile.website_url)} 
                   target="_blank" 
@@ -119,8 +119,8 @@ const PublicProfileHeader = ({ profile }: PublicProfileHeaderProps) => {
       {/* Bio */}
       {profile.bio && (
         <div className="mt-6 prose max-w-none">
-          <h2 className="text-lg font-semibold text-gray-900">About</h2>
-          <p className="mt-2 text-gray-700">{profile.bio}</p>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">About</h2>
+          <p className="mt-2 text-gray-700 dark:text-gray-200">{profile.bio}</p>
         </div>
       )}
     </div>

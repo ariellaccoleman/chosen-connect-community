@@ -54,10 +54,10 @@ const ProfileView = () => {
     return (
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <div className="animate-pulse space-y-8">
-          <div className="h-40 bg-gray-100 rounded-lg"></div>
+          <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-40 bg-gray-100 rounded-lg"></div>
-            <div className="h-40 bg-gray-100 rounded-lg"></div>
+            <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
+            <div className="h-40 bg-gray-100 dark:bg-gray-700 rounded-lg"></div>
           </div>
         </div>
       </div>
@@ -77,8 +77,8 @@ const ProfileView = () => {
           Back
         </Button>
         <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Profile Not Found</h1>
-          <p className="text-gray-600">The profile you're looking for does not exist or has been removed.</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Profile Not Found</h1>
+          <p className="text-gray-600 dark:text-gray-200">The profile you're looking for does not exist or has been removed.</p>
         </div>
       </div>
     );
@@ -89,7 +89,7 @@ const ProfileView = () => {
       <Button
         variant="outline"
         size="sm"
-        className="mb-6"
+        className="mb-6 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
         onClick={handleBack}
       >
         <ArrowLeft className="h-4 w-4 mr-2" />

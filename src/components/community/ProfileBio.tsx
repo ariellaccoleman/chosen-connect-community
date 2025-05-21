@@ -10,7 +10,7 @@ export const ProfileBio = ({ profile }: ProfileBioProps) => {
   
   return (
     <div className="mt-4">
-      <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-3">{profile.bio}</p>
+      <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-3">{profile.bio}</p>
     </div>
   );
 };
