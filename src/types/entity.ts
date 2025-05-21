@@ -1,3 +1,4 @@
+
 import { EntityType } from "./entityTypes";
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
@@ -115,8 +116,16 @@ export function hubToEntity(hub: HubWithDetails): Entity {
       target_id: hub.id, 
       target_type: 'hub', 
       created_at: hub.created_at || '', 
-      updated_at: hub.updated_at || '', // Added missing updated_at field
-      tag: hub.tag 
+      updated_at: hub.updated_at || '',
+      tag: {
+        id: hub.tag.id,
+        name: hub.tag.name,
+        description: hub.tag.description,
+        type: null, // Add the missing fields
+        created_by: null,
+        created_at: hub.created_at || '',
+        updated_at: hub.updated_at || ''
+      }
     }] : []
   };
 }
