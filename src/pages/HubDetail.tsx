@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
@@ -116,7 +117,7 @@ const HubDetail = () => {
         <Carousel className="w-full">
           <CarouselContent className="-ml-4 overflow-visible">
             {entities.map((entity) => (
-              <CarouselItem key={`entity-${entity.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3 pr-4">
+              <CarouselItem key={`entity-${entity.id}`} className="pl-4 md:basis-2/5 lg:basis-[30%] pr-4">
                 <div className="h-full">
                   <EntityCard entity={entity} showTags={true} className="h-full" />
                 </div>
@@ -169,7 +170,7 @@ const HubDetail = () => {
               <Carousel className="w-full">
                 <CarouselContent className="-ml-4 overflow-visible">
                   {chatChannels.map(channel => (
-                    <CarouselItem key={`channel-${channel.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3 pr-4">
+                    <CarouselItem key={`channel-${channel.id}`} className="pl-4 md:basis-2/5 lg:basis-[30%] pr-4">
                       <Card className="h-full transition-shadow hover:shadow-md">
                         <CardContent className="p-6">
                           <CardTitle className="flex items-center mb-2 text-xl">
