@@ -22,27 +22,30 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Log the generated URL for debugging
   logger.debug(`ProfileCard: Generated URL for profile ${profile.id}: ${profileUrl}`);
 
+  // Check if profile has tags to determine layout
+  const hasTags = profile.tags && profile.tags.length > 0;
+
   return (
     <Link to={profileUrl} className="block">
       <div className="bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-50 shadow rounded-lg p-6 hover:shadow-md transition-shadow">
-        <div className="flex flex-col md:flex-row md:gap-6">
+        <div className={`flex ${hasTags ? 'flex-col md:flex-row md:gap-6' : 'flex-col'}`}>
           {/* Left Column - Avatar and basic info */}
-          <div className="flex items-start space-x-4 md:w-1/2">
+          <div className={`flex items-start space-x-4 ${hasTags ? 'md:w-1/2' : 'w-full'}`}>
             <ProfileAvatar profile={profile} />
             <ProfileInfo profile={profile} />
           </div>
           
-          {/* Right Column - Tags (only on desktop) */}
-          <div className="md:w-1/2 mt-4 md:mt-0">
-            {profile.tags && profile.tags.length > 0 && (
+          {/* Right Column - Tags (only show if has tags) */}
+          {hasTags && (
+            <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
                 <TagList 
                   tagAssignments={profile.tags} 
                   className="flex flex-wrap gap-2" 
                 />
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
         <ProfileBio profile={profile} />
