@@ -120,7 +120,7 @@ const CreateEventForm = ({
       // If event is virtual, ensure location_id is null
       const finalLocationId = values.is_virtual ? null : values.location_id;
 
-      // Convert form values to CreateEventInput
+      // Convert form values to CreateEventInput - use ISO string for dates
       const eventInput: CreateEventInput = {
         title: values.title,
         description: values.description || "",

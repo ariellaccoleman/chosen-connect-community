@@ -43,7 +43,7 @@ export const eventApi = createApiFactory<
     if (data.title !== undefined) transformed.title = data.title;
     if (data.description !== undefined) transformed.description = data.description;
     
-    // Format dates for the database
+    // Format dates for the database - ensure we handle string dates correctly
     if (data.start_time !== undefined) {
       transformed.start_time = formatDateForDb(data.start_time);
     }

@@ -21,16 +21,30 @@ export const useEventMutations = () => {
     }) => {
       logger.info("Creating event", { event, hostId, tagIds });
       
-      // Use extended API to create event with tags if provided
-      const result = tagIds && tagIds.length > 0
-        ? await extendedEventApi.createEventWithTags(event, hostId, tagIds)
-        : await extendedEventApi.create({ ...event, host_id: hostId } as any);
-      
-      if (result.error) {
-        logger.error("API returned error:", result.error);
-        throw new Error(result.error.message || "Failed to create event");
+      try {
+        // Use extended API to create event with tags if provided
+        const result = tagIds && tagIds.length > 0
+          ? await extendedEventApi.createEventWithTags(event, hostId, tagIds)
+          : await extendedEventApi.create({ ...event, host_id: hostId } as any);
+        
+        if (result.error) {
+          logger.error("API returned error:", result.error);
+          throw result.error;
+        }
+        
+        return result.data;
+      } catch (err) {
+        logger.error("Error creating event", err);
+        // Format the error message properly
+        if (err instanceof Error) {
+          throw err;
+        } else if (typeof err === 'object' && err !== null) {
+          const errorMsg = err.message || JSON.stringify(err);
+          throw new Error(`Failed to create event: ${errorMsg}`);
+        } else {
+          throw new Error(`Failed to create event: ${String(err)}`);
+        }
       }
-      return result.data;
     },
     onSuccess: () => {
       setError(null);
