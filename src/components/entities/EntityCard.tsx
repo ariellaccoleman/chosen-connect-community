@@ -47,9 +47,10 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           
           {/* Content */}
           <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-lg">{entity.name}</h3>
-              <Badge variant="outline" className="flex items-center gap-1">
+            {/* Header with title and badge - Modified for right-aligned badge */}
+            <div className="flex items-start justify-between">
+              <h3 className="font-semibold text-lg pr-2">{entity.name}</h3>
+              <Badge variant="outline" className="flex-shrink-0 flex items-center gap-1">
                 {getEntityIcon(entity.entityType)}
                 <span>{getEntityTypeLabel(entity.entityType)}</span>
               </Badge>
