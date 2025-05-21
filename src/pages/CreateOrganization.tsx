@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -15,6 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useCreateOrganizationWithRelationships } from "@/hooks/organizations";
 import { logger } from "@/utils/logger";
 import { Skeleton } from "@/components/ui/skeleton";
+import Layout from "@/components/layout/Layout";
 
 const organizationSchema = z.object({
   name: z.string().min(2, "Organization name must be at least 2 characters"),
@@ -28,9 +29,9 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
  * Component for creating a new organization
  * Contains authentication checks at the component level for security
  */
-const CreateOrganization = () => {
+const CreateOrganizationContent = () => {
   const navigate = useNavigate();
-  const { user, loading, initialized } = useAuth();
+  const { user, loading } = useAuth();
   const createOrganization = useCreateOrganizationWithRelationships();
 
   const form = useForm<OrganizationFormValues>({
@@ -43,23 +44,20 @@ const CreateOrganization = () => {
   });
   
   // Log authentication state for debugging
-  logger.info("CreateOrganization page rendering", { 
+  logger.info("CreateOrganization content rendering", { 
     userAuthenticated: !!user, 
-    loading,
-    initialized
+    loading
   });
   
   // If still loading auth state, show loading state
-  if (loading || !initialized) {
+  if (loading) {
     return (
-      <DashboardLayout>
-        <div className="container mx-auto py-6 max-w-3xl">
-          <div className="space-y-6">
-            <Skeleton className="h-10 w-1/4 mb-6" />
-            <Skeleton className="h-64 w-full rounded-lg" />
-          </div>
+      <div className="container mx-auto py-6 max-w-3xl">
+        <div className="space-y-6">
+          <Skeleton className="h-10 w-1/4 mb-6" />
+          <Skeleton className="h-64 w-full rounded-lg" />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
   
@@ -94,88 +92,96 @@ const CreateOrganization = () => {
   };
 
   return (
+    <div className="container mx-auto py-6 max-w-3xl">
+      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
+        <ArrowLeft className="mr-2 h-4 w-4" />
+        Back
+      </Button>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Create New Organization</CardTitle>
+          <CardDescription>
+            Add your organization to the community
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form 
+              onSubmit={form.handleSubmit(onSubmit)} 
+              className="space-y-6"
+              role="form"
+              data-testid="org-create-form"
+            >
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Organization Name*</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="Enter organization name" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        {...field} 
+                        placeholder="Brief description of the organization"
+                        className="min-h-[100px]" 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="website_url"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Website URL</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="https://www.example.com" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <div className="flex justify-end">
+                <Button 
+                  type="submit" 
+                  disabled={createOrganization.isPending}
+                  className="bg-chosen-blue hover:bg-chosen-navy"
+                >
+                  {createOrganization.isPending ? "Creating..." : "Create Organization"}
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const CreateOrganization = () => {
+  logger.info("CreateOrganization page container rendering");
+  
+  return (
     <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-3xl">
-        <Button variant="ghost" onClick={() => navigate(-1)} className="mb-6">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Back
-        </Button>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Organization</CardTitle>
-            <CardDescription>
-              Add your organization to the community
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...form}>
-              <form 
-                onSubmit={form.handleSubmit(onSubmit)} 
-                className="space-y-6"
-                role="form"
-                data-testid="org-create-form"
-              >
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Organization Name*</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="Enter organization name" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="description"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Description</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          {...field} 
-                          placeholder="Brief description of the organization"
-                          className="min-h-[100px]" 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <FormField
-                  control={form.control}
-                  name="website_url"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Website URL</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="https://www.example.com" />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
-                <div className="flex justify-end">
-                  <Button 
-                    type="submit" 
-                    disabled={createOrganization.isPending}
-                    className="bg-chosen-blue hover:bg-chosen-navy"
-                  >
-                    {createOrganization.isPending ? "Creating..." : "Create Organization"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </CardContent>
-        </Card>
-      </div>
+      <CreateOrganizationContent />
     </DashboardLayout>
   );
 };

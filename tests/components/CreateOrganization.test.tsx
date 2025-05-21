@@ -52,7 +52,7 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      initialized: true
+      isAuthenticated: true
     }));
     
     // Default organization creation mock
@@ -67,7 +67,7 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
       loading: false,
-      initialized: true
+      isAuthenticated: false
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -83,7 +83,7 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
       loading: true,
-      initialized: false
+      isAuthenticated: false
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -98,7 +98,7 @@ describe('CreateOrganization Component', () => {
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      initialized: true
+      isAuthenticated: true
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
