@@ -1,3 +1,4 @@
+
 import { createApiFactory } from "@/api/core/factory";
 import { extendApiOperations } from "@/api/core/apiExtension";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,17 +84,14 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
       try {
         console.log("Fetching posts with details...");
         
+        // First, get all posts with author details and counts
         const { data, error } = await supabase
           .from("posts")
           .select(`
             *,
             author:profiles!posts_author_id_fkey(id, first_name, last_name, avatar_url),
             post_likes(count),
-            post_comments(count),
-            tag_assignments(
-              tag_id,
-              tags:tag_id(id, name)
-            )
+            post_comments(count)
           `)
           .order("created_at", { ascending: false });
 
@@ -103,25 +101,51 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
         }
         
         console.log("Raw posts data:", data);
+        
+        if (!data || data.length === 0) {
+          return createSuccessResponse([]);
+        }
 
-        const formattedPosts = data?.map(post => {
+        // Now, get tag assignments for these posts in a separate query
+        const postIds = data.map(post => post.id);
+        const { data: tagAssignments, error: tagError } = await supabase
+          .from("tag_assignments")
+          .select(`
+            tag_id,
+            target_id,
+            tags:tag_id(id, name)
+          `)
+          .in('target_id', postIds)
+          .eq('target_type', 'post');
+          
+        if (tagError) {
+          console.error("Error fetching tag assignments:", tagError);
+          // Don't throw here, just continue without tags
+        }
+        
+        console.log("Tag assignments:", tagAssignments);
+        
+        // Group tag assignments by post ID
+        const tagsByPostId = (tagAssignments || []).reduce((acc: Record<string, any[]>, curr: any) => {
+          if (!acc[curr.target_id]) {
+            acc[curr.target_id] = [];
+          }
+          if (curr.tags) {
+            acc[curr.target_id].push(curr.tags);
+          }
+          return acc;
+        }, {});
+        
+        const formattedPosts = data.map(post => {
           // Format the author data using our helper function
           const author = formatAuthor(post.author);
-
-          // Format tags with null check
-          let tags = [];
-          if (post.tag_assignments && Array.isArray(post.tag_assignments)) {
-            tags = post.tag_assignments
-              .map((assignment: any) => assignment.tags)
-              .filter(Boolean);
-          }
 
           return {
             ...post,
             author,
             likes_count: post.post_likes?.length || 0,
             comments_count: post.post_comments?.length || 0,
-            tags
+            tags: tagsByPostId[post.id] || []
           };
         });
         
@@ -174,40 +198,49 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
     // Get post by ID with details
     async getPostWithDetails(id: string): Promise<ApiResponse<Post>> {
       try {
+        // First, get the post with author details and counts
         const { data, error } = await supabase
           .from("posts")
           .select(`
             *,
             author:profiles!posts_author_id_fkey(id, first_name, last_name, avatar_url),
             post_likes(count),
-            post_comments(count),
-            tag_assignments(
-              tag_id,
-              tags:tag_id(id, name)
-            )
+            post_comments(count)
           `)
           .eq("id", id)
           .single();
 
         if (error) throw error;
+        
+        // Then get tags in a separate query
+        const { data: tagAssignments, error: tagError } = await supabase
+          .from("tag_assignments")
+          .select(`
+            tag_id,
+            tags:tag_id(id, name)
+          `)
+          .eq('target_id', id)
+          .eq('target_type', 'post');
+          
+        if (tagError) {
+          console.error("Error fetching tags for post:", tagError);
+          // Don't throw here, just continue without tags
+        }
 
         // Format the author data with our helper function
         const author = formatAuthor(data.author);
-
-        // Format tags with null check
-        let tags = [];
-        if (data.tag_assignments && Array.isArray(data.tag_assignments)) {
-          tags = data.tag_assignments
-            .map((assignment: any) => assignment.tags)
-            .filter(Boolean);
-        }
+        
+        // Extract tags from assignments
+        const tags = (tagAssignments || [])
+          .map((assignment: any) => assignment.tags)
+          .filter(Boolean);
 
         const formattedPost = {
           ...data,
           author,
           likes_count: data.post_likes?.length || 0,
           comments_count: data.post_comments?.length || 0,
-          tags
+          tags: tags || []
         };
 
         return createSuccessResponse(formattedPost);
