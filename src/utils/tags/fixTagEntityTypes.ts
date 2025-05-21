@@ -15,8 +15,7 @@ export async function fixTagEntityAssociations(entityType: EntityType): Promise<
     const { data: assignments, error: assignmentsError } = await supabase
       .from("tag_assignments")
       .select("tag_id")
-      .eq("target_type", entityType)
-      .distinct();
+      .eq("target_type", entityType);
       
     if (assignmentsError) {
       logger.error(`Error fetching tag assignments for ${entityType}:`, assignmentsError);
@@ -29,7 +28,7 @@ export async function fixTagEntityAssociations(entityType: EntityType): Promise<
     }
     
     // Get all the unique tag IDs used with this entity type
-    const tagIds = assignments.map(assignment => assignment.tag_id);
+    const tagIds = Array.from(new Set(assignments.map(assignment => assignment.tag_id)));
     logger.info(`Found ${tagIds.length} unique tags used with ${entityType}`);
     
     // 2. For each tag, ensure there's an entry in tag_entity_types
