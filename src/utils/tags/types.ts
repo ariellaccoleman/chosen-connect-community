@@ -37,3 +37,17 @@ export interface TagEntityType {
   created_at?: string;
   updated_at?: string;
 }
+
+/**
+ * Map of entity types to their human-readable names
+ * This was previously missing and causing the build error
+ */
+export const ENTITY_TYPE_MAP = {
+  [EntityType.PERSON]: "Person",
+  [EntityType.ORGANIZATION]: "Organization",
+  [EntityType.EVENT]: "Event",
+  [EntityType.GUIDE]: "Guide",
+  [EntityType.CHAT]: "Chat",
+  [EntityType.HUB]: "Hub",
+  [EntityType.POST]: "Post"
+};

@@ -13,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ENTITY_TYPE_MAP } from "@/utils/tags/types";
+import { EntityType } from "@/types/entityTypes";
 
 // Schema moved from parent component
 const tagSchema = z.object({
