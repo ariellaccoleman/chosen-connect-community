@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { useIsOrganizationAdmin } from "@/hooks/organizations";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_ROUTES } from "@/config/routes";
 
 interface OrganizationListProps {
   relationships: ProfileOrganizationRelationshipWithDetails[];

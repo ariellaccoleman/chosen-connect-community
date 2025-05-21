@@ -7,6 +7,7 @@ import OrganizationCard from "@/components/organizations/OrganizationCard";
 import { Briefcase } from "lucide-react";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
+import { APP_ROUTES } from "@/config/routes";
 
 interface OrganizationSectionProps {
   relationships: ProfileOrganizationRelationshipWithDetails[];
@@ -37,7 +38,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <CardTitle>Your Organizations</CardTitle>
             <Button 
-              onClick={() => navigate("/organizations/manage-connections")} 
+              onClick={() => navigate(APP_ROUTES.MANAGE_ORGANIZATIONS)} 
               className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
             >
               <Briefcase className="h-4 w-4 mr-2" />
@@ -81,7 +82,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
             <div className="text-center py-6">
               <p className="text-gray-500 mb-4">You haven't added any organizations yet</p>
               <Button 
-                onClick={() => navigate("/organizations")}
+                onClick={() => navigate(APP_ROUTES.ORGANIZATIONS)}
                 className="bg-chosen-blue hover:bg-chosen-navy"
               >
                 Browse Organizations

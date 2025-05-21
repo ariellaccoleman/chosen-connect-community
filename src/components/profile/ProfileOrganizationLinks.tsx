@@ -1,6 +1,7 @@
 
 import { useState } from "react";
 import { UseFormReturn } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { 
   FormField, 
   FormItem, 
@@ -23,6 +24,8 @@ import OrganizationList from "./organization/OrganizationList";
 import OrganizationFormDialog from "./organization/OrganizationFormDialog";
 import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
 import { logger } from "@/utils/logger";
+import { APP_ROUTES } from "@/config/routes";
+import { Button } from "@/components/ui/button";
 
 interface ProfileOrganizationLinksProps {
   form: UseFormReturn<ProfileFormValues>;
@@ -30,6 +33,7 @@ interface ProfileOrganizationLinksProps {
 
 const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isAddingNew, setIsAddingNew] = useState<boolean>(false);
   
   const { data: organizationsResponse } = useOrganizations();
@@ -64,6 +68,11 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const toggleAddOrganization = () => {
     setIsAddingNew(true);
   };
+  
+  // Navigate to manage organizations page
+  const handleManageOrganizations = () => {
+    navigate(APP_ROUTES.MANAGE_ORGANIZATIONS);
+  };
 
   return (
     <Card>
@@ -78,7 +87,7 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
         <OrganizationList
           relationships={formattedRelationships}
           isLoading={isLoadingRelationships}
-          onManageClick={() => form.setValue("navigateToManageOrgs", true)}
+          onManageClick={handleManageOrganizations}
         />
 
         {/* Always render the dialog but control visibility with isAddingNew */}
@@ -93,6 +102,16 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
         <FormDescription>
           Manage your organization connections or add new ones. You can add more details and edit existing connections from the "Manage Organizations" page.
         </FormDescription>
+        
+        <div className="flex justify-center mt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleManageOrganizations}
+          >
+            Manage All Organizations
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

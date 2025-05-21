@@ -1,136 +1,87 @@
 
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useUserOrganizationRelationships, useOrganizations, useAddOrganizationRelationship } from "@/hooks/organizations";
-import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
-import { ProfileOrganizationRelationshipWithDetails, OrganizationWithLocation } from "@/types";
-import { toast } from "@/components/ui/sonner";
-import OrganizationTabs from "@/components/organizations/OrganizationTabs";
+import { useUserOrganizationRelationships, useOrganizations } from "@/hooks/organizations";
+import Layout from "@/components/layout/Layout";
 import OrganizationConnectionsHeader from "@/components/organizations/OrganizationConnectionsHeader";
-import EmptyOrganizationState from "@/components/organizations/EmptyOrganizationState";
-import { formatOrganizationRelationships, filterAvailableOrganizations } from "@/utils/organizationFormatters";
-import OrganizationFormDialog from "@/components/profile/organization/OrganizationFormDialog";
+import OrganizationConnectionDialog from "@/components/organizations/OrganizationConnectionDialog";
+import OrganizationRelationshipList from "@/components/organizations/OrganizationRelationshipList";
+import { filterAvailableOrganizations } from "@/utils/organizationFormatters";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { AlertCircle } from "lucide-react";
 import { logger } from "@/utils/logger";
 
 const ManageOrganizationConnections = () => {
-  const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Log page load for debugging
-  useEffect(() => {
-    logger.info("ManageOrganizationConnections - Component mounted", {
-      userId: user?.id,
-      path: window.location.pathname
-    });
-  }, [user]);
-  
-  const { data: relationshipsResponse, isLoading: relationshipsLoading } = useUserOrganizationRelationships(user?.id);
+  // Fetch user's organization relationships
+  const { 
+    data: relationshipsResponse,
+    isLoading: relationshipsLoading,
+    error: relationshipsError
+  } = useUserOrganizationRelationships(user?.id);
   const relationships = relationshipsResponse?.data || [];
   
-  const [activeTab, setActiveTab] = useState("all");
-  const [relationshipToEdit, setRelationshipToEdit] = useState<ProfileOrganizationRelationshipWithDetails | null>(null);
-  const [isConnectDialogOpen, setIsConnectDialogOpen] = useState(false);
+  // Fetch all organizations for connecting
+  const { 
+    data: organizationsResponse,
+    isLoading: organizationsLoading,
+    error: organizationsError
+  } = useOrganizations();
+  const organizations = organizationsResponse?.data || [];
   
-  // Get organizations for the connect dialog
-  const { data: allOrganizationsResponse, isLoading: isLoadingOrgs } = useOrganizations();
-  const allOrganizations = allOrganizationsResponse?.data || [];
-  const addRelationship = useAddOrganizationRelationship();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      logger.info("ManageOrganizationConnections - No user, redirecting to auth");
-      navigate("/auth");
-    }
-  }, [user, loading, navigate]);
-
-  // Use our utility function to format relationships
-  const formattedRelationships = formatOrganizationRelationships(relationships);
+  // Filter out organizations the user is already connected to
+  const availableOrganizations = filterAvailableOrganizations(organizations, relationships);
   
-  // Calculate available organizations using our utility function
-  const availableOrganizations = filterAvailableOrganizations(allOrganizations, relationships);
-
-  const handleEditClick = (relationship: ProfileOrganizationRelationshipWithDetails) => {
-    setRelationshipToEdit(relationship);
-  };
-  
-  const handleAddConnection = async (data: {
-    organizationId: string;
-    connectionType: "current" | "former" | "connected_insider";
-    department: string | null;
-    notes: string | null;
-  }) => {
-    if (!user?.id) return;
-    
-    try {
-      await addRelationship.mutateAsync({
-        profile_id: user.id,
-        organization_id: data.organizationId,
-        connection_type: data.connectionType,
-        department: data.department,
-        notes: data.notes
-      });
-      
-      toast.success("Organization connection added successfully");
-      setIsConnectDialogOpen(false);
-    } catch (error) {
-      logger.error("Error adding organization connection:", error);
-      toast.error("Failed to add organization connection");
-    }
-  };
+  // Log for debugging
+  logger.info('ManageOrganizationConnections component state:', {
+    userId: user?.id,
+    relationshipsCount: relationships?.length,
+    organizationsCount: organizations?.length,
+    availableOrganizationsCount: availableOrganizations?.length,
+    isDialogOpen,
+    isLoading: relationshipsLoading || organizationsLoading
+  });
 
   return (
-    <DashboardLayout>
-      <div className="container mx-auto py-6 max-w-5xl px-4">
-        <OrganizationConnectionsHeader
-          onConnectClick={() => setIsConnectDialogOpen(true)}
+    <Layout>
+      <div className="container py-8">
+        <OrganizationConnectionsHeader 
+          onConnectClick={() => setIsDialogOpen(true)}
           availableOrganizationsCount={availableOrganizations.length}
         />
         
-        <Card className="overflow-hidden">
-          <CardHeader>
-            <CardTitle>Manage Organization Connections</CardTitle>
-            <CardDescription>
-              Update or remove your connections to organizations
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="overflow-x-auto">
-            {relationshipsLoading ? (
-              <div className="text-center py-8">Loading your organizations...</div>
-            ) : formattedRelationships.length > 0 ? (
-              <OrganizationTabs
-                relationships={formattedRelationships}
-                activeTab={activeTab}
-                onTabChange={setActiveTab}
-                onEditClick={handleEditClick}
-              />
-            ) : (
-              <EmptyOrganizationState />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Edit Relationship Dialog */}
-      {relationshipToEdit && (
-        <EditRelationshipDialog 
-          relationship={relationshipToEdit}
-          isOpen={!!relationshipToEdit}
-          onClose={() => setRelationshipToEdit(null)}
+        {/* Error states */}
+        {(relationshipsError || organizationsError) && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              {relationshipsError ? 'Failed to load your organization connections.' : 
+               organizationsError ? 'Failed to load available organizations.' : 
+               'An error occurred. Please try again.'}
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Organization list */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <OrganizationRelationshipList 
+            relationships={relationships}
+            isLoading={relationshipsLoading}
+          />
+        </div>
+        
+        {/* Connection dialog */}
+        <OrganizationConnectionDialog 
+          isOpen={isDialogOpen}
+          onClose={() => setIsDialogOpen(false)}
+          organizations={availableOrganizations}
+          isLoading={organizationsLoading}
+          userId={user?.id}
         />
-      )}
-      
-      {/* Connect to Organization Dialog */}
-      <OrganizationFormDialog
-        organizations={availableOrganizations}
-        isLoadingOrgs={isLoadingOrgs}
-        onClose={() => setIsConnectDialogOpen(false)}
-        onSubmit={handleAddConnection}
-        isOpen={isConnectDialogOpen}
-      />
-    </DashboardLayout>
+      </div>
+    </Layout>
   );
 };
 
