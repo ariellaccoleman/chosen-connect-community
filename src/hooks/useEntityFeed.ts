@@ -34,7 +34,7 @@ export const useEntityFeed = ({
       await Promise.all(
         entityTypes.map(async (type) => {
           try {
-            let items = [];
+            let items: any[] = [];
             
             // Fetch the appropriate data based on entity type
             switch (type) {
@@ -142,21 +142,28 @@ export const useEntityFeed = ({
             }
             
             // Convert each item to an Entity and add to results
-            items.forEach((item) => {
-              if (item) {
-                const entity = toEntity(item, type);
-                if (entity) {
-                  logger.debug(`EntityFeed: Converted ${type} to entity`, {
-                    id: entity.id,
-                    entityType: entity.entityType,
-                    name: entity.name
-                  });
-                  allEntities.push(entity);
-                } else {
-                  logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
+            if (items && items.length > 0) {
+              items.forEach((item) => {
+                if (item) {
+                  try {
+                    // Fix: Use type assertion to avoid TypeScript circular reference issues
+                    const entity = toEntity(item as any, type);
+                    if (entity) {
+                      logger.debug(`EntityFeed: Converted ${type} to entity`, {
+                        id: entity.id,
+                        entityType: entity.entityType,
+                        name: entity.name
+                      });
+                      allEntities.push(entity);
+                    } else {
+                      logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
+                    }
+                  } catch (conversionError) {
+                    logger.error(`EntityFeed: Error converting ${type} entity:`, conversionError);
+                  }
                 }
-              }
-            });
+              });
+            }
           } catch (e) {
             logger.error(`Error fetching ${type} entities:`, e);
           }
