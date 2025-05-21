@@ -108,23 +108,21 @@ const HubDetail = () => {
           {icon}
           <span className="ml-2">{title}</span>
         </h2>
-        <div className="relative">
-          <Carousel className="w-full">
-            <CarouselContent>
-              {entities.map((entity) => (
-                <CarouselItem key={`entity-${entity.id}`} className="sm:basis-1/2 lg:basis-1/3 pl-4">
-                  <EntityCard entity={entity} showTags={true} />
-                </CarouselItem>
-              ))}
-            </CarouselContent>
-            {entities.length > 1 && (
-              <div className="flex justify-end mt-2">
-                <CarouselPrevious className="relative static mr-2 -left-0 translate-y-0" />
-                <CarouselNext className="relative static -right-0 translate-y-0" />
-              </div>
-            )}
-          </Carousel>
-        </div>
+        <Carousel className="w-full">
+          <CarouselContent className="-ml-4">
+            {entities.map((entity) => (
+              <CarouselItem key={`entity-${entity.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                <EntityCard entity={entity} showTags={true} />
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {entities.length > 1 && (
+            <div className="flex justify-end mt-2">
+              <CarouselPrevious className="mr-2 static translate-y-0 left-auto" />
+              <CarouselNext className="static translate-y-0 right-auto" />
+            </div>
+          )}
+        </Carousel>
       </div>
     );
   };
@@ -133,10 +131,10 @@ const HubDetail = () => {
   const EntityCard = ({ entity, showTags }) => {
     return (
       <Card className="h-full transition-shadow hover:shadow-md">
-        <CardContent className="pt-6">
-          <CardTitle className="mb-2 truncate">{entity.name}</CardTitle>
+        <CardContent className="p-6">
+          <CardTitle className="mb-2 text-xl">{entity.name}</CardTitle>
           {entity.description && (
-            <p className="text-muted-foreground line-clamp-2">{entity.description}</p>
+            <p className="text-muted-foreground mt-2 line-clamp-2">{entity.description}</p>
           )}
           {showTags && entity.tags && entity.tags.length > 0 && (
             <div className="mt-4">
@@ -193,36 +191,34 @@ const HubDetail = () => {
                 <span>Chat Channels</span>
               </h2>
               
-              <div className="relative">
-                <Carousel className="w-full">
-                  <CarouselContent>
-                    {chatChannels.map(channel => (
-                      <CarouselItem key={`channel-${channel.id}`} className="sm:basis-1/2 lg:basis-1/3 pl-4">
-                        <Card className="h-full transition-shadow hover:shadow-md">
-                          <CardContent className="pt-6">
-                            <CardTitle className="flex items-center mb-2">
-                              <MessageSquare className="mr-2 h-5 w-5" />
-                              {channel.name || "Unnamed Channel"}
-                            </CardTitle>
-                            {channel.description && (
-                              <p className="text-muted-foreground mt-2 line-clamp-2">{channel.description}</p>
-                            )}
-                            
-                            {/* Add the channel preview component */}
-                            <ChannelPreview channel={channel} />
-                          </CardContent>
-                        </Card>
-                      </CarouselItem>
-                    ))}
-                  </CarouselContent>
-                  {chatChannels.length > 1 && (
-                    <div className="flex justify-end mt-2">
-                      <CarouselPrevious className="relative static mr-2 -left-0 translate-y-0" />
-                      <CarouselNext className="relative static -right-0 translate-y-0" />
-                    </div>
-                  )}
-                </Carousel>
-              </div>
+              <Carousel className="w-full">
+                <CarouselContent className="-ml-4">
+                  {chatChannels.map(channel => (
+                    <CarouselItem key={`channel-${channel.id}`} className="pl-4 md:basis-1/2 lg:basis-1/3">
+                      <Card className="h-full transition-shadow hover:shadow-md">
+                        <CardContent className="p-6">
+                          <CardTitle className="flex items-center mb-2 text-xl">
+                            <MessageSquare className="mr-2 h-5 w-5" />
+                            {channel.name || "Unnamed Channel"}
+                          </CardTitle>
+                          {channel.description && (
+                            <p className="text-muted-foreground mt-2 line-clamp-2">{channel.description}</p>
+                          )}
+                          
+                          {/* Add the channel preview component */}
+                          <ChannelPreview channel={channel} />
+                        </CardContent>
+                      </Card>
+                    </CarouselItem>
+                  ))}
+                </CarouselContent>
+                {chatChannels.length > 1 && (
+                  <div className="flex justify-end mt-2">
+                    <CarouselPrevious className="mr-2 static translate-y-0 left-auto" />
+                    <CarouselNext className="static translate-y-0 right-auto" />
+                  </div>
+                )}
+              </Carousel>
             </div>
           )}
           
