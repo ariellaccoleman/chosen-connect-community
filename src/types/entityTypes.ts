@@ -6,7 +6,8 @@ export enum EntityType {
   PERSON = 'person',
   ORGANIZATION = 'organization',
   EVENT = 'event',
-  CHAT = 'chat'  // Add new chat entity type
+  CHAT = 'chat',  
+  HUB = 'hub'  // Add new hub entity type
 }
 
 /**

@@ -95,7 +95,7 @@ const AdminHubForm: React.FC<AdminHubFormProps> = ({
               <FormLabel>Associated Tag</FormLabel>
               <FormControl>
                 <TagSelector 
-                  targetType="hub" as EntityType
+                  targetType={EntityType.HUB}
                   onTagSelected={(tag) => field.onChange(tag.id)}
                   currentSelectedTagId={field.value}
                 />
