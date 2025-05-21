@@ -1,16 +1,27 @@
 
 import React from "react";
+import Layout from "@/components/layout/Layout";
+import PostComposer from "@/components/feed/PostComposer";
+import PostList from "@/components/feed/PostList";
+import { Card } from "@/components/ui/card";
 
 const Feed: React.FC = () => {
   return (
-    <div className="container py-8">
-      <h1 className="text-3xl font-bold mb-6">Feed</h1>
-      <div className="bg-white dark:bg-sidebar p-6 rounded-lg shadow-sm">
-        <p className="text-gray-600 dark:text-gray-400">
-          Feed content will be displayed here.
-        </p>
+    <Layout>
+      <div className="container py-8 max-w-3xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Feed</h1>
+        
+        {/* Post composer */}
+        <div className="mb-6">
+          <PostComposer />
+        </div>
+        
+        {/* Feed content */}
+        <div className="space-y-4">
+          <PostList />
+        </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

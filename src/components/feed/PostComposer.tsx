@@ -1,0 +1,85 @@
+
+import React, { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/hooks/useAuth";
+import { useCurrentProfile } from "@/hooks/profiles";
+import { Image, Video, Send } from "lucide-react";
+
+const PostComposer: React.FC = () => {
+  const [postContent, setPostContent] = useState("");
+  const { user } = useAuth();
+  const { data: profileData } = useCurrentProfile();
+  const profile = profileData?.data;
+
+  const handlePostContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPostContent(e.target.value);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Post submitted:", postContent);
+    setPostContent("");
+  };
+
+  const getInitials = () => {
+    if (!profile) return user?.email?.charAt(0).toUpperCase() || "U";
+
+    return [profile.first_name?.[0], profile.last_name?.[0]]
+      .filter(Boolean)
+      .join("")
+      .toUpperCase();
+  };
+
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <form onSubmit={handleSubmit}>
+          <div className="flex items-start space-x-4">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={profile?.avatar_url || ""} alt={profile?.full_name || "User"} />
+              <AvatarFallback className="bg-chosen-blue text-white">
+                {getInitials()}
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1">
+              <Textarea
+                placeholder="What's on your mind?"
+                className="resize-none mb-3 min-h-[100px]"
+                value={postContent}
+                onChange={handlePostContentChange}
+              />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Button type="button" variant="ghost" size="sm" className="text-gray-600">
+                    <Image className="h-5 w-5 mr-1" />
+                    Photo
+                  </Button>
+                  <Button type="button" variant="ghost" size="sm" className="text-gray-600">
+                    <Video className="h-5 w-5 mr-1" />
+                    Video
+                  </Button>
+                </div>
+                
+                <Button 
+                  type="submit" 
+                  className="bg-chosen-blue hover:bg-chosen-navy"
+                  disabled={!postContent.trim()}
+                >
+                  <Send className="h-4 w-4 mr-2" />
+                  Post
+                </Button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PostComposer;
