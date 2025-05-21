@@ -15,8 +15,8 @@ import { logger } from "@/utils/logger";
 
 const ProfileView = () => {
   // Get profileId from URL params - ensure we use the right parameter name
-  // The route is defined as /community/:id in APP_ROUTES.COMMUNITY_PROFILE
-  const { id: profileId } = useParams<{ id: string }>();
+  // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
+  const { profileId } = useParams<{ profileId: string }>();
   const navigate = useNavigate();
   
   // Log the extracted profileId for debugging

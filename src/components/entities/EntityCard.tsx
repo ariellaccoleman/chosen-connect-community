@@ -57,7 +57,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
             </div>
             
             {entity.description && (
-              <p className="text-gray-600 mt-1 line-clamp-2">{entity.description}</p>
+              <p className="text-gray-600 mt-1">{entity.description}</p>
             )}
             
             {/* Location info */}
