@@ -29,6 +29,12 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     getEntityAvatarFallback 
   } = useEntityRegistry();
 
+  // Safe check for entity type
+  if (!entity || !entity.entityType) {
+    logger.error("EntityCard: Invalid entity or missing entity type", entity);
+    return null;
+  }
+
   // Debug entity data
   logger.debug(`EntityCard: Rendering entity`, {
     id: entity.id,
@@ -46,7 +52,10 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   
   // Make sure we have a valid entity type
   const entityTypeLabel = getEntityTypeLabel(entity.entityType);
-  logger.debug(`EntityCard: Entity type label for ${entity.entityType}: ${entityTypeLabel}`);
+  
+  if (entityTypeLabel === 'Unknown') {
+    logger.error(`EntityCard: Unknown entity type for entity: ${entity.id}, type: ${entity.entityType}`);
+  }
 
   return (
     <Link to={entityUrl} className="block">

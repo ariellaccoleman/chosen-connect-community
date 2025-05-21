@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Building2, Calendar } from 'lucide-react';
 import { useEntityFeed } from '@/hooks/useEntityFeed';
 import { useChatChannelsByTag } from '@/hooks/chat/useChatChannels';
+import { logger } from '@/utils/logger';
 import PostCarousel from '@/components/feed/PostCarousel';
 import ChatChannelCarousel from '@/components/hubs/detail/ChatChannelCarousel';
 import EntityCarousel from '@/components/hubs/detail/EntityCarousel';
@@ -20,9 +21,21 @@ const HubDetail = () => {
   const { data: hubResponse, isLoading, error } = useHub(hubId);
   const hub = hubResponse?.data;
 
+  // Log hub details for debugging
+  useEffect(() => {
+    if (hub) {
+      logger.debug('Hub detail loaded:', {
+        id: hub.id,
+        name: hub.name,
+        tag_id: hub.tag_id
+      });
+    }
+  }, [hub]);
+
   // If there's an error or no hub found, redirect to the hubs page
   useEffect(() => {
     if (error || (!isLoading && !hub)) {
+      logger.error('Hub not found or error occurred:', error);
       navigate('/hubs');
     }
   }, [hub, isLoading, error, navigate]);
@@ -58,6 +71,18 @@ const HubDetail = () => {
     limit: 6
   });
 
+  // Log entity counts for debugging
+  useEffect(() => {
+    if (hub) {
+      logger.debug(`Entity counts for hub ${hub.name}:`, {
+        people: people.length,
+        organizations: organizations.length,
+        events: events.length,
+        tag_id: hub.tag_id
+      });
+    }
+  }, [hub, people, organizations, events]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -73,6 +98,13 @@ const HubDetail = () => {
   if (!hub) return null; // Will redirect from the useEffect
 
   const hasEntities = people.length > 0 || organizations.length > 0 || events.length > 0;
+  
+  // Log the check for entities
+  logger.debug(`Hub ${hub.name} has entities: ${hasEntities}`, {
+    peopleCount: people.length,
+    organizationsCount: organizations.length,
+    eventsCount: events.length
+  });
 
   return (
     <>

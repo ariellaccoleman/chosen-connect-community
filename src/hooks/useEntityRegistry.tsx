@@ -58,7 +58,11 @@ export const useEntityRegistry = () => {
    */
   const getEntityIcon = (entityType: EntityType) => {
     const registration = registry[entityType];
-    return registration ? registration.icon : null;
+    if (!registration) {
+      logger.error(`No registration found for entity type: ${entityType}`);
+      return null;
+    }
+    return registration.icon;
   };
 
   /**
@@ -66,7 +70,11 @@ export const useEntityRegistry = () => {
    */
   const getEntityTypeLabel = (entityType: EntityType): string => {
     const registration = registry[entityType];
-    return registration ? registration.label : 'Unknown';
+    if (!registration) {
+      logger.error(`No registration found for entity type: ${entityType}`);
+      return 'Unknown';
+    }
+    return registration.label;
   };
   
   /**
@@ -74,7 +82,11 @@ export const useEntityRegistry = () => {
    */
   const getEntityTypePlural = (entityType: EntityType): string => {
     const registration = registry[entityType];
-    return registration ? (registration.pluralLabel || `${registration.label}s`) : 'Unknown';
+    if (!registration) {
+      logger.error(`No registration found for entity type: ${entityType}`);
+      return 'Unknown';
+    }
+    return registration.pluralLabel || `${registration.label}s`;
   };
 
   /**
@@ -95,7 +107,17 @@ export const useEntityRegistry = () => {
    * Convert a data object to an entity
    */
   const toEntity = (data: any, entityType: EntityType): Entity | null => {
-    if (!data) return null;
+    if (!data) {
+      logger.warn(`Null or undefined data provided to toEntity for type ${entityType}`);
+      return null;
+    }
+    
+    if (!data.id) {
+      logger.warn(`Data missing ID property for type ${entityType}`, data);
+      return null;
+    }
+    
+    logger.debug(`Converting ${entityType} to entity with id ${data.id}`);
     
     const baseEntity: Entity = {
       id: data.id,
@@ -104,48 +126,55 @@ export const useEntityRegistry = () => {
       created_at: data.created_at,
     };
     
-    switch (entityType) {
-      case EntityType.EVENT:
-        return {
-          ...baseEntity,
-          name: data.title,
-          description: data.description,
-          location: data.location,
-          imageUrl: data.image_url || null,
-          tags: data.tags,
-        };
-      
-      case EntityType.PERSON:
-        return {
-          ...baseEntity,
-          name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
-          description: data.headline || data.bio,
-          location: data.location,
-          imageUrl: data.avatar_url || null,
-          tags: data.tags,
-        };
+    try {
+      switch (entityType) {
+        case EntityType.EVENT:
+          return {
+            ...baseEntity,
+            name: data.title,
+            description: data.description,
+            location: data.location,
+            imageUrl: data.image_url || null,
+            tags: data.tags,
+          };
         
-      case EntityType.ORGANIZATION:
-        return {
-          ...baseEntity,
-          name: data.name,
-          description: data.description,
-          location: data.location,
-          imageUrl: data.logo_url || data.logo_api_url || null,
-          tags: data.tags,
-        };
-        
-      case EntityType.HUB:
-        return {
-          ...baseEntity,
-          name: data.name,
-          description: data.description,
-          imageUrl: null, // Hubs don't have images currently
-          tags: data.tags,
-        };
-        
-      default:
-        return null;
+        case EntityType.PERSON:
+          return {
+            ...baseEntity,
+            name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+            description: data.headline || data.bio,
+            location: data.location,
+            imageUrl: data.avatar_url || null,
+            tags: data.tags,
+          };
+          
+        case EntityType.ORGANIZATION:
+          return {
+            ...baseEntity,
+            name: data.name,
+            description: data.description,
+            location: data.location,
+            imageUrl: data.logo_url || data.logo_api_url || null,
+            tags: data.tags,
+          };
+          
+        case EntityType.HUB:
+          return {
+            ...baseEntity,
+            name: data.name,
+            description: data.description,
+            imageUrl: null, // Hubs don't have images currently
+            tags: data.tags,
+          };
+          
+        default:
+          logger.error(`Unsupported entity type in toEntity: ${entityType}`);
+          return null;
+      }
+    } catch (error) {
+      logger.error(`Error converting ${entityType} to entity:`, error);
+      logger.debug(`Failed entity data:`, data);
+      return null;
     }
   };
 

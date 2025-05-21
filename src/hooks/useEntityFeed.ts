@@ -34,6 +34,8 @@ export const useEntityFeed = ({
     queryFn: async () => {
       const allEntities: Entity[] = [];
       
+      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}`);
+      
       // Conditionally fetch each entity type
       await Promise.all(
         entityTypes.map(async (type) => {
@@ -51,6 +53,8 @@ export const useEntityFeed = ({
                   },
                   limit
                 });
+                
+                logger.debug(`EntityFeed: Received ${profiles?.length || 0} profiles`);
                 items = profiles || [];
                 break;
                 
@@ -62,6 +66,8 @@ export const useEntityFeed = ({
                   },
                   limit
                 });
+                
+                logger.debug(`EntityFeed: Received ${orgs?.length || 0} organizations`);
                 items = orgs || [];
                 break;
                 
@@ -73,14 +79,19 @@ export const useEntityFeed = ({
                   },
                   limit
                 });
+                
+                logger.debug(`EntityFeed: Received ${events?.length || 0} events`);
                 items = events || [];
                 break;
                 
-              // Add more cases as needed for other entity types
-              
               default:
                 logger.warn(`Unsupported entity type: ${type}`);
                 return;
+            }
+            
+            // Log the structure of first item to help debug conversion issues
+            if (items.length > 0) {
+              logger.debug(`Sample ${type} item structure:`, JSON.stringify(items[0]).substring(0, 200) + "...");
             }
             
             // Convert each item to an Entity and add to results
@@ -103,6 +114,7 @@ export const useEntityFeed = ({
         })
       );
       
+      logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
       return allEntities;
     },
     enabled: entityTypes.length > 0,
