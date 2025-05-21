@@ -2,9 +2,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
-import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
+import { entityRegistry } from "@/registry";
 
 /**
  * Custom hook to fetch entities of specified types, optionally filtered by tag
@@ -20,8 +20,6 @@ export const useEntityFeed = ({
   limit?: number;
   filterByUserId?: string | null;
 }) => {
-  const { toEntity } = useEntityRegistry();
-  
   // This query fetches entities based on the provided entityTypes
   const { data: entitiesData, isLoading, error } = useQuery({
     queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId }],
@@ -53,7 +51,7 @@ export const useEntityFeed = ({
                 }
                 
                 if (filterByUserId) {
-                  peopleQuery = peopleQuery.eq('user_id', filterByUserId);
+                  peopleQuery = peopleQuery.eq('id', filterByUserId);
                   logger.debug(`EntityFeed: Filtering PERSON entities by user_id=${filterByUserId}`);
                 }
                 
@@ -146,8 +144,8 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Directly use the entity registry's toEntity method 
-                    const entity = toEntity(item, type);
+                    // Use the entity registry directly to convert items
+                    const entity = entityRegistry[type]?.toEntity ? entityRegistry[type].toEntity(item) : null;
                     if (entity) {
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
                         id: entity.id,
