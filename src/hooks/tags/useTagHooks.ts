@@ -1,8 +1,6 @@
-
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  tagsApi, 
   getAllTags, 
   createTag, 
   updateTag,
@@ -12,45 +10,33 @@ import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
 import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
+import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
+import { logger } from "@/utils/logger";
 
 /**
  * Hook to fetch tags for selection lists
  */
 export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
-    queryKey: ["tags", entityType],
+    queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
-      // If entityType is provided, modify query to filter by entity type using tag_entity_types
-      if (entityType) {
-        const { data, error } = await apiClient.query(async (client) => {
-          const { data, error } = await client.rpc('query_tags', {
-            query_text: `
-              SELECT t.* FROM tags t
-              WHERE t.id IN (
-                SELECT tag_id FROM tag_entity_types
-                WHERE entity_type = '${entityType}'
-              )
-              OR NOT EXISTS (
-                SELECT 1 FROM tag_entity_types 
-                WHERE tag_entity_types.tag_id = t.id
-              )
-              ORDER BY t.name
-            `
-          });
-          if (error) throw error;
-          return { data, error };
+      try {
+        // Use the shared fetchSelectionTags function from tagOperations
+        const tags = await fetchSelectionTags({
+          targetType: entityType,
+          skipCache: false
         });
-
-        if (error) throw error;
+        
+        logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
         return {
           status: 'success',
-          data: data || []
+          data: tags
         };
+      } catch (error) {
+        logger.error("Error in useSelectionTags:", error);
+        throw error;
       }
-      
-      // Otherwise, get all tags
-      return getAllTags();
     }
   });
 }

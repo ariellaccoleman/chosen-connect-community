@@ -18,7 +18,7 @@ const CommunityDirectory = () => {
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { user } = useAuth();
   
-  // Use the hooks for tags
+  // Use the hooks for tags - now uses the improved useSelectionTags hook
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
@@ -33,7 +33,7 @@ const CommunityDirectory = () => {
   // Debug tag data
   useEffect(() => {
     if (tagsResponse?.data) {
-      logger.debug("Available tags:", tagsResponse.data);
+      logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
       
       // Find and log the Campus Issues tag
       const campusIssuesTag = tagsResponse.data.find(tag => tag.name === "Campus Issues");
@@ -81,7 +81,7 @@ const CommunityDirectory = () => {
     }
   }, [selectedTagIds, tagsResponse?.data]);
 
-  // Client-side filtering for tags (since the backend filtering isn't working properly)
+  // Client-side filtering for tags
   const filteredProfiles = selectedTagIds.length > 0 
     ? allProfiles.filter(profile => 
         profile.tags && 

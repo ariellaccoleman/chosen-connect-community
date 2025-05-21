@@ -1,4 +1,3 @@
-
 import { 
   getSelectionTags, 
   getFilterTags 
@@ -14,6 +13,7 @@ export const fetchFilterTags = async (options: {
   createdBy?: string;
   searchQuery?: string;
   targetType?: EntityType | string;
+  skipCache?: boolean;
 } = {}): Promise<Tag[]> => {
   try {
     // Validate entity type if provided
@@ -25,12 +25,15 @@ export const fetchFilterTags = async (options: {
       validOptions.targetType = undefined;
     }
     
+    logger.debug(`fetchFilterTags: Getting tags for target type: ${validOptions.targetType || 'all'}`);
+    
     const response = await getFilterTags(validOptions);
     if (response.status !== 'success' || !response.data) {
       logger.error("Error fetching filter tags:", response.error);
       return [];
     }
     
+    logger.debug(`fetchFilterTags: Found ${response.data.length} tags`);
     return response.data;
   } catch (error) {
     logger.error("Error in fetchFilterTags:", error);
@@ -56,17 +59,59 @@ export const fetchSelectionTags = async (options: {
       validOptions.targetType = undefined;
     }
     
-    const response = await getSelectionTags(validOptions);
-    if (response.status !== 'success' || !response.data) {
-      logger.error("Error fetching selection tags:", response.error);
+    logger.debug(`fetchSelectionTags: Getting tags for target type: ${validOptions.targetType || 'all'}`);
+    
+    // First try the optimized selection tags API
+    try {
+      const response = await getSelectionTags(validOptions);
+      if (response.status === 'success' && response.data && response.data.length > 0) {
+        logger.debug(`fetchSelectionTags: Found ${response.data.length} tags via getSelectionTags`);
+        return response.data;
+      }
+    } catch (optimizedError) {
+      logger.warn("Optimized tag selection query failed, falling back to standard approach:", optimizedError);
+    }
+    
+    // Fallback to getting all tags if the specialized query fails
+    logger.debug("fetchSelectionTags: Falling back to getAllTags");
+    const allTagsResponse = await getAllTags();
+    
+    if (allTagsResponse.status !== 'success' || !allTagsResponse.data) {
+      logger.error("Error fetching all tags:", allTagsResponse.error);
       return [];
     }
     
-    return response.data;
+    let tags = allTagsResponse.data;
+    logger.debug(`fetchSelectionTags: Found ${tags.length} tags via fallback method`);
+    
+    return tags;
   } catch (error) {
     logger.error("Error in fetchSelectionTags:", error);
     // Always return empty array on error to prevent UI from breaking
     return [];
+  }
+};
+
+// Import getAllTags function to use in the fallback case
+const getAllTags = async (): Promise<{ status: string, data: Tag[], error?: any }> => {
+  try {
+    const { data, error } = await apiClient.query(client => 
+      client.from("tags").select("*").order("name")
+    );
+    
+    if (error) throw error;
+    
+    return {
+      status: 'success',
+      data: data || []
+    };
+  } catch (error) {
+    logger.error("Error in getAllTags:", error);
+    return { 
+      status: 'error', 
+      data: [],
+      error 
+    };
   }
 };
 
