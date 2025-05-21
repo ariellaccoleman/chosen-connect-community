@@ -1,10 +1,10 @@
 
 import { EntityType } from "./entityTypes";
-import { BaseEntity, Entity } from "./entity";
+import { Entity } from "./entity";
 import { ReactNode } from "react";
 
 // Entity converter definition
-export interface EntityConverter<T extends BaseEntity> {
+export interface EntityConverter<T> {
   toEntity: (source: T) => Entity;
   fromEntity?: (entity: Entity) => Partial<T>;
 }

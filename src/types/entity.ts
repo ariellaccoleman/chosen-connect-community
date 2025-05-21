@@ -1,6 +1,7 @@
 
 import { EntityType } from "./entityTypes";
 import { TagAssignment } from "@/utils/tags/types";
+import { Location } from "./location";
 
 /** 
  * Generic Entity interface that represents any entity in the system
@@ -35,7 +36,7 @@ export interface Entity {
   /**
    * Location information for the entity
    */
-  location?: string;
+  location?: Location;
   
   /**
    * Website or external URL for the entity

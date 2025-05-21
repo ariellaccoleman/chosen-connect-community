@@ -10,6 +10,7 @@ import TagList from "../tags/TagList";
 import { format } from "date-fns";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
+import { formatLocation } from "@/utils/formatters/locationFormatters";
 
 interface EntityCardProps {
   entity: Entity;
@@ -63,6 +64,9 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     });
   }
 
+  // Format location for display
+  const locationDisplay = entity.location ? formatLocation(entity.location) : null;
+
   return (
     <Link to={entityUrl} className="block">
       <div className={`bg-card text-card-foreground dark:bg-gray-800 dark:text-gray-50 shadow rounded-lg p-6 hover:shadow-md transition-shadow ${className}`}>
@@ -91,10 +95,10 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
             )}
             
             {/* Location info */}
-            {entity.location && (
+            {locationDisplay && (
               <div className="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-300">
                 <MapPin className="h-3.5 w-3.5 mr-1" />
-                <span>{entity.location.formatted_location || entity.location.full_name}</span>
+                <span>{locationDisplay}</span>
               </div>
             )}
             
