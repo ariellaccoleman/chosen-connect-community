@@ -53,12 +53,23 @@ describe('CreateOrganization Component', () => {
     jest.clearAllMocks();
     
     // Setup the default auth mock - authenticated and not loading
+    // Fix: Add all required properties to match useAuth hook return values
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true,
-      isAuthenticated: true,
-      initialized: true // Add this to ensure the component doesn't think auth is initializing
+      authenticated: true, // Legacy property - keep for compatibility
+      isAuthenticated: true, // New property - used in component
+      initialized: true, // Critical flag to prevent loading skeleton
+      email: mockUser.email,
+      isAdmin: false, // Add this to match the useAuth hook
+      error: null,
+      login: jest.fn(),
+      signUp: jest.fn(),
+      logout: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn()
     }));
     
     // Setup the default organization mutation mock
@@ -77,7 +88,17 @@ describe('CreateOrganization Component', () => {
       loading: false,
       authenticated: false,
       isAuthenticated: false,
-      initialized: true // Add this to ensure the component doesn't think auth is initializing
+      initialized: true, // Important: Set initialized to true to prevent loading state
+      email: null,
+      isAdmin: false,
+      error: null,
+      login: jest.fn(),
+      signUp: jest.fn(),
+      logout: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn()
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -98,7 +119,17 @@ describe('CreateOrganization Component', () => {
       loading: true, 
       authenticated: false,
       isAuthenticated: false,
-      initialized: false // Important: Set initialized to false to simulate initial loading
+      initialized: false, // Important: Set initialized to false to simulate initial loading
+      email: null,
+      isAdmin: false,
+      error: null,
+      login: jest.fn(),
+      signUp: jest.fn(),
+      logout: jest.fn(),
+      signIn: jest.fn(),
+      signOut: jest.fn(),
+      forgotPassword: jest.fn(),
+      resetPassword: jest.fn()
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -228,7 +259,17 @@ describe('CreateOrganization Component', () => {
           loading: false,
           authenticated: false,
           isAuthenticated: false,
-          initialized: true
+          initialized: true,
+          email: null,
+          isAdmin: false,
+          error: null,
+          login: jest.fn(),
+          signUp: jest.fn(),
+          logout: jest.fn(),
+          signIn: jest.fn(),
+          signOut: jest.fn(),
+          forgotPassword: jest.fn(),
+          resetPassword: jest.fn()
         }));
         // Force a re-render with the new auth state
         await new Promise(resolve => setTimeout(resolve, 10));
