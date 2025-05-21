@@ -14,3 +14,5 @@ export * from './use-mobile';
 export * from './useEntityFeed';
 export * from './useEntityRegistry';
 export * from './posts';
+export * from './useDebounce';
+

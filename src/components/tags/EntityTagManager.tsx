@@ -1,9 +1,10 @@
+
 import React, { useState, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useDebounce } from '@/hooks/useDebounce';
-import { useAvailableTags } from '@/hooks/tags';
+import { useAvailableTags } from '@/hooks/tags/useTagHooks';
 import { Tag } from '@/types/tag';
 import { EntityType } from '@/types/entityTypes';
 import TagList from './TagList';
@@ -13,7 +14,7 @@ import { logger } from '@/utils/logger';
 interface EntityTagManagerProps {
   entityId: string;
   currentEntityType: EntityType;
-  existingTagAssignments: any[];
+  existingTagAssignments?: any[];
   onTagAssignment: (tagId: string) => Promise<void>;
   onTagUnassignment: (assignmentId: string) => Promise<void>;
 }
@@ -24,7 +25,7 @@ interface EntityTagManagerProps {
 const EntityTagManager: React.FC<EntityTagManagerProps> = ({
   entityId,
   currentEntityType,
-  existingTagAssignments,
+  existingTagAssignments = [],
   onTagAssignment,
   onTagUnassignment,
 }) => {
@@ -45,6 +46,10 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
     try {
       await onTagAssignment(tag.id);
       setInputValue('');
+      toast({
+        title: "Success",
+        description: `Tag "${tag.name}" assigned successfully`,
+      });
     } catch (error) {
       logger.error('Error assigning tag:', error);
       toast({
@@ -62,6 +67,10 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
     setIsRemoving(true);
     try {
       await onTagUnassignment(assignmentId);
+      toast({
+        title: "Success",
+        description: "Tag removed successfully",
+      });
     } catch (error) {
       logger.error('Error unassigning tag:', error);
       toast({
@@ -108,6 +117,7 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
         <Label>Current Tags</Label>
         <TagList 
           tagAssignments={tagAssignments} 
+          currentEntityType={currentEntityType}
           isRemoving={isRemoving}
           onRemove={handleRemove}
         />

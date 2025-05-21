@@ -3,7 +3,7 @@
 export * from './apiClient';
 export * from './apiExtension';
 // Explicitly re-export specific members from errorHandler to avoid ambiguity
-export { handleApiError, formatError } from './errorHandler';
+export { handleApiError } from './errorHandler';
 export * from './factory';
 export * from './repository';
 export * from './typedRpc';

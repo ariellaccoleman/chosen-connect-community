@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -8,7 +7,7 @@ import {
   updateTag,
   deleteTag
 } from "@/api/tags";
-import { Tag, TagAssignment } from "@/utils/tags/types";
+import { Tag, TagAssignment } from "@/types/tag";
 import { EntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
 import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
@@ -30,6 +29,46 @@ export function useSelectionTags(entityType?: EntityType) {
       
       // Otherwise, get all tags
       return getAllTags();
+    }
+  });
+}
+
+/**
+ * Hook to search for available tags based on a search term
+ */
+export function useAvailableTags(searchTerm: string, entityType?: EntityType) {
+  return useQuery({
+    queryKey: ["tags", "available", searchTerm, entityType],
+    queryFn: async () => {
+      // If we have a search term, filter tags by name and type
+      if (searchTerm) {
+        const { data, error } = await apiClient.query(client => 
+          client
+            .from('tags')
+            .select('*')
+            .ilike('name', `%${searchTerm}%`)
+            .then(res => {
+              // Filter by entity type if provided
+              if (entityType && res.data) {
+                return {
+                  ...res,
+                  data: res.data.filter(item => !item.type || item.type === entityType)
+                };
+              }
+              return res;
+            })
+        );
+        
+        if (error) throw error;
+        return data as Tag[];
+      }
+      
+      // Otherwise get all tags filtered by type
+      const response = await tagsApi.getAll({
+        filters: entityType ? { type: entityType } : undefined
+      });
+      
+      return response.data || [];
     }
   });
 }
