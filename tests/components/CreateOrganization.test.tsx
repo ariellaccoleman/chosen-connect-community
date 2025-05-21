@@ -65,6 +65,13 @@ describe('CreateOrganization Component', () => {
       isError: false,
       isSuccess: false
     } as any));
+
+    // Mock setTimeout to execute immediately in tests
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   test('redirects unauthenticated users to auth page with correct state', () => {
@@ -75,6 +82,9 @@ describe('CreateOrganization Component', () => {
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
     
     // Check for redirect with correct 'from' state
     expect(screen.getByTestId('mock-navigate')).toBeInTheDocument();
@@ -107,6 +117,9 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
+    
     // Check for form elements
     expect(screen.getByText('Create New Organization')).toBeInTheDocument();
     expect(screen.getByLabelText(/Organization Name\*/i)).toBeInTheDocument();
@@ -122,6 +135,9 @@ describe('CreateOrganization Component', () => {
     mockMutateAsync.mockResolvedValueOnce('new-org-id');
     
     render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
     
     // Fill out the form
     fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
@@ -160,6 +176,9 @@ describe('CreateOrganization Component', () => {
     // Use the default mock setup from beforeEach which is authenticated
     
     render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
     
     // Submit form without required fields
     const submitButton = screen.getByRole('button', { name: /Create Organization/i });
@@ -202,6 +221,9 @@ describe('CreateOrganization Component', () => {
     
     render(<CreateOrganization />, { wrapper: Wrapper });
     
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
+    
     // Check for loading state - the button should display "Creating..."
     expect(screen.getByRole('button', { name: 'Creating...' })).toBeDisabled();
   });
@@ -228,6 +250,9 @@ describe('CreateOrganization Component', () => {
     } as any));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
+    
+    // Fast-forward timers to trigger useEffect
+    jest.runAllTimers();
     
     // Fill out the form
     fireEvent.change(screen.getByLabelText(/Organization Name\*/i), {
