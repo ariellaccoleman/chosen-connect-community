@@ -6,6 +6,8 @@ import { createSuccessResponse, ApiResponse, createErrorResponse } from '../core
 import { logger } from '@/utils/logger';
 import { createRepository } from '../core/repository/repositoryFactory';
 import { Tables } from '@/integrations/supabase/types';
+import { Profile } from '@/types/profile';
+import { TagAssignment } from '@/utils/tags/types';
 
 type ChatChannelRow = Tables<"chat_channels">;
 
@@ -109,10 +111,15 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
         channel_type: channel.channel_type === 'group' ? 'group' : 'announcement'
       };
       
+      // Properly cast tagAssignments to the correct type
+      const typedTagAssignments = Array.isArray(tagAssignments) 
+        ? tagAssignments as TagAssignment[] 
+        : [];
+      
       const result: ChatChannelWithDetails = {
         ...baseChannel,
         created_by_profile: channel.created_by_profile || null,
-        tag_assignments: tagAssignments || []
+        tag_assignments: typedTagAssignments
       };
       
       return createSuccessResponse(result);
