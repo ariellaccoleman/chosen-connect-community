@@ -1,6 +1,6 @@
 
 import { createApiFactory } from '@/api/core/factory';
-import { ApiError, ApiResponse } from '@/api/core/types';
+import { ApiResponse } from '@/api/core/types';
 import { createErrorResponse } from '@/api/core/errorHandler';
 import { Hub } from '@/types';
 

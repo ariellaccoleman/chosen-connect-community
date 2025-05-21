@@ -11,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import TagSelector from '@/components/tags/TagSelector'; // Fixed import
 import { HubFormValues } from '@/types/hub';
+import { EntityType } from '@/types/entityTypes';
 
 interface AdminHubFormProps {
   initialValues?: HubFormValues;
@@ -94,8 +95,9 @@ const AdminHubForm: React.FC<AdminHubFormProps> = ({
               <FormLabel>Associated Tag</FormLabel>
               <FormControl>
                 <TagSelector 
-                  value={field.value || ''} 
-                  onChange={field.onChange}
+                  targetType="hub" as EntityType
+                  onTagSelected={(tag) => field.onChange(tag.id)}
+                  currentSelectedTagId={field.value}
                 />
               </FormControl>
               <FormMessage />
