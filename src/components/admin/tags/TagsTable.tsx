@@ -47,7 +47,6 @@ const TagsTable = ({
           <TableRow>
             <TableHead className="w-[150px]">Name</TableHead>
             <TableHead>Description</TableHead>
-            <TableHead>Type</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -65,7 +64,6 @@ const TagsTable = ({
                   )}
                 </TableCell>
                 <TableCell>{tag.description}</TableCell>
-                <TableCell>{tag.type}</TableCell>
                 <TableCell className="text-right">
                   {onMakeHub && onRemoveHub && (
                     isHub ? (

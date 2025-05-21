@@ -169,7 +169,6 @@ export const useEntityFeed = ({
                               id: item.assigned_tag_id,
                               name: item.tag_name,
                               description: null,
-                              type: null,
                               created_by: null,
                               created_at: item.created_at || '',
                               updated_at: item.updated_at || ''
@@ -200,7 +199,6 @@ export const useEntityFeed = ({
                               id: item.assigned_tag_id,
                               name: item.tag_name,
                               description: null,
-                              type: null,
                               created_by: null,
                               created_at: item.created_at || '',
                               updated_at: item.updated_at || ''
@@ -229,7 +227,6 @@ export const useEntityFeed = ({
                               id: item.assigned_tag_id,
                               name: item.tag_name,
                               description: null,
-                              type: null,
                               created_by: null,
                               created_at: item.created_at || '',
                               updated_at: item.updated_at || ''

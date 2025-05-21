@@ -40,17 +40,17 @@ const AdminTags = () => {
   const handleCreateTag = async (values: TagFormValues) => {
     try {
       // Create the tag first
-      const tagResponse = await createTag({
+      await createTag({
         name: values.name,
         description: values.description,
         created_by: user?.id // Add the created_by property with the current user's ID
       });
       
       // Then associate it with the selected entity type
-      if (tagResponse && values.entityType) {
+      if (values.entityType) {
         try {
           const { updateTagEntityType } = await import("@/utils/tags/tagOperations");
-          await updateTagEntityType(tagResponse.id, values.entityType);
+          await updateTagEntityType(values.name, values.entityType);
         } catch (entityTypeError) {
           console.error("Error setting entity type:", entityTypeError);
           // Continue even if this fails

@@ -33,7 +33,6 @@ export interface TagAssignmentWithDetails {
     id: string;
     name: string;
     description: string | null;
-    type: string | null;
     created_at: string;
     updated_at: string;
     created_by: string | null;
@@ -48,7 +47,6 @@ export interface Tag {
   id: string;
   name: string;
   description: string | null;
-  type: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;

@@ -1,6 +1,6 @@
 
 import { createApiFactory } from '../core/factory/apiFactory';
-import { Tag } from '@/types';
+import { Tag } from '@/utils/tags';
 
 /**
  * Create API operations for tags using the factory pattern
