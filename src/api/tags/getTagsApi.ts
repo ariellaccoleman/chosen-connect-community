@@ -13,7 +13,6 @@ import { logger } from "@/utils/logger";
  * of the specified type
  */
 export const getFilterTags = async (options: {
-  type?: string;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
@@ -28,7 +27,6 @@ export const getFilterTags = async (options: {
           FROM tags t
           INNER JOIN tag_assignments ta ON t.id = ta.tag_id
           WHERE ta.target_type = '${options.targetType}'
-          ${options.type ? `AND t.type = '${options.type}'` : ''}
           ${options.createdBy ? `AND t.created_by = '${options.createdBy}'` : ''}
           ${options.searchQuery ? `AND t.name ILIKE '%${options.searchQuery}%'` : ''}
           ORDER BY t.name
@@ -49,10 +47,6 @@ export const getFilterTags = async (options: {
       let query = client.from('tags').select('*');
       
       // Apply filters
-      if (options.type) {
-        query = query.eq('type', options.type);
-      }
-      
       if (options.createdBy) {
         query = query.eq('created_by', options.createdBy);
       }
@@ -78,7 +72,6 @@ export const getFilterTags = async (options: {
  * Used for typeaheads and selector components
  */
 export const getSelectionTags = async (options: {
-  type?: string;
   createdBy?: string;
   searchQuery?: string;
   targetType?: string;
@@ -110,7 +103,7 @@ export const getSelectionTags = async (options: {
       
       // If table exists, proceed with cached query logic
       if (options.targetType && !options.skipCache && !options.searchQuery && 
-          !options.type && !options.createdBy) {
+          !options.createdBy) {
         try {
           // Try to get from cache
           const cacheKey = `selection_tags_${options.targetType}`;
@@ -135,10 +128,6 @@ export const getSelectionTags = async (options: {
         let query = client.from('tags').select('*');
         
         // Apply filters
-        if (options.type) {
-          query = query.eq('type', options.type);
-        }
-        
         if (options.createdBy) {
           query = query.eq('created_by', options.createdBy);
         }
@@ -168,7 +157,6 @@ export const getSelectionTags = async (options: {
         SELECT t.* 
         FROM tags t
         WHERE 
-          ${options.type ? `t.type = '${options.type}' AND` : ''}
           ${options.createdBy ? `t.created_by = '${options.createdBy}' AND` : ''}
           ${options.searchQuery ? `t.name ILIKE '%${options.searchQuery}%' AND` : ''}
           (

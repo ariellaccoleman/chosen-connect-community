@@ -31,7 +31,7 @@ const TagBadge = ({
 }: TagBadgeProps) => {
   // Use the tag object if provided, otherwise use the individual props
   const tagName = tag ? tag.name : name;
-  const tagType = tag ? tag.type : entityType;
+  const tagType = entityType;
 
   // Determine the color based on entity type
   let badgeClasses = "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 hover:text-blue-800";

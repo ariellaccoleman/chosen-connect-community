@@ -7,7 +7,6 @@ import { EntityType } from "@/types/entityTypes";
 export interface Tag {
   id: string;
   name: string;
-  type?: string | EntityType;
   description?: string;
   created_by?: string;
   created_at?: string;

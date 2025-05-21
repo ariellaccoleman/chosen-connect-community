@@ -1027,7 +1027,6 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          type: string | null
           updated_at: string | null
         }
         Insert: {
@@ -1036,7 +1035,6 @@ export type Database = {
           description?: string | null
           id?: string
           name: string
-          type?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -1045,7 +1043,6 @@ export type Database = {
           description?: string | null
           id?: string
           name?: string
-          type?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -1218,13 +1215,6 @@ export type Database = {
             referencedRelation: "tags"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tag_assignments_tag_id_fkey"
-            columns: ["assigned_tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
         ]
       }
       hub_details: {
@@ -1272,13 +1262,6 @@ export type Database = {
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tag_assignments_tag_id_fkey"
-            columns: ["assigned_tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
         ]
       }
       people_with_tags: {
@@ -1311,13 +1294,6 @@ export type Database = {
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "tag_assignments_tag_id_fkey"
-            columns: ["assigned_tag_id"]
-            isOneToOne: false
-            referencedRelation: "tags"
-            referencedColumns: ["id"]
-          },
         ]
       }
     }
@@ -1338,7 +1314,6 @@ export type Database = {
           description: string | null
           id: string
           name: string
-          type: string | null
           updated_at: string | null
         }[]
       }

@@ -21,7 +21,7 @@ const tagSchema = z.object({
     message: "Tag name must be at least 2 characters.",
   }),
   description: z.string().optional(),
-  type: z.enum(["person", "organization"]),
+  entityType: z.enum(["person", "organization"]),
 });
 
 export type TagFormValues = z.infer<typeof tagSchema>;
@@ -39,7 +39,7 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
     defaultValues: {
       name: "",
       description: "",
-      type: "person",
+      entityType: "person",
     },
   });
 
@@ -90,10 +90,10 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
 
             <FormField
               control={form.control}
-              name="type"
+              name="entityType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Type</FormLabel>
+                  <FormLabel>Entity Type</FormLabel>
                   <FormControl>
                     <select {...field} className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
                       <option value="person">Person</option>

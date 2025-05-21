@@ -11,7 +11,6 @@ import { logger } from "@/utils/logger";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
-  type?: string;
   createdBy?: string;
   searchQuery?: string;
   targetType?: EntityType | string;
@@ -42,7 +41,6 @@ export const fetchFilterTags = async (options: {
 
 // Fetch tags for selection (showing entity-specific and general tags)
 export const fetchSelectionTags = async (options: {
-  type?: string;
   createdBy?: string;
   searchQuery?: string;
   targetType?: EntityType | string;
@@ -76,19 +74,24 @@ export const fetchSelectionTags = async (options: {
 export const fetchTags = fetchSelectionTags;
 
 // Find or create a tag
-export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
+export const findOrCreateTag = async (tagData: Partial<Tag>, entityType?: EntityType | string): Promise<Tag | null> => {
   try {
-    // If type is provided as EntityType, convert to string
-    if (tagData.type && isValidEntityType(tagData.type)) {
-      tagData = { ...tagData, type: tagData.type.toString() };
-    }
-    
     // Call the API function that properly uses the apiClient
     const response = await apiFindOrCreateTag(tagData);
     
     if (response.status !== 'success' || !response.data) {
       logger.error("Error finding or creating tag:", response.error);
       return null;
+    }
+    
+    // If entity type is provided, associate it with the tag
+    if (entityType && isValidEntityType(entityType)) {
+      try {
+        await updateTagEntityType(response.data.id, entityType);
+      } catch (entityTypeError) {
+        logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
+        // Continue even if this fails
+      }
     }
     
     return response.data;
@@ -126,19 +129,24 @@ export const updateTagEntityType = async (
 };
 
 // Create a new tag - Use the API function instead of direct fetch
-export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
+export const createTag = async (tagData: Partial<Tag>, entityType?: EntityType | string): Promise<Tag | null> => {
   try {
-    // If type is provided as EntityType, convert to string
-    if (tagData.type && isValidEntityType(tagData.type)) {
-      tagData = { ...tagData, type: tagData.type.toString() };
-    }
-    
     // Call the API function that properly uses the apiClient
     const response = await apiCreateTag(tagData);
     
     if (response.status !== 'success' || !response.data) {
       logger.error("Error creating tag:", response.error);
       return null;
+    }
+    
+    // If entity type is provided, associate it with the tag
+    if (entityType && isValidEntityType(entityType)) {
+      try {
+        await updateTagEntityType(response.data.id, entityType);
+      } catch (entityTypeError) {
+        logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
+        // Continue even if this fails
+      }
     }
     
     return response.data;
@@ -154,11 +162,6 @@ export const updateTag = async (
   updates: Partial<Tag>
 ): Promise<Tag | null> => {
   try {
-    // If type is provided as EntityType, convert to string
-    if (updates.type && isValidEntityType(updates.type)) {
-      updates = { ...updates, type: updates.type.toString() };
-    }
-    
     const response = await fetch(`/api/tags/${tagId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

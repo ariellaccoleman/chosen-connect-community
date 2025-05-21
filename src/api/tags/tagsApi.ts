@@ -14,7 +14,6 @@ export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>,
       id: data.id,
       name: data.name,
       description: data.description,
-      type: data.type,
       created_at: data.created_at,
       updated_at: data.updated_at,
       created_by: data.created_by
@@ -23,7 +22,6 @@ export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>,
       const transformed: Record<string, any> = {};
       if (data.name !== undefined) transformed.name = data.name;
       if (data.description !== undefined) transformed.description = data.description;
-      if (data.type !== undefined) transformed.type = data.type;
       if (data.createdBy !== undefined) transformed.created_by = data.createdBy;
       return transformed;
     },

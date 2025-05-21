@@ -11,7 +11,6 @@ interface TagListProps {
   max?: number;
   showMore?: boolean;
   onRemove?: (assignmentId: string) => void;
-  currentEntityType?: EntityType;
   isRemoving?: boolean;
 }
 
@@ -21,7 +20,6 @@ const TagList: React.FC<TagListProps> = ({
   max, 
   showMore = false,
   onRemove,
-  currentEntityType, 
   isRemoving = false
 }) => {
   // Safety check for null or undefined

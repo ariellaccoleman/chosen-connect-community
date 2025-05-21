@@ -20,12 +20,33 @@ export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
     queryKey: ["tags", entityType],
     queryFn: async () => {
-      // If entityType is provided, filter tags by type
+      // If entityType is provided, modify query to filter by entity type using tag_entity_types
       if (entityType) {
-        const response = await tagsApi.getAll({
-          filters: { type: entityType }
+        const { data, error } = await apiClient.query(async (client) => {
+          const { data, error } = await client.rpc('query_tags', {
+            query_text: `
+              SELECT t.* FROM tags t
+              WHERE t.id IN (
+                SELECT tag_id FROM tag_entity_types
+                WHERE entity_type = '${entityType}'
+              )
+              OR NOT EXISTS (
+                SELECT 1 FROM tag_entity_types 
+                WHERE tag_entity_types.tag_id = t.id
+              )
+              ORDER BY t.name
+            `
+          });
+          if (error) throw error;
+          return { data, error };
         });
-        return response;
+
+        if (error) throw error;
+        
+        return {
+          status: 'success',
+          data: data || []
+        };
       }
       
       // Otherwise, get all tags

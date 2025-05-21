@@ -59,9 +59,8 @@ const CreateTagDialog = ({
       const createdTag = await findOrCreateTag({
         name: name.trim(),
         description: description.trim() || null,
-        type: targetType.toString(),
         created_by: user.id
-      });
+      }, targetType);
       
       if (createdTag) {
         onTagCreated(createdTag);

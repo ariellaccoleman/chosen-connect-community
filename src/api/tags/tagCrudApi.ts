@@ -30,7 +30,6 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<ApiRespons
       .insert({
         name: tagData.name,
         description: tagData.description,
-        type: tagData.type,
         created_by: tagData.created_by
       })
       .select()
@@ -53,7 +52,6 @@ export const createTag = async (tagData: Partial<Tag>): Promise<ApiResponse<Tag>
       .insert({
         name: tagData.name,
         description: tagData.description,
-        type: tagData.type,
         created_by: tagData.created_by
       })
       .select()
