@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import TagSelector from '@/components/tags/TagSelector'; // Fixed import
+import TagSelector from '@/components/tags/TagSelector';
 import { HubFormValues } from '@/types/hub';
 import { EntityType } from '@/types/entityTypes';
 
@@ -97,7 +97,8 @@ const AdminHubForm: React.FC<AdminHubFormProps> = ({
                 <TagSelector 
                   targetType={EntityType.HUB}
                   onTagSelected={(tag) => field.onChange(tag.id)}
-                  currentSelectedTagId={field.value}
+                  placeholder={field.value ? "Change tag" : "Select a tag"}
+                  disabled={isPending}
                 />
               </FormControl>
               <FormMessage />

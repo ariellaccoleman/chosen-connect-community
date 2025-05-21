@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -23,7 +22,7 @@ import { findOrCreateTag } from "@/utils/tags/tagOperations";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 
-interface TagSelectorProps {
+export interface TagSelectorProps {
   targetType: EntityType | string;
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;

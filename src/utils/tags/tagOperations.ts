@@ -1,3 +1,4 @@
+
 import { 
   getSelectionTags, 
   getFilterTags 
@@ -7,6 +8,7 @@ import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEnt
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
+import { apiClient } from "@/api/core/apiClient";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
