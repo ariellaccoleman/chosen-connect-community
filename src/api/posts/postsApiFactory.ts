@@ -142,9 +142,16 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           // Format the author data using our helper function
           const author = formatAuthor(post.author);
 
-          // Fix initial count values to be 0 when null
-          const likesCount = post.post_likes?.length || 0;
-          const commentsCount = post.post_comments?.length || 0;
+          // Fix: Properly count likes and comments
+          // The post_likes and post_comments arrays contain objects with count property
+          // We need to extract the actual count value or default to 0
+          const likesCount = post.post_likes && post.post_likes.length > 0 
+            ? (post.post_likes[0].count || 0) 
+            : 0;
+            
+          const commentsCount = post.post_comments && post.post_comments.length > 0 
+            ? (post.post_comments[0].count || 0) 
+            : 0;
 
           return {
             ...post,
@@ -261,11 +268,20 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           .map((assignment: any) => assignment.tags)
           .filter(Boolean);
 
+        // Fix: Properly count likes and comments
+        const likesCount = data.post_likes && data.post_likes.length > 0 
+          ? (data.post_likes[0].count || 0) 
+          : 0;
+          
+        const commentsCount = data.post_comments && data.post_comments.length > 0 
+          ? (data.post_comments[0].count || 0) 
+          : 0;
+
         const formattedPost = {
           ...data,
           author,
-          likes_count: data.post_likes?.length || 0,
-          comments_count: data.post_comments?.length || 0,
+          likes_count: likesCount,
+          comments_count: commentsCount,
           tags: tags || []
         };
 
