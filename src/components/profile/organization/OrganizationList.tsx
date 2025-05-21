@@ -103,7 +103,7 @@ const OrganizationItem = ({ relationship, userId, onManageClick }: OrganizationI
           onClick={onManageClick}
         >
           <Edit className="h-4 w-4 mr-1" />
-          Edit Relationship
+          Edit Connection
         </Button>
         {isAdmin && (
           <Button

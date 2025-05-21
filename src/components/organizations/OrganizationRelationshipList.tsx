@@ -218,7 +218,7 @@ const RelationshipItem = ({ relationship, onEdit, onDelete }: RelationshipItemPr
           onClick={onEdit}
         >
           <Edit className="h-4 w-4 mr-1" />
-          Edit
+          Edit Connection
         </Button>
         
         <Button
