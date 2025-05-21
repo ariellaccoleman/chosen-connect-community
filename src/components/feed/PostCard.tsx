@@ -4,7 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Heart, MessageSquare, Share2, MoreHorizontal, Send } from "lucide-react";
+import { Heart, MessageSquare, Send } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -93,7 +93,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
     <Card className="overflow-hidden">
       <CardContent className="p-0">
         {/* Post header */}
-        <div className="p-4 flex items-start justify-between">
+        <div className="p-4 flex items-start">
           <div className="flex items-center space-x-3">
             <Avatar className="h-10 w-10">
               <AvatarImage src={post.author.avatar} alt={post.author.name} />
@@ -109,9 +109,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
         </div>
         
         {/* Post content */}
@@ -163,10 +160,6 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           >
             <MessageSquare className="h-4 w-4 mr-2" />
             Comment
-          </Button>
-          <Button variant="ghost" size="sm" className="flex-1 text-gray-600">
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
           </Button>
         </CardFooter>
         
