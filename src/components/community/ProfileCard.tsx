@@ -9,6 +9,7 @@ import TagList from "../tags/TagList";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from 'react-router-dom';
 import { logger } from '@/utils/logger';
+import { useEffect } from "react";
 
 interface ProfileCardProps {
   profile: ProfileWithDetails;
@@ -19,8 +20,18 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
   
-  // Log the generated URL for debugging
-  logger.debug(`ProfileCard: Generated URL for profile ${profile.id}: ${profileUrl}`);
+  // Debug profile tags
+  useEffect(() => {
+    if (profile.id && profile.tags) {
+      logger.debug(`ProfileCard: Profile ${profile.id} (${profile.first_name} ${profile.last_name}) has ${profile.tags.length} tags:`, 
+        profile.tags.map(t => ({ 
+          id: t.id, 
+          tag_id: t.tag_id, 
+          tag: t.tag ? t.tag.name : 'undefined' 
+        }))
+      );
+    }
+  }, [profile]);
 
   // Check if profile has tags to determine layout
   const hasTags = profile.tags && profile.tags.length > 0;

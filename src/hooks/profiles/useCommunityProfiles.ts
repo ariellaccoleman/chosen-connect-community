@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { profileApi } from '@/api/profiles';
 import { ProfileWithDetails } from '@/types';
+import { logger } from '@/utils/logger';
 
 interface CommunityProfilesParams {
   search?: string;
@@ -28,11 +29,19 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
           ...(params.excludeId && { id: { neq: params.excludeId } })
         },
         search: params.search,
-        limit: params.limit
+        limit: params.limit,
+        include: 'tags' // Explicitly request tags to be included
       });
       
       if (response.error) {
         throw response.error;
+      }
+      
+      logger.debug(`Fetched ${response.data?.length || 0} community profiles`);
+      
+      // Log some sample tag data if available
+      if (response.data && response.data.length > 0 && response.data[0].tags) {
+        logger.debug(`Sample profile tags structure:`, response.data[0].tags);
       }
       
       // If tag filter is applied and we have tag assignments, filter the profiles client-side
@@ -40,7 +49,7 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
       
       if (params.tagId && filteredData.length > 0) {
         // This will be handled by the useFilterByTag hook at the component level
-        console.log('Tag filtering requested for tag:', params.tagId);
+        logger.debug('Tag filtering requested for tag:', params.tagId);
       }
       
       return filteredData;

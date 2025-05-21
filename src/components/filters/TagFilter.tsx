@@ -1,6 +1,6 @@
 
 import React from "react";
-import { Tag } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -8,6 +8,7 @@ import { Check, ChevronDown, Tag as TagIcon, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { logger } from "@/utils/logger";
 
 export interface TagFilterProps {
   // Support both legacy single tagId and new multiple tagIds
@@ -44,6 +45,12 @@ const TagFilter = ({
   const effectiveSelectedTagIds = isMultiSelect 
     ? selectedTagIds 
     : (selectedTagId ? [selectedTagId] : []);
+  
+  // Debug available tags
+  React.useEffect(() => {
+    logger.debug("TagFilter: Available tags:", tags.map(t => ({ id: t.id, name: t.name })));
+    logger.debug("TagFilter: Selected tag IDs:", effectiveSelectedTagIds);
+  }, [tags, effectiveSelectedTagIds]);
   
   if (isLoading) {
     return <Skeleton className="h-10 w-full" />;

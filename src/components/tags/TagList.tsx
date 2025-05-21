@@ -1,67 +1,73 @@
 
-import React from "react";
-import { Badge } from "@/components/ui/badge";
-import { TagAssignment } from "@/utils/tags/types";
-import { EntityType } from "@/types/entityTypes";
-import { X } from "lucide-react";
+import React from 'react';
+import { Badge } from '@/components/ui/badge';
+import { TagAssignment } from '@/utils/tags';
+import { logger } from '@/utils/logger';
 
 interface TagListProps {
-  tagAssignments: TagAssignment[];
+  tagAssignments?: TagAssignment[] | null;
   className?: string;
-  size?: "sm" | "md";
-  currentEntityType?: EntityType;
-  onRemove?: (assignmentId: string) => void;
-  isRemoving?: boolean;
+  max?: number;
+  showMore?: boolean;
 }
 
 const TagList: React.FC<TagListProps> = ({ 
   tagAssignments = [], 
-  className = "", 
-  size = "md",
-  currentEntityType,
-  onRemove,
-  isRemoving = false
+  className = '', 
+  max, 
+  showMore = false 
 }) => {
-  // Early return if no tags
+  // Safety check for null or undefined
   if (!tagAssignments || tagAssignments.length === 0) {
     return null;
   }
 
-  // Make sure we have valid tag assignments with tag objects
-  const validAssignments = tagAssignments.filter(
-    assignment => assignment.tag && assignment.tag.name
-  );
+  // Debug the tag assignments structure
+  React.useEffect(() => {
+    logger.debug(`TagList: Received ${tagAssignments.length} tag assignments`, 
+      tagAssignments.map(t => ({
+        id: t.id,
+        tag_id: t.tag_id,
+        tag: t.tag ? { id: t.tag.id, name: t.tag.name } : 'undefined'
+      }))
+    );
+  }, [tagAssignments]);
 
-  if (validAssignments.length === 0) {
-    return null;
-  }
+  // Limit the number of tags to display if max is specified
+  const displayedTags = max ? tagAssignments.slice(0, max) : tagAssignments;
+  const hiddenCount = max && tagAssignments.length > max ? tagAssignments.length - max : 0;
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
-      {validAssignments.map((assignment) => (
+    <div className={className}>
+      {displayedTags.map((assignment) => {
+        // Handle both tag access patterns (nested tag object or direct properties)
+        const tagName = assignment.tag ? assignment.tag.name : undefined;
+        
+        // Skip if we don't have a tag name
+        if (!tagName) {
+          logger.debug(`TagList: Missing tag name for assignment:`, assignment);
+          return null;
+        }
+        
+        return (
+          <Badge 
+            key={assignment.id || assignment.tag_id} 
+            variant="secondary"
+            className="text-xs py-1"
+          >
+            {tagName}
+          </Badge>
+        );
+      })}
+      
+      {showMore && hiddenCount > 0 && (
         <Badge 
-          key={`tag-${assignment.tag_id}`}
-          variant="outline" 
-          className={`${size === "sm" ? "px-2 py-0 text-xs" : "px-3 py-1"} ${onRemove ? "pr-1" : ""}`}
+          variant="outline"
+          className="text-xs py-1 cursor-default"
         >
-          <span>{assignment.tag.name}</span>
-          
-          {onRemove && (
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onRemove(assignment.id);
-              }}
-              disabled={isRemoving}
-              className="ml-1 rounded-full hover:bg-gray-200 p-1"
-              aria-label={`Remove ${assignment.tag.name} tag`}
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
+          +{hiddenCount} more
         </Badge>
-      ))}
+      )}
     </div>
   );
 };
