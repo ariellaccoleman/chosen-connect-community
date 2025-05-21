@@ -11,3 +11,4 @@ export * from './organizations';
 export * from './tags';
 export * from './chat'; // Add chat API exports
 export * from './tests';
+export * from './posts'; // Add posts API exports

@@ -83,15 +83,13 @@ export const useCreatePost = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
       toast({
-        title: "Post created",
         description: "Your post has been published"
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to create post",
-        description: error.message || "An error occurred",
-        variant: "destructive"
+        variant: "destructive",
+        description: error.message || "An error occurred"
       });
     }
   });
@@ -110,15 +108,13 @@ export const useCreateComment = (postId: string) => {
       queryClient.invalidateQueries({ queryKey: [POST_KEY, postId] });
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
       toast({
-        title: "Comment added",
         description: "Your comment has been posted"
       });
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to add comment",
-        description: error.message || "An error occurred",
-        variant: "destructive"
+        variant: "destructive",
+        description: error.message || "An error occurred"
       });
     }
   });
@@ -139,9 +135,8 @@ export const useTogglePostLike = (postId: string) => {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to like/unlike post",
-        description: error.message || "An error occurred",
-        variant: "destructive"
+        variant: "destructive",
+        description: error.message || "An error occurred"
       });
     }
   });
@@ -161,9 +156,8 @@ export const useToggleCommentLike = (commentId: string, postId: string) => {
     },
     onError: (error: any) => {
       toast({
-        title: "Failed to like/unlike comment",
-        description: error.message || "An error occurred",
-        variant: "destructive"
+        variant: "destructive",
+        description: error.message || "An error occurred"
       });
     }
   });

@@ -54,7 +54,7 @@ export const postsApi = extendApiOperations(postsBaseApi, {
           author:profiles!posts_author_id_fkey(id, first_name, last_name, avatar_url),
           post_likes(count),
           post_comments(count),
-          tag_assignments!inner(
+          tag_assignments(
             tag_id,
             tags:tag_id(id, name)
           )
@@ -65,7 +65,7 @@ export const postsApi = extendApiOperations(postsBaseApi, {
 
       const formattedPosts = data?.map(post => {
         // Format the author data
-        const authorData = post.author || {};
+        const authorData = post.author ? post.author : {};
         const author = {
           id: authorData.id || '',
           name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
@@ -73,7 +73,9 @@ export const postsApi = extendApiOperations(postsBaseApi, {
         };
 
         // Format tags
-        const tags = post.tag_assignments?.map((assignment: any) => assignment.tags) || [];
+        const tags = post.tag_assignments && Array.isArray(post.tag_assignments) 
+          ? post.tag_assignments.map((assignment: any) => assignment.tags) 
+          : [];
 
         return {
           ...post,
@@ -148,7 +150,7 @@ export const postsApi = extendApiOperations(postsBaseApi, {
       if (error) throw error;
 
       // Format the author data
-      const authorData = data.author || {};
+      const authorData = data.author ? data.author : {};
       const author = {
         id: authorData.id || '',
         name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
@@ -156,7 +158,9 @@ export const postsApi = extendApiOperations(postsBaseApi, {
       };
 
       // Format tags
-      const tags = data.tag_assignments?.map((assignment: any) => assignment.tags) || [];
+      const tags = data.tag_assignments && Array.isArray(data.tag_assignments)
+        ? data.tag_assignments.map((assignment: any) => assignment.tags)
+        : [];
 
       const formattedPost = {
         ...data,
@@ -192,7 +196,7 @@ export const commentsApi = extendApiOperations(commentsBaseApi, {
 
       const formattedComments = data?.map(comment => {
         // Format the author data
-        const authorData = comment.author || {};
+        const authorData = comment.author ? comment.author : {};
         const author = {
           id: authorData.id || '',
           name: `${authorData.first_name || ''} ${authorData.last_name || ''}`.trim(),
@@ -234,7 +238,7 @@ export const commentsApi = extendApiOperations(commentsBaseApi, {
       if (error) throw error;
 
       // Format the comment
-      const authorData = comment.author || {};
+      const authorData = comment.author ? comment.author : {};
       const formattedComment = {
         ...comment,
         author: {

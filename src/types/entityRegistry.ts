@@ -40,3 +40,13 @@ export interface EntityTypeDefinition {
   converter: EntityConverter<any>;
   behavior: EntityBehavior;
 }
+
+// Entity registration format used for the default registrations
+export interface EntityRegistration {
+  type: EntityType;
+  icon: ReactNode;
+  label: string;
+  pluralLabel?: string;
+  avatarFallback: (name: string | undefined) => string;
+  defaultRoute: string;
+}
