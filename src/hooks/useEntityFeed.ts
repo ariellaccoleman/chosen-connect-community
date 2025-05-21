@@ -144,8 +144,102 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Use the entity registry directly to convert items
-                    const entity = entityRegistry[type]?.toEntity ? entityRegistry[type].toEntity(item) : null;
+                    // Convert item to entity based on entity type
+                    let entity: Entity | null = null;
+
+                    switch (type) {
+                      case EntityType.PERSON:
+                        entity = {
+                          id: item.id,
+                          entityType: EntityType.PERSON,
+                          name: `${item.first_name || ''} ${item.last_name || ''}`.trim(),
+                          description: item.headline || item.bio,
+                          imageUrl: item.avatar_url,
+                          location: item.location,
+                          url: item.website_url,
+                          created_at: item.created_at,
+                          updated_at: item.updated_at,
+                          tags: item.tag_id ? [{ 
+                            id: '', 
+                            tag_id: item.assigned_tag_id, 
+                            target_id: item.id, 
+                            target_type: 'profile', 
+                            created_at: item.created_at || '', 
+                            updated_at: item.updated_at || '',
+                            tag: {
+                              id: item.assigned_tag_id,
+                              name: item.tag_name,
+                              description: null,
+                              type: null,
+                              created_by: null,
+                              created_at: item.created_at || '',
+                              updated_at: item.updated_at || ''
+                            }
+                          }] : []
+                        };
+                        break;
+                        
+                      case EntityType.ORGANIZATION:
+                        entity = {
+                          id: item.id,
+                          entityType: EntityType.ORGANIZATION,
+                          name: item.name,
+                          description: item.description,
+                          imageUrl: item.logo_url || item.logo_api_url,
+                          location: item.location,
+                          url: item.website_url,
+                          created_at: item.created_at,
+                          updated_at: item.updated_at,
+                          tags: item.assigned_tag_id ? [{ 
+                            id: '', 
+                            tag_id: item.assigned_tag_id, 
+                            target_id: item.id, 
+                            target_type: 'organization', 
+                            created_at: item.created_at || '', 
+                            updated_at: item.updated_at || '',
+                            tag: {
+                              id: item.assigned_tag_id,
+                              name: item.tag_name,
+                              description: null,
+                              type: null,
+                              created_by: null,
+                              created_at: item.created_at || '',
+                              updated_at: item.updated_at || ''
+                            }
+                          }] : []
+                        };
+                        break;
+                        
+                      case EntityType.EVENT:
+                        entity = {
+                          id: item.id,
+                          entityType: EntityType.EVENT,
+                          name: item.title || '',
+                          description: item.description,
+                          location: item.location,
+                          created_at: item.created_at,
+                          updated_at: item.updated_at,
+                          tags: item.assigned_tag_id ? [{ 
+                            id: '', 
+                            tag_id: item.assigned_tag_id, 
+                            target_id: item.id, 
+                            target_type: 'event', 
+                            created_at: item.created_at || '', 
+                            updated_at: item.updated_at || '',
+                            tag: {
+                              id: item.assigned_tag_id,
+                              name: item.tag_name,
+                              description: null,
+                              type: null,
+                              created_by: null,
+                              created_at: item.created_at || '',
+                              updated_at: item.updated_at || ''
+                            }
+                          }] : []
+                        };
+                        break;
+                    }
+                    
                     if (entity) {
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
                         id: entity.id,
