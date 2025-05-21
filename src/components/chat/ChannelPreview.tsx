@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { useChannelMessagePreviews } from '@/hooks/chat';
 import { Skeleton } from '@/components/ui/skeleton';
 import { APP_ROUTES } from '@/config/routes';
 import { MessageCircle } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface ChannelPreviewProps {
   limit?: number;
@@ -87,41 +87,48 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {channels.map((channel: ChannelPreviewData) => (
-            <Link 
-              key={channel.id} 
-              to={`${APP_ROUTES.CHAT}/${channel.id}`}
-              className="block"
-            >
-              <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{channel.name || 'Unnamed channel'}</h3>
-                  {channel.unread_count && channel.unread_count > 0 && (
-                    <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">
-                      {channel.unread_count}
-                    </span>
+          {channels.map((channel: ChannelPreviewData) => {
+            const lastMessageTime = channel.last_active_time || channel.last_message?.message;
+            const formattedTime = lastMessageTime 
+              ? formatDistanceToNow(new Date(lastMessageTime), { addSuffix: true }) 
+              : '';
+            
+            return (
+              <Link 
+                key={channel.id} 
+                to={`${APP_ROUTES.CHAT}/${channel.id}`}
+                className="block"
+              >
+                <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">{channel.name || 'Unnamed channel'}</h3>
+                    {channel.unread_count && channel.unread_count > 0 && (
+                      <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">
+                        {channel.unread_count}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {channel.last_message && (
+                    <>
+                      <div className="text-sm text-muted-foreground mt-1 flex items-start gap-1">
+                        <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                        <div className="flex-1 truncate">
+                          <span className="font-medium mr-1">
+                            {channel.last_message.user_name || 'Unknown'}:
+                          </span>
+                          {channel.last_message.message || 'New message'}
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {formattedTime}
+                      </div>
+                    </>
                   )}
                 </div>
-                
-                {channel.last_message && (
-                  <>
-                    <div className="text-sm text-muted-foreground mt-1 flex items-start gap-1">
-                      <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      <div className="flex-1 truncate">
-                        <span className="font-medium mr-1">
-                          {channel.last_message.user_name || 'Unknown'}:
-                        </span>
-                        {channel.last_message.message || 'New message'}
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {channel.last_active_time || 'Just now'}
-                    </div>
-                  </>
-                )}
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

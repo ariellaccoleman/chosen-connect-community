@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
-import { useEntityTags } from '@/hooks/tags';
+import { useEntityTags } from '@/hooks/tags/useTagHooks';
 import { EntityType } from '@/types/entityTypes';
 
 interface TagListProps {
@@ -35,7 +35,7 @@ const TagList = ({
       );
 
   // Fetch tag data based on IDs
-  const { data: tagsData, isLoading } = useEntityTags(ids, currentEntityType);
+  const { data: tagsData, isLoading } = useEntityTags(ids.join(','), currentEntityType);
   
   // Ensure tags is always an array
   const tags = Array.isArray(tagsData) ? tagsData : (tagsData?.data || []);
@@ -51,8 +51,8 @@ const TagList = ({
   }
 
   // Limit the number of tags shown
-  const displayTags = tags.slice(0, limit);
-  const remainingCount = tags.length - limit;
+  const displayTags = Array.isArray(tags) ? tags.slice(0, limit) : [];
+  const remainingCount = Array.isArray(tags) ? tags.length - limit : 0;
 
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>

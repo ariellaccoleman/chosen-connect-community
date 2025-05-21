@@ -8,7 +8,7 @@ import { useAvailableTags } from '@/hooks/tags/useTagHooks';
 import { Tag } from '@/types/tag';
 import { EntityType } from '@/types/entityTypes';
 import TagList from './TagList';
-import { toast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 
 interface EntityTagManagerProps {
@@ -17,6 +17,10 @@ interface EntityTagManagerProps {
   existingTagAssignments?: any[];
   onTagAssignment: (tagId: string) => Promise<void>;
   onTagUnassignment: (assignmentId: string) => Promise<void>;
+  isAdmin?: boolean;
+  isEditing?: boolean;
+  onTagSuccess?: () => void;
+  onTagError?: (error: Error) => void;
 }
 
 /**
@@ -28,6 +32,10 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
   existingTagAssignments = [],
   onTagAssignment,
   onTagUnassignment,
+  isAdmin,
+  isEditing,
+  onTagSuccess,
+  onTagError,
 }) => {
   const [inputValue, setInputValue] = useState('');
   const [isAdding, setIsAdding] = useState(false);
@@ -46,38 +54,26 @@ const EntityTagManager: React.FC<EntityTagManagerProps> = ({
     try {
       await onTagAssignment(tag.id);
       setInputValue('');
-      toast({
-        title: "Success",
-        description: `Tag "${tag.name}" assigned successfully`,
-      });
+      toast.success(`Tag "${tag.name}" assigned successfully`);
+      if (onTagSuccess) onTagSuccess();
     } catch (error) {
       logger.error('Error assigning tag:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to assign tag',
-        variant: 'destructive',
-      });
+      toast.error('Failed to assign tag');
+      if (onTagError && error instanceof Error) onTagError(error);
     } finally {
       setIsAdding(false);
     }
-  }, [onTagAssignment]);
+  }, [onTagAssignment, onTagSuccess, onTagError]);
   
   // Handler to remove a tag from the entity
   const handleRemove = useCallback(async (assignmentId: string) => {
     setIsRemoving(true);
     try {
       await onTagUnassignment(assignmentId);
-      toast({
-        title: "Success",
-        description: "Tag removed successfully",
-      });
+      toast.success("Tag removed successfully");
     } catch (error) {
       logger.error('Error unassigning tag:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to unassign tag',
-        variant: 'destructive',
-      });
+      toast.error('Failed to unassign tag');
     } finally {
       setIsRemoving(false);
     }

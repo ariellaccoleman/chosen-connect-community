@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { postApi } from "@/api/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { CreatePostPayload } from "@/types/post";
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 
 /**
@@ -92,16 +92,11 @@ export const useCreatePost = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
-      toast({
-        description: 'Post created successfully',
-      });
+      toast.success('Post created successfully');
     },
     onError: (error) => {
       logger.error("Error creating post:", error);
-      toast({
-        description: error instanceof Error ? error.message : 'Failed to create post',
-        variant: "destructive"
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to create post');
     }
   });
 };
@@ -124,16 +119,11 @@ export const useDeletePost = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
-      toast({
-        description: 'Post deleted successfully',
-      });
+      toast.success('Post deleted successfully');
     },
     onError: (error) => {
       logger.error("Error deleting post:", error);
-      toast({
-        description: error instanceof Error ? error.message : 'Failed to delete post',
-        variant: "destructive"
-      });
+      toast.error(error instanceof Error ? error.message : 'Failed to delete post');
     }
   });
 };

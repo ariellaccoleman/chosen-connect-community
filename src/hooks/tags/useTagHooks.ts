@@ -148,16 +148,33 @@ export function useTagCrudMutations() {
 /**
  * Hook to fetch tags for a specific entity
  */
-export function useEntityTags(entityId: string, entityType: EntityType) {
+export function useEntityTags(entityIds: string, entityType?: EntityType) {
   return useQuery({
-    queryKey: ["entity", entityId, "tags"],
+    queryKey: ["entity", entityIds, "tags"],
     queryFn: async () => {
-      if (!entityId) return { status: 'success', data: [] };
-      
-      const { getEntityTags } = await import("@/api/tags/entityTagsApi");
-      return getEntityTags(entityId, entityType);
+      if (!entityIds) return [];
+
+      try {
+        if (entityIds.includes(',')) {
+          // Handle multiple IDs
+          const ids = entityIds.split(',').filter(Boolean);
+          const results = await Promise.all(ids.map(async id => {
+            const { getTagById } = await import("@/api/tags");
+            return getTagById(id);
+          }));
+          return results.filter(Boolean).map(result => result.data).flat();
+        } else {
+          // Handle single ID
+          const { getTagById } = await import("@/api/tags");
+          const result = await getTagById(entityIds);
+          return result.data || [];
+        }
+      } catch (error) {
+        console.error("Error fetching entity tags:", error);
+        return [];
+      }
     },
-    enabled: !!entityId
+    enabled: !!entityIds
   });
 }
 

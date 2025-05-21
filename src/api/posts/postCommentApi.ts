@@ -102,11 +102,9 @@ export function createPostCommentApi() {
         return false;
       }
       
-      const comment = data;
-      const post = comment.posts || {};
-      
       // User can delete if they are the comment author or the post owner
-      return comment.author_id === userId || post.author_id === userId;
+      return (data.author_id === userId) || 
+             (data.posts && data.posts.author_id === userId);
     } catch (error) {
       return false;
     }
