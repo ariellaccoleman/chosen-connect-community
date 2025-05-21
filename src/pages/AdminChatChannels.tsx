@@ -6,7 +6,6 @@ import { Plus } from 'lucide-react';
 import ChatChannelList from '@/components/admin/chat/ChatChannelList';
 import { useChatChannels, useDeleteChatChannel } from '@/hooks/chat/useChatChannels';
 import { ChatChannel } from '@/types/chat';
-import ChatChannelTagAssigner from '@/components/admin/chat/ChatChannelTagAssigner';
 
 export default function AdminChatChannels() {
   const { data: channels = [], isLoading } = useChatChannels();
@@ -39,19 +38,13 @@ export default function AdminChatChannels() {
         </Button>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 bg-white dark:bg-gray-800 rounded-md shadow p-6">
-          <ChatChannelList 
-            channels={channels as ChatChannel[]} 
-            isLoading={isLoading} 
-            onDelete={handleDeleteChannel}
-            isDeleting={deleteMutation.isPending}
-          />
-        </div>
-        
-        <div className="md:col-span-1">
-          <ChatChannelTagAssigner />
-        </div>
+      <div className="bg-white dark:bg-gray-800 rounded-md shadow p-6">
+        <ChatChannelList 
+          channels={channels as ChatChannel[]} 
+          isLoading={isLoading} 
+          onDelete={handleDeleteChannel}
+          isDeleting={deleteMutation.isPending}
+        />
       </div>
     </div>
   );
