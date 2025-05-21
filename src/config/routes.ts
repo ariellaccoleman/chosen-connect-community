@@ -33,6 +33,10 @@ export const APP_ROUTES = {
   CHAT: '/chat',
   CHAT_CHANNEL: '/chat/:channelId',
   
+  // Hub routes
+  HUBS: '/hubs',
+  HUB_DETAIL: '/hubs/:id',
+  
   // Admin routes
   ADMIN_DASHBOARD: '/admin/dashboard',
   ADMIN_TAGS: '/admin/tags',
@@ -40,6 +44,7 @@ export const APP_ROUTES = {
   ADMIN_TESTS: '/admin/tests',
   ADMIN_TEST_DETAIL: '/admin/tests/:id',
   ADMIN_CHAT_CHANNELS: '/admin/chat/channels',
+  ADMIN_HUBS: '/admin/hubs',
   CREATE_CHAT_CHANNEL: '/admin/chat/channels/create',
   EDIT_CHAT_CHANNEL: '/admin/chat/channels/:id/edit'
 };

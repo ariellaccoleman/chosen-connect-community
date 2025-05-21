@@ -20,6 +20,7 @@ import OrganizationEdit from '@/pages/OrganizationEdit';
 import ManageOrganizationConnections from '@/pages/ManageOrganizationConnections';
 import CommunityDirectory from '@/pages/CommunityDirectory';
 import TestDataGenerator from '@/pages/TestDataGenerator';
+import Hubs from '@/pages/Hubs';
 
 // Chat Routes
 import Chat from '@/pages/Chat';
@@ -32,6 +33,7 @@ import AdminTestRunDetail from '@/pages/AdminTestRunDetail';
 import AdminChatChannels from '@/pages/AdminChatChannels';
 import CreateChatChannel from '@/pages/CreateChatChannel';
 import EditChatChannel from '@/pages/EditChatChannel';
+import AdminHubs from '@/pages/AdminHubs';
 
 // Route Guards
 import PublicRoute from './PublicRoute';
@@ -71,6 +73,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.EVENTS} element={<ProtectedRoute><Events /></ProtectedRoute>} />
       <Route path={APP_ROUTES.EVENT_DETAIL} element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
       
+      {/* Hub Routes */}
+      <Route path={APP_ROUTES.HUBS} element={<ProtectedRoute><Hubs /></ProtectedRoute>} />
+      
       {/* Chat Routes */}
       <Route path={APP_ROUTES.CHAT} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path={APP_ROUTES.CHAT_CHANNEL} element={<ProtectedRoute><Chat /></ProtectedRoute>} />
@@ -82,6 +87,7 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.TEST_DATA_GENERATOR} element={<AdminRoute><TestDataGenerator /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TESTS} element={<AdminRoute><AdminTestReports /></AdminRoute>} />
       <Route path={APP_ROUTES.ADMIN_TEST_DETAIL} element={<AdminRoute><AdminTestRunDetail /></AdminRoute>} />
+      <Route path={APP_ROUTES.ADMIN_HUBS} element={<AdminRoute><AdminHubs /></AdminRoute>} />
       
       {/* Admin Chat Channel Routes */}
       <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />

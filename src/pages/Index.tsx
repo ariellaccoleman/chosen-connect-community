@@ -5,6 +5,7 @@ import FeaturesSection from "@/components/FeaturesSection";
 import MissionSection from "@/components/MissionSection";
 import StatsSection from "@/components/StatsSection";
 import CallToAction from "@/components/CallToAction";
+import FeaturedHubs from "@/components/hubs/FeaturedHubs";
 
 const Index = () => {
   return (
@@ -13,6 +14,7 @@ const Index = () => {
       <BenefitsSection />
       <FeaturesSection />
       <StatsSection />
+      <FeaturedHubs />
       <MissionSection />
       <CallToAction />
     </>
