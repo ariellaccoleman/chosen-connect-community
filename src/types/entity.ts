@@ -130,13 +130,4 @@ export function hubToEntity(hub: HubWithDetails): Entity {
   };
 }
 
-/**
- * @deprecated Use the entity registry's toEntity method instead
- * Convert an entity of any type to the generic Entity interface
- */
-export function toEntity(entity: any, entityType: EntityType): Entity | null {
-  // Import dynamically to prevent circular dependency
-  const { useEntityRegistry } = require("@/hooks/useEntityRegistry");
-  const { toEntity } = useEntityRegistry();
-  return toEntity(entity, entityType);
-}
+// The deprecated toEntity function has been removed to prevent circular dependencies

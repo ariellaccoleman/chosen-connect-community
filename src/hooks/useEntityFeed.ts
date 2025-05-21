@@ -146,7 +146,7 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Use entityRegistry's toEntity method with explicit type casting
+                    // Directly use the entity registry's toEntity method 
                     const entity = toEntity(item, type);
                     if (entity) {
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
