@@ -5,15 +5,17 @@ import {
   profileToEntity,
   organizationToEntity, 
   eventToEntity,
-  chatChannelToEntity
+  chatChannelToEntity,
+  hubToEntity
 } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { ProfileWithDetails } from "@/types/profile";
 import { OrganizationWithLocation } from "@/types/organization";
 import { EventWithDetails } from "@/types/event";
-import { Calendar, Users, Building2, MessageSquare } from "lucide-react";
+import { Calendar, Users, Building2, MessageSquare, Layers } from "lucide-react";
 import React from "react";
 import { ChatChannelWithDetails } from "@/types/chat";
+import { HubWithDetails } from "@/types/hub";
 
 /**
  * Hook for working with different entity types in a consistent way
@@ -34,6 +36,8 @@ export function useEntityRegistry() {
         return eventToEntity(entity as EventWithDetails);
       case EntityType.CHAT:
         return chatChannelToEntity(entity as ChatChannelWithDetails);
+      case EntityType.HUB:
+        return hubToEntity(entity as HubWithDetails);
       default:
         console.warn(`Unsupported entity type: ${entityType}`);
         return null;
@@ -53,6 +57,8 @@ export function useEntityRegistry() {
         return "Event";
       case EntityType.CHAT:
         return "Chat Channel";
+      case EntityType.HUB:
+        return "Hub";
       default:
         return "Unknown";
     }
@@ -71,6 +77,8 @@ export function useEntityRegistry() {
         return "Events";
       case EntityType.CHAT:
         return "Chat Channels";
+      case EntityType.HUB:
+        return "Hubs";
       default:
         return "Items";
     }
@@ -103,6 +111,8 @@ export function useEntityRegistry() {
         return `/events/${entity.id}`;
       case EntityType.CHAT:
         return `/admin/chat/channels/${entity.id}/edit`;
+      case EntityType.HUB:
+        return `/hubs/${entity.id}`;
       default:
         return "/";
     }
@@ -121,6 +131,8 @@ export function useEntityRegistry() {
         return <Calendar className="h-3 w-3" />;
       case EntityType.CHAT:
         return <MessageSquare className="h-3 w-3" />;
+      case EntityType.HUB:
+        return <Layers className="h-3 w-3" />;
       default:
         return null;
     }

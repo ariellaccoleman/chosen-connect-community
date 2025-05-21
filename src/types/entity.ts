@@ -6,6 +6,7 @@ import { OrganizationWithLocation } from "./organization";
 import { EventWithDetails } from "./event";
 import { TagAssignment } from "@/utils/tags/types";
 import { ChatChannelWithDetails } from './chat';
+import { HubWithDetails } from "./hub";
 
 /**
  * Base entity interface that all entity types should implement
@@ -94,6 +95,29 @@ export function chatChannelToEntity(channel: ChatChannelWithDetails): Entity {
     created_at: channel.created_at,
     updated_at: channel.updated_at,
     tags: channel.tag_assignments
+  };
+}
+
+/**
+ * Convert a hub to an entity
+ */
+export function hubToEntity(hub: HubWithDetails): Entity {
+  return {
+    id: hub.id,
+    name: hub.name,
+    description: hub.description || undefined,
+    imageUrl: null, // Hubs don't have images yet
+    entityType: EntityType.HUB,
+    created_at: hub.created_at,
+    updated_at: hub.updated_at,
+    tags: hub.tag ? [{ 
+      id: '', 
+      tag_id: hub.tag.id, 
+      target_id: hub.id, 
+      target_type: 'hub', 
+      created_at: hub.created_at || '', 
+      tag: hub.tag 
+    }] : []
   };
 }
 

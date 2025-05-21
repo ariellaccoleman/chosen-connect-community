@@ -17,6 +17,7 @@ interface EntityFeedProps {
   className?: string;
   emptyMessage?: string;
   tagId?: string; // Added tagId prop to match what's being passed in HubDetail.tsx
+  excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
 }
 
 /**
@@ -30,8 +31,14 @@ const EntityFeed = ({
   limit,
   className = "",
   emptyMessage = "No items found",
-  tagId // Add the tagId prop to destructuring
+  tagId, // Add the tagId prop to destructuring
+  excludeEntityTypes = []
 }: EntityFeedProps) => {
+  // Filter out excluded entity types
+  const availableEntityTypes = defaultEntityTypes.filter(
+    type => !excludeEntityTypes.includes(type)
+  );
+
   const [activeTab, setActiveTab] = useState<"all" | EntityType>("all");
   const { 
     getEntityTypeLabel,
@@ -40,7 +47,7 @@ const EntityFeed = ({
   
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
-    ? defaultEntityTypes 
+    ? availableEntityTypes 
     : [activeTab];
   
   // Fetch tags for filtering - use our consolidated hook
@@ -78,11 +85,11 @@ const EntityFeed = ({
       {title && <h2 className="text-2xl font-bold mb-6">{title}</h2>}
       
       <div className="mb-6">
-        {showTabs && (
+        {showTabs && availableEntityTypes.length > 1 && (
           <Tabs defaultValue="all" onValueChange={handleTabChange} className="mb-6">
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
-              {defaultEntityTypes.map(type => (
+              {availableEntityTypes.map(type => (
                 <TabsTrigger key={type} value={type}>
                   {getEntityTypePlural(type)}
                 </TabsTrigger>

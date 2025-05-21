@@ -7,10 +7,11 @@ import { useEvents } from "@/hooks/events";
 import { useCommunityProfiles } from "@/hooks/profiles";
 import { useOrganizations } from "./organizations";
 import { useEntityRegistry } from "./useEntityRegistry";
+import { useHubs } from "./hubs";
 
 interface UseEntityFeedOptions {
   entityTypes?: EntityType[];
-  tagId?: string;
+  tagId?: string | null;
   limit?: number;
   searchQuery?: string;
 }
@@ -29,8 +30,9 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const includeEvents = entityTypes.includes(EntityType.EVENT);
   const includeProfiles = entityTypes.includes(EntityType.PERSON);
   const includeOrgs = entityTypes.includes(EntityType.ORGANIZATION);
+  const includeHubs = entityTypes.includes(EntityType.HUB);
   
-  // Fetch data for each entity type using factory hooks - now returns array directly
+  // Fetch data for each entity type using factory hooks
   const { data: events = [], isLoading: eventsLoading } = useEvents(); 
   
   const { data: profiles = [], isLoading: profilesLoading } = useCommunityProfiles({
@@ -42,7 +44,11 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
   const { data: organizationsResponse, isLoading: orgsLoading } = useOrganizations();
   const organizations = organizationsResponse?.data || [];
   
-  // Use tag hooks - without the reference to activeTab (which isn't defined in this scope)
+  // Add hub data fetching
+  const { data: hubsResponse, isLoading: hubsLoading } = useHubs();
+  const hubs = hubsResponse?.data || [];
+  
+  // Use tag hooks
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
   
   // Use tag filtering
@@ -102,6 +108,14 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
         });
       }
       
+      // Convert and add hubs
+      if (includeHubs) {
+        hubs.forEach(hub => {
+          const entity = toEntity(hub, EntityType.HUB);
+          if (entity) allEntities.push(entity);
+        });
+      }
+      
       // Filter by tag if needed
       const filteredEntities = selectedTagId 
         ? filterItemsByTag(allEntities)
@@ -125,18 +139,21 @@ export const useEntityFeed = (options: UseEntityFeedOptions = {}) => {
       setError(err instanceof Error ? err : new Error(String(err)));
     }
     
-    setIsLoading(eventsLoading || profilesLoading || orgsLoading);
+    setIsLoading(eventsLoading || profilesLoading || orgsLoading || hubsLoading);
   }, [
     events, 
     profiles, 
-    organizations, 
+    organizations,
+    hubs,
     eventsLoading, 
     profilesLoading, 
     orgsLoading,
+    hubsLoading,
     selectedTagId,
     includeEvents,
     includeProfiles,
     includeOrgs,
+    includeHubs,
     options.limit,
     filterItemsByTag,
     toEntity,

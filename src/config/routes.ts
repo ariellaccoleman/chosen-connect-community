@@ -1,51 +1,50 @@
+import { generatePath } from 'react-router-dom';
 
 /**
  * Application routes
  */
 export const APP_ROUTES = {
-  HOME: '/',
-  ABOUT: '/about',
-  AUTH: '/auth',
-  DASHBOARD: '/dashboard',
+  // Main Routes
+  HOME: "/",
+  ABOUT: "/about",
+  AUTH: "/auth",
+  DASHBOARD: "/dashboard",
+  NOT_FOUND: "*",
   
-  // Profile routes
-  PROFILE_EDIT: '/profile/edit',
-  PROFILE_VIEW: '/profile/:id',
-  MANAGE_ORGANIZATIONS: '/profile/organizations',
+  // Community Routes
+  COMMUNITY: "/community",
+  PROFILE_VIEW: "/profile/:profileId",
+  PROFILE_EDIT: "/profile/edit/:profileId?",
+  COMMUNITY_GUIDE: "/community-guide",
   
-  // Organization routes
-  ORGANIZATIONS: '/organizations',
-  ORGANIZATION_DETAIL: '/organizations/:id',
-  ORGANIZATION_EDIT: '/organizations/:id/edit',
-  CREATE_ORGANIZATION: '/organizations/create',
+  // Organization Routes
+  ORGANIZATIONS: "/organizations",
+  ORGANIZATION_DETAIL: "/organizations/:orgId",
+  ORGANIZATION_EDIT: "/organizations/:orgId/edit",
+  CREATE_ORGANIZATION: "/organizations/create",
+  MANAGE_ORGANIZATION_CONNECTIONS: "/organizations/:orgId/connections",
   
-  // Community routes
-  COMMUNITY: '/community',
-  COMMUNITY_PROFILE: '/community/:id',
-  COMMUNITY_GUIDE: '/community/guide',
+  // Event Routes
+  EVENTS: "/events",
+  EVENT_DETAIL: "/events/:eventId",
+  CREATE_EVENT: "/events/create",
   
-  // Event routes
-  EVENTS: '/events',
-  EVENT_DETAIL: '/events/:id',
-  CREATE_EVENT: '/events/create',
+  // Chat Routes
+  CHAT: "/chat",
+  CHAT_CHANNEL: "/chat/:channelId",
   
-  // Chat routes
-  CHAT: '/chat',
-  CHAT_CHANNEL: '/chat/:channelId',
+  // Hub Routes
+  HUBS: "/hubs",
+  HUB_DETAIL: "/hubs/:hubId",
   
-  // Hub routes
-  HUBS: '/hubs',
-  HUB_DETAIL: '/hubs/:id',
-  
-  // Admin routes
-  ADMIN_DASHBOARD: '/admin/dashboard',
-  ADMIN_TAGS: '/admin/tags',
-  TEST_DATA_GENERATOR: '/admin/test-data-generator',
-  ADMIN_TESTS: '/admin/tests',
-  ADMIN_TEST_DETAIL: '/admin/tests/:id',
-  ADMIN_CHAT_CHANNELS: '/admin/chat/channels',
-  ADMIN_CHAT_CHANNELS_ALT: '/admin/chat-channels', // Adding alternative path with hyphen
-  ADMIN_HUBS: '/admin/hubs',
-  CREATE_CHAT_CHANNEL: '/admin/chat/channels/create',
-  EDIT_CHAT_CHANNEL: '/admin/chat/channels/:id/edit'
+  // Admin Routes
+  ADMIN_DASHBOARD: "/admin",
+  ADMIN_TAGS: "/admin/tags",
+  ADMIN_CHAT_CHANNELS: "/admin/chat/channels",
+  CREATE_CHAT_CHANNEL: "/admin/chat/channels/create",
+  EDIT_CHAT_CHANNEL: "/admin/chat/channels/:channelId/edit",
+  TEST_DATA_GENERATOR: "/admin/test-data",
+  TEST_REPORTS: "/admin/test-reports",
+  TEST_RUN_DETAIL: "/admin/test-reports/:testRunId",
+  ADMIN_HUBS: "/admin/hubs"
 };

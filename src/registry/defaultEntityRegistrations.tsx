@@ -2,11 +2,12 @@
 import React from "react";
 import { EntityType } from "../types/entityTypes";
 import { entityRegistry } from "./entityRegistry";
-import { User, Building, Calendar } from "lucide-react";
+import { User, Building, Calendar, Layers } from "lucide-react";
 import { 
   profileToEntity, 
   organizationToEntity, 
-  eventToEntity 
+  eventToEntity,
+  hubToEntity 
 } from "../types/entity";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from "react-router-dom";
@@ -82,6 +83,34 @@ entityRegistry.register({
     getTypeLabel: () => "Event",
     getSingularName: () => "event",
     getPluralName: () => "events",
+    getDisplayName: (entity) => entity.name,
+    getFallbackInitials: (entity) => {
+      if (!entity.name) return "?";
+      return entity.name
+        .split(" ")
+        .map(part => part[0])
+        .join("")
+        .toUpperCase()
+        .substring(0, 2);
+    }
+  }
+});
+
+// Register Hub entity type
+entityRegistry.register({
+  type: EntityType.HUB,
+  converter: {
+    toEntity: hubToEntity
+  },
+  behavior: {
+    getDetailUrl: (id) => generatePath(APP_ROUTES.HUB_DETAIL, { hubId: id }),
+    getCreateUrl: () => APP_ROUTES.ADMIN_HUBS, // Admins create hubs from the admin page
+    getEditUrl: (id) => generatePath(APP_ROUTES.ADMIN_HUBS), // No direct edit page yet
+    getListUrl: () => APP_ROUTES.HUBS,
+    getIcon: () => <Layers className="h-4 w-4" />,
+    getTypeLabel: () => "Hub",
+    getSingularName: () => "hub",
+    getPluralName: () => "hubs",
     getDisplayName: (entity) => entity.name,
     getFallbackInitials: (entity) => {
       if (!entity.name) return "?";
