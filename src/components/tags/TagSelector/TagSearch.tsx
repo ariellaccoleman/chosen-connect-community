@@ -4,7 +4,8 @@ import {
   Command, 
   CommandEmpty, 
   CommandInput,
-  CommandList 
+  CommandList,
+  CommandGroup
 } from "@/components/ui/command";
 import { Tag } from "@/utils/tags";
 import { User } from "@supabase/supabase-js";
@@ -12,6 +13,7 @@ import TagList from "./TagList";
 import EmptySearchState from "./EmptySearchState";
 import TagCreateFooter from "./TagCreateFooter";
 import { EntityType } from "@/types/entityTypes";
+import { Loader2 } from "lucide-react";
 
 interface TagSearchProps {
   searchValue: string;
@@ -21,6 +23,7 @@ interface TagSearchProps {
   onTagSelected: (tag: Tag) => void;
   handleOpenCreateDialog: () => void;
   user: User | null;
+  isLoading?: boolean;
 }
 
 const TagSearch = ({
@@ -30,7 +33,8 @@ const TagSearch = ({
   targetType,
   onTagSelected,
   handleOpenCreateDialog,
-  user
+  user,
+  isLoading = false
 }: TagSearchProps) => {
   return (
     <Command>
@@ -40,25 +44,36 @@ const TagSearch = ({
         onValueChange={setSearchValue}
       />
       <CommandList>
-        <CommandEmpty>
-          <EmptySearchState 
-            searchValue={searchValue}
-            handleOpenCreateDialog={handleOpenCreateDialog}
-            user={user}
-          />
-        </CommandEmpty>
-        
-        <TagList 
-          tags={tags} 
-          onTagSelected={onTagSelected} 
-          targetType={targetType} 
-        />
-        
-        {searchValue && user && (
-          <TagCreateFooter 
-            searchValue={searchValue} 
-            handleOpenCreateDialog={handleOpenCreateDialog} 
-          />
+        {isLoading ? (
+          <CommandGroup>
+            <div className="flex items-center justify-center py-6">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Fixing tag associations...</span>
+            </div>
+          </CommandGroup>
+        ) : (
+          <>
+            <CommandEmpty>
+              <EmptySearchState 
+                searchValue={searchValue}
+                handleOpenCreateDialog={handleOpenCreateDialog}
+                user={user}
+              />
+            </CommandEmpty>
+            
+            <TagList 
+              tags={tags} 
+              onTagSelected={onTagSelected} 
+              targetType={targetType} 
+            />
+            
+            {searchValue && user && (
+              <TagCreateFooter 
+                searchValue={searchValue} 
+                handleOpenCreateDialog={handleOpenCreateDialog} 
+              />
+            )}
+          </>
         )}
       </CommandList>
     </Command>

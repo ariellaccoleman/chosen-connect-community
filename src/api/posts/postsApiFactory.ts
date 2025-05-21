@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { ApiResponse } from "@/api/core/types";
 import { Post, PostComment, PostLike, CommentLike, CreatePostRequest, CreateCommentRequest } from "@/types/post";
 import { createErrorResponse, createSuccessResponse } from "@/api/core/errorHandler";
+import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 
 // Create base operations for posts
 const postsBaseApi = createApiFactory<Post>({
@@ -161,6 +163,8 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
     // Create post with tags
     async createPostWithTags(data: CreatePostRequest): Promise<ApiResponse<Post>> {
       try {
+        logger.info("Creating post with tags:", data);
+        
         // Create the post
         const { data: post, error } = await supabase
           .from("posts")
@@ -172,25 +176,43 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          logger.error("Error creating post:", error);
+          throw error;
+        }
 
         // Assign tags if provided
         if (data.tag_ids && data.tag_ids.length > 0 && post) {
+          logger.info("Creating tag assignments for post", { 
+            postId: post.id,
+            tagIds: data.tag_ids
+          });
+          
+          // Create tag assignments
           const tagAssignments = data.tag_ids.map(tagId => ({
             target_id: post.id,
             tag_id: tagId,
-            target_type: 'post'
+            target_type: EntityType.POST
           }));
 
           const { error: tagError } = await supabase
             .from("tag_assignments")
             .insert(tagAssignments);
 
-          if (tagError) throw tagError;
+          if (tagError) {
+            logger.error("Error creating tag assignments:", tagError);
+            throw tagError;
+          }
+          
+          // For each tag, ensure it's associated with the POST entity type
+          for (const tagId of data.tag_ids) {
+            await ensureTagEntityType(tagId, EntityType.POST);
+          }
         }
 
         return createSuccessResponse(post);
       } catch (error) {
+        logger.error("Error in createPostWithTags:", error);
         return createErrorResponse(error);
       }
     },
@@ -250,6 +272,46 @@ export const postsApi = extendApiOperations<Post, string, Partial<Post>, Partial
     }
   }
 );
+
+// Helper function to ensure a tag is associated with an entity type
+async function ensureTagEntityType(tagId: string, entityType: EntityType): Promise<void> {
+  try {
+    logger.info(`Ensuring tag ${tagId} is associated with entity type ${entityType}`);
+    
+    // Check if the entity type association already exists
+    const { data, error } = await supabase
+      .from("tag_entity_types")
+      .select()
+      .eq("tag_id", tagId)
+      .eq("entity_type", entityType)
+      .maybeSingle();
+      
+    if (error) {
+      logger.error("Error checking tag entity type:", error);
+      return;
+    }
+    
+    // If association doesn't exist, create it
+    if (!data) {
+      logger.info(`Creating new association for tag ${tagId} with entity type ${entityType}`);
+      
+      const { error: insertError } = await supabase
+        .from("tag_entity_types")
+        .insert({
+          tag_id: tagId,
+          entity_type: entityType
+        });
+        
+      if (insertError) {
+        logger.error("Error creating tag entity type:", insertError);
+      }
+    } else {
+      logger.info(`Association for tag ${tagId} with entity type ${entityType} already exists`);
+    }
+  } catch (error) {
+    logger.error("Error in ensureTagEntityType:", error);
+  }
+}
 
 // Extend comments API with custom operations
 export const commentsApi = extendApiOperations<PostComment, string, Partial<PostComment>, Partial<PostComment>, CommentsCustomOperations>(

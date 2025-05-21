@@ -8,6 +8,8 @@ import { Tag, fetchSelectionTags, invalidateTagCache } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
+import { fixTagEntityAssociations } from "@/utils/tags/fixTagEntityTypes";
+import { logger } from "@/utils/logger";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -31,12 +33,33 @@ const TagSelectorComponent = ({
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const { user } = useAuth();
+  const [isFixingTags, setIsFixingTags] = useState(false);
 
-  // Load tags when search criteria changes
+  // Run fix for tag entity associations the first time component mounts
   useEffect(() => {
-    loadTagsWithDebounce();
+    const runFix = async () => {
+      try {
+        setIsFixingTags(true);
+        await fixTagEntityAssociations(targetType);
+        // Force refresh of tag cache after fixing
+        await invalidateTagCache(targetType);
+      } catch (err) {
+        logger.error("Error running tag entity fix:", err);
+      } finally {
+        setIsFixingTags(false);
+      }
+    };
+
+    runFix();
+  }, [targetType]);
+
+  // Load tags when search criteria changes or when popover opens
+  useEffect(() => {
+    if (open || searchValue) {
+      loadTagsWithDebounce();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue, targetType, isAdmin, user?.id, open]);
+  }, [searchValue, targetType, isAdmin, user?.id, open, isFixingTags]);
 
   // Find and set the selected tag when currentSelectedTagId changes
   useEffect(() => {
@@ -52,7 +75,7 @@ const TagSelectorComponent = ({
             setSelectedTag(found);
           }
         } catch (err) {
-          console.error("Error fetching selected tag:", err);
+          logger.error("Error fetching selected tag:", err);
         }
       };
       
@@ -85,7 +108,7 @@ const TagSelectorComponent = ({
     try {
       await invalidateTagCache(targetType);
     } catch (err) {
-      console.error("Failed to invalidate tag cache:", err);
+      logger.error("Failed to invalidate tag cache:", err);
     }
   };
 
@@ -101,7 +124,7 @@ const TagSelectorComponent = ({
       });
       setTags(fetchedTags);
     } catch (err) {
-      console.error("Error fetching tags:", err);
+      logger.error("Error fetching tags:", err);
       setTags([]);
     }
   };
@@ -172,6 +195,7 @@ const TagSelectorComponent = ({
             onTagSelected={handleTagSelection}
             handleOpenCreateDialog={handleOpenCreateDialog}
             user={user}
+            isLoading={isFixingTags}
           />
         </PopoverContent>
       </Popover>
