@@ -5,10 +5,10 @@ import { EntityType } from "@/types/entityTypes";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
 
-// Import proper API clients
+// Import proper API clients and their methods
+import { profileApi } from "@/api/profiles";
 import { organizationApi } from "@/api/organizations";
 import { eventApi } from "@/api/events";
-import { profileApi } from "@/api/profiles";
 
 interface UseEntityFeedProps {
   entityTypes: EntityType[];
@@ -44,18 +44,22 @@ export const useEntityFeed = ({
             switch (type) {
               case EntityType.PERSON:
                 logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
-                const { data: profiles } = await profileApi.getAllProfiles({ 
-                  tagId, 
-                  limit, 
-                  filterByUserId 
+                const { data: profiles } = await profileApi.getAll({ 
+                  filters: { 
+                    ...(tagId ? { tag_id: tagId } : {}),
+                    ...(filterByUserId ? { user_id: filterByUserId } : {})
+                  },
+                  limit
                 });
                 items = profiles || [];
                 break;
                 
               case EntityType.ORGANIZATION:
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
-                const { data: orgs } = await organizationApi.getAllOrganizations({ 
-                  tagId, 
+                const { data: orgs } = await organizationApi.getAll({ 
+                  filters: { 
+                    ...(tagId ? { tag_id: tagId } : {})
+                  },
                   limit
                 });
                 items = orgs || [];
@@ -63,8 +67,10 @@ export const useEntityFeed = ({
                 
               case EntityType.EVENT:
                 logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
-                const { data: events } = await eventApi.getAllEvents({ 
-                  tagId, 
+                const { data: events } = await eventApi.getAll({ 
+                  filters: { 
+                    ...(tagId ? { tag_id: tagId } : {})
+                  },
                   limit
                 });
                 items = events || [];
@@ -87,6 +93,8 @@ export const useEntityFeed = ({
                   name: entity.name
                 });
                 allEntities.push(entity);
+              } else {
+                logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { item });
               }
             });
           } catch (e) {
