@@ -1,6 +1,5 @@
-
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, generatePath } from "react-router-dom";
 import { useOrganizations } from "@/hooks/organizations";
 import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,12 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
 import { OrganizationWithLocation } from "@/types";
-import { formatWebsiteUrl } from "@/utils/formatters/urlFormatters";
-import TagFilter from "@/components/filters/TagFilter";
-import { toast } from "@/components/ui/sonner";
 import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
 import { logger } from "@/utils/logger";
+import { toast } from "@/components/ui/sonner";
+import TagFilter from "@/components/filters/TagFilter";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -57,6 +55,13 @@ const OrganizationsList = () => {
         return taggedIds.has(org.id);
       })
     : searchFilteredOrgs;
+    
+  // Handle clicking on an organization card
+  const handleViewOrganization = (orgId: string) => {
+    // Use generatePath to correctly create the URL with parameters
+    const orgDetailUrl = generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId });
+    navigate(orgDetailUrl);
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
@@ -100,7 +105,7 @@ const OrganizationsList = () => {
             <OrganizationCard 
               key={organization.id} 
               organization={organization} 
-              onClick={() => navigate(`/organizations/${organization.id}`)} 
+              onClick={() => handleViewOrganization(organization.id)} 
             />
           ))}
         </div>
@@ -138,14 +143,14 @@ const OrganizationCard = ({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <h3 className="text-lg font-semibold mb-1 break-words">{organization.name}</h3>
+            <h3 className="text-lg font-semibold mb-1">{organization.name}</h3>
             {organization.location && (
-              <p className="text-sm text-gray-500 mb-2 truncate">{organization.location.formatted_location}</p>
+              <p className="text-sm text-gray-500 mb-2">{organization.location.formatted_location}</p>
             )}
           </div>
         </div>
         {organization.description && (
-          <p className="mt-4 text-sm text-gray-600 line-clamp-3">{organization.description}</p>
+          <p className="mt-4 text-sm text-gray-600">{organization.description}</p>
         )}
       </CardContent>
     </Card>

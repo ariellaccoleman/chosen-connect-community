@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,17 +17,18 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 const OrganizationDetail = () => {
-  const { id } = useParams<{ id: string }>();
+  // Use orgId parameter to match the route defined in APP_ROUTES.ORGANIZATION_DETAIL
+  const { orgId } = useParams<{ orgId: string }>();
   const { user, isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState("members");
   
   // Pass the correct id to the useOrganization hook
-  const { data: organizationResponse, isLoading } = useOrganization(id);
+  const { data: organizationResponse, isLoading } = useOrganization(orgId);
   const organization = organizationResponse?.data as OrganizationWithLocation;
   
   // Update all useIsOrganizationAdmin calls with the correct ID
-  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, id);
-  const { data: userRole } = useOrganizationRole(user?.id, id);
+  const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, orgId);
+  const { data: userRole } = useOrganizationRole(user?.id, orgId);
   
   // Get user's relationships with the fixed hook usage
   const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
@@ -36,10 +38,10 @@ const OrganizationDetail = () => {
   useEffect(() => {
     if (organization) {
       logger.info(`OrganizationDetail - Successfully loaded organization: ${organization.name}`);
-    } else if (!isLoading && id) {
-      logger.warn(`OrganizationDetail - No organization found with ID: ${id}`);
+    } else if (!isLoading && orgId) {
+      logger.warn(`OrganizationDetail - No organization found with ID: ${orgId}`);
     }
-  }, [organization, isLoading, id]);
+  }, [organization, isLoading, orgId]);
 
   if (isLoading) {
     return (
@@ -65,13 +67,13 @@ const OrganizationDetail = () => {
     <div className="container mx-auto py-6 px-4 max-w-3xl">
       <OrganizationDetailHeader 
         userId={user?.id}
-        organizationId={id}
+        organizationId={orgId}
         organizationName={organization?.name}
         relationships={relationships}
       />
 
       {/* Admin alert below the header */}
-      {user && id && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={id} />}
+      {user && orgId && <OrganizationAdminAlert isAdmin={isOrgAdmin} organizationId={orgId} />}
 
       <div className="space-y-6">
         {/* Organization Info Card with Tags */}
@@ -83,9 +85,9 @@ const OrganizationDetail = () => {
             <div className="mt-6 border-t pt-6">
               <h3 className="text-lg font-medium mb-2">Tags</h3>
               <div className="mt-2">
-                {id && (
+                {orgId && (
                   <EntityTagManager 
-                    entityId={id} 
+                    entityId={orgId} 
                     entityType={EntityType.ORGANIZATION} 
                     isAdmin={isOrgAdmin || isAdmin}
                   />
@@ -105,12 +107,12 @@ const OrganizationDetail = () => {
           </TabsList>
           
           <TabsContent value="members">
-            {id && <OrganizationMembers organizationId={id} />}
+            {orgId && <OrganizationMembers organizationId={orgId} />}
           </TabsContent>
           
           {(isOrgAdmin || isAdmin) && (
             <TabsContent value="admins">
-              {id && <OrganizationAdmins organizationId={id} />}
+              {orgId && <OrganizationAdmins organizationId={orgId} />}
             </TabsContent>
           )}
         </Tabs>

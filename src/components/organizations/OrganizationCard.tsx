@@ -7,6 +7,8 @@ import { Link } from "react-router-dom";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import { useIsOrganizationAdmin } from "@/hooks/organizations";
 import { useAuth } from "@/hooks/useAuth";
+import { APP_ROUTES } from "@/config/routes";
+import { generatePath } from "react-router-dom";
 
 interface OrganizationCardProps {
   relationship: ProfileOrganizationRelationshipWithDetails;
@@ -43,6 +45,10 @@ const OrganizationCard = ({
     former: "Former",
     connected_insider: "Connected Insider"
   }[relationship.connection_type || "current"];
+  
+  // Use APP_ROUTES and generatePath for consistent URL generation
+  const organizationUrl = generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId: organization.id });
+  const editOrgUrl = generatePath(APP_ROUTES.ORGANIZATION_EDIT, { orgId: organization.id });
   
   return (
     <Card className="hover:shadow-sm transition-shadow">
@@ -90,7 +96,7 @@ const OrganizationCard = ({
             className="flex items-center"
             asChild
           >
-            <Link to={`/organizations/${organization.id}`}>
+            <Link to={organizationUrl}>
               <Eye className="h-4 w-4 mr-1" />
               View Organization
             </Link>
@@ -116,7 +122,7 @@ const OrganizationCard = ({
               className="flex items-center text-blue-600 hover:text-blue-800 hover:bg-blue-50"
               asChild
             >
-              <Link to={`/organizations/${organization.id}/edit`}>
+              <Link to={editOrgUrl}>
                 <Settings className="h-4 w-4 mr-1" />
                 Edit Organization
               </Link>

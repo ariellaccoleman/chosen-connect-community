@@ -2,10 +2,12 @@
 import { useMemo } from 'react';
 import { EntityType } from '@/types/entityTypes';
 import { Entity } from '@/types/entity';
-import { defaultEntityRegistrations } from '@/registry/defaultEntityRegistrations';
 import { APP_ROUTES } from '@/config/routes';
 import { generatePath } from 'react-router-dom';
 import { logger } from '@/utils/logger';
+
+// Import from registry without relying on defaultEntityRegistrations export
+import { entityRegistry } from '@/registry';
 
 /**
  * Custom hook that provides access to the entity registry.
@@ -13,7 +15,7 @@ import { logger } from '@/utils/logger';
  * without needing to add conditional logic throughout the app.
  */
 export const useEntityRegistry = () => {
-  const registry = useMemo(() => defaultEntityRegistrations, []);
+  const registry = useMemo(() => entityRegistry, []);
 
   /**
    * Gets the URL for an entity
@@ -33,8 +35,8 @@ export const useEntityRegistry = () => {
         return generatePath(APP_ROUTES.EVENT_DETAIL, { eventId: entity.id });
       }
       
-      // For PROFILE type, use profileId as the parameter key
-      if (entity.entityType === EntityType.PROFILE) {
+      // For PERSON type (formerly PROFILE), use profileId as the parameter key
+      if (entity.entityType === EntityType.PERSON) {
         return generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: entity.id });
       }
       
@@ -71,6 +73,14 @@ export const useEntityRegistry = () => {
     const registration = registry[entityType];
     return registration ? registration.label : 'Unknown';
   };
+  
+  /**
+   * Gets the plural label for an entity type
+   */
+  const getEntityTypePlural = (entityType: EntityType): string => {
+    const registration = registry[entityType];
+    return registration ? (registration.pluralLabel || `${registration.label}s`) : 'Unknown';
+  };
 
   /**
    * Gets the avatar fallback for an entity
@@ -85,11 +95,71 @@ export const useEntityRegistry = () => {
       .map(word => word.charAt(0).toUpperCase())
       .join('');
   };
+  
+  /**
+   * Convert a data object to an entity
+   */
+  const toEntity = (data: any, entityType: EntityType): Entity | null => {
+    if (!data) return null;
+    
+    const baseEntity: Entity = {
+      id: data.id,
+      entityType,
+      name: '',
+      created_at: data.created_at,
+    };
+    
+    switch (entityType) {
+      case EntityType.EVENT:
+        return {
+          ...baseEntity,
+          name: data.title,
+          description: data.description,
+          location: data.location,
+          imageUrl: data.image_url || null,
+          tags: data.tags,
+        };
+      
+      case EntityType.PERSON:
+        return {
+          ...baseEntity,
+          name: `${data.first_name || ''} ${data.last_name || ''}`.trim(),
+          description: data.headline || data.bio,
+          location: data.location,
+          imageUrl: data.avatar_url || null,
+          tags: data.tags,
+        };
+        
+      case EntityType.ORGANIZATION:
+        return {
+          ...baseEntity,
+          name: data.name,
+          description: data.description,
+          location: data.location,
+          imageUrl: data.logo_url || data.logo_api_url || null,
+          tags: data.tags,
+        };
+        
+      case EntityType.HUB:
+        return {
+          ...baseEntity,
+          name: data.name,
+          description: data.description,
+          imageUrl: null, // Hubs don't have images currently
+          tags: data.tags,
+        };
+        
+      default:
+        return null;
+    }
+  };
 
   return {
     getEntityUrl,
     getEntityIcon,
     getEntityTypeLabel,
+    getEntityTypePlural,
     getEntityAvatarFallback,
+    toEntity
   };
 };
