@@ -10,8 +10,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 
 export interface TagFilterProps {
-  selectedTagIds: string[];
-  onTagSelect: (tagIds: string[]) => void;
+  // Support both legacy single tagId and new multiple tagIds
+  selectedTagId?: string | null;
+  selectedTagIds?: string[];
+  // Support both legacy single tag callback and new multiple tags callback
+  onTagSelect?: (tagId: string | null) => void;
+  onTagsSelect?: (tagIds: string[]) => void;
   tags?: Tag[];
   isLoading?: boolean;
   targetType?: string;
@@ -20,8 +24,11 @@ export interface TagFilterProps {
 }
 
 const TagFilter = ({
+  // Handle both prop patterns - single tag and multiple tags
+  selectedTagId = null,
   selectedTagIds = [],
   onTagSelect,
+  onTagsSelect,
   tags = [],
   isLoading = false,
   label = "Filter by Tags",
@@ -30,23 +37,45 @@ const TagFilter = ({
 }: TagFilterProps) => {
   const [open, setOpen] = React.useState(false);
   
+  // Determine which mode we're in (single or multi select)
+  const isMultiSelect = onTagsSelect !== undefined;
+  
+  // Use the appropriate selected value(s)
+  const effectiveSelectedTagIds = isMultiSelect 
+    ? selectedTagIds 
+    : (selectedTagId ? [selectedTagId] : []);
+  
   if (isLoading) {
     return <Skeleton className="h-10 w-full" />;
   }
 
   // Find the selected tags to display their names
-  const selectedTags = tags.filter((tag) => selectedTagIds.includes(tag.id));
+  const selectedTags = tags.filter((tag) => effectiveSelectedTagIds.includes(tag.id));
   
   const handleTagToggle = (tagId: string) => {
-    if (selectedTagIds.includes(tagId)) {
-      onTagSelect(selectedTagIds.filter(id => id !== tagId));
+    if (isMultiSelect) {
+      // Multi-select mode
+      if (effectiveSelectedTagIds.includes(tagId)) {
+        onTagsSelect!(effectiveSelectedTagIds.filter(id => id !== tagId));
+      } else {
+        onTagsSelect!([...effectiveSelectedTagIds, tagId]);
+      }
     } else {
-      onTagSelect([...selectedTagIds, tagId]);
+      // Single-select mode (legacy)
+      if (selectedTagId === tagId) {
+        onTagSelect!(null);
+      } else {
+        onTagSelect!(tagId);
+      }
     }
   };
   
   const clearTags = () => {
-    onTagSelect([]);
+    if (isMultiSelect) {
+      onTagsSelect!([]);
+    } else {
+      onTagSelect!(null);
+    }
     setOpen(false);
   };
 
@@ -85,7 +114,7 @@ const TagFilter = ({
                 </CommandItem>
                 
                 {tags.map((tag) => {
-                  const isSelected = selectedTagIds.includes(tag.id);
+                  const isSelected = effectiveSelectedTagIds.includes(tag.id);
                   return (
                     <CommandItem
                       key={tag.id}

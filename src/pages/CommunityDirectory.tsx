@@ -61,7 +61,7 @@ const CommunityDirectory = () => {
             <div className="md:w-64">
               <TagFilter
                 selectedTagIds={selectedTagIds}
-                onTagSelect={setSelectedTagIds}
+                onTagsSelect={setSelectedTagIds}
                 tags={tags}
                 isLoading={isTagsLoading}
               />
