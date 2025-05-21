@@ -30,7 +30,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
  */
 const CreateOrganization = () => {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, isAuthenticated } = useAuth();
   const createOrganization = useCreateOrganizationWithRelationships();
 
   const form = useForm<OrganizationFormValues>({
@@ -45,7 +45,8 @@ const CreateOrganization = () => {
   // Log authentication state for debugging
   logger.info("CreateOrganization page rendering", { 
     userAuthenticated: !!user, 
-    loading
+    loading,
+    isAuthenticated
   });
   
   // If still loading, show loading state
@@ -63,7 +64,7 @@ const CreateOrganization = () => {
   }
   
   // If not authenticated, redirect to auth page
-  if (!user) {
+  if (!isAuthenticated) {
     logger.warn("Unauthenticated user attempted to access CreateOrganization page");
     return <Navigate to="/auth" state={{ from: '/organizations/new' }} replace />;
   }

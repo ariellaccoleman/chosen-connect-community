@@ -53,23 +53,11 @@ describe('CreateOrganization Component', () => {
     jest.clearAllMocks();
     
     // Setup the default auth mock - authenticated and not loading
-    // Fix: Add all required properties to match useAuth hook return values
+    // Use a simplified mock that only includes the properties the component actually uses
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: mockUser,
       loading: false,
-      authenticated: true, // Legacy property - keep for compatibility
-      isAuthenticated: true, // New property - used in component
-      initialized: true, // Critical flag to prevent loading skeleton
-      email: mockUser.email,
-      isAdmin: false, // Add this to match the useAuth hook
-      error: null,
-      login: jest.fn(),
-      signUp: jest.fn(),
-      logout: jest.fn(),
-      signIn: jest.fn(),
-      signOut: jest.fn(),
-      forgotPassword: jest.fn(),
-      resetPassword: jest.fn()
+      isAuthenticated: true
     }));
     
     // Setup the default organization mutation mock
@@ -82,23 +70,11 @@ describe('CreateOrganization Component', () => {
   });
 
   test('redirects unauthenticated users to auth page with correct state', () => {
-    // Mock unauthenticated state
+    // Mock unauthenticated state with simplified mock
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
       loading: false,
-      authenticated: false,
-      isAuthenticated: false,
-      initialized: true, // Important: Set initialized to true to prevent loading state
-      email: null,
-      isAdmin: false,
-      error: null,
-      login: jest.fn(),
-      signUp: jest.fn(),
-      logout: jest.fn(),
-      signIn: jest.fn(),
-      signOut: jest.fn(),
-      forgotPassword: jest.fn(),
-      resetPassword: jest.fn()
+      isAuthenticated: false
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -113,23 +89,11 @@ describe('CreateOrganization Component', () => {
   });
 
   test('shows loading skeleton while checking authentication', () => {
-    // Mock loading state
+    // Mock loading state with simplified mock
     jest.spyOn(AuthHook, 'useAuth').mockImplementation(() => ({
       user: null,
-      loading: true, 
-      authenticated: false,
-      isAuthenticated: false,
-      initialized: false, // Important: Set initialized to false to simulate initial loading
-      email: null,
-      isAdmin: false,
-      error: null,
-      login: jest.fn(),
-      signUp: jest.fn(),
-      logout: jest.fn(),
-      signIn: jest.fn(),
-      signOut: jest.fn(),
-      forgotPassword: jest.fn(),
-      resetPassword: jest.fn()
+      loading: true,
+      isAuthenticated: false
     }));
     
     render(<CreateOrganization />, { wrapper: Wrapper });
@@ -257,19 +221,7 @@ describe('CreateOrganization Component', () => {
         authHookSpy.mockImplementation(() => ({
           user: null,
           loading: false,
-          authenticated: false,
-          isAuthenticated: false,
-          initialized: true,
-          email: null,
-          isAdmin: false,
-          error: null,
-          login: jest.fn(),
-          signUp: jest.fn(),
-          logout: jest.fn(),
-          signIn: jest.fn(),
-          signOut: jest.fn(),
-          forgotPassword: jest.fn(),
-          resetPassword: jest.fn()
+          isAuthenticated: false
         }));
         // Force a re-render with the new auth state
         await new Promise(resolve => setTimeout(resolve, 10));
