@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '../core/factory/apiFactory';
 import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { apiClient } from '../core/apiClient';
@@ -66,7 +65,8 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
         .select(`
           *,
           created_by_profile:profiles!chat_channels_created_by_fkey(
-            id, first_name, last_name, avatar_url
+            id, first_name, last_name, avatar_url, email, headline, bio, linkedin_url, 
+            twitter_url, website_url, company, created_at, updated_at, is_approved, membership_tier, location_id
           )
         `)
         .eq('id', channelId)
@@ -78,12 +78,7 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
       
       // Type assertion to ensure we can access properties safely
       const channel = data as ChatChannelRow & {
-        created_by_profile?: {
-          id: string;
-          first_name: string | null;
-          last_name: string | null;
-          avatar_url: string | null;
-        } | null;
+        created_by_profile?: Profile | null;
       };
       
       // Get tags assigned to this channel
