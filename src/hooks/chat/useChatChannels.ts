@@ -14,15 +14,23 @@ const chatChannelHooks = createQueryHooks(
 );
 
 // Modified hooks to ensure proper data handling
-export const useChatChannels = () => {
+export const useChatChannels = (options?: { tagId?: string | null }) => {
   const result = chatChannelHooks.useList();
+  
+  // Use the tag ID to filter channels if provided
+  const filteredData = options?.tagId 
+    ? result.data?.data?.filter(channel => {
+        // If channel has tags, check if one matches the requested tag ID
+        return channel.tag_assignments?.some(ta => ta.tag_id === options.tagId);
+      })
+    : result.data?.data;
   
   // Transform the result to ensure data is an array
   // The original issue was that we weren't properly extracting the data from the ApiResponse
   return {
     ...result,
-    data: Array.isArray(result.data?.data) 
-      ? result.data.data 
+    data: Array.isArray(filteredData) 
+      ? filteredData 
       : Array.isArray(result.data) 
         ? result.data 
         : [],
@@ -110,5 +118,45 @@ export function useUpdateChannelTags() {
       logger.error('Error updating channel tags:', error);
       toast.error('Failed to update channel tags: An unexpected error occurred');
     }
+  });
+}
+
+/**
+ * Hook to get chat channels filtered by tag ID
+ */
+export function useChatChannelsByTag(tagId: string | null | undefined) {
+  return useQuery({
+    queryKey: ['chatChannels', 'byTag', tagId],
+    queryFn: async () => {
+      if (!tagId) return [];
+      
+      // Get all channels
+      const channelsResult = await chatChannelsApi.getAll();
+      if (channelsResult.error || !Array.isArray(channelsResult.data)) {
+        return [];
+      }
+      
+      // Get all tag assignments for the channels
+      const { createRepository } = await import('@/api/core/repository');
+      const tagAssignmentsRepo = createRepository('tag_assignments');
+      const { data: tagAssignments, error } = await tagAssignmentsRepo
+        .select('*')
+        .eq('tag_id', tagId)
+        .eq('target_type', 'chat')
+        .execute();
+      
+      if (error || !tagAssignments) {
+        return [];
+      }
+      
+      // Filter channels by the ones that have tag assignments matching the tag ID
+      const channelIds = tagAssignments.map(ta => ta.target_id);
+      const filteredChannels = channelsResult.data.filter(
+        channel => channelIds.includes(channel.id)
+      );
+      
+      return filteredChannels;
+    },
+    enabled: !!tagId
   });
 }

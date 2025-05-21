@@ -1,21 +1,17 @@
 
 /**
- * Entity types supported in the application
+ * Enum for entity types
  */
 export enum EntityType {
   PERSON = 'person',
   ORGANIZATION = 'organization',
   EVENT = 'event',
-  CHAT = 'chat',  
-  HUB = 'hub'  // Add new hub entity type
+  GUIDE = 'guide',
+  CHAT = 'chat',
+  HUB = 'hub'
 }
 
 /**
- * Validate if a string is a valid EntityType
+ * Type for target type used in tag assignments - must match EntityType
  */
-export function isValidEntityType(type: any): boolean {
-  if (typeof type === 'string') {
-    return Object.values(EntityType).includes(type as EntityType);
-  }
-  return false;
-}
+export type TargetType = 'person' | 'organization' | 'event' | 'guide' | 'chat' | 'hub';
