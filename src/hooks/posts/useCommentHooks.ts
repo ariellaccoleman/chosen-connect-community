@@ -55,6 +55,7 @@ export const useCreateComment = () => {
     onError: (error) => {
       logger.error("Error creating comment:", error);
       toast({
+        title: "Error",
         description: error instanceof Error ? error.message : 'Failed to create comment',
         variant: "destructive"
       });
@@ -81,12 +82,14 @@ export const useDeleteComment = () => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['postComments', result.postId] });
       toast({
+        title: "Success",
         description: 'Comment deleted successfully',
       });
     },
     onError: (error) => {
       logger.error("Error deleting comment:", error);
       toast({
+        title: "Error",
         description: error instanceof Error ? error.message : 'Failed to delete comment',
         variant: "destructive"
       });

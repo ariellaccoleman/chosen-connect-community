@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -104,8 +103,7 @@ function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) 
       </TableCell>
       <TableCell>
         <TagList 
-          tagAssignments={tagAssignments}
-          currentEntityType={EntityType.CHAT}
+          tagAssignments={channel.tag_assignments} 
           className="flex-wrap"
         />
       </TableCell>

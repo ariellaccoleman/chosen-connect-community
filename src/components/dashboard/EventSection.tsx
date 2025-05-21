@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -44,7 +43,7 @@ const EventSection: React.FC = () => {
           size="sm"
           className="bg-chosen-blue hover:bg-chosen-navy"
         >
-          <Link to={APP_ROUTES.CREATE_EVENT} className="flex items-center gap-1">
+          <Link to={APP_ROUTES.EVENT_CREATE} className="flex items-center gap-1">
             <PlusCircle size={16} />
             <span>Create Event</span>
           </Link>

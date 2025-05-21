@@ -23,7 +23,7 @@ export function createPostCommentApi() {
    */
   const getCommentsByPostId = async (postId: string): Promise<ApiResponse<PostComment[]>> => {
     const query = `
-      post_comments(*),
+      *,
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
@@ -40,10 +40,17 @@ export function createPostCommentApi() {
     // Transform comments to include author details
     const commentsWithAuthor = data.map(comment => {
       const authorProfile = comment.profiles || {};
-      return {
-        ...comment,
+      const transformedComment: PostComment = {
+        id: comment.id,
+        post_id: comment.post_id,
+        author_id: comment.author_id,
+        content: comment.content,
+        created_at: comment.created_at,
+        updated_at: comment.updated_at,
         author: authorProfile as PostComment['author']
-      } as PostComment;
+      };
+      
+      return transformedComment;
     });
     
     return { data: commentsWithAuthor, error: null, status: 'success' };
@@ -81,7 +88,7 @@ export function createPostCommentApi() {
     try {
       // Get the comment with post author information
       const query = `
-        post_comments(*),
+        *,
         posts!post_id(author_id)
       `;
       
@@ -110,17 +117,16 @@ export function createPostCommentApi() {
    */
   const getCommentCount = async (postId: string): Promise<number> => {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('post_comments')
-        .select('count')
-        .eq('post_id', postId)
-        .single();
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId);
       
-      if (error || !data) {
+      if (error || count === null) {
         return 0;
       }
       
-      return parseInt(data.count) || 0;
+      return count;
     } catch (error) {
       return 0;
     }

@@ -12,9 +12,23 @@ interface ChannelPreviewProps {
   channelTagId?: string;
 }
 
+interface ChannelPreviewData {
+  id: string;
+  name?: string;
+  unread_count?: number;
+  last_message?: {
+    user_name?: string;
+    message?: string;
+  };
+  last_active_time?: string;
+}
+
 const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
-  // Convert limit to string if needed by the hook
-  const { data: channels = [], isLoading } = useChannelMessagePreviews(limit, channelTagId);
+  // Convert limit to number if it's a string
+  const limitNum = typeof limit === 'string' ? parseInt(limit) : limit;
+  
+  // Use the hook with the proper limit type
+  const { data: channels = [], isLoading } = useChannelMessagePreviews(limitNum.toString(), channelTagId);
   
   if (isLoading) {
     return (
@@ -73,7 +87,7 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          {channels.map((channel: any) => (
+          {channels.map((channel: ChannelPreviewData) => (
             <Link 
               key={channel.id} 
               to={`${APP_ROUTES.CHAT}/${channel.id}`}
@@ -82,7 +96,7 @@ const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
               <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">{channel.name || 'Unnamed channel'}</h3>
-                  {channel.unread_count > 0 && (
+                  {channel.unread_count && channel.unread_count > 0 && (
                     <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">
                       {channel.unread_count}
                     </span>

@@ -2,12 +2,16 @@
 import React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useEntityTags } from '@/hooks/tags';
+import { EntityType } from '@/types/entityTypes';
 
 interface TagListProps {
   tagIds?: string[];
   tagAssignments?: any[];
   limit?: number;
   className?: string;
+  currentEntityType?: EntityType;
+  onRemove?: (assignmentId: string) => Promise<void>;
+  isRemoving?: boolean;
 }
 
 /**
@@ -18,7 +22,10 @@ const TagList = ({
   tagIds = [], 
   tagAssignments = [], 
   limit = 3,
-  className = ''
+  className = '',
+  currentEntityType,
+  onRemove,
+  isRemoving = false
 }: TagListProps) => {
   // Handle both tag IDs and tag assignment objects
   const ids = tagIds.length > 0 
@@ -28,7 +35,10 @@ const TagList = ({
       );
 
   // Fetch tag data based on IDs
-  const { data: tags = [], isLoading } = useEntityTags(ids);
+  const { data: tagsData, isLoading } = useEntityTags(ids, currentEntityType);
+  
+  // Ensure tags is always an array
+  const tags = Array.isArray(tagsData) ? tagsData : (tagsData?.data || []);
 
   if (isLoading) {
     return (
@@ -49,6 +59,15 @@ const TagList = ({
       {displayTags.map(tag => (
         <Badge key={tag.id} variant="outline">
           {tag.name}
+          {onRemove && (
+            <button
+              onClick={() => onRemove(tag.id)}
+              className="ml-1 hover:text-destructive"
+              disabled={isRemoving}
+            >
+              ×
+            </button>
+          )}
         </Badge>
       ))}
       

@@ -25,12 +25,12 @@ export function createPostApi() {
    */
   const getPostsWithAuthor = async (): Promise<ApiResponse<PostWithAuthor[]>> => {
     const query = `
-      posts(*),
+      *,
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
     // Use the Supabase client directly
-    const { data, error, status } = await supabase
+    const { data, error } = await supabase
       .from('posts')
       .select(query)
       .order('created_at', { ascending: false });
@@ -42,10 +42,17 @@ export function createPostApi() {
     // Transform posts to include author details and proper typing
     const postsWithAuthor = data.map(post => {
       const authorProfile = post.profiles || {};
-      return {
-        ...post,
+      const transformedPost: PostWithAuthor = {
+        id: post.id,
+        author_id: post.author_id,
+        content: post.content,
+        has_media: post.has_media,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
         author: authorProfile as PostWithAuthor['author']
-      } as PostWithAuthor;
+      };
+      
+      return transformedPost;
     });
     
     return { data: postsWithAuthor, error: null, status: 'success' };
@@ -56,7 +63,7 @@ export function createPostApi() {
    */
   const getPostById = async (id: string): Promise<ApiResponse<PostWithAuthor>> => {
     const query = `
-      posts(*),
+      *,
       profiles!author_id(id, first_name, last_name, avatar_url),
       post_media(*)
     `;
@@ -81,14 +88,18 @@ export function createPostApi() {
     }
 
     // Transform post to include author details, media, and proper typing
-    const post = data;
-    const authorProfile = post.profiles || {};
-    const media = post.post_media || [];
+    const authorProfile = data.profiles || {};
+    const media = data.post_media || [];
     
     const postWithAuthor: PostWithAuthor = {
-      ...post,
+      id: data.id,
+      author_id: data.author_id,
+      content: data.content,
+      has_media: data.has_media,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
       author: authorProfile as PostWithAuthor['author'],
-      media: media as PostWithAuthor['media'],
+      media: media
     };
     
     return { data: postWithAuthor, error: null, status: 'success' };
@@ -121,7 +132,7 @@ export function createPostApi() {
     
     // Now get the posts with these IDs, including author details
     const query = `
-      posts(*),
+      *,
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
@@ -138,10 +149,18 @@ export function createPostApi() {
     // Transform posts to include author details
     const postsWithAuthor = data.map(post => {
       const authorProfile = post.profiles || {};
-      return {
-        ...post,
+      
+      const transformedPost: PostWithAuthor = {
+        id: post.id,
+        author_id: post.author_id,
+        content: post.content,
+        has_media: post.has_media,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
         author: authorProfile as PostWithAuthor['author']
-      } as PostWithAuthor;
+      };
+      
+      return transformedPost;
     });
     
     return { data: postsWithAuthor, error: null, status: 'success' };

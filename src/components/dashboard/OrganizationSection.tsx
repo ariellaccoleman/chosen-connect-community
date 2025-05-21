@@ -1,5 +1,5 @@
-
-import { useState } from "react";
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,7 +38,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <CardTitle>Your Organizations</CardTitle>
             <Button 
-              onClick={() => navigate(APP_ROUTES.MANAGE_ORGANIZATIONS)} 
+              onClick={() => navigate(APP_ROUTES.ORGANIZATIONS)} 
               className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
             >
               <Briefcase className="mr-2 h-4 w-4" />
