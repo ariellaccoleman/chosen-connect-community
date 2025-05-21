@@ -11,6 +11,8 @@ import { Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 import { ChatProvider, useChatContext } from '@/contexts/ChatContext';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 /**
  * Helper function to validate if a string is a valid UUID
@@ -27,11 +29,12 @@ const isValidChannelId = (id: string | null | undefined): boolean => {
 const ChatContent = () => {
   const { isThreadOpen, selectedMessage } = useChatContext();
   const { channelId } = useParams<{ channelId: string }>();
+  const isMobile = useIsMobile();
   
   return (
     <>
       {/* Main Message Area */}
-      <div className={`flex-1 flex flex-col overflow-hidden ${isThreadOpen ? 'hidden md:flex' : ''}`}>
+      <div className={`flex-1 flex flex-col overflow-hidden ${isMobile && isThreadOpen ? 'hidden' : ''}`}>
         {isValidChannelId(channelId) ? (
           <MessageFeed />
         ) : (
@@ -50,11 +53,29 @@ const ChatContent = () => {
       
       {/* Thread Panel (conditional) */}
       {isThreadOpen && selectedMessage && (
-        <div className="w-full md:w-80 lg:w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex flex-col overflow-hidden">
+        <div className={`${isMobile ? 'w-full' : 'hidden md:flex w-80 lg:w-96'} border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-800 flex-col overflow-hidden`}>
           <ThreadPanel />
         </div>
       )}
     </>
+  );
+};
+
+// Mobile sidebar as a sheet
+const MobileSidebar = ({ selectedChannelId, onSelectChannel }) => {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="sm" className="md:hidden mb-2 ml-2 mt-2">
+          Channels
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-[240px] sm:w-[280px] p-0">
+        <div className="w-full h-full bg-white dark:bg-sidebar overflow-y-auto">
+          <ChatSidebar selectedChannelId={selectedChannelId} onSelectChannel={onSelectChannel} />
+        </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
@@ -63,6 +84,7 @@ const ChatPageContent = () => {
   const { channelId } = useParams<{ channelId: string }>();
   const navigate = useNavigate();
   const { isAuthenticated, user, initialized } = useAuth();
+  const isMobile = useIsMobile();
   
   // Authentication check
   useEffect(() => {
@@ -118,16 +140,25 @@ const ChatPageContent = () => {
 
   return (
     <div className="h-[calc(100vh-64px)] flex flex-col sm:flex-row bg-gray-50 dark:bg-gray-900">
-      {/* Channel Sidebar */}
-      <div className="w-full sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
-        <ChatSidebar selectedChannelId={channelId || null} onSelectChannel={handleChannelSelect} />
-      </div>
+      {/* Mobile Channel Sheet */}
+      {isMobile && (
+        <MobileSidebar selectedChannelId={channelId || null} onSelectChannel={handleChannelSelect} />
+      )}
+      
+      {/* Desktop Sidebar */}
+      {!isMobile && (
+        <div className="hidden sm:flex sm:w-64 md:w-72 border-r border-gray-200 dark:border-gray-800 bg-white dark:bg-sidebar overflow-y-auto">
+          <ChatSidebar selectedChannelId={channelId || null} onSelectChannel={handleChannelSelect} />
+        </div>
+      )}
       
       {/* Only render chat content if authenticated */}
       {isAuthenticated && (
-        <ChatProvider>
-          <ChatContent />
-        </ChatProvider>
+        <div className="flex flex-1 flex-col sm:flex-row">
+          <ChatProvider>
+            <ChatContent />
+          </ChatProvider>
+        </div>
       )}
     </div>
   );

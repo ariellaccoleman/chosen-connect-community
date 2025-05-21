@@ -8,6 +8,7 @@ import { logger } from '@/utils/logger';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { useNavigate } from 'react-router-dom';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ChatSidebarProps {
   selectedChannelId: string | null;
@@ -119,29 +120,31 @@ const ChatSidebar: React.FC<ChatSidebarProps> = ({
         </h2>
       </div>
 
-      <div className="space-y-1 px-2">
-        {channels.map(channel => (
-          <button
-            key={channel.id}
-            onClick={() => {
-              logger.info(`Channel selected: ${channel.id} (${channel.name})`);
-              onSelectChannel(channel.id);
-            }}
-            className={cn(
-              "w-full px-2 py-2 rounded-md flex items-center text-left transition-colors",
-              selectedChannelId === channel.id
-                ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-            )}
-          >
-            <MessageSquare size={16} className="mr-2 shrink-0" />
-            <span className="truncate flex-1">{channel.name || 'Unnamed Channel'}</span>
-            {!channel.is_public && (
-              <Badge variant="outline" className="ml-2 text-xs">Private</Badge>
-            )}
-          </button>
-        ))}
-      </div>
+      <ScrollArea className="h-[calc(100vh-180px)] sm:h-auto">
+        <div className="space-y-1 px-2 max-h-[calc(100vh-180px)] sm:max-h-none">
+          {channels.map(channel => (
+            <button
+              key={channel.id}
+              onClick={() => {
+                logger.info(`Channel selected: ${channel.id} (${channel.name})`);
+                onSelectChannel(channel.id);
+              }}
+              className={cn(
+                "w-full px-2 py-2 rounded-md flex items-center text-left transition-colors",
+                selectedChannelId === channel.id
+                  ? "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+              )}
+            >
+              <MessageSquare size={16} className="mr-2 shrink-0" />
+              <span className="truncate flex-1">{channel.name || 'Unnamed Channel'}</span>
+              {!channel.is_public && (
+                <Badge variant="outline" className="ml-2 text-xs">Private</Badge>
+              )}
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   );
 };

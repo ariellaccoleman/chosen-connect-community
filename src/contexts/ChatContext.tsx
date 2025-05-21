@@ -1,9 +1,10 @@
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { ChatMessageWithAuthor, ChatChannel } from '@/types/chat';
 import { useChat } from '@/hooks/chat/useChat';
 import { useChannelMessagesRealtime, useThreadRepliesRealtime } from '@/hooks/chat/useChatRealtime';
 import { useChannelMessages, useThreadMessages } from '@/hooks/chat/useChatMessageFactory';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ChatContextType {
   channelId: string | null;
@@ -32,6 +33,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isThreadOpen, setIsThreadOpen] = useState(false);
   const [autoScrollMessages, setAutoScrollMessages] = useState(true);
   const [autoScrollThread, setAutoScrollThread] = useState(true);
+  const isMobile = useIsMobile();
   
   // Setup message queries
   const channelMessagesQuery = useChannelMessages(channelId);
@@ -54,6 +56,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setSelectedMessage(null);
     }
   };
+
+  // Close thread panel on channel change if on mobile
+  useEffect(() => {
+    if (isMobile && isThreadOpen) {
+      setIsThreadOpen(false);
+      setSelectedMessage(null);
+    }
+  }, [channelId, isMobile]);
   
   // Extract data and states from queries
   const messages = channelMessagesQuery.data || [];
