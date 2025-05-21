@@ -4,7 +4,7 @@ import { postApi } from "@/api/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { CreatePostPayload, PostWithAuthor } from "@/types/post";
 import { showErrorToast } from "@/api/core";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { logger } from "@/utils/logger";
 
 /**
@@ -94,13 +94,15 @@ export const useCreatePost = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({
-        title: 'Success',
         description: 'Post created successfully',
       });
     },
     onError: (error) => {
       logger.error("Error creating post:", error);
-      showErrorToast(error, 'Failed to create post');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to create post'),
+      });
     }
   });
 };
@@ -124,13 +126,15 @@ export const useDeletePost = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
       toast({
-        title: 'Success',
         description: 'Post deleted successfully',
       });
     },
     onError: (error) => {
       logger.error("Error deleting post:", error);
-      showErrorToast(error, 'Failed to delete post');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to delete post'),
+      });
     }
   });
 };

@@ -1,72 +1,116 @@
 
 import React from 'react';
-import { ChatChannel } from '@/types/chat';
-import { useChannelMessagePreviews } from '@/hooks/chat/useChannelMessagePreviews';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
-import { MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { formatRelativeTime } from '@/utils/formatters/timeFormatters';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
+import { useChannelMessagePreviews } from '@/hooks/chat';
+import { Skeleton } from '@/components/ui/skeleton';
+import { APP_ROUTES } from '@/config/routes';
+import { MessageCircle } from 'lucide-react';
 
 interface ChannelPreviewProps {
-  channel: ChatChannel;
-  maxMessages?: number;
+  limit?: number;
+  channelTagId?: string;
 }
 
-/**
- * Component to display a preview of recent messages in a chat channel
- */
-const ChannelPreview: React.FC<ChannelPreviewProps> = ({ channel, maxMessages = 3 }) => {
-  const { data: messages = [], isLoading } = useChannelMessagePreviews(channel.id, maxMessages);
+const ChannelPreview = ({ limit = 3, channelTagId }: ChannelPreviewProps) => {
+  const { data: channels = [], isLoading } = useChannelMessagePreviews(limit, channelTagId);
   
   if (isLoading) {
     return (
-      <div className="space-y-2 mt-3">
-        {Array(2).fill(0).map((_, i) => (
-          <div key={i} className="flex gap-2">
-            <Skeleton className="h-6 w-6 rounded-full" />
-            <Skeleton className="h-4 flex-1" />
-          </div>
-        ))}
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Recent Conversations</span>
+            <Skeleton className="h-5 w-20" />
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (channels.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span>Recent Conversations</span>
+            <Link 
+              to={APP_ROUTES.CHAT} 
+              className="text-sm font-normal text-primary hover:underline"
+            >
+              View all
+            </Link>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">No conversations available</p>
+          <p className="mt-2">
+            <Link to={APP_ROUTES.CHAT} className="text-primary hover:underline">
+              Start a conversation
+            </Link>
+          </p>
+        </CardContent>
+      </Card>
     );
   }
   
   return (
-    <div className="mt-3 space-y-4">
-      {messages.length > 0 ? (
-        <div className="space-y-2">
-          {messages.map(message => (
-            <div key={message.id} className="text-sm">
-              <div className="flex items-start gap-2">
-                <span className="font-semibold truncate max-w-[30%]">
-                  {message.author?.full_name || 'Anonymous'}:
-                </span>
-                <span className="text-muted-foreground line-clamp-1 flex-1">
-                  {message.message}
-                </span>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex justify-between items-center">
+          <span>Recent Conversations</span>
+          <Link 
+            to={APP_ROUTES.CHAT} 
+            className="text-sm font-normal text-primary hover:underline"
+          >
+            View all
+          </Link>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-3">
+          {channels.map((channel) => (
+            <Link 
+              key={channel.id} 
+              to={`${APP_ROUTES.CHAT}/${channel.id}`}
+              className="block"
+            >
+              <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium">{channel.name}</h3>
+                  {channel.unread_count > 0 && (
+                    <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">
+                      {channel.unread_count}
+                    </span>
+                  )}
+                </div>
+                
+                {channel.last_message && (
+                  <>
+                    <div className="text-sm text-muted-foreground mt-1 flex items-start gap-1">
+                      <MessageCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      <div className="flex-1 truncate">
+                        <span className="font-medium mr-1">
+                          {channel.last_message.user_name || 'Unknown'}:
+                        </span>
+                        {ChatMessageFactory.getPreviewText(channel.last_message)}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {channel.last_active_time}
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
-      ) : (
-        <div className="text-sm text-muted-foreground">
-          No messages yet. Be the first to start a conversation!
-        </div>
-      )}
-      
-      <Button 
-        size="sm" 
-        className="w-full mt-2" 
-        variant="outline" 
-        asChild
-      >
-        <Link to={`/chat/${channel.id}`} className="flex items-center justify-center gap-2">
-          <MessageCircle className="w-4 h-4" />
-          Join the Conversation
-        </Link>
-      </Button>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 

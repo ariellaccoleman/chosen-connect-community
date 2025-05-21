@@ -1,142 +1,125 @@
 
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { usePostsByTag } from '@/hooks/posts';
-import { formatDistanceToNow } from 'date-fns';
 import { Link } from 'react-router-dom';
-import { APP_ROUTES } from '@/config/routes';
-import { Button } from '@/components/ui/button';
-import { ChevronRight, MessageSquare } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel";
+import { APP_ROUTES } from '@/config/routes';
+import { useAuth } from '@/hooks/useAuth';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
 
 interface PostCarouselProps {
-  tagId: string | undefined;
+  tagId?: string;
+  limit?: number;
 }
 
-const PostCarousel = ({ tagId }: PostCarouselProps) => {
+const PostCarousel = ({ tagId, limit = 5 }: PostCarouselProps) => {
   const { data: posts = [], isLoading } = usePostsByTag(tagId);
+  const { user } = useAuth();
   
-  // Show only the most recent 5 posts
-  const recentPosts = posts.slice(0, 5);
+  // Filter and limit posts
+  const displayPosts = posts.slice(0, limit);
   
   if (isLoading) {
     return (
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl flex justify-between items-center">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
             <span>Recent Posts</span>
-            <Skeleton className="h-8 w-24" />
+            <Skeleton className="h-5 w-20" />
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4">
-            {[1, 2, 3].map((_, i) => (
-              <PostItemSkeleton key={i} />
-            ))}
-          </div>
+          <Skeleton className="h-32 w-full" />
         </CardContent>
       </Card>
     );
   }
   
-  if (recentPosts.length === 0) {
+  // If no posts, show a message
+  if (displayPosts.length === 0) {
     return (
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xl flex justify-between items-center">
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
             <span>Recent Posts</span>
-            <Button variant="ghost" size="sm" asChild>
-              <Link to={APP_ROUTES.FEED}>
-                View all <ChevronRight className="h-4 w-4 ml-1" />
-              </Link>
-            </Button>
+            <Link 
+              to={APP_ROUTES.FEED} 
+              className="text-sm font-normal text-primary hover:underline"
+            >
+              View all
+            </Link>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="p-4 text-center">
-            <p className="text-muted-foreground">No posts yet</p>
-            <Button variant="outline" size="sm" asChild className="mt-2">
-              <Link to={APP_ROUTES.FEED}>Create a post</Link>
-            </Button>
-          </div>
+        <CardContent className="text-center py-8">
+          <p className="text-muted-foreground">No posts available</p>
+          {user && (
+            <p className="mt-2">
+              <Link to={APP_ROUTES.FEED} className="text-primary hover:underline">
+                Create a post
+              </Link>
+            </p>
+          )}
         </CardContent>
       </Card>
     );
   }
-  
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-xl flex justify-between items-center">
+        <CardTitle className="flex justify-between items-center">
           <span>Recent Posts</span>
-          <Button variant="ghost" size="sm" asChild>
-            <Link to={APP_ROUTES.FEED}>
-              View all <ChevronRight className="h-4 w-4 ml-1" />
-            </Link>
-          </Button>
+          <Link 
+            to={APP_ROUTES.FEED} 
+            className="text-sm font-normal text-primary hover:underline"
+          >
+            View all
+          </Link>
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4">
-          {recentPosts.map(post => (
-            <PostItem key={post.id} post={post} />
-          ))}
-        </div>
+        <Carousel className="w-full">
+          <CarouselContent>
+            {displayPosts.map((post) => (
+              <CarouselItem key={post.id}>
+                <Link to={APP_ROUTES.FEED}>
+                  <div className="p-3 border rounded-md hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={post.author?.avatar_url} alt={post.author?.first_name} />
+                        <AvatarFallback>
+                          {post.author?.first_name?.[0] || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-medium">
+                          {post.author?.first_name} {post.author?.last_name}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {post.created_at && formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="line-clamp-2 text-sm">{post.content}</p>
+                  </div>
+                </Link>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          <CarouselPrevious />
+          <CarouselNext />
+        </Carousel>
       </CardContent>
     </Card>
-  );
-};
-
-const PostItem = ({ post }: { post: any }) => {
-  return (
-    <Link to={APP_ROUTES.FEED} className="block">
-      <div className="p-3 rounded-md border hover:bg-gray-50 transition-colors">
-        <div className="flex items-center gap-3 mb-2">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src={post.author?.avatar_url} />
-            <AvatarFallback>
-              {post.author?.first_name?.[0] || 'U'}
-              {post.author?.last_name?.[0] || ''}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="font-medium text-sm">
-              {post.author?.first_name} {post.author?.last_name}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {post.created_at && 
-                formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </p>
-          </div>
-        </div>
-        
-        <p className="line-clamp-2 text-sm mb-2">{post.content}</p>
-        
-        <div className="flex items-center text-xs text-muted-foreground">
-          <MessageSquare className="h-3 w-3 mr-1" />
-          <span>Comments</span>
-        </div>
-      </div>
-    </Link>
-  );
-};
-
-const PostItemSkeleton = () => {
-  return (
-    <div className="p-3 rounded-md border">
-      <div className="flex items-center gap-3 mb-2">
-        <Skeleton className="h-8 w-8 rounded-full" />
-        <div>
-          <Skeleton className="h-4 w-24 mb-1" />
-          <Skeleton className="h-3 w-16" />
-        </div>
-      </div>
-      
-      <Skeleton className="h-10 w-full mb-2" />
-      
-      <Skeleton className="h-4 w-16" />
-    </div>
   );
 };
 

@@ -26,17 +26,18 @@ export function createPostCommentApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    const response = await api.repository.select(query)
+    const { data, error } = await api.supabase
+      .from('post_comments')
+      .select(query)
       .eq('post_id', postId)
-      .order('created_at', { ascending: true })
-      .execute();
+      .order('created_at', { ascending: true });
     
-    if (response.error) {
-      return { data: null, error: response.error, status: 'error' };
+    if (error) {
+      return { data: null, error, status: 'error' };
     }
     
     // Transform comments to include author details
-    const commentsWithAuthor = response.data.map(comment => {
+    const commentsWithAuthor = data.map(comment => {
       const authorProfile = comment.profiles || {};
       return {
         ...comment,
@@ -58,7 +59,16 @@ export function createPostCommentApi() {
    * Delete a comment
    */
   const deleteComment = async (commentId: string): Promise<ApiResponse<null>> => {
-    return await api.delete(commentId);
+    const { error } = await api.supabase
+      .from('post_comments')
+      .delete()
+      .eq('id', commentId);
+      
+    if (error) {
+      return { data: null, error, status: 'error' };
+    }
+    
+    return { data: null, error: null, status: 'success' };
   };
 
   /**
@@ -74,15 +84,17 @@ export function createPostCommentApi() {
         posts!post_id(author_id)
       `;
       
-      const response = await api.repository.select(query)
+      const { data, error } = await api.supabase
+        .from('post_comments')
+        .select(query)
         .eq('id', commentId)
         .maybeSingle();
       
-      if (response.error || !response.data) {
+      if (error || !data) {
         return false;
       }
       
-      const comment = response.data;
+      const comment = data;
       const post = comment.posts || {};
       
       // User can delete if they are the comment author or the post owner
@@ -97,15 +109,17 @@ export function createPostCommentApi() {
    */
   const getCommentCount = async (postId: string): Promise<number> => {
     try {
-      const response = await api.repository.select('count')
+      const { data, error } = await api.supabase
+        .from('post_comments')
+        .select('count')
         .eq('post_id', postId)
         .single();
       
-      if (response.error || !response.data) {
+      if (error || !data) {
         return 0;
       }
       
-      return parseInt(response.data.count) || 0;
+      return parseInt(data.count) || 0;
     } catch (error) {
       return 0;
     }

@@ -14,8 +14,11 @@ import { Badge } from '@/components/ui/badge';
 
 const HubDetail = () => {
   const { hubId } = useParams<{ hubId: string }>();
-  const { data: hub, isLoading, error } = useHub(hubId);
+  const { data: hubResponse, isLoading, error } = useHub(hubId);
   const [activeTab, setActiveTab] = useState<string>('all');
+  
+  // Extract hub from the response
+  const hub = hubResponse?.data;
   
   // Use the entity feed hook to get entities filtered by the hub's tag
   const {
@@ -70,7 +73,7 @@ const HubDetail = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           <PostCarousel tagId={hub.tag_id} />
-          <ChannelPreview tagId={hub.tag_id} />
+          <ChannelPreview channelTagId={hub.tag_id} />
         </div>
         
         <div className="space-y-6">

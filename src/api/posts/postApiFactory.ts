@@ -28,14 +28,18 @@ export function createPostApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    const response = await api.repository.select(query).order('created_at', { ascending: false }).execute();
+    // Use the provided api client to make the query
+    const { data, error, status } = await api.supabase
+      .from('posts')
+      .select(query)
+      .order('created_at', { ascending: false });
     
-    if (response.error) {
-      return { data: null, error: response.error, status: 'error' };
+    if (error) {
+      return { data: null, error, status: 'error' };
     }
     
     // Transform posts to include author details and proper typing
-    const postsWithAuthor = response.data.map(post => {
+    const postsWithAuthor = data.map(post => {
       const authorProfile = post.profiles || {};
       return {
         ...post,
@@ -56,15 +60,18 @@ export function createPostApi() {
       post_media(*)
     `;
 
-    const response = await api.repository.select(query)
+    // Use the provided api client to make the query
+    const { data, error } = await api.supabase
+      .from('posts')
+      .select(query)
       .eq('id', id)
       .maybeSingle();
     
-    if (response.error) {
-      return { data: null, error: response.error, status: 'error' };
+    if (error) {
+      return { data: null, error, status: 'error' };
     }
     
-    if (!response.data) {
+    if (!data) {
       return { 
         data: null, 
         error: { code: 'not_found', message: 'Post not found' }, 
@@ -73,7 +80,7 @@ export function createPostApi() {
     }
 
     // Transform post to include author details, media, and proper typing
-    const post = response.data;
+    const post = data;
     const authorProfile = post.profiles || {};
     const media = post.post_media || [];
     
@@ -91,23 +98,23 @@ export function createPostApi() {
    */
   const getPostsByTag = async (tagId: string): Promise<ApiResponse<PostWithAuthor[]>> => {
     // Get post IDs first from tag assignments
-    const tagAssignmentsResponse = await api.repository
-      .select('tag_assignments(target_id)')
+    const { data: tagAssignments, error: assignmentsError } = await api.supabase
+      .from('tag_assignments')
+      .select('target_id')
       .eq('tag_id', tagId)
-      .eq('target_type', 'post')
-      .execute();
+      .eq('target_type', 'post');
     
-    if (tagAssignmentsResponse.error) {
-      return { data: null, error: tagAssignmentsResponse.error, status: 'error' };
+    if (assignmentsError) {
+      return { data: null, error: assignmentsError, status: 'error' };
     }
     
     // If no posts with this tag, return an empty array
-    if (!tagAssignmentsResponse.data || tagAssignmentsResponse.data.length === 0) {
+    if (!tagAssignments || tagAssignments.length === 0) {
       return { data: [], error: null, status: 'success' };
     }
     
     // Extract post IDs from the assignments
-    const postIds = tagAssignmentsResponse.data.map(
+    const postIds = tagAssignments.map(
       assignment => assignment.target_id
     );
     
@@ -117,17 +124,18 @@ export function createPostApi() {
       profiles!author_id(id, first_name, last_name, avatar_url)
     `;
 
-    const response = await api.repository.select(query)
+    const { data, error } = await api.supabase
+      .from('posts')
+      .select(query)
       .in('id', postIds)
-      .order('created_at', { ascending: false })
-      .execute();
+      .order('created_at', { ascending: false });
     
-    if (response.error) {
-      return { data: null, error: response.error, status: 'error' };
+    if (error) {
+      return { data: null, error, status: 'error' };
     }
     
     // Transform posts to include author details
-    const postsWithAuthor = response.data.map(post => {
+    const postsWithAuthor = data.map(post => {
       const authorProfile = post.profiles || {};
       return {
         ...post,

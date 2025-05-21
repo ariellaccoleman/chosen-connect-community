@@ -1,43 +1,66 @@
 
 import React from 'react';
-import { TagAssignment } from '@/utils/tags';
-import TagBadge from './TagBadge';
-import { cn } from "@/lib/utils";
+import { Badge } from '@/components/ui/badge';
+import { useEntityTags } from '@/hooks/tags';
 
 interface TagListProps {
-  tagAssignments: TagAssignment[];
-  onRemove?: (assignmentId: string) => void;
-  currentEntityType?: string;
-  isRemoving?: boolean;
-  className?: string; // Add className prop
+  tagIds?: string[];
+  tagAssignments?: any[];
+  limit?: number;
+  className?: string;
 }
 
+/**
+ * Renders a list of tags as badges
+ * Can accept either tag IDs or tag assignment objects
+ */
 const TagList = ({ 
-  tagAssignments, 
-  onRemove, 
-  currentEntityType,
-  isRemoving = false,
-  className
+  tagIds = [], 
+  tagAssignments = [], 
+  limit = 3,
+  className = ''
 }: TagListProps) => {
-  if (!tagAssignments || tagAssignments.length === 0) {
-    return <p className="text-gray-500 text-sm">No tags assigned.</p>;
+  // Handle both tag IDs and tag assignment objects
+  const ids = tagIds.length > 0 
+    ? tagIds 
+    : (tagAssignments || []).map(assignment => 
+        typeof assignment === 'string' ? assignment : assignment.tag_id
+      );
+
+  // Fetch tag data based on IDs
+  const { data: tags = [], isLoading } = useEntityTags(ids);
+
+  if (isLoading) {
+    return (
+      <div className={`flex gap-2 ${className}`}>
+        {[...Array(Math.min(limit, 3))].map((_, i) => (
+          <Badge key={i} variant="outline" className="animate-pulse h-6 w-16" />
+        ))}
+      </div>
+    );
   }
 
+  // Limit the number of tags shown
+  const displayTags = tags.slice(0, limit);
+  const remainingCount = tags.length - limit;
+
   return (
-    <div className={cn("flex flex-wrap gap-2", className)}>
-      {tagAssignments.map((assignment) => (
-        assignment.tag && (
-          <TagBadge
-            key={assignment.id}
-            name={assignment.tag.name}
-            entityType={assignment.tag.type || undefined}
-            isRemovable={!!onRemove}
-            onRemove={onRemove ? () => onRemove(assignment.id) : undefined}
-            isFromDifferentEntityType={currentEntityType ? assignment.tag.type !== currentEntityType : false}
-            isRemoving={isRemoving}
-          />
-        )
+    <div className={`flex flex-wrap gap-2 ${className}`}>
+      {displayTags.map(tag => (
+        <Badge key={tag.id} variant="outline">
+          {tag.name}
+        </Badge>
       ))}
+      
+      {remainingCount > 0 && (
+        <Badge variant="outline">
+          +{remainingCount} more
+        </Badge>
+      )}
+      
+      {tags.length === 0 && (
+        <span className="text-sm text-muted-foreground">No tags</span>
+      )}
     </div>
   );
 };

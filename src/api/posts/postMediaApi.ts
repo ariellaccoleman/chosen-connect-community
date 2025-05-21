@@ -21,11 +21,12 @@ export function createPostMediaApi() {
    * Get media for a specific post
    */
   const getMediaByPostId = async (postId: string): Promise<ApiResponse<PostMedia[]>> => {
-    const response = await api.repository.select()
-      .eq('post_id', postId)
-      .execute();
+    const { data, error } = await api.supabase
+      .from('post_media')
+      .select()
+      .eq('post_id', postId);
     
-    return response;
+    return { data: data || [], error, status: error ? 'error' : 'success' };
   };
 
   /**
@@ -39,7 +40,16 @@ export function createPostMediaApi() {
    * Delete media from a post
    */
   const deleteMedia = async (mediaId: string): Promise<ApiResponse<null>> => {
-    return await api.delete(mediaId);
+    const { error } = await api.supabase
+      .from('post_media')
+      .delete()
+      .eq('id', mediaId);
+    
+    if (error) {
+      return { data: null, error, status: 'error' };
+    }
+    
+    return { data: null, error: null, status: 'success' };
   };
 
   return {

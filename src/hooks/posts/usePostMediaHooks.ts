@@ -4,6 +4,7 @@ import { postMediaApi } from "@/api/posts";
 import { CreatePostMediaPayload } from "@/types/post";
 import { showErrorToast } from "@/api/core";
 import { logger } from "@/utils/logger";
+import { toast } from "@/components/ui/use-toast";
 
 /**
  * Hook to fetch media for a specific post
@@ -46,7 +47,10 @@ export const useAddPostMedia = () => {
     },
     onError: (error) => {
       logger.error("Error adding media to post:", error);
-      showErrorToast(error, 'Failed to add media');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to add media'),
+      });
     }
   });
 };
@@ -73,7 +77,10 @@ export const useDeletePostMedia = () => {
     },
     onError: (error) => {
       logger.error("Error deleting media:", error);
-      showErrorToast(error, 'Failed to delete media');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to delete media'),
+      });
     }
   });
 };

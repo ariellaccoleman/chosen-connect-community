@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { postCommentApi } from "@/api/posts";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "@/components/ui/use-toast";
 import { showErrorToast } from "@/api/core";
 
 /**
@@ -55,7 +55,10 @@ export const useCreateComment = () => {
     },
     onError: (error) => {
       logger.error("Error creating comment:", error);
-      showErrorToast(error, 'Failed to create comment');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to create comment'),
+      });
     }
   });
 };
@@ -79,13 +82,15 @@ export const useDeleteComment = () => {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['postComments', result.postId] });
       toast({
-        title: 'Success',
         description: 'Comment deleted successfully',
       });
     },
     onError: (error) => {
       logger.error("Error deleting comment:", error);
-      showErrorToast(error, 'Failed to delete comment');
+      toast({
+        variant: "destructive",
+        description: showErrorToast(error, 'Failed to delete comment'),
+      });
     }
   });
 };
