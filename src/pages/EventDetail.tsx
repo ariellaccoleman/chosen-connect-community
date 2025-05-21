@@ -30,8 +30,9 @@ const EventDetailContent = () => {
     hostId: event?.host_id
   });
 
+  // Update to use browser history instead of hardcoded route
   const handleBack = () => {
-    navigate("/events");
+    navigate(-1);
   };
 
   if (isLoading) {
@@ -100,7 +101,7 @@ const EventDetailContent = () => {
           className="flex items-center gap-2"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Events
+          Back
         </Button>
         {isOwner && (
           <div className="flex gap-2">

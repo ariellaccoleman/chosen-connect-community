@@ -45,6 +45,7 @@ const ProfileView = () => {
     }
   }, [profileError]);
 
+  // Update to use browser history instead of hardcoded route
   const handleBack = () => {
     navigate(-1);
   };

@@ -66,6 +66,11 @@ const HubDetail = () => {
     limit: 6
   });
 
+  // Update to use browser history instead of hardcoded route
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto py-8 px-4">
@@ -137,10 +142,8 @@ const HubDetail = () => {
       
       <div className="container mx-auto py-8 px-4">
         <div className="mb-2">
-          <Button variant="ghost" asChild>
-            <Link to="/hubs" className="flex items-center text-muted-foreground">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Hubs
-            </Link>
+          <Button variant="ghost" onClick={handleBack} className="flex items-center text-muted-foreground">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Back
           </Button>
         </div>
         
