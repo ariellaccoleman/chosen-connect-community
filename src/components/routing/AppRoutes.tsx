@@ -92,7 +92,6 @@ const AppRoutes = () => {
       
       {/* Admin Chat Channel Routes */}
       <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
-      <Route path={APP_ROUTES.ADMIN_CHAT_CHANNELS_ALT} element={<AdminRoute><AdminChatChannels /></AdminRoute>} />
       <Route path={APP_ROUTES.CREATE_CHAT_CHANNEL} element={<AdminRoute><CreateChatChannel /></AdminRoute>} />
       <Route path={APP_ROUTES.EDIT_CHAT_CHANNEL} element={<AdminRoute><EditChatChannel /></AdminRoute>} />
       

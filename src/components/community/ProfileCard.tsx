@@ -16,7 +16,7 @@ interface ProfileCardProps {
 
 const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Generate the correct community profile URL using the APP_ROUTES constant
-  const profileUrl = generatePath(APP_ROUTES.COMMUNITY_PROFILE, { id: profile.id });
+  const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
   
   // Log the generated URL for debugging
   logger.debug(`ProfileCard: Generated URL for profile ${profile.id}: ${profileUrl}`);

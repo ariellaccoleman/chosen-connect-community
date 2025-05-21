@@ -1,4 +1,3 @@
-
 import { EntityType } from "./entityTypes";
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
@@ -116,6 +115,7 @@ export function hubToEntity(hub: HubWithDetails): Entity {
       target_id: hub.id, 
       target_type: 'hub', 
       created_at: hub.created_at || '', 
+      updated_at: hub.updated_at || '', // Added missing updated_at field
       tag: hub.tag 
     }] : []
   };

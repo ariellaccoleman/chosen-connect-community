@@ -1,3 +1,4 @@
+
 import { generatePath } from 'react-router-dom';
 
 /**
@@ -16,6 +17,7 @@ export const APP_ROUTES = {
   PROFILE_VIEW: "/profile/:profileId",
   PROFILE_EDIT: "/profile/edit/:profileId?",
   COMMUNITY_GUIDE: "/community-guide",
+  COMMUNITY_PROFILE: "/profile/:profileId", // Added this for consistency
   
   // Organization Routes
   ORGANIZATIONS: "/organizations",
@@ -23,6 +25,7 @@ export const APP_ROUTES = {
   ORGANIZATION_EDIT: "/organizations/:orgId/edit",
   CREATE_ORGANIZATION: "/organizations/create",
   MANAGE_ORGANIZATION_CONNECTIONS: "/organizations/:orgId/connections",
+  MANAGE_ORGANIZATIONS: "/manage-organizations", // Added missing route
   
   // Event Routes
   EVENTS: "/events",
@@ -45,6 +48,8 @@ export const APP_ROUTES = {
   EDIT_CHAT_CHANNEL: "/admin/chat/channels/:channelId/edit",
   TEST_DATA_GENERATOR: "/admin/test-data",
   TEST_REPORTS: "/admin/test-reports",
+  ADMIN_TESTS: "/admin/test-reports", // Added missing route
   TEST_RUN_DETAIL: "/admin/test-reports/:testRunId",
+  ADMIN_TEST_DETAIL: "/admin/test-reports/:testRunId", // Added missing route
   ADMIN_HUBS: "/admin/hubs"
 };

@@ -41,7 +41,7 @@ const OrganizationSection = ({ relationships, isLoading }: OrganizationSectionPr
               onClick={() => navigate(APP_ROUTES.MANAGE_ORGANIZATIONS)} 
               className="bg-chosen-blue hover:bg-chosen-navy w-full sm:w-auto"
             >
-              <Briefcase className="h-4 w-4 mr-2" />
+              <Briefcase className="mr-2 h-4 w-4" />
               Manage Organizations
             </Button>
           </div>
