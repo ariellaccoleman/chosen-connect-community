@@ -11,6 +11,9 @@ export * from './getTagsApi';
 export * from './tagEntityTypesApi';
 export * from './cacheApi';
 export * from './tagsApi';
+export * from './tagApiFactory';
+export * from './tagEntityTypesApiFactory';
+export * from './tagAssignmentsApiFactory';
 
 // Export functions from tagCrudApi with renamed imports to avoid conflicts
 // since similar names are exported from tagsApi
@@ -19,4 +22,3 @@ export {
 } from './tagCrudApi';
 
 // No need to redefine tagsApi here since we're exporting from tagsApi.ts
-

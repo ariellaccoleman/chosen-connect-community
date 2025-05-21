@@ -10,7 +10,7 @@ import {
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
-import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
+import { assignTag, removeTagAssignment } from "@/api/tags/tagAssignmentsApiFactory";
 import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
 import { logger } from "@/utils/logger";
 
