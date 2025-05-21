@@ -22,6 +22,11 @@ const Feed: React.FC = () => {
       <div className="container py-8 max-w-3xl mx-auto">
         <h1 className="text-3xl font-bold mb-6">Feed</h1>
         
+        {/* Post composer */}
+        <div className="mb-6">
+          <PostComposer />
+        </div>
+        
         {/* Tag filter */}
         <div className="mb-6">
           <TagFilter
@@ -30,11 +35,6 @@ const Feed: React.FC = () => {
             tags={tags}
             label="Filter posts by tag"
           />
-        </div>
-        
-        {/* Post composer */}
-        <div className="mb-6">
-          <PostComposer />
         </div>
         
         {/* Feed content */}
