@@ -9,26 +9,33 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useSelectionTags } from "@/hooks/tags";
+import { ProfileWithDetails } from "@/types";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { user } = useAuth();
   
-  // Use the consolidated tag hooks
+  // Use the hooks for tags
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
 
-  // Fetch all community profiles with proper filter object
-  const { data: profiles, isLoading, error } = useCommunityProfiles({ 
+  // Fetch community profiles
+  const { data: allProfiles = [], isLoading, error } = useCommunityProfiles({ 
     search: searchQuery,
-    isApproved: true,
-    tagId: selectedTagId
+    isApproved: true
   });
+
+  // Client-side filtering for tags (since the backend filtering isn't working properly)
+  const filteredProfiles = selectedTagIds.length > 0 
+    ? allProfiles.filter(profile => 
+        profile.tags && 
+        profile.tags.some(tag => selectedTagIds.includes(tag.tag_id))
+      )
+    : allProfiles;
 
   // Display error message if profile loading fails
   if (error) {
@@ -38,9 +45,6 @@ const CommunityDirectory = () => {
 
   // Extract tags from the response
   const tags = tagsResponse?.data || [];
-
-  // No need to combine and deduplicate profiles anymore, just use what's returned
-  const allProfiles = profiles || [];
 
   return (
     <div className="container max-w-6xl px-4 py-8">
@@ -56,8 +60,8 @@ const CommunityDirectory = () => {
             </div>
             <div className="md:w-64">
               <TagFilter
-                selectedTagId={selectedTagId}
-                onTagSelect={setSelectedTagId}
+                selectedTagIds={selectedTagIds}
+                onTagSelect={setSelectedTagIds}
                 tags={tags}
                 isLoading={isTagsLoading}
               />
@@ -66,7 +70,7 @@ const CommunityDirectory = () => {
         </CardContent>
       </Card>
 
-      <ProfileGrid profiles={allProfiles} isLoading={isLoading} searchQuery={searchQuery} />
+      <ProfileGrid profiles={filteredProfiles} isLoading={isLoading} searchQuery={searchQuery} />
     </div>
   );
 };
