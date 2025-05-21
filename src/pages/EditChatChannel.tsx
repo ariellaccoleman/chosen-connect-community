@@ -67,7 +67,11 @@ export default function EditChatChannel() {
     );
   }
   
-  const channelData = channel as unknown as ChatChannel;
+  // Extract the actual channel data
+  const channelData = channel?.data as ChatChannel || channel as ChatChannel;
+  
+  // Log the channel data to make sure we have the correct properties
+  logger.info('Channel data for form:', channelData);
   
   return (
     <div className="container mx-auto py-6">

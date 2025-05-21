@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { ChatChannelCreate, ChatChannelType } from '@/types/chat';
 import EntityTagManager from '@/components/tags/EntityTagManager';
 import { EntityType } from '@/types/entityTypes';
+import { logger } from '@/utils/logger';
 
 const channelFormSchema = z.object({
   name: z.string().min(3, 'Channel name must be at least 3 characters'),
@@ -38,6 +39,9 @@ export default function ChatChannelForm({
   isEditMode = false,
   existingChannelId
 }: ChatChannelFormProps) {
+  // Log the default values to check they are correctly passed
+  logger.info('ChatChannelForm defaultValues:', defaultValues);
+  
   const form = useForm<ChatChannelFormValues>({
     resolver: zodResolver(channelFormSchema),
     defaultValues: {
@@ -47,6 +51,9 @@ export default function ChatChannelForm({
       channel_type: defaultValues?.channel_type || 'group'
     },
   });
+  
+  // Log the form values after initialization
+  logger.info('Form values after initialization:', form.getValues());
   
   const handleSubmitForm = (values: ChatChannelFormValues) => {
     onSubmit({
@@ -100,6 +107,7 @@ export default function ChatChannelForm({
             <Select 
               onValueChange={field.onChange} 
               defaultValue={field.value}
+              value={field.value}
             >
               <FormControl>
                 <SelectTrigger>
