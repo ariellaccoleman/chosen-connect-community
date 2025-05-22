@@ -14,7 +14,7 @@ const config = {
     '^@/(.*)$': '<rootDir>/src/$1'
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup/setupTests.ts'],
-  testMatch: ['**/tests/**/*.test.(ts|tsx)'],
+  testMatch: ['**/tests/**/*.test.{ts,tsx}'],
   collectCoverageFrom: [
     'src/api/**/*.ts',
     'src/utils/**/*.ts',
