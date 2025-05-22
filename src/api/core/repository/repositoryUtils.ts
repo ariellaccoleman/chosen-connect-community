@@ -13,8 +13,8 @@ export function createSuccessResponse<T>(data: T): RepositoryResponse<T> {
   return { 
     data, 
     error: null,
-    isSuccess: true,
-    isError: false,
+    isSuccess: () => true,
+    isError: () => false,
     getErrorMessage: () => null
   };
 }
@@ -44,8 +44,8 @@ export function createErrorResponse<T>(error: RepositoryError | string | Error):
   return {
     data: null, 
     error: formattedError,
-    isSuccess: false,
-    isError: true,
+    isSuccess: () => false,
+    isError: () => true,
     getErrorMessage: () => formattedError.message
   };
 }
