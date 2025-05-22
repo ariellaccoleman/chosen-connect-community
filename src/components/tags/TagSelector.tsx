@@ -52,8 +52,8 @@ const TagSelector = ({
     targetType as EntityType
   );
   
-  // Extract the tags array from the response
-  const tags = tagsResponse?.data || [];
+  // Extract the tags array from the response and ensure it's always an array
+  const tags = Array.isArray(tagsResponse?.data) ? tagsResponse?.data : [];
   
   // Set the selected tag when currentSelectedTagId changes
   useEffect(() => {
