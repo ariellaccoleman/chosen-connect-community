@@ -39,7 +39,7 @@ export class TagAssignmentService {
       return createErrorResponse(`Invalid entity type: ${entityType}`);
     }
     
-    return await this.assignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
+    return this.assignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
   }
   
   /**

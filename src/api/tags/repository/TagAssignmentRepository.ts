@@ -214,7 +214,7 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
         
         const query = repository.select(`
           tags:tag_id(id, name, description, created_at, updated_at, created_by),
-          id as assignment_id
+          id
         `)
         .eq('target_id', entityId)
         .eq('target_type', entityType);
@@ -226,9 +226,10 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
         }
         
         // Transform the data to flatten the structure
+        // Extract the 'tags' property from each item and add the assignment_id
         const tags = result.data.map(item => ({
-          ...item.tags,
-          assignment_id: item.assignment_id
+          ...(item.tags || {}),
+          assignment_id: item.id
         }));
         
         return createSuccessResponse(tags);
