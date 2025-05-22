@@ -5,7 +5,7 @@
  */
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
-import { ApiResponse, createSuccessResponse } from '@/api/core/errorHandler';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 import { 
   createTagAssignmentRepository, 
   TagAssignmentRepository 
@@ -36,11 +36,10 @@ export class TagAssignmentService {
     
     // Validate entity type
     if (!isValidEntityType(entityType)) {
-      throw new Error(`Invalid entity type: ${entityType}`);
+      return createErrorResponse(`Invalid entity type: ${entityType}`);
     }
     
-    const assignments = await this.assignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
-    return createSuccessResponse(assignments);
+    return await this.assignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
   }
   
   /**
@@ -48,8 +47,13 @@ export class TagAssignmentService {
    */
   async getEntitiesWithTag(tagId: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>> {
     logger.debug(`TagAssignmentService.getEntitiesWithTag: Fetching entities with tag ${tagId}`);
-    const assignments = await this.assignmentRepo.getEntitiesWithTag(tagId, entityType);
-    return createSuccessResponse(assignments);
+    
+    try {
+      const assignments = await this.assignmentRepo.getEntitiesWithTag(tagId, entityType);
+      return createSuccessResponse(assignments);
+    } catch (error) {
+      return createErrorResponse(error);
+    }
   }
   
   /**
@@ -60,20 +64,22 @@ export class TagAssignmentService {
     
     // Validate entity type
     if (!isValidEntityType(entityType)) {
-      throw new Error(`Invalid entity type: ${entityType}`);
+      return createErrorResponse(`Invalid entity type: ${entityType}`);
     }
     
-    // Ensure the tag is associated with this entity type
-    await this.entityTypeRepo.associateTagWithEntityType(tagId, entityType);
-    
-    // Create the assignment
-    const assignment = await this.assignmentRepo.createTagAssignment({
-      tag_id: tagId,
-      target_id: entityId,
-      target_type: entityType
-    });
-    
-    return createSuccessResponse(assignment);
+    try {
+      // Ensure the tag is associated with this entity type
+      await this.entityTypeRepo.associateTagWithEntityType(tagId, entityType);
+      
+      // Create the assignment
+      return await this.assignmentRepo.createTagAssignment({
+        tag_id: tagId,
+        target_id: entityId,
+        target_type: entityType
+      });
+    } catch (error) {
+      return createErrorResponse(error);
+    }
   }
   
   /**
@@ -81,8 +87,7 @@ export class TagAssignmentService {
    */
   async removeTagAssignment(assignmentId: string): Promise<ApiResponse<boolean>> {
     logger.debug(`TagAssignmentService.removeTagAssignment: Removing tag assignment ${assignmentId}`);
-    await this.assignmentRepo.deleteTagAssignment(assignmentId);
-    return createSuccessResponse(true);
+    return await this.assignmentRepo.deleteTagAssignment(assignmentId);
   }
 }
 

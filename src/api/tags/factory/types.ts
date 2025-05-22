@@ -1,4 +1,3 @@
-
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse } from '@/api/core/types';
@@ -80,7 +79,7 @@ export interface TagAssignmentOperations {
   /**
    * Get tag assignments for an entity
    */
-  getForEntity(entityId: string, entityType?: EntityType): Promise<TagAssignment[]>;
+  getForEntity(entityId: string, entityType: EntityType): Promise<TagAssignment[]>;
   
   /**
    * Get entities by tag ID

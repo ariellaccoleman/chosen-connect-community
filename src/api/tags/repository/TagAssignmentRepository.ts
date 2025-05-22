@@ -1,4 +1,3 @@
-
 /**
  * Tag Assignment Repository
  * Repository implementation for managing tag assignments
@@ -227,7 +226,7 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
         
         // Transform the data to flatten the structure
         const tags = result.data.map(item => ({
-          ...item.tags,
+          ...item.tag,
           assignment_id: item.assignment_id
         }));
         

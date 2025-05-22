@@ -4,6 +4,7 @@ import { TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { TagApiOptions, TagAssignmentOperations } from './types';
 import { logger } from '@/utils/logger';
+import { ApiResponse, createErrorResponse } from '@/api/core/errorHandler';
 
 /**
  * Create tag assignment API operations
@@ -17,7 +18,10 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     getForEntity: async (entityId: string, entityType: EntityType) => {
       try {
         const response = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
-        return response;
+        if (response.status === 'success' && response.data) {
+          return response.data;
+        }
+        return [];
       } catch (error) {
         logger.error(`Error getting tag assignments for entity ${entityId}:`, error);
         return [];
@@ -28,8 +32,8 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     getEntitiesByTagId: async (tagId: string, entityType?: EntityType) => {
       logger.debug(`TagAssignmentOperations.getEntitiesByTagId: Getting entities with tag ${tagId}`);
       try {
-        const response = await tagAssignmentRepo.getEntitiesWithTag(tagId, entityType);
-        return response;
+        const assignments = await tagAssignmentRepo.getEntitiesWithTag(tagId, entityType);
+        return assignments;
       } catch (error) {
         logger.error(`Error getting entities with tag ${tagId}:`, error);
         return [];
@@ -44,7 +48,11 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
           target_id: entityId,
           target_type: entityType
         });
-        return response;
+        
+        if (response.status === 'success' && response.data) {
+          return response.data;
+        }
+        throw new Error(response.error?.message || 'Failed to create tag assignment');
       } catch (error) {
         logger.error(`Error creating tag assignment:`, error);
         throw error;
@@ -54,8 +62,8 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Delete assignment
     delete: async (assignmentId: string) => {
       try {
-        await tagAssignmentRepo.deleteTagAssignment(assignmentId);
-        return true;
+        const response = await tagAssignmentRepo.deleteTagAssignment(assignmentId);
+        return response.status === 'success' && !!response.data;
       } catch (error) {
         logger.error(`Error deleting tag assignment ${assignmentId}:`, error);
         return false;
@@ -68,12 +76,15 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
       
       try {
         // Get the assignment ID first
-        const assignments = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
-        const targetAssignment = assignments.find(a => a.tag_id === tagId);
+        const assignmentsResponse = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
         
-        if (targetAssignment) {
-          await tagAssignmentRepo.deleteTagAssignment(targetAssignment.id);
-          return true;
+        if (assignmentsResponse.status === 'success' && assignmentsResponse.data) {
+          const targetAssignment = assignmentsResponse.data.find(a => a.tag_id === tagId);
+          
+          if (targetAssignment) {
+            const deleteResponse = await tagAssignmentRepo.deleteTagAssignment(targetAssignment.id);
+            return deleteResponse.status === 'success' && !!deleteResponse.data;
+          }
         }
         
         logger.warn(`No tag assignment found for tag ${tagId} and entity ${entityId}`);
@@ -98,8 +109,11 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Check if tag is assigned
     isTagAssigned: async (tagId: string, entityId: string, entityType: EntityType) => {
       try {
-        const assignments = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
-        return assignments.some(a => a.tag_id === tagId);
+        const assignmentsResponse = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
+        if (assignmentsResponse.status === 'success' && assignmentsResponse.data) {
+          return assignmentsResponse.data.some(a => a.tag_id === tagId);
+        }
+        return false;
       } catch (error) {
         logger.error(`Error checking if tag ${tagId} is assigned to entity ${entityId}:`, error);
         return false;
