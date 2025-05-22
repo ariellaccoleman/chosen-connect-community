@@ -44,6 +44,8 @@ export function createTestMockRepository<T>(tableName: string, initialData: T[] 
 
 /**
  * Mock the repository factory to return a test mock repository
+ * 
+ * @param mockData Optional mock data keyed by table name
  */
 export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   // Mock the createSupabaseRepository function
