@@ -7,14 +7,15 @@ import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
-import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useFilterByTag } from "@/hooks/tags";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
 import TagDebugTool from "@/components/filters/TagDebugTool";
 import { Button } from "@/components/ui/button";
 import { Wrench } from "lucide-react";
+import TagSelector from "@/components/tags/TagSelector";
+import { Tag } from "@/utils/tags";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,10 +23,7 @@ const CommunityDirectory = () => {
   const [showDebugTool, setShowDebugTool] = useState(false);
   const { user } = useAuth();
   
-  // Use the consistent hooks for tags
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
-  
-  // Use the same tag filtering approach as the Organizations page
+  // Use the tag filtering hook
   const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
@@ -39,29 +37,8 @@ const CommunityDirectory = () => {
 
   // Log tag data for debugging
   useEffect(() => {
-    if (tagsResponse?.data) {
-      logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
-      
-      if (selectedTagId) {
-        logger.debug(`Selected tag ID: ${selectedTagId}`);
-        const selectedTag = tagsResponse.data.find(tag => tag.id === selectedTagId);
-        if (selectedTag) {
-          logger.debug("Selected tag details:", selectedTag);
-        }
-      }
-
-      // Find and log the specific target tag
-      const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
-      const targetTag = tagsResponse.data.find(tag => tag.id === targetTagId);
-      if (targetTag) {
-        logger.debug("Found target tag:", targetTag);
-      }
-    }
-  }, [tagsResponse?.data, selectedTagId]);
-
-  // Log details about filtered profiles and tag assignments
-  useEffect(() => {
     if (selectedTagId) {
+      logger.debug(`Selected tag ID: ${selectedTagId}`);
       logger.debug(`Tag Assignments for ${selectedTagId}:`, tagAssignments);
       
       const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
@@ -130,7 +107,6 @@ const CommunityDirectory = () => {
   });
   
   // Then filter by tag using the tag assignments from the hook
-  // This matches how filtering is done in the Organizations page
   const filteredProfiles = selectedTagId
     ? searchFilteredProfiles.filter(profile => {
         // Use the tag assignments from the useFilterByTag hook
@@ -148,32 +124,16 @@ const CommunityDirectory = () => {
       })
     : searchFilteredProfiles;
 
-  // Log filtered results for debugging
-  useEffect(() => {
-    if (selectedTagId) {
-      logger.debug(`Filtered profiles: ${filteredProfiles.length} of ${searchFilteredProfiles.length}`);
-      
-      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-      const targetProfile = filteredProfiles.find(p => p.id === targetProfileId);
-      
-      if (targetProfile) {
-        logger.debug("Target profile is in filtered results:", targetProfile);
-      } else {
-        logger.debug("Target profile is NOT in filtered results");
-        
-        // Check if the profile exists in unfiltered results
-        const profileInAllResults = searchFilteredProfiles.find(p => p.id === targetProfileId);
-        if (profileInAllResults) {
-          logger.debug("Target profile exists in search results but was filtered out by tag");
-        } else {
-          logger.debug("Target profile does not exist in search results at all");
-        }
-      }
-    }
-  }, [filteredProfiles, searchFilteredProfiles, selectedTagId]);
+  // Handle tag selection
+  const handleTagSelected = (tag: Tag) => {
+    setSelectedTagId(tag.id || null);
+    logger.debug(`Tag selected: ${tag.name} (${tag.id})`);
+  };
 
-  // Extract tags from the response
-  const tags = tagsResponse?.data || [];
+  // Clear tag filter
+  const clearTagFilter = () => {
+    setSelectedTagId(null);
+  };
 
   return (
     <div className="container max-w-6xl px-4 py-8">
@@ -205,13 +165,24 @@ const CommunityDirectory = () => {
               <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </div>
             <div className="md:w-64">
-              <TagFilter
-                selectedTagId={selectedTagId}
-                onTagSelect={setSelectedTagId}
-                tags={tags}
-                isLoading={isTagsLoading}
-                label="Filter by interest"
+              <div className="text-sm text-muted-foreground mb-2">
+                Filter by interest:
+              </div>
+              <TagSelector
+                targetType={EntityType.PERSON}
+                onTagSelected={handleTagSelected}
+                currentSelectedTagId={selectedTagId}
               />
+              {selectedTagId && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearTagFilter}
+                  className="mt-2"
+                >
+                  Clear filter
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>

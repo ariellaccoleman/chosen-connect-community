@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { useOrganizations } from "@/hooks/organizations";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useFilterByTag } from "@/hooks/tags";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,8 @@ import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/sonner";
-import TagFilter from "@/components/filters/TagFilter";
+import TagSelector from "@/components/tags/TagSelector";
+import { Tag } from "@/utils/tags";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -28,13 +29,9 @@ const OrganizationsList = () => {
   // Extract organizations from the response
   const organizations = organizationsResponse?.data || [];
   
-  // Use tag hooks directly instead of useTagFilter
+  // Use tag hooks directly
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
   const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
-  
-  // Extract tags from the response
-  const filterTags = tagsResponse?.data || [];
 
   // Show error toast if organization loading fails
   if (error) {
@@ -63,6 +60,17 @@ const OrganizationsList = () => {
     const orgDetailUrl = generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId });
     navigate(orgDetailUrl);
   };
+  
+  // Handle tag selection
+  const handleTagSelected = (tag: Tag) => {
+    setSelectedTagId(tag.id || null);
+    logger.debug(`Tag selected: ${tag.name} (${tag.id})`);
+  };
+  
+  // Clear tag filter
+  const clearTagFilter = () => {
+    setSelectedTagId(null);
+  };
 
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
@@ -89,12 +97,26 @@ const OrganizationsList = () => {
             />
           </div>
           
-          <TagFilter 
-            selectedTagId={selectedTagId} 
-            onTagSelect={setSelectedTagId} 
-            tags={filterTags}
-            isLoading={isTagsLoading}
-          />
+          <div className="w-full md:max-w-xs">
+            <div className="text-sm text-muted-foreground mb-2">
+              Filter by tag:
+            </div>
+            <TagSelector
+              targetType={EntityType.ORGANIZATION}
+              onTagSelected={handleTagSelected}
+              currentSelectedTagId={selectedTagId}
+            />
+            {selectedTagId && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={clearTagFilter}
+                className="mt-2"
+              >
+                Clear filter
+              </Button>
+            )}
+          </div>
         </CardContent>
       </Card>
       

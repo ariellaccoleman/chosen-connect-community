@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useFilterByTag } from "@/hooks/tags";
 import { toast } from "sonner";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags";
@@ -27,12 +27,8 @@ const Events: React.FC = () => {
   // State for selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
-  // Use tag hooks for typeahead filtering
-  const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.EVENT);
+  // Use tag hook for filtering
   const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.EVENT);
-  
-  // Extract tags from the response
-  const tags = tagsResponse?.data || [];
   
   const { data: events = [], isLoading, error, refetch } = useEvents();
   
@@ -106,8 +102,13 @@ const Events: React.FC = () => {
   
   // Handle tag selection
   const handleTagSelected = (tag: Tag) => {
-    setSelectedTagId(tag.id);
+    setSelectedTagId(tag.id || null);
     logger.debug(`Selected tag: ${tag.name} (${tag.id})`);
+  };
+  
+  // Clear tag filter
+  const clearTagFilter = () => {
+    setSelectedTagId(null);
   };
 
   return (
@@ -146,18 +147,19 @@ const Events: React.FC = () => {
           </div>
           
           <div className="w-full md:max-w-xs">
+            <div className="text-sm text-muted-foreground mb-2">
+              Filter by tag:
+            </div>
             <TagSelector 
               targetType={EntityType.EVENT}
               onTagSelected={handleTagSelected}
-              isAdmin={false}
               currentSelectedTagId={selectedTagId}
-              placeholder={selectedTagId ? "Filter by tag" : "Select tag to filter"}
             />
             {selectedTagId && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                onClick={() => setSelectedTagId(null)}
+                onClick={clearTagFilter}
                 className="mt-2"
               >
                 Clear filter
