@@ -1,7 +1,8 @@
+
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -10,7 +11,7 @@ interface ProtectedRouteProps {
 const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { user, loading, initialized } = useAuth();
   const location = useLocation();
-  const redirectAttempted = useRef(false);
+  const [shouldRedirect, setShouldRedirect] = useState(false);
   
   // Add clear debug logs
   console.log("📍 ProtectedRoute:", { 
@@ -18,9 +19,16 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     loading, 
     initialized,
     pathname: location.pathname,
-    shouldRedirect: !user && initialized && !loading,
-    redirectAttempted: redirectAttempted.current
   });
+
+  // Determine when to redirect in a side effect to avoid
+  // render phase state updates
+  useEffect(() => {
+    if (!loading && initialized && !user) {
+      console.log("🚫 ProtectedRoute: No authenticated user, redirecting to auth");
+      setShouldRedirect(true);
+    }
+  }, [user, loading, initialized, location.pathname]);
 
   // Show loading skeleton while checking authentication or not yet initialized
   if (loading || !initialized) {
@@ -36,10 +44,9 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     );
   }
 
-  // Only redirect if we're fully initialized and no user is found
-  if (!user && initialized && !redirectAttempted.current) {
-    console.log("🚫 ProtectedRoute: No authenticated user, preparing redirect to auth");
-    redirectAttempted.current = true;
+  // Perform the actual redirect if needed
+  if (shouldRedirect) {
+    console.log("🔄 ProtectedRoute: Redirecting to auth");
     return <Navigate to="/auth" state={{ from: location.pathname }} replace />;
   }
 

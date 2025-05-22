@@ -53,9 +53,15 @@ export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
     queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
-      // Always use getTags since getTagsByEntityType is removed
-      const response = await getTags({ targetType: entityType });
-      return response;
+      try {
+        // Use getTags for all tag selection needs
+        const response = await getTags({ targetType: entityType });
+        logger.debug(`Retrieved ${response?.data?.length || 0} tags for entity type: ${entityType || 'all'}`);
+        return response;
+      } catch (error) {
+        logger.error(`Error fetching selection tags for entity type ${entityType || 'all'}:`, error);
+        throw error;
+      }
     }
   });
 }
@@ -67,24 +73,29 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
   return useQuery({
     queryKey: ["tagAssignments", "filter", tagId, entityType],
     queryFn: async () => {
-      if (!tagId) return [];
+      if (!tagId) return { data: [] };
       
       logger.debug(`Fetching tag assignments for tag: ${tagId}, entity type: ${entityType || 'all'}`);
       
-      const response = await getEntityTagAssignments();
-      
-      if (response.status === "success" && response.data) {
-        // Filter the results client-side
-        const filteredData = response.data.filter(item => 
-          item.tag_id === tagId && (!entityType || item.target_type === entityType)
-        );
+      try {
+        const response = await getEntityTagAssignments();
         
-        logger.debug(`Found ${filteredData.length} tag assignments for tag ${tagId}`);
-        return filteredData;
+        if (response.status === "success" && response.data) {
+          // Filter the results client-side
+          const filteredData = response.data.filter(item => 
+            item.tag_id === tagId && (!entityType || item.target_type === entityType)
+          );
+          
+          logger.debug(`Found ${filteredData.length} tag assignments for tag ${tagId}`);
+          return { data: filteredData };
+        }
+        
+        logger.warn(`No tag assignments found for tag ${tagId} or error in response`);
+        return { data: [] };
+      } catch (error) {
+        logger.error(`Error fetching tag assignments for tag ${tagId}:`, error);
+        return { data: [] };
       }
-      
-      logger.warn(`No tag assignments found for tag ${tagId} or error in response`);
-      return [];
     },
     enabled: !!tagId
   });
@@ -99,13 +110,18 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
     queryFn: async () => {
       if (!entityId) return { data: [] };
       
-      const response = await getEntityTagAssignments();
-      // Filter by entity ID and type client-side
-      const filteredData = response.data ? response.data.filter(item => 
-        item.target_id === entityId && item.target_type === entityType
-      ) : [];
-      
-      return { data: filteredData };
+      try {
+        const response = await getEntityTagAssignments();
+        // Filter by entity ID and type client-side
+        const filteredData = response.data ? response.data.filter(item => 
+          item.target_id === entityId && item.target_type === entityType
+        ) : [];
+        
+        return { data: filteredData };
+      } catch (error) {
+        logger.error(`Error fetching tags for entity ${entityId}:`, error);
+        return { data: [] };
+      }
     },
     enabled: !!entityId && !!entityType
   });

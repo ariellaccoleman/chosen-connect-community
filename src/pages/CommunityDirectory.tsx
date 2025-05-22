@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
 import { useSelectionTags } from "@/hooks/tags";
-import { ProfileWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
 
 const CommunityDirectory = () => {
@@ -78,7 +77,7 @@ const CommunityDirectory = () => {
     toast.error("Failed to load community members. Please try again.");
   }
 
-  // Extract tags from the response
+  // Extract tags from the response - safely
   const tags = tagsResponse?.data || [];
 
   return (
