@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from "react";
-import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon } from "lucide-react";
+import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +30,7 @@ export interface TagSelectorProps {
   disabled?: boolean;
   placeholder?: string;
   className?: string;
+  currentSelectedTagId?: string | null;
 }
 
 const TagSelector = ({
@@ -37,11 +39,13 @@ const TagSelector = ({
   isAdmin = false,
   disabled = false,
   placeholder = "Select a tag",
-  className
+  className,
+  currentSelectedTagId
 }: TagSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
   const [isCreatingTag, setIsCreatingTag] = useState(false);
+  const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   
   // Use our unified tag selection hook
   const { data: tagsResponse, isLoading, isError, error } = useSelectionTags(
@@ -50,6 +54,18 @@ const TagSelector = ({
   
   // Extract the tags array from the response
   const tags = tagsResponse?.data || [];
+  
+  // Set the selected tag when currentSelectedTagId changes
+  useEffect(() => {
+    if (currentSelectedTagId) {
+      const tag = tags.find(tag => tag.id === currentSelectedTagId);
+      if (tag) {
+        setSelectedTag(tag);
+      }
+    } else {
+      setSelectedTag(null);
+    }
+  }, [currentSelectedTagId, tags]);
   
   // Debug the tag loading
   useEffect(() => {
@@ -65,6 +81,7 @@ const TagSelector = ({
   const handleTagSelect = (tagId: string) => {
     const selectedTag = tags.find(tag => tag.id === tagId);
     if (selectedTag) {
+      setSelectedTag(selectedTag);
       onTagSelected(selectedTag);
       setSearchValue("");
       setOpen(false);
@@ -83,6 +100,7 @@ const TagSelector = ({
       
       if (newTag) {
         logger.debug(`Created/found tag: ${newTag.name} (${newTag.id})`);
+        setSelectedTag(newTag);
         onTagSelected(newTag);
         setSearchValue("");
         setOpen(false);
@@ -97,6 +115,12 @@ const TagSelector = ({
     }
   };
 
+  const handleClearTag = () => {
+    setSelectedTag(null);
+    onTagSelected({ id: "", name: "" } as Tag); // Pass an empty tag to trigger filtering reset
+    setSearchValue("");
+  };
+
   return (
     <div className={cn("w-full", className)}>
       <Popover open={open} onOpenChange={setOpen}>
@@ -108,14 +132,34 @@ const TagSelector = ({
             disabled={disabled}
             className="w-full justify-between"
           >
-            <div className="flex items-center">
-              <TagIcon className="mr-2 h-4 w-4" />
-              <span>{placeholder}</span>
-            </div>
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+            {selectedTag ? (
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center">
+                  <TagIcon className="mr-2 h-4 w-4" />
+                  <span className="truncate">{selectedTag.name}</span>
+                </div>
+                <X 
+                  className="h-4 w-4 opacity-70 hover:opacity-100 cursor-pointer" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClearTag();
+                  }}
+                />
+              </div>
             ) : (
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+              <div className="flex items-center">
+                <TagIcon className="mr-2 h-4 w-4" />
+                <span>{placeholder}</span>
+              </div>
+            )}
+            {!selectedTag && (
+              <>
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                ) : (
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                )}
+              </>
             )}
           </Button>
         </PopoverTrigger>
@@ -165,13 +209,16 @@ const TagSelector = ({
                     <CommandItem
                       key={tag.id}
                       value={tag.id}
-                      onSelect={handleTagSelect}
+                      onSelect={() => handleTagSelect(tag.id)}
                       className="flex items-center justify-between"
                     >
                       <div className="flex items-center">
                         <TagIcon className="mr-2 h-4 w-4" />
                         {tag.name}
                       </div>
+                      {selectedTag?.id === tag.id && (
+                        <Check className="h-4 w-4" />
+                      )}
                     </CommandItem>
                   ))}
                 {isAdmin && searchValue.trim() && !tags.some(tag => 
