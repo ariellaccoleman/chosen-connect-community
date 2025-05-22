@@ -20,22 +20,11 @@ export function useTagQuery(entityType?: EntityType) {
         if (entityType) {
           if (!isValidEntityType(entityType)) {
             logger.warn(`Invalid entity type passed to useTagQuery: ${entityType}`);
-            return {
-              status: 'success',
-              data: []
-            };
+            return [];
           }
-          const tags = await tagApi.getByEntityType(entityType);
-          return {
-            status: 'success',
-            data: tags || []
-          };
+          return await tagApi.getByEntityType(entityType);
         }
-        const tags = await tagApi.getAll();
-        return {
-          status: 'success',
-          data: tags || []
-        };
+        return await tagApi.getAll();
       } catch (error) {
         logger.error("Error in useTagQuery:", error);
         throw error;
@@ -91,11 +80,7 @@ export function useAllTags() {
     queryKey: ["tags", "all"],
     queryFn: async () => {
       try {
-        const tags = await tagApi.getAll();
-        return {
-          status: 'success',
-          data: tags || []
-        };
+        return await tagApi.getAll();
       } catch (error) {
         logger.error("Error fetching all tags:", error);
         throw error;

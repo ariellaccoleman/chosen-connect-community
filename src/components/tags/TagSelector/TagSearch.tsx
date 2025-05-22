@@ -36,9 +36,6 @@ const TagSearch = ({
   user,
   isLoading = false
 }: TagSearchProps) => {
-  // Ensure tags is always an array
-  const safeTags = Array.isArray(tags) ? tags : [];
-  
   return (
     <Command>
       <CommandInput
@@ -65,7 +62,7 @@ const TagSearch = ({
             </CommandEmpty>
             
             <TagList 
-              tags={safeTags} 
+              tags={tags} 
               onTagSelected={onTagSelected} 
               targetType={targetType} 
             />

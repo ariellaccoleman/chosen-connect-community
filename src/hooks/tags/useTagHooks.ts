@@ -37,15 +37,11 @@ export function useSelectionTags(entityType?: EntityType) {
         
         return {
           status: 'success',
-          data: tags || []
+          data: tags
         };
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);
-        return {
-          status: 'error',
-          data: [],
-          error
-        };
+        throw error;
       }
     },
     staleTime: 30000 // Cache for 30 seconds

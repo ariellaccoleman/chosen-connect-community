@@ -4,13 +4,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Tag } from "@/utils/tags";
+import { Tag, fetchSelectionTags } from "@/utils/tags";
 import TagSearch from "./TagSearch";
 import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
-import { tagApi } from "@/api/tags";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -49,15 +48,16 @@ const TagSelectorComponent = ({
     if (currentSelectedTagId) {
       const findSelectedTag = async () => {
         try {
-          setIsLoading(true);
-          const tag = await tagApi.getById(currentSelectedTagId);
-          if (tag) {
-            setSelectedTag(tag);
+          const allTags = await fetchSelectionTags({ 
+            targetType,
+            skipCache: true
+          });
+          const found = allTags.find(tag => tag.id === currentSelectedTagId);
+          if (found) {
+            setSelectedTag(found);
           }
         } catch (err) {
           logger.error("Error fetching selected tag:", err);
-        } finally {
-          setIsLoading(false);
         }
       };
       
@@ -65,7 +65,7 @@ const TagSelectorComponent = ({
     } else {
       setSelectedTag(null);
     }
-  }, [currentSelectedTagId]);
+  }, [currentSelectedTagId, targetType]);
 
   /**
    * Load tags with debounce to prevent excessive API calls
@@ -85,15 +85,11 @@ const TagSelectorComponent = ({
     setIsLoading(true);
     try {
       logger.debug(`Loading tags for entity type: ${targetType}`);
-      let fetchedTags: Tag[] = [];
-      
-      if (searchValue) {
-        // Search by name
-        fetchedTags = await tagApi.searchByName(searchValue);
-      } else {
-        // Get tags for entity type
-        fetchedTags = await tagApi.getByEntityType(targetType);
-      }
+      const fetchedTags = await fetchSelectionTags({ 
+        searchQuery: searchValue,
+        targetType,
+        skipCache: true // Always skip cache since we're having issues
+      });
       
       logger.debug("Fetched tags:", fetchedTags);
       setTags(fetchedTags);

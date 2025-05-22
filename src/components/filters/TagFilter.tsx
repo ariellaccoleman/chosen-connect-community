@@ -34,23 +34,20 @@ const TagFilter: React.FC<TagFilterProps> = ({
   targetType,
   label
 }) => {
-  // Ensure tags is always an array
-  const safeTags = Array.isArray(tags) ? tags : [];
-  
   // Enhanced logging for debugging tag filtering
   React.useEffect(() => {
     logger.debug(`TagFilter mounted with:`, {
-      tagsCount: safeTags.length,
+      tagsCount: tags.length,
       selectedTagId,
       selectedTagIds,
       targetType,
       mode: selectedTagIds ? 'multi' : 'single'
     });
     
-    if (safeTags.length > 0) {
-      logger.debug(`Available tags:`, safeTags.map(tag => ({ id: tag.id, name: tag.name })));
+    if (tags.length > 0) {
+      logger.debug(`Available tags:`, tags.map(tag => ({ id: tag.id, name: tag.name })));
     }
-  }, [safeTags, selectedTagId, selectedTagIds, targetType]);
+  }, [tags, selectedTagId, selectedTagIds, targetType]);
 
   // Determine if we're in single or multi-select mode
   const isMultiSelectMode = selectedTagIds !== undefined && onTagsSelect !== undefined;
@@ -65,7 +62,7 @@ const TagFilter: React.FC<TagFilterProps> = ({
     );
   }
 
-  if (!safeTags || safeTags.length === 0) {
+  if (!tags || tags.length === 0) {
     return null;
   }
 
@@ -117,7 +114,7 @@ const TagFilter: React.FC<TagFilterProps> = ({
         {label || "Filter by tag:"}
       </div>
       <div className="flex flex-wrap gap-2">
-        {safeTags.map((tag) => {
+        {tags.map((tag) => {
           const isSelected = isTagSelected(tag.id);
           
           return (

@@ -8,7 +8,3 @@ export {
   tagApi,
   tagAssignmentApi
 } from './tagApiFactory';
-
-export * from './types';
-export * from './tagOperations';
-export * from './tagAssignmentOperations';
