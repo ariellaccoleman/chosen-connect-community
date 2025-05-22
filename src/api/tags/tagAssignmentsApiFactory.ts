@@ -23,10 +23,11 @@ export const tagAssignmentsApi = createApiFactory<TagAssignment, string, Partial
 
 /**
  * Create API operations for entity tag assignments view
+ * Using a type assertion to allow using the view name
  */
-export const entityTagAssignmentsViewApi = createApiFactory<any, string, never, never, 'entity_tag_assignments_view'>(
+export const entityTagAssignmentsViewApi = createApiFactory<any, string, never, never, any>(
   {
-    tableName: 'entity_tag_assignments_view',
+    tableName: 'entity_tag_assignments_view' as any,
     entityName: 'entity tag assignment',
     repository: createEntityTagAssignmentsViewRepository(),
     useQueryOperations: true,
@@ -89,8 +90,8 @@ export const assignTag = async (
         
         // Also ensure that the tag is properly associated with this entity type
         try {
-          const { updateTagEntityType } = await import('./tagEntityTypesApiFactory');
-          await updateTagEntityType(tagId, entityType.toString());
+          const { updateTagEntityTypeFromFactory } = await import('./tagEntityTypesApiFactory');
+          await updateTagEntityTypeFromFactory(tagId, entityType.toString());
         } catch (entityTypeError) {
           logger.warn("Error updating tag entity type:", entityTypeError);
           // Continue anyway, this is not critical

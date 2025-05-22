@@ -37,10 +37,11 @@ export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>,
 
 /**
  * Create API operations for the tag entity types view
+ * Using a type assertion to allow using the view name
  */
-export const tagEntityTypesViewApi = createApiFactory<Tag, string, never, never, 'all_tags_with_entity_types_view'>(
+export const tagEntityTypesViewApi = createApiFactory<Tag, string, never, never, any>(
   {
-    tableName: 'all_tags_with_entity_types_view',
+    tableName: 'all_tags_with_entity_types_view' as any,
     entityName: 'tag view',
     defaultOrderBy: 'name',
     repository: createTagEntityTypesViewRepository(),
@@ -52,10 +53,11 @@ export const tagEntityTypesViewApi = createApiFactory<Tag, string, never, never,
 
 /**
  * Create API operations for the filtered entity tags view
+ * Using a type assertion to allow using the view name
  */
-export const filteredEntityTagsViewApi = createApiFactory<Tag, string, never, never, 'filtered_entity_tags_view'>(
+export const filteredEntityTagsViewApi = createApiFactory<Tag, string, never, never, any>(
   {
-    tableName: 'filtered_entity_tags_view',
+    tableName: 'filtered_entity_tags_view' as any,
     entityName: 'filtered tag',
     defaultOrderBy: 'name',
     repository: createFilteredEntityTagsViewRepository(),

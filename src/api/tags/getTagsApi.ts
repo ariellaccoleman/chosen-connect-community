@@ -229,7 +229,8 @@ export const getSelectionTags = async (options: {
             
             // Add entity_types to each tag
             data.forEach(tag => {
-              tag.entity_types = entityTypeMap.get(tag.id) || [];
+              // Ensure each tag object has the entity_types property
+              (tag as Tag).entity_types = entityTypeMap.get(tag.id) || [];
             });
           }
         }

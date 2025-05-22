@@ -57,7 +57,7 @@ export const getEntityTypesForTag = async (tagId: string): Promise<ApiResponse<s
  * Update the entity types for a tag
  * Associates a tag with an entity type, creating the association if it doesn't exist
  */
-export const updateTagEntityType = async (tagId: string, entityType: string): Promise<ApiResponse<boolean>> => {
+export const updateTagEntityTypeFromFactory = async (tagId: string, entityType: string): Promise<ApiResponse<boolean>> => {
   return apiClient.query(async (client) => {
     try {
       logger.debug(`Associating tag ${tagId} with entity type ${entityType}`);
