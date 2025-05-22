@@ -1,87 +1,109 @@
 
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
+import { ApiResponse } from '@/api/core/types';
 
 /**
- * Options for creating tag API operations
+ * Options for configuring the tag API
  */
 export interface TagApiOptions {
   /**
-   * Table name for the repository
-   * @default 'tags'
+   * Enable caching for tag queries
+   */
+  enableCache?: boolean;
+  
+  /**
+   * Cache expiration time in seconds
+   */
+  cacheExpirationSeconds?: number;
+  
+  /**
+   * Custom table name (defaults to 'tags')
    */
   tableName?: string;
-  
-  /**
-   * Repository type (supabase, mock)
-   * @default 'supabase'
-   */
-  repositoryType?: 'supabase' | 'mock';
-  
-  /**
-   * Initial data for mock repository
-   */
-  initialData?: Tag[];
-  
-  /**
-   * Default entity type for created tags
-   */
-  defaultEntityType?: EntityType;
 }
 
 /**
- * Extended tag operations for tag-specific functionality
+ * Core operations for tag entities
  */
-export interface TagOperations<T = Tag> {
+export interface TagOperations<T extends Tag = Tag> {
   /**
-   * Find a tag by name
+   * Get all tags
    */
-  findByName: (name: string) => Promise<T | null>;
+  getAll(): Promise<T[]>;
+  
+  /**
+   * Get tag by ID
+   */
+  getById(id: string): Promise<T | null>;
+  
+  /**
+   * Find tag by name
+   */
+  findByName(name: string): Promise<T | null>;
+
+  /**
+   * Search tags by name (partial match)
+   */
+  searchByName(query: string): Promise<T[]>;
+  
+  /**
+   * Create a new tag
+   */
+  create(data: Partial<T>): Promise<T>;
+  
+  /**
+   * Update a tag
+   */
+  update(id: string, data: Partial<T>): Promise<T>;
+  
+  /**
+   * Delete a tag
+   */
+  delete(id: string): Promise<boolean>;
+  
+  /**
+   * Find or create a tag by name
+   */
+  findOrCreate(data: Partial<T>, entityType?: EntityType): Promise<T>;
   
   /**
    * Get tags by entity type
    */
-  getByEntityType: (entityType: EntityType) => Promise<T[]>;
-  
-  /**
-   * Find or create a tag
-   */
-  findOrCreate: (data: Partial<T>, entityType?: EntityType) => Promise<T>;
-  
-  /**
-   * Associate a tag with an entity type
-   */
-  associateWithEntityType: (tagId: string, entityType: EntityType) => Promise<boolean>;
-  
-  // Include standard API operations
-  getById: (id: string) => Promise<T | null>;
-  getAll: () => Promise<T[]>;
-  create: (data: Partial<T>) => Promise<T>;
-  update: (id: string, data: Partial<T>) => Promise<T>;
-  delete: (id: string) => Promise<boolean>;
+  getByEntityType(entityType: EntityType): Promise<T[]>;
 }
 
 /**
- * Interface for tag assignment operations
+ * Core operations for tag assignment entities
  */
 export interface TagAssignmentOperations {
   /**
-   * Get assignments for entity
+   * Get tag assignments for an entity
    */
-  getForEntity: (entityId: string, entityType: EntityType) => Promise<TagAssignment[]>;
+  getForEntity(entityId: string, entityType?: EntityType): Promise<TagAssignment[]>;
   
   /**
-   * Create assignment
+   * Get entities by tag ID
    */
-  create: (tagId: string, entityId: string, entityType: EntityType) => Promise<TagAssignment>;
+  getEntitiesByTagId(tagId: string, entityType?: EntityType): Promise<TagAssignment[]>;
   
   /**
-   * Delete assignment
+   * Create a tag assignment
    */
-  delete: (assignmentId: string) => Promise<boolean>;
+  create(tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment>;
   
   /**
-   * Delete all assignments for an entity
+   * Delete a tag assignment by ID
    */
-  deleteForEntity: (entityId: string, entityType: EntityType) => Promise<boolean>;
+  delete(assignmentId: string): Promise<boolean>;
+  
+  /**
+   * Delete tag assignment by tag and entity
+   */
+  deleteByTagAndEntity(tagId: string, entityId: string, entityType: EntityType): Promise<boolean>;
+  
+  /**
+   * Check if a tag is assigned to an entity
+   */
+  isTagAssigned(tagId: string, entityId: string, entityType: EntityType): Promise<boolean>;
 }
