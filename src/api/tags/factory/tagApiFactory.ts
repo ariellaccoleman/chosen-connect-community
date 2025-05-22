@@ -1,3 +1,4 @@
+
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag, TagAssignment, TagEntityType } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
