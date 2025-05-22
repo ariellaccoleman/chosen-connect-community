@@ -113,6 +113,7 @@ const CommunityDirectory = () => {
         // Check if the profile ID is in the set of tagged IDs
         const isIncluded = taggedIds.has(profile.id);
         
+        // Debug check for current user's profile
         if (currentUserProfile && profile.id === currentUserProfile.id) {
           logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
