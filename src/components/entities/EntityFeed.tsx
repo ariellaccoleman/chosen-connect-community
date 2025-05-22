@@ -5,7 +5,7 @@ import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useSelectionTags } from "@/hooks/tags";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
 
@@ -17,7 +17,7 @@ interface EntityFeedProps {
   limit?: number;
   className?: string;
   emptyMessage?: string;
-  tagId?: string; // Added tagId prop to match what's being passed in HubDetail.tsx
+  tagId?: string; // Fixed tagId prop to match what's being passed in HubDetail.tsx
   excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
 }
 
