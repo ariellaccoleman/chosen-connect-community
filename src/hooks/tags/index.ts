@@ -10,9 +10,10 @@ export * from './useTagAssignments';
 // Export from useTagHooks with unique names to avoid conflicts
 export { 
   useTagCrudMutations as useTagCrudOperations,
-  useTagAssignmentMutations as useTagAssignmentOperations 
+  useTagAssignmentMutations as useTagAssignmentOperations,
+  useSelectionTags,
+  useFilterByTag
 } from './useTagHooks';
 
 // For backward compatibility with existing code
 export { useSelectionTags as useTags } from './useTagLegacy';
-

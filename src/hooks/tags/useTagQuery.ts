@@ -89,4 +89,3 @@ export function useAllTags() {
     staleTime: 60000 // Cache for 1 minute
   });
 }
-

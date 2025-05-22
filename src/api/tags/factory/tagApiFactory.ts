@@ -106,38 +106,38 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
     // Core operations from standard factory
     getById: async (id: string) => {
       const response = await repository.getTagById(id);
-      return response as T | null;
+      return response as unknown as T | null;
     },
     
     getAll: async () => {
       const response = await repository.getAllTags();
-      return response as T[];
+      return response as unknown as T[];
     },
     
     create: async (data: Partial<T>) => {
       const response = await repository.createTag(data);
-      return response as T;
+      return response as unknown as T;
     },
     
     update: async (id: string, data: Partial<T>) => {
       const response = await repository.updateTag(id, data);
-      return response as T;
+      return response as unknown as T;
     },
     
     delete: async (id: string) => {
       const response = await repository.deleteTag(id);
-      return response as boolean;
+      return response as unknown as boolean;
     },
     
     // Custom tag-specific operations
     findByName: async (name: string) => {
       const response = await repository.findTagByName(name);
-      return response as T | null;
+      return response as unknown as T | null;
     },
     
     getByEntityType: async (entityType: EntityType) => {
       const response = await repository.getTagsByEntityType(entityType);
-      return response as T[];
+      return response as unknown as T[];
     },
     
     findOrCreate: async (data: Partial<T>, entityType?: EntityType) => {
@@ -152,14 +152,14 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
       const existingTag = await repository.findTagByName(data.name);
       
       if (existingTag) {
-        return existingTag as T;
+        return existingTag as unknown as T;
       }
       
       // If not found, create the tag
       const newTag = await repository.createTag(data);
       
       // Associate with entity type if specified
-      if (effectiveEntityType && newTag) {
+      if (effectiveEntityType && newTag && newTag.id) {
         try {
           await repository.associateTagWithEntityType(newTag.id, effectiveEntityType);
         } catch (err) {
@@ -168,7 +168,7 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
         }
       }
       
-      return newTag as T;
+      return newTag as unknown as T;
     },
     
     associateWithEntityType: async (tagId: string, entityType: EntityType) => {
@@ -272,4 +272,3 @@ export const createTagAssignment = async (tagId: string, entityId: string, entit
 export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
   return await tagAssignmentApi.delete(assignmentId);
 };
-
