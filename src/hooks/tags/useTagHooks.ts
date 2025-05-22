@@ -3,9 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 import { createTag, updateTag, deleteTag } from "@/api/tags/tagCrudApi";
-import { assignTag, removeTagAssignment, getEntityTagAssignments } from "@/api/tags/assignmentApi";
-import { getTags, getTagsByEntityType } from "@/api/tags/getTagsApi";
-import { getAllFilteredEntityTags } from "@/api/tags/tagApiFactory";
+import { assignTag, removeTagAssignment } from "@/api/tags/assignmentApi";
+import { getTags } from "@/api/tags";
+import { getAllFilteredEntityTags, getEntityTagAssignments } from "@/api/tags";
 
 /**
  * Hook for CRUD operations on tags
@@ -52,11 +52,9 @@ export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
     queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
-      if (entityType) {
-        return getTagsByEntityType(entityType);
-      } else {
-        return getTags();
-      }
+      // Always use getTags since getTagsByEntityType is removed
+      const response = await getTags({ targetType: entityType });
+      return response;
     }
   });
 }
@@ -70,8 +68,13 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
     queryFn: async () => {
       if (!tagId) return [];
       
-      const response = await getEntityTagAssignments(tagId, entityType);
-      return response.data || [];
+      const response = await getEntityTagAssignments();
+      // Filter the results client-side if needed
+      const filteredData = response.data ? response.data.filter(item => 
+        item.tag_id === tagId && (!entityType || item.target_type === entityType)
+      ) : [];
+      
+      return filteredData;
     },
     enabled: !!tagId
   });
@@ -85,7 +88,14 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
     queryKey: ["entity", entityId, "tags"],
     queryFn: async () => {
       if (!entityId) return { data: [] };
-      return getEntityTagAssignments(entityId, entityType);
+      
+      const response = await getEntityTagAssignments();
+      // Filter by entity ID and type client-side
+      const filteredData = response.data ? response.data.filter(item => 
+        item.target_id === entityId && item.target_type === entityType
+      ) : [];
+      
+      return { data: filteredData };
     },
     enabled: !!entityId && !!entityType
   });

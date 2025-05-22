@@ -19,4 +19,4 @@ export const entityTagAssignmentsViewApi = createApiFactory<any, string, never, 
 
 // Export individual operations
 export const getAllEntityTagAssignments = entityTagAssignmentsViewApi.getAll;
-export const getEntityTagAssignments = entityTagAssignmentsViewApi.getByFilter;
+export const getEntityTagAssignments = entityTagAssignmentsViewApi.getAll; // Changed from getByFilter to getAll

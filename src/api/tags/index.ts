@@ -4,14 +4,50 @@
  * @module api/tags
  */
 
-// Re-export all tag-related API functions
-export * from './assignmentApi';
-export * from './entityTagsApi';
-export * from './getTagsApi';
-export * from './tagEntityTypesApi';
+// Export from getTagsApi without ambiguity
+export { 
+  getSelectionTags as getTags,
+  getFilterTags
+} from './getTagsApi';
+
+// Export assignment APIs
+export {
+  assignTag,
+  removeTagAssignment
+} from './assignmentApi';
+
+// Export entity types API 
+export { 
+  getEntityTypesForTag,
+  getAllTagEntityTypes,
+  createTagEntityType,
+  getTagEntityTypeById,
+  deleteTagEntityType
+} from './tagEntityTypesApi';
+
+// Export from updateEntityTypeFactory without ambiguity
+export { 
+  updateTagEntityTypeFromFactory as updateTagEntityType 
+} from './tagEntityTypesApiFactory';
+
+// Export tag factory APIs
+export { 
+  getAllTagsWithEntityTypes,
+  getAllFilteredEntityTags 
+} from './tagApiFactory';
+
+// Export tag assignments factory APIs
+export {
+  getAllEntityTagAssignments,
+  getEntityTagAssignments
+} from './tagAssignmentsApiFactory';
+
+// Export cache APIs
 export * from './cacheApi';
-export * from './tagsApi';
-export * from './tagEntityTypesApiFactory';
-export * from './tagAssignmentsApiFactory';
-export * from './tagApiFactory';
-export * from './tagCrudApi';
+
+// Export tag CRUD APIs
+export { 
+  createTag,
+  updateTag,
+  deleteTag
+} from './tagCrudApi';
