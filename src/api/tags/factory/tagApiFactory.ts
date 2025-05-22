@@ -158,9 +158,9 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
       const newTag = await repository.createTag(data);
       
       // Associate with entity type if specified
-      if (effectiveEntityType) {
+      if (effectiveEntityType && newTag.data) {
         try {
-          await this.associateWithEntityType(newTag.data.id, effectiveEntityType);
+          await repository.associateTagWithEntityType(newTag.data.id, effectiveEntityType);
         } catch (err) {
           // Log but don't fail if entity type association fails
           console.warn(`Failed to associate new tag with entity type: ${err}`);
@@ -171,12 +171,8 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
     },
     
     associateWithEntityType: async (tagId: string, entityType: EntityType) => {
-      // This operation requires the tag entity type repository
-      const { createTagEntityTypeRepository } = await import('../repository');
-      const tagEntityTypeRepo = createTagEntityTypeRepository();
-      
       try {
-        await tagEntityTypeRepo.associateTagWithEntityType(tagId, entityType);
+        await repository.associateTagWithEntityType(tagId, entityType);
         return true;
       } catch (err) {
         console.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
@@ -197,16 +193,18 @@ export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
   return {
     // Get assignments for entity
     getForEntity: async (entityId: string, entityType: EntityType) => {
-      return tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
+      const response = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
+      return response.data;
     },
     
     // Create assignment
     create: async (tagId: string, entityId: string, entityType: EntityType) => {
-      return tagAssignmentRepo.createTagAssignment({
+      const response = await tagAssignmentRepo.createTagAssignment({
         tag_id: tagId,
         target_id: entityId,
         target_type: entityType
       });
+      return response.data;
     },
     
     // Delete assignment
@@ -223,6 +221,39 @@ export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
   };
 }
 
+// Export standard functions that match the original API
+export const getAllTags = async (): Promise<Tag[]> => {
+  return await tagApi.getAll();
+};
+
+export const getTagById = async (id: string): Promise<Tag | null> => {
+  return await tagApi.getById(id);
+};
+
+export const findTagByName = async (name: string): Promise<Tag | null> => {
+  return await tagApi.findByName(name);
+};
+
+export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
+  return await tagApi.create(data);
+};
+
+export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
+  return await tagApi.update(id, data);
+};
+
+export const deleteTag = async (id: string): Promise<boolean> => {
+  return await tagApi.delete(id);
+};
+
+export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
+  return await tagApi.findOrCreate(data, entityType);
+};
+
+export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
+  return await tagApi.getByEntityType(entityType);
+};
+
 /**
  * Create a default tag API instance
  */
@@ -232,3 +263,16 @@ export const tagApi = createTagApiFactory();
  * Create a default tag assignment API instance
  */
 export const tagAssignmentApi = createTagAssignmentApiFactory();
+
+// For tag assignments
+export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
+  return await tagAssignmentApi.getForEntity(entityId, entityType);
+};
+
+export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
+  return await tagAssignmentApi.create(tagId, entityId, entityType);
+};
+
+export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
+  return await tagAssignmentApi.delete(assignmentId);
+};
