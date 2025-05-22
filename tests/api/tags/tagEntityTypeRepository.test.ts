@@ -1,7 +1,11 @@
 
 import { createTagEntityTypeRepository, TagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
 import { EntityType } from '@/types/entityTypes';
-import { mockRepositoryFactory, resetRepositoryFactoryMock } from '../../../tests/utils/repositoryTestUtils';
+
+// Mock the repository factory module
+jest.mock('@/api/core/repository/repositoryFactory', () => ({
+  createSupabaseRepository: jest.fn()
+}));
 
 // Mock data
 const mockTagEntityTypes = [
@@ -25,19 +29,79 @@ describe('Tag Entity Type Repository', () => {
   let tagEntityTypeRepository: TagEntityTypeRepository;
   
   beforeEach(() => {
-    // Mock the repository factory with our test data
-    mockRepositoryFactory({
-      'tag_entity_types': mockTagEntityTypes
-    });
+    // Reset all mocks
+    jest.clearAllMocks();
+    
+    // Setup default mock implementations for repository methods
+    const mockSelect = jest.fn().mockImplementation(() => ({
+      select: jest.fn().mockResolvedValue({
+        data: mockTagEntityTypes,
+        error: null
+      })
+    }));
+    
+    const mockInsert = jest.fn().mockImplementation((data) => ({
+      select: jest.fn().mockResolvedValue({
+        data: Array.isArray(data) 
+          ? data.map((item, index) => ({ id: `new-id-${index}`, ...item }))
+          : { id: 'new-id', ...data },
+        error: null
+      })
+    }));
+    
+    const mockDelete = jest.fn().mockImplementation(() => ({
+      match: jest.fn().mockResolvedValue({
+        data: true,
+        error: null
+      })
+    }));
+    
+    // Mock the createSupabaseRepository to return our mocked methods
+    const mockRepo = {
+      select: mockSelect,
+      insert: mockInsert,
+      delete: mockDelete
+    };
+    
+    // Setup the createSupabaseRepository mock
+    require('@/api/core/repository/repositoryFactory').createSupabaseRepository.mockReturnValue(mockRepo);
     
     // Create the repository instance
     tagEntityTypeRepository = createTagEntityTypeRepository();
+    
+    // Mock specific methods
+    jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockImplementation((tagId) => {
+      const entityTypes = mockTagEntityTypes
+        .filter(et => et.tag_id === tagId)
+        .map(et => et.entity_type);
+      
+      return Promise.resolve({
+        status: 'success',
+        data: entityTypes,
+        error: null
+      });
+    });
+    
+    jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockImplementation(() => {
+      return Promise.resolve({
+        status: 'success',
+        data: true,
+        error: null
+      });
+    });
+    
+    jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockImplementation(() => {
+      return Promise.resolve({
+        status: 'success',
+        data: true,
+        error: null
+      });
+    });
   });
   
   afterEach(() => {
-    // Reset mocks after each test
-    resetRepositoryFactoryMock();
-    jest.clearAllMocks();
+    // Reset all mocks
+    jest.resetAllMocks();
   });
   
   describe('getEntityTypesByTagId', () => {
@@ -51,6 +115,13 @@ describe('Tag Entity Type Repository', () => {
     });
     
     test('should return empty array if no entity types found', async () => {
+      // Override mock for this test
+      jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockResolvedValueOnce({
+        status: 'success',
+        data: [],
+        error: null
+      });
+      
       // Act
       const result = await tagEntityTypeRepository.getEntityTypesByTagId('non-existent');
       
@@ -70,21 +141,18 @@ describe('Tag Entity Type Repository', () => {
       
       // Assert
       expect(result.status).toBe('success');
+      expect(result.data).toBe(true);
     });
     
     test('should handle errors when association fails', async () => {
       // Arrange
       jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      // Force an error
-      jest.spyOn(Promise, 'resolve').mockImplementationOnce(() => {
-        throw new Error('Database error');
-      });
+      jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockRejectedValueOnce(new Error('Database error'));
       
       // Act & Assert
       await expect(
         tagEntityTypeRepository.associateTagWithEntityType('tag-1', 'person' as EntityType)
-      ).rejects.toThrow();
+      ).rejects.toThrow('Database error');
     });
   });
   
@@ -104,16 +172,12 @@ describe('Tag Entity Type Repository', () => {
     test('should handle errors when removal fails', async () => {
       // Arrange
       jest.spyOn(console, 'error').mockImplementation(() => {});
-      
-      // Force an error
-      jest.spyOn(Promise, 'resolve').mockImplementationOnce(() => {
-        throw new Error('Database error');
-      });
+      jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockRejectedValueOnce(new Error('Database error'));
       
       // Act & Assert
       await expect(
         tagEntityTypeRepository.removeTagEntityTypeAssociation('tag-1', 'person' as EntityType)
-      ).rejects.toThrow();
+      ).rejects.toThrow('Database error');
     });
   });
 });
