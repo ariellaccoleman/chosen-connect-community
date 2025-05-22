@@ -10,6 +10,7 @@ import {
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
+import { supabase } from "@/integrations/supabase/client"; // Added this import
 import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
 import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
 import { logger } from "@/utils/logger";
