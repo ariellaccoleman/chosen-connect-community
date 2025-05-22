@@ -38,6 +38,10 @@ export const findTagByName = async (name: string): Promise<Tag | null> => {
   return await tagApi.findByName(name);
 };
 
+export const searchTags = async (query: string): Promise<Tag[]> => {
+  return await tagApi.searchByName(query);
+};
+
 export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
   return await tagApi.create(data);
 };

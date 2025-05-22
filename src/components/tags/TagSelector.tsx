@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +21,7 @@ import { useSelectionTags } from "@/hooks/tags";
 import { findOrCreateTag } from "@/utils/tags/tagOperations";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
+import { tagApi } from "@/api/tags";
 
 export interface TagSelectorProps {
   targetType: EntityType | string;
@@ -46,37 +46,58 @@ const TagSelector = ({
   const [searchValue, setSearchValue] = useState("");
   const [isCreatingTag, setIsCreatingTag] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Use our unified tag selection hook
-  const { data: tagsResponse, isLoading, isError, error } = useSelectionTags(
-    targetType as EntityType
-  );
-  
-  // Extract the tags array from the response and ensure it's always an array
-  const tags = Array.isArray(tagsResponse?.data) ? tagsResponse?.data : [];
+  // Load tags on init or when search changes
+  useEffect(() => {
+    if (open || searchValue) {
+      loadTags();
+    }
+  }, [open, searchValue, targetType]);
   
   // Set the selected tag when currentSelectedTagId changes
   useEffect(() => {
     if (currentSelectedTagId) {
-      const tag = tags.find(tag => tag.id === currentSelectedTagId);
-      if (tag) {
-        setSelectedTag(tag);
-      }
+      const findTag = async () => {
+        try {
+          const tag = await tagApi.getById(currentSelectedTagId);
+          if (tag) {
+            setSelectedTag(tag);
+          }
+        } catch (err) {
+          logger.error("Error fetching selected tag:", err);
+        }
+      };
+      
+      findTag();
     } else {
       setSelectedTag(null);
     }
-  }, [currentSelectedTagId, tags]);
+  }, [currentSelectedTagId]);
   
-  // Debug the tag loading
-  useEffect(() => {
-    if (tags.length > 0) {
-      logger.debug(`TagSelector loaded ${tags.length} tags for entity type ${targetType}`);
-    }
-    
-    if (isError) {
+  const loadTags = async () => {
+    setIsLoading(true);
+    try {
+      let fetchedTags: Tag[] = [];
+      
+      if (searchValue) {
+        // If there's a search query, search by name
+        fetchedTags = await tagApi.searchByName(searchValue);
+      } else {
+        // Otherwise get tags for entity type
+        fetchedTags = await tagApi.getByEntityType(targetType as EntityType);
+      }
+      
+      logger.debug(`TagSelector loaded ${fetchedTags.length} tags for entity type ${targetType}`);
+      setTags(fetchedTags);
+    } catch (error) {
       logger.error("Error loading tags:", error);
+      setTags([]);
+    } finally {
+      setIsLoading(false);
     }
-  }, [tags, isError, error, targetType]);
+  };
 
   const handleTagSelect = (tagId: string) => {
     const selectedTag = tags.find(tag => tag.id === tagId);
@@ -104,6 +125,8 @@ const TagSelector = ({
         onTagSelected(newTag);
         setSearchValue("");
         setOpen(false);
+        // Refresh tag list
+        loadTags();
       } else {
         toast.error("Failed to create tag");
       }

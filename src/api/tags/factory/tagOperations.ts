@@ -1,123 +1,247 @@
 
-import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
-import { EntityType } from '@/types/entityTypes';
-import { createTagRepository } from '../repository';
-import { TagRepository } from '../repository/TagRepository';
+import { EntityType, isValidEntityType } from '@/types/entityTypes';
 import { TagApiOptions, TagOperations } from './types';
+import { apiClient } from '@/api/core/apiClient';
+import { logger } from '@/utils/logger';
 
 /**
- * Create specialized API operations for tags
+ * Create tag operations with provided options
  */
 export function createTagOperations<T extends Tag>(options: TagApiOptions = {}): TagOperations<T> {
-  // Set up default options
   const tableName = options.tableName || 'tags';
-  const defaultEntityType = options.defaultEntityType;
-  
-  // Create tag repository
-  const repository = createTagRepository() as TagRepository;
-  
-  // Create core API operations using the standard factory
-  const coreApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>>({
-    tableName: tableName as any,
-    entityName: 'tag',
-    defaultOrderBy: 'name',
-    transformResponse: (data) => ({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      created_by: data.created_by
-    }),
-    transformRequest: (data) => {
-      const transformed: Record<string, any> = {};
-      if (data.name !== undefined) transformed.name = data.name;
-      if (data.description !== undefined) transformed.description = data.description;
-      if (data.created_by !== undefined) transformed.created_by = data.created_by;
-      return transformed;
-    },
-    useMutationOperations: true,
-    useQueryOperations: true
-  });
 
-  // Return combined operations
   return {
-    // Core operations from standard factory
-    getById: async (id: string) => {
-      const response = await repository.getTagById(id);
-      return response as unknown as T | null;
-    },
-    
-    getAll: async () => {
-      const response = await repository.getAllTags();
-      return response as unknown as T[];
-    },
-    
-    create: async (data: Partial<T>) => {
-      const response = await repository.createTag(data);
-      return response as unknown as T;
-    },
-    
-    update: async (id: string, data: Partial<T>) => {
-      const response = await repository.updateTag(id, data);
-      return response as unknown as T;
-    },
-    
-    delete: async (id: string) => {
-      const response = await repository.deleteTag(id);
-      return response as unknown as boolean;
-    },
-    
-    // Custom tag-specific operations
-    findByName: async (name: string) => {
-      const response = await repository.findTagByName(name);
-      return response as unknown as T | null;
-    },
-    
-    getByEntityType: async (entityType: EntityType) => {
-      const response = await repository.getTagsByEntityType(entityType);
-      return response as unknown as T[];
-    },
-    
-    findOrCreate: async (data: Partial<T>, entityType?: EntityType) => {
-      // Use the provided entity type or fall back to the default
-      const effectiveEntityType = entityType || defaultEntityType;
+    /**
+     * Get all tags
+     */
+    async getAll(): Promise<T[]> {
+      logger.debug('TagOperations.getAll: Fetching all tags');
       
-      if (!data.name) {
-        throw new Error("Tag name is required for findOrCreate operation");
+      const { data, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .select('*')
+          .order('name');
+      });
+      
+      if (error) {
+        logger.error('Error fetching tags:', error);
+        return [];
       }
       
-      // First try to find the tag by name
-      const existingTag = await repository.findTagByName(data.name);
+      return data as T[];
+    },
+    
+    /**
+     * Get tag by ID
+     */
+    async getById(id: string): Promise<T | null> {
+      logger.debug(`TagOperations.getById: Fetching tag with ID ${id}`);
+      
+      const { data, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .select('*')
+          .eq('id', id)
+          .single();
+      });
+      
+      if (error) {
+        logger.error(`Error fetching tag with ID ${id}:`, error);
+        return null;
+      }
+      
+      return data as T;
+    },
+    
+    /**
+     * Find tag by exact name match
+     */
+    async findByName(name: string): Promise<T | null> {
+      logger.debug(`TagOperations.findByName: Finding tag with name ${name}`);
+      
+      const { data, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .select('*')
+          .ilike('name', name)
+          .single();
+      });
+      
+      if (error) {
+        // Not found errors are expected and should not be logged as errors
+        if (error.code !== 'PGRST116') {
+          logger.error(`Error finding tag with name ${name}:`, error);
+        }
+        return null;
+      }
+      
+      return data as T;
+    },
+
+    /**
+     * Search tags by partial name match
+     */
+    async searchByName(query: string): Promise<T[]> {
+      logger.debug(`TagOperations.searchByName: Searching tags with query ${query}`);
+      
+      const { data, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .select('*')
+          .ilike('name', `%${query}%`)
+          .order('name')
+          .limit(20);
+      });
+      
+      if (error) {
+        logger.error(`Error searching tags with query ${query}:`, error);
+        return [];
+      }
+      
+      return data as T[];
+    },
+    
+    /**
+     * Create a new tag
+     */
+    async create(data: Partial<T>): Promise<T> {
+      logger.debug(`TagOperations.create: Creating new tag with name ${data.name}`);
+      
+      // Validate required fields
+      if (!data.name) {
+        throw new Error('Tag name is required');
+      }
+      
+      const { data: createdTag, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .insert([data])
+          .select()
+          .single();
+      });
+      
+      if (error) {
+        logger.error(`Error creating tag:`, error);
+        throw new Error(`Failed to create tag: ${error.message}`);
+      }
+      
+      return createdTag as T;
+    },
+    
+    /**
+     * Update a tag
+     */
+    async update(id: string, data: Partial<T>): Promise<T> {
+      logger.debug(`TagOperations.update: Updating tag with ID ${id}`);
+      
+      const { data: updatedTag, error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+      });
+      
+      if (error) {
+        logger.error(`Error updating tag with ID ${id}:`, error);
+        throw new Error(`Failed to update tag: ${error.message}`);
+      }
+      
+      return updatedTag as T;
+    },
+    
+    /**
+     * Delete a tag
+     */
+    async delete(id: string): Promise<boolean> {
+      logger.debug(`TagOperations.delete: Deleting tag with ID ${id}`);
+      
+      const { error } = await apiClient.query(async (client) => {
+        return client
+          .from(tableName)
+          .delete()
+          .eq('id', id);
+      });
+      
+      if (error) {
+        logger.error(`Error deleting tag with ID ${id}:`, error);
+        throw new Error(`Failed to delete tag: ${error.message}`);
+      }
+      
+      return true;
+    },
+    
+    /**
+     * Find or create a tag
+     */
+    async findOrCreate(data: Partial<T>, entityType?: EntityType): Promise<T> {
+      logger.debug(`TagOperations.findOrCreate: Finding or creating tag with name ${data.name}`);
+      
+      // Validate required fields
+      if (!data.name) {
+        throw new Error('Tag name is required');
+      }
+      
+      // Try to find the tag first
+      const existingTag = await this.findByName(data.name);
       
       if (existingTag) {
-        return existingTag as unknown as T;
+        logger.debug(`Found existing tag with name ${data.name}`);
+        return existingTag;
       }
       
-      // If not found, create the tag
-      const newTag = await repository.createTag(data);
+      // If not found, create new tag
+      logger.debug(`Creating new tag with name ${data.name}`);
+      const newTag = await this.create(data);
       
-      // Associate with entity type if specified - fix: access the data.id property
-      if (effectiveEntityType && newTag && newTag.data && newTag.data.id) {
+      // If entityType is provided, associate the tag with it
+      if (entityType && isValidEntityType(entityType)) {
         try {
-          await repository.associateTagWithEntityType(newTag.data.id, effectiveEntityType);
-        } catch (err) {
-          // Log but don't fail if entity type association fails
-          console.warn(`Failed to associate new tag with entity type: ${err}`);
+          const { updateTagEntityType } = await import('@/api/tags/tagEntityTypesApi');
+          await updateTagEntityType(newTag.id, entityType);
+        } catch (error) {
+          logger.warn(`Error associating tag with entity type: ${error}`);
+          // Continue even if this fails
         }
       }
       
-      return newTag as unknown as T;
+      return newTag;
     },
     
-    associateWithEntityType: async (tagId: string, entityType: EntityType) => {
+    /**
+     * Get tags by entity type
+     */
+    async getByEntityType(entityType: EntityType): Promise<T[]> {
+      logger.debug(`TagOperations.getByEntityType: Getting tags for entity type ${entityType}`);
+      
+      if (!isValidEntityType(entityType)) {
+        logger.error(`Invalid entity type: ${entityType}`);
+        return [];
+      }
+      
       try {
-        await repository.associateTagWithEntityType(tagId, entityType);
-        return true;
-      } catch (err) {
-        console.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
-        return false;
+        const { data, error } = await apiClient.query(async (client) => {
+          return client
+            .from('tag_entity_types')
+            .select(`tag:tags(*)`)
+            .eq('entity_type', entityType);
+        });
+        
+        if (error) {
+          logger.error(`Error fetching tags for entity type ${entityType}:`, error);
+          return [];
+        }
+        
+        // Extract tags from the response
+        const tags = data.map((item: any) => item.tag) as T[];
+        return tags;
+        
+      } catch (error) {
+        logger.error(`Error in getByEntityType:`, error);
+        return [];
       }
     }
   };
