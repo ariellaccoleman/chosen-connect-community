@@ -19,8 +19,19 @@ interface TestRunRequest {
   git_branch?: string
 }
 
+interface TestSuiteRequest {
+  test_run_id: string
+  suite_name: string
+  file_path: string
+  status: 'success' | 'failure' | 'skipped'
+  test_count: number
+  duration_ms: number
+  error_message?: string
+}
+
 interface TestResultRequest {
   test_run_id: string
+  test_suite_id?: string
   test_suite: string
   test_name: string
   status: 'passed' | 'failed' | 'skipped'
@@ -111,6 +122,9 @@ serve(async (req) => {
     if (action === 'create-run') {
       // Create a new test run
       return await handleCreateTestRun(requestData, corsHeaders)
+    } else if (action === 'record-suite') {
+      // Record a test suite
+      return await handleRecordTestSuite(requestData, corsHeaders)
     } else if (action === 'record-result') {
       // Record a test result for an existing test run
       return await handleRecordTestResult(requestData, corsHeaders)
@@ -122,7 +136,7 @@ serve(async (req) => {
       console.log('[report-test-results] No specific action specified, using legacy handler')
       return new Response(JSON.stringify({ 
         error: 'Invalid endpoint', 
-        message: 'Please use one of the specific endpoints: create-run, record-result, or update-run'
+        message: 'Please use one of the specific endpoints: create-run, record-suite, record-result, or update-run'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -226,6 +240,92 @@ async function handleCreateTestRun(
 }
 
 /**
+ * Records a test suite for an existing test run
+ */
+async function handleRecordTestSuite(
+  requestData: TestSuiteRequest,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  const { test_run_id: testRunId } = requestData
+
+  if (!testRunId) {
+    return new Response(JSON.stringify({ 
+      error: 'Missing test run ID', 
+      message: 'A valid test_run_id is required'
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  console.log(`[record-suite] Recording test suite for test run: ${testRunId}`)
+  
+  try {
+    // Verify the test run exists
+    const { data: testRun, error: checkError } = await supabase
+      .from('test_runs')
+      .select('id')
+      .eq('id', testRunId)
+      .maybeSingle()
+    
+    if (checkError || !testRun) {
+      console.error('[record-suite] Test run not found:', checkError || 'No test run with that ID')
+      return new Response(JSON.stringify({ 
+        error: 'Test run not found', 
+        message: `No test run found with ID: ${testRunId}`
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Insert the test suite
+    const { data, error: insertError } = await supabase
+      .from('test_suites')
+      .insert({
+        test_run_id: testRunId,
+        suite_name: requestData.suite_name,
+        file_path: requestData.file_path,
+        status: requestData.status,
+        test_count: requestData.test_count,
+        duration_ms: requestData.duration_ms,
+        error_message: requestData.error_message || null,
+      })
+      .select('id')
+      .single()
+
+    if (insertError) {
+      console.error('[record-suite] Error inserting test suite:', insertError)
+      return new Response(JSON.stringify({ 
+        error: 'Failed to record test suite', 
+        details: insertError.message
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    console.log(`[record-suite] Successfully recorded test suite ${requestData.suite_name} with ID ${data.id}`)
+    return new Response(JSON.stringify({ 
+      message: 'Test suite recorded successfully',
+      test_suite_id: data.id
+    }), {
+      status: 201,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.error('[record-suite] Exception recording test suite:', error)
+    return new Response(JSON.stringify({ 
+      error: 'Failed to record test suite', 
+      details: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+}
+
+/**
  * Records a test result for an existing test run
  */
 async function handleRecordTestResult(
@@ -270,6 +370,7 @@ async function handleRecordTestResult(
       .from('test_results')
       .insert({
         test_run_id: testRunId,
+        test_suite_id: requestData.test_suite_id || null,
         test_suite: requestData.test_suite,
         test_name: requestData.test_name,
         status: requestData.status,

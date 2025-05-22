@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -13,7 +14,11 @@ class TestReporter {
       duration: 0,
       testResults: [],
       // Track which tests we've already reported to prevent double counting
-      reportedTests: new Set()
+      reportedTests: new Set(),
+      // Track test suites
+      suites: new Map(),
+      // Track current suite being processed
+      currentSuite: null
     };
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
@@ -79,7 +84,126 @@ class TestReporter {
     }
   }
 
-  async onTestResult(test, testResult) {
+  async onTestFileStart(test) {
+    if (!this.testRunId) {
+      console.error('No testRunId available. Cannot record test suite.');
+      return;
+    }
+
+    const testFilePath = test.path;
+    // Extract suite name from file path
+    const testSuitePath = testFilePath.split('/');
+    const suiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
+    
+    console.log(`Starting test suite: ${suiteName} (${testFilePath})`);
+
+    this.results.currentSuite = {
+      path: testFilePath,
+      name: suiteName,
+      startTime: Date.now(),
+      testCount: 0,
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      id: null
+    };
+    
+    try {
+      // Record that the suite is starting
+      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.TEST_REPORTING_API_KEY
+        },
+        body: JSON.stringify({
+          test_run_id: this.testRunId,
+          suite_name: suiteName,
+          file_path: testFilePath,
+          status: 'in_progress', // Initial status
+          test_count: 0,
+          duration_ms: 0
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        this.results.currentSuite.id = data.test_suite_id;
+        console.log(`Recorded start of test suite ${suiteName} with ID ${data.test_suite_id}`);
+      } else {
+        const errorText = await response.text();
+        console.error(`Failed to record test suite start: ${errorText}`);
+      }
+    } catch (error) {
+      console.error(`Error recording test suite start for ${suiteName}:`, error);
+    }
+
+    // Store the suite in our map
+    this.results.suites.set(testFilePath, this.results.currentSuite);
+  }
+
+  async onTestFileResult(test, testResult) {
+    const { testFilePath } = test;
+    const suite = this.results.suites.get(testFilePath);
+    
+    if (!suite) {
+      console.error(`No suite found for ${testFilePath}`);
+      return;
+    }
+    
+    // Calculate test duration
+    const duration = Date.now() - suite.startTime;
+
+    // Update suite stats
+    const testCount = testResult.numPassingTests + testResult.numFailingTests + testResult.numPendingTests;
+    const status = testResult.numFailingTests > 0 ? 'failure' : 'success';
+    
+    console.log(`Completed test suite: ${suite.name} - ${status} (${testCount} tests, ${duration}ms)`);
+    
+    if (!this.testRunId) {
+      console.error('No testRunId available. Cannot update test suite.');
+      return;
+    }
+    
+    try {
+      // Update the suite record with final results
+      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.TEST_REPORTING_API_KEY
+        },
+        body: JSON.stringify({
+          test_run_id: this.testRunId,
+          suite_name: suite.name,
+          file_path: testFilePath,
+          status: status,
+          test_count: testCount,
+          duration_ms: duration,
+          error_message: testResult.failureMessage || null
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Failed to update test suite: ${errorText}`);
+      } else {
+        const data = await response.json();
+        suite.id = data.test_suite_id;
+        console.log(`Updated test suite ${suite.name} with ID ${data.test_suite_id}`);
+      }
+    } catch (error) {
+      console.error(`Error updating test suite ${suite.name}:`, error);
+    }
+    
+    // Now process the individual tests in this suite
+    await this.processTestResults(testResult, suite);
+
+    // Clear current suite
+    this.results.currentSuite = null;
+  }
+
+  async processTestResults(testResult, suite) {
     const { testResults, testFilePath } = testResult;
     
     if (!this.testRunId) {
@@ -162,6 +286,7 @@ class TestReporter {
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
+            test_suite_id: suite ? suite.id : null,
             test_suite: testSuiteName,
             test_name: testName,
             status: testStatus,
@@ -185,6 +310,11 @@ class TestReporter {
     
     // Update total duration
     this.results.duration += testResult.perfStats.end - testResult.perfStats.start;
+  }
+
+  async onTestResult(test, testResult) {
+    // Most of the work is done in onTestFileResult now
+    // This method is kept for backward compatibility
   }
 
   async onRunComplete(contexts, results) {

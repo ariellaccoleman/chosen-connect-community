@@ -1,6 +1,6 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { getAllTestRuns, getTestRunById, getTestResultsByRunId } from '@/api/tests';
+import * as testAPI from '@/api/tests/testApi';
 
 /**
  * Hook to fetch all test runs
@@ -9,8 +9,7 @@ export const useTestRuns = () => {
   return useQuery({
     queryKey: ['testRuns'],
     queryFn: async () => {
-      const response = await getAllTestRuns();
-      return response.data || [];
+      return await testAPI.getAllTestRuns();
     }
   });
 };
@@ -23,8 +22,21 @@ export const useTestRunDetails = (testRunId?: string) => {
     queryKey: ['testRun', testRunId],
     queryFn: async () => {
       if (!testRunId) throw new Error('Test run ID is required');
-      const response = await getTestRunById(testRunId);
-      return response.data;
+      return await testAPI.getTestRunById(testRunId);
+    },
+    enabled: !!testRunId
+  });
+};
+
+/**
+ * Hook to fetch test suites for a specific run
+ */
+export const useTestSuites = (testRunId?: string) => {
+  return useQuery({
+    queryKey: ['testSuites', testRunId],
+    queryFn: async () => {
+      if (!testRunId) throw new Error('Test run ID is required');
+      return await testAPI.getTestSuitesByRunId(testRunId);
     },
     enabled: !!testRunId
   });
@@ -38,10 +50,23 @@ export const useTestResults = (testRunId?: string) => {
     queryKey: ['testResults', testRunId],
     queryFn: async () => {
       if (!testRunId) throw new Error('Test run ID is required');
-      const response = await getTestResultsByRunId(testRunId);
-      return response.data || [];
+      return await testAPI.getTestResultsByRunId(testRunId);
     },
     enabled: !!testRunId
+  });
+};
+
+/**
+ * Hook to fetch test results for a specific suite
+ */
+export const useTestResultsBySuite = (suiteId?: string) => {
+  return useQuery({
+    queryKey: ['testResultsBySuite', suiteId],
+    queryFn: async () => {
+      if (!suiteId) throw new Error('Suite ID is required');
+      return await testAPI.getTestResultsBySuiteId(suiteId);
+    },
+    enabled: !!suiteId
   });
 };
 

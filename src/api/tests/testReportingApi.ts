@@ -6,6 +6,7 @@ import { apiClient } from '@/api/core/apiClient';
 
 type TestRun = Tables<'test_runs'>;
 type TestResult = Tables<'test_results'>;
+type TestSuite = Tables<'test_suites'>;
 
 /**
  * Create a new test run in the database
@@ -40,10 +41,52 @@ export const createTestRun = async (): Promise<string | null> => {
 };
 
 /**
+ * Save test suite to the database
+ */
+export const saveTestSuite = async (
+  testRunId: string,
+  suiteName: string,
+  filePath: string,
+  status: 'success' | 'failure' | 'skipped',
+  testCount: number,
+  durationMs: number,
+  errorMessage?: string
+): Promise<string | null> => {
+  try {
+    // Call the record-suite endpoint
+    const { data, error } = await apiClient.functionQuery((functions) => 
+      functions.invoke('report-test-results/record-suite', {
+        method: 'POST',
+        body: {
+          test_run_id: testRunId,
+          suite_name: suiteName,
+          file_path: filePath,
+          status,
+          test_count: testCount,
+          duration_ms: durationMs,
+          error_message: errorMessage || null,
+        }
+      })
+    );
+    
+    if (error) {
+      logger.error('Error saving test suite:', error);
+      return null;
+    }
+    
+    return data.test_suite_id;
+  } catch (error) {
+    logger.error('Exception saving test suite:', error);
+    return null;
+  }
+};
+
+/**
  * Save test result to the database
  */
 export const saveTestResult = async (
   testRunId: string,
+  testSuiteId: string | null,
   testSuite: string,
   testName: string,
   status: 'passed' | 'failed' | 'skipped',
@@ -59,6 +102,7 @@ export const saveTestResult = async (
         method: 'POST',
         body: {
           test_run_id: testRunId,
+          test_suite_id: testSuiteId,
           test_suite: testSuite,
           test_name: testName,
           status,
@@ -171,6 +215,29 @@ export const getTestRunById = async (testRunId: string): Promise<TestRun | null>
 };
 
 /**
+ * Get test suites for a specific test run
+ */
+export const getTestSuitesByRunId = async (testRunId: string): Promise<TestSuite[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('test_suites')
+      .select('*')
+      .eq('test_run_id', testRunId)
+      .order('suite_name', { ascending: true });
+    
+    if (error) {
+      logger.error('Error fetching test suites:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    logger.error('Exception fetching test suites:', error);
+    return [];
+  }
+};
+
+/**
  * Get test results for a specific test run
  */
 export const getTestResultsByRunId = async (testRunId: string): Promise<TestResult[]> => {
@@ -190,6 +257,50 @@ export const getTestResultsByRunId = async (testRunId: string): Promise<TestResu
   } catch (error) {
     logger.error('Exception fetching test results:', error);
     return [];
+  }
+};
+
+/**
+ * Get test results grouped by suite for a specific run
+ */
+export const getTestResultsGroupedBySuite = async (testRunId: string): Promise<{
+  suites: TestSuite[],
+  results: Record<string, TestResult[]>
+}> => {
+  try {
+    const [suites, results] = await Promise.all([
+      getTestSuitesByRunId(testRunId),
+      getTestResultsByRunId(testRunId)
+    ]);
+    
+    // Group results by test_suite_id
+    const resultsBySuite: Record<string, TestResult[]> = {};
+    
+    // Initialize with empty arrays for each suite
+    suites.forEach(suite => {
+      resultsBySuite[suite.id] = [];
+    });
+    
+    // Populate with results
+    results.forEach(result => {
+      if (result.test_suite_id) {
+        if (!resultsBySuite[result.test_suite_id]) {
+          resultsBySuite[result.test_suite_id] = [];
+        }
+        resultsBySuite[result.test_suite_id].push(result);
+      }
+    });
+    
+    return {
+      suites,
+      results: resultsBySuite
+    };
+  } catch (error) {
+    logger.error('Exception getting grouped test results:', error);
+    return {
+      suites: [],
+      results: {}
+    };
   }
 };
 
@@ -218,6 +329,35 @@ export const getRecentFailedTests = async (limit = 20): Promise<TestResult[]> =>
     return data || [];
   } catch (error) {
     logger.error('Exception fetching failed tests:', error);
+    return [];
+  }
+};
+
+/**
+ * Get recent failed test suites
+ */
+export const getRecentFailedSuites = async (limit = 20): Promise<TestSuite[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('test_suites')
+      .select(`
+        *,
+        test_runs:test_run_id (
+          run_at
+        )
+      `)
+      .eq('status', 'failure')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    
+    if (error) {
+      logger.error('Error fetching failed suites:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    logger.error('Exception fetching failed suites:', error);
     return [];
   }
 };

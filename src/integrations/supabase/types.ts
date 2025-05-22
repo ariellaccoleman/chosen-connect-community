@@ -1186,6 +1186,7 @@ export type Database = {
           test_name: string
           test_run_id: string
           test_suite: string
+          test_suite_id: string | null
         }
         Insert: {
           console_output?: string | null
@@ -1198,6 +1199,7 @@ export type Database = {
           test_name: string
           test_run_id: string
           test_suite: string
+          test_suite_id?: string | null
         }
         Update: {
           console_output?: string | null
@@ -1210,6 +1212,7 @@ export type Database = {
           test_name?: string
           test_run_id?: string
           test_suite?: string
+          test_suite_id?: string | null
         }
         Relationships: [
           {
@@ -1217,6 +1220,13 @@ export type Database = {
             columns: ["test_run_id"]
             isOneToOne: false
             referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_results_test_suite_id_fkey"
+            columns: ["test_suite_id"]
+            isOneToOne: false
+            referencedRelation: "test_suites"
             referencedColumns: ["id"]
           },
         ]
@@ -1262,6 +1272,50 @@ export type Database = {
           total_tests?: number
         }
         Relationships: []
+      }
+      test_suites: {
+        Row: {
+          created_at: string
+          duration_ms: number
+          error_message: string | null
+          file_path: string
+          id: string
+          status: Database["public"]["Enums"]["test_suite_status"]
+          suite_name: string
+          test_count: number
+          test_run_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          file_path: string
+          id?: string
+          status: Database["public"]["Enums"]["test_suite_status"]
+          suite_name: string
+          test_count?: number
+          test_run_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_ms?: number
+          error_message?: string | null
+          file_path?: string
+          id?: string
+          status?: Database["public"]["Enums"]["test_suite_status"]
+          suite_name?: string
+          test_count?: number
+          test_run_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_suites_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -1688,6 +1742,7 @@ export type Database = {
       pricing_tier: "free" | "community" | "pro" | "partner"
       test_run_status: "success" | "failure" | "in_progress"
       test_status: "passed" | "failed" | "skipped"
+      test_suite_status: "success" | "failure" | "skipped"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1809,6 +1864,7 @@ export const Constants = {
       pricing_tier: ["free", "community", "pro", "partner"],
       test_run_status: ["success", "failure", "in_progress"],
       test_status: ["passed", "failed", "skipped"],
+      test_suite_status: ["success", "failure", "skipped"],
     },
   },
 } as const
