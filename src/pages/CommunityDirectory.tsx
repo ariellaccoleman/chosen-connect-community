@@ -7,20 +7,17 @@ import CommunitySearch from "@/components/community/CommunitySearch";
 import ProfileGrid from "@/components/community/ProfileGrid";
 import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterByTag } from "@/hooks/tags";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
-import TagDebugTool from "@/components/filters/TagDebugTool";
-import { Button } from "@/components/ui/button";
-import { Wrench } from "lucide-react";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const [showDebugTool, setShowDebugTool] = useState(false);
   const { user } = useAuth();
   
   // Use the tag filtering hook
@@ -41,7 +38,7 @@ const CommunityDirectory = () => {
       logger.debug(`Selected tag ID: ${selectedTagId}`);
       logger.debug(`Tag Assignments for ${selectedTagId}:`, tagAssignments);
       
-      // Fix #1: Extract target_id values from the tag assignments array instead of passing the whole array
+      // Extract target_id values from the tag assignments array
       const targetProfileIds = tagAssignments.map(ta => ta.target_id);
       logger.debug(`Tagged profile IDs: ${targetProfileIds.join(', ')}`);
       
@@ -117,7 +114,6 @@ const CommunityDirectory = () => {
         const isIncluded = taggedIds.has(profile.id);
         
         if (currentUserProfile && profile.id === currentUserProfile.id) {
-          // Fix #2: Access id from currentUserProfile directly, not from ApiResponse
           logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
         
@@ -142,23 +138,7 @@ const CommunityDirectory = () => {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           Community Directory
         </h1>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowDebugTool(!showDebugTool)}
-        >
-          <Wrench className="h-4 w-4 mr-2" />
-          {showDebugTool ? "Hide Debug" : "Show Debug"}
-        </Button>
       </div>
-
-      {showDebugTool && (
-        <TagDebugTool 
-          tagId={selectedTagId || undefined}
-          // Fix #3: Access currentUserProfile.id directly, not from ApiResponse
-          profileId={currentUserProfile ? currentUserProfile.id : undefined}
-        />
-      )}
 
       <Card className="mb-6">
         <CardContent className="pt-6">
@@ -197,4 +177,3 @@ const CommunityDirectory = () => {
 };
 
 export default CommunityDirectory;
-
