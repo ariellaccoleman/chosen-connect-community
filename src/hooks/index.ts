@@ -14,7 +14,8 @@ export * from './tests';
 
 // Entity-related hooks
 export * from "./useEntitySystem";
-export * from "./useEntityRegistry";
+// We're already exporting useEntityRegistry from useEntitySystem, so we don't need to re-export it here
+// export * from "./useEntityRegistry";
 export * from "./useEntityFeed";
 
 /**

@@ -58,5 +58,8 @@ export const useEntitySystem = () => {
   };
 };
 
-// For backward compatibility
+// Export with both names for backward compatibility
 export const useEntityRegistry = useEntitySystem;
+
+// Default export as useEntitySystem
+export default useEntitySystem;
