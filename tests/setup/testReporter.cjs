@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -156,7 +157,12 @@ class TestReporter {
       return;
     }
 
-    const { testFilePath } = test;
+    if (!testResult) {
+      console.error('TestResult object is undefined in onTestFileResult');
+      return;
+    }
+
+    const testFilePath = test.path;
     console.log(`Looking for suite with testFilePath: ${testFilePath}`);
     
     const suite = this.results.suites.get(testFilePath);

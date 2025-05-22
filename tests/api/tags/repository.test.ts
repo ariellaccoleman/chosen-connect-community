@@ -1,14 +1,9 @@
 
 import { Tag, TagAssignment, TagEntityType } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
-import { 
-  createTagRepository, 
-  createTagAssignmentRepository, 
-  createTagEntityTypeRepository 
-} from "@/api/tags/repository";
+import { createTagRepository, createTagAssignmentRepository, createTagEntityTypeRepository } from "@/api/tags/repository";
 import { createMockRepository } from "@/api/core/repository/MockRepository";
 import { createSuccessResponse } from "@/api/core/repository/repositoryUtils";
-import { DataRepository } from "@/api/core/repository/DataRepository";
 
 // Mock data for tests
 const mockTag: Tag = {
@@ -75,21 +70,34 @@ const mockEntityTypes: TagEntityType[] = [
   }
 ];
 
-// Mock the repository factory
+// Fix the circular dependency by directly defining mock functions first
+const mockRepositories: Record<string, any> = {};
+
+// Create the mock repositories before initializing them with data
+mockRepositories["tags"] = createMockRepository("tags");
+mockRepositories["tag_assignments"] = createMockRepository("tag_assignments");
+mockRepositories["tag_entity_types"] = createMockRepository("tag_entity_types");
+
+// Now populate the repositories with mock data
 jest.mock("@/api/core/repository/repositoryFactory", () => {
-  // Create a factory function that will return appropriate mock repositories
-  const mockRepositories: Record<string, any> = {};
-  
-  // Initialize with test data
-  mockRepositories["tags"] = createMockRepository("tags", mockTags);
-  mockRepositories["tag_assignments"] = createMockRepository("tag_assignments", mockAssignments);
-  mockRepositories["tag_entity_types"] = createMockRepository("tag_entity_types", mockEntityTypes);
-  
   // Return the factory mock
   return {
     createSupabaseRepository: jest.fn((tableName) => {
       // Return the mock repository for the requested table or create a new empty one
-      return mockRepositories[tableName] || createMockRepository(tableName);
+      if (!mockRepositories[tableName]) {
+        mockRepositories[tableName] = createMockRepository(tableName);
+      }
+      
+      // Initialize with test data if needed
+      if (tableName === "tags" && mockRepositories[tableName].getAll().length === 0) {
+        mockRepositories[tableName].setMockData(mockTags);
+      } else if (tableName === "tag_assignments" && mockRepositories[tableName].getAll().length === 0) {
+        mockRepositories[tableName].setMockData(mockAssignments);
+      } else if (tableName === "tag_entity_types" && mockRepositories[tableName].getAll().length === 0) {
+        mockRepositories[tableName].setMockData(mockEntityTypes);
+      }
+      
+      return mockRepositories[tableName];
     })
   };
 });
