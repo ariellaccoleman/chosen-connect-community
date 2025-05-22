@@ -29,6 +29,29 @@ export const updateTagEntityType = tagEntityTypesApi.update;
 export const deleteTagEntityType = tagEntityTypesApi.delete;
 
 /**
+ * Get entity types for a specific tag
+ */
+export const getEntityTypesForTag = async (tagId: string): Promise<ApiResponse<string[]>> => {
+  try {
+    logger.debug(`Getting entity types for tag ${tagId}`);
+    const response = await getAllTagEntityTypes();
+    
+    if (response.status !== 'success' || !response.data) {
+      return createErrorResponse(response.error);
+    }
+    
+    const entityTypes = response.data
+      .filter(entry => entry.tag_id === tagId)
+      .map(entry => entry.entity_type);
+    
+    return createSuccessResponse(entityTypes);
+  } catch (error) {
+    logger.error("Error getting entity types for tag:", error);
+    return createErrorResponse(error);
+  }
+};
+
+/**
  * Update the entity types for a tag
  * Associates a tag with an entity type, creating the association if it doesn't exist
  */
