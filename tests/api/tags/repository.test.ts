@@ -7,6 +7,7 @@ import {
   createTagEntityTypeRepository 
 } from "@/api/tags/repository";
 import { createMockRepository } from "@/api/core/repository/MockRepository";
+import { createSuccessResponse } from "@/api/core/errorHandler";
 
 jest.mock("@/api/core/repository/repositoryFactory", () => ({
   createSupabaseRepository: jest.fn(() => createMockRepository("mock_table"))
@@ -39,18 +40,21 @@ describe("Tag Repository Tests", () => {
   ];
 
   describe("TagRepository", () => {
-    const tagRepo = createTagRepository();
+    let tagRepo: ReturnType<typeof createTagRepository>;
 
     beforeEach(() => {
       jest.clearAllMocks();
+      tagRepo = createTagRepository();
     });
 
     test("getAllTags returns all tags", async () => {
       // Mock the repository to return our test data
       const mockRepo = createMockRepository<Tag>("tags", mockTags);
+      const executeMock = jest.fn().mockResolvedValue({ data: mockTags, error: null });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         order: jest.fn().mockReturnValue({
-          execute: jest.fn().mockResolvedValue({ data: mockTags, error: null })
+          execute: executeMock
         })
       } as any);
 
@@ -62,13 +66,16 @@ describe("Tag Repository Tests", () => {
       expect(result.data).toHaveLength(2);
       expect(result.data?.[0].name).toBe("test-tag");
       expect(result.error).toBeNull();
+      expect(executeMock).toHaveBeenCalled();
     });
 
     test("getTagById returns a specific tag", async () => {
       const mockRepo = createMockRepository<Tag>("tags", mockTags);
+      const maybeSingleMock = jest.fn().mockResolvedValue({ data: mockTag, error: null });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         eq: jest.fn().mockReturnValue({
-          maybeSingle: jest.fn().mockResolvedValue({ data: mockTag, error: null })
+          maybeSingle: maybeSingleMock
         })
       } as any);
 
@@ -78,13 +85,16 @@ describe("Tag Repository Tests", () => {
       
       expect(result.data?.id).toBe("tag-1");
       expect(result.data?.name).toBe("test-tag");
+      expect(maybeSingleMock).toHaveBeenCalled();
     });
 
     test("findTagByName finds a tag by name", async () => {
       const mockRepo = createMockRepository<Tag>("tags", mockTags);
+      const maybeSingleMock = jest.fn().mockResolvedValue({ data: mockTag, error: null });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         ilike: jest.fn().mockReturnValue({
-          maybeSingle: jest.fn().mockResolvedValue({ data: mockTag, error: null })
+          maybeSingle: maybeSingleMock
         })
       } as any);
 
@@ -93,11 +103,12 @@ describe("Tag Repository Tests", () => {
       const result = await tagRepo.findTagByName("test-tag");
       
       expect(result.data?.name).toBe("test-tag");
+      expect(maybeSingleMock).toHaveBeenCalled();
     });
   });
 
   describe("TagAssignmentRepository", () => {
-    const tagAssignmentRepo = createTagAssignmentRepository();
+    let tagAssignmentRepo: ReturnType<typeof createTagAssignmentRepository>;
     
     const mockAssignments: TagAssignment[] = [
       {
@@ -120,13 +131,19 @@ describe("Tag Repository Tests", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
+      tagAssignmentRepo = createTagAssignmentRepository();
     });
 
     test("getTagAssignmentsForEntity returns assignments for entity", async () => {
       const mockRepo = createMockRepository<TagAssignment>("tag_assignments", mockAssignments);
+      const executeMock = jest.fn().mockResolvedValue({ 
+        data: [mockAssignments[0]], 
+        error: null 
+      });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         eq: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue({ data: [mockAssignments[0]], error: null })
+        execute: executeMock
       } as any);
 
       (tagAssignmentRepo as any).repository = mockRepo;
@@ -138,6 +155,7 @@ describe("Tag Repository Tests", () => {
       expect(result).toHaveLength(1);
       expect(result[0].target_id).toBe("entity-1");
       expect(result[0].target_type).toBe(EntityType.PERSON);
+      expect(executeMock).toHaveBeenCalled();
     });
 
     test("createTagAssignment creates a new tag assignment", async () => {
@@ -155,8 +173,13 @@ describe("Tag Repository Tests", () => {
         updated_at: new Date().toISOString()
       };
 
+      const executeMock = jest.fn().mockResolvedValue({ 
+        data: [createdAssignment], 
+        error: null 
+      });
+
       jest.spyOn(mockRepo, "insert").mockReturnValue({
-        execute: jest.fn().mockResolvedValue({ data: [createdAssignment], error: null })
+        execute: executeMock
       } as any);
 
       (tagAssignmentRepo as any).repository = mockRepo;
@@ -165,11 +188,12 @@ describe("Tag Repository Tests", () => {
       
       expect(result.id).toBe("new-assignment");
       expect(result.tag_id).toBe("tag-3");
+      expect(executeMock).toHaveBeenCalled();
     });
   });
 
   describe("TagEntityTypeRepository", () => {
-    const tagEntityTypeRepo = createTagEntityTypeRepository();
+    let tagEntityTypeRepo: ReturnType<typeof createTagEntityTypeRepository>;
     
     const mockEntityTypes: TagEntityType[] = [
       {
@@ -197,13 +221,19 @@ describe("Tag Repository Tests", () => {
 
     beforeEach(() => {
       jest.clearAllMocks();
+      tagEntityTypeRepo = createTagEntityTypeRepository();
     });
 
     test("isTagAllowedForEntityType checks if tag is allowed for entity type", async () => {
       const mockRepo = createMockRepository<TagEntityType>("tag_entity_types", mockEntityTypes);
+      const executeMock = jest.fn().mockResolvedValue({ 
+        data: [mockEntityTypes[0]], 
+        error: null 
+      });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         eq: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue({ data: [mockEntityTypes[0]], error: null })
+        execute: executeMock
       } as any);
 
       (tagEntityTypeRepo as any).repository = mockRepo;
@@ -211,16 +241,19 @@ describe("Tag Repository Tests", () => {
       const result = await tagEntityTypeRepo.isTagAllowedForEntityType("tag-1", EntityType.PERSON);
       
       expect(result).toBe(true);
+      expect(executeMock).toHaveBeenCalled();
     });
 
     test("getTagEntityTypesByTagId returns entity types for a tag", async () => {
       const mockRepo = createMockRepository<TagEntityType>("tag_entity_types", mockEntityTypes);
+      const executeMock = jest.fn().mockResolvedValue({ 
+        data: [mockEntityTypes[0], mockEntityTypes[1]], 
+        error: null 
+      });
+      
       jest.spyOn(mockRepo, "select").mockReturnValue({
         eq: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue({ 
-          data: [mockEntityTypes[0], mockEntityTypes[1]], 
-          error: null 
-        })
+        execute: executeMock
       } as any);
 
       (tagEntityTypeRepo as any).repository = mockRepo;
@@ -230,6 +263,7 @@ describe("Tag Repository Tests", () => {
       expect(result).toHaveLength(2);
       expect(result[0].entity_type).toBe(EntityType.PERSON);
       expect(result[1].entity_type).toBe(EntityType.ORGANIZATION);
+      expect(executeMock).toHaveBeenCalled();
     });
   });
 });
