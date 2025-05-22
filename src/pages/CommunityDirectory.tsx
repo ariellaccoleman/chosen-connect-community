@@ -59,7 +59,7 @@ const CommunityDirectory = () => {
         .eq("target_type", "person");
       
       if (error) {
-        logger.error("Error querying tag_assignments:", error);
+        logger.debug("Error querying tag_assignments:", error);
       } else {
         logger.debug(`Found ${data?.length || 0} tag assignments for people`);
         
@@ -67,7 +67,8 @@ const CommunityDirectory = () => {
         if (selectedTagId) {
           const filteredAssignments = data?.filter(a => a.tag_id === selectedTagId) || [];
           logger.debug(`Found ${filteredAssignments.length} assignments with selected tag ID:`);
-          logger.debug(filteredAssignments);
+          // Fix for error #1: Convert the array to a string using JSON.stringify
+          logger.debug(JSON.stringify(filteredAssignments));
           
           // Check if any profiles match these assignments
           const taggedIds = new Set(filteredAssignments.map(a => a.target_id));
@@ -114,7 +115,8 @@ const CommunityDirectory = () => {
         const isIncluded = taggedIds.has(profile.id);
         
         // Debug check for current user's profile
-        if (currentUserProfile && profile.id === currentUserProfile?.id) {
+        // Fix for error #2: Access the id property correctly through the data property
+        if (currentUserProfile?.data && profile.id === currentUserProfile.data.id) {
           logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
         
