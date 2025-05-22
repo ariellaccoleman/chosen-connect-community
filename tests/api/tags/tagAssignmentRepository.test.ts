@@ -154,10 +154,6 @@ describe('Tag Assignment Repository', () => {
         error: null
       };
       
-      const mockSelect = jest.fn().mockReturnValue({
-        execute: jest.fn().mockResolvedValue(mockJoinResult)
-      });
-      
       jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation(async () => {
         return {
           status: 'success',
