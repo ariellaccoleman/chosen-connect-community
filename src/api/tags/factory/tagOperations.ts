@@ -118,7 +118,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       const { data: createdTag, error } = await apiClient.query(async (client) => {
         return client
           .from('tags')
-          .insert([data])
+          .insert(data as any) // Using type assertion as a workaround
           .select()
           .single();
       });
