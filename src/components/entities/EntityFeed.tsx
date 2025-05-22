@@ -1,11 +1,11 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
-import { useSelectionTags } from "@/hooks/tags";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
 import { logger } from "@/utils/logger";
 
@@ -47,7 +47,7 @@ const EntityFeed = ({
   } = useEntityRegistry();
   
   // Enhanced logging for debugging tag filtering
-  React.useEffect(() => {
+  useEffect(() => {
     logger.debug(`EntityFeed initialized:`, {
       defaultEntityTypes,
       activeTab,
@@ -71,23 +71,41 @@ const EntityFeed = ({
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   
-  // Log when selectedTagId changes
-  React.useEffect(() => {
-    logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
-  }, [selectedTagId]);
+  // Use the useFilterByTag hook for consistent tag filtering
+  const { data: tagAssignments = [] } = useFilterByTag(
+    selectedTagId,
+    activeTab !== "all" ? activeTab : undefined
+  );
   
-  // Use the entity feed hook with enhanced tag filtering
+  // Log when selectedTagId changes
+  useEffect(() => {
+    logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
+    if (selectedTagId) {
+      logger.debug(`EntityFeed: Tag assignments for ${selectedTagId}:`, tagAssignments);
+    }
+  }, [selectedTagId, tagAssignments]);
+  
+  // Use the entity feed hook
   const { 
-    entities, 
+    entities: unfilteredEntities, 
     isLoading
   } = useEntityFeed({
     entityTypes,
-    limit,
-    tagId: selectedTagId
+    limit
   });
   
+  // Filter entities using consistent approach
+  const entities = selectedTagId
+    ? unfilteredEntities.filter(entity => {
+        // Get the set of IDs that have the selected tag
+        const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
+        // Return true if this entity's ID is in the set
+        return taggedIds.has(entity.id);
+      })
+    : unfilteredEntities;
+  
   // Log entity count when it changes 
-  React.useEffect(() => {
+  useEffect(() => {
     logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
       activeTab,
       selectedTagId,
