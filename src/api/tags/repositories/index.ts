@@ -8,7 +8,8 @@ export * from "./tagAssignmentsRepository";
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createTagEntityTypesViewRepository = () => {
-  return {
+  // Using the enhanced repository pattern
+  const repository = {
     tableName: 'all_tags_with_entity_types_view',
     getAll: async () => {
       return { data: [], error: null };
@@ -32,6 +33,7 @@ export const createTagEntityTypesViewRepository = () => {
       return { data: null, error: null };
     }
   };
+  return repository;
 };
 
 /**
@@ -39,7 +41,8 @@ export const createTagEntityTypesViewRepository = () => {
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createFilteredEntityTagsViewRepository = () => {
-  return {
+  // Using the enhanced repository pattern
+  const repository = {
     tableName: 'filtered_entity_tags_view',
     getAll: async () => {
       return { data: [], error: null };
@@ -63,6 +66,7 @@ export const createFilteredEntityTagsViewRepository = () => {
       return { data: null, error: null };
     }
   };
+  return repository;
 };
 
 /**
@@ -70,7 +74,8 @@ export const createFilteredEntityTagsViewRepository = () => {
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createEntityTagAssignmentsViewRepository = () => {
-  return {
+  // Using the enhanced repository pattern
+  const repository = {
     tableName: 'entity_tag_assignments_view',
     getAll: async () => {
       return { data: [], error: null };
@@ -94,4 +99,5 @@ export const createEntityTagAssignmentsViewRepository = () => {
       return { data: null, error: null };
     }
   };
+  return repository;
 };

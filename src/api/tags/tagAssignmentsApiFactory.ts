@@ -10,7 +10,7 @@ export const entityTagAssignmentsViewApi = createApiFactory<any, string, never, 
   {
     tableName: 'entity_tag_assignments_view' as any,
     entityName: 'entity tag assignment',
-    repository: createEntityTagAssignmentsViewRepository(),
+    repository: createEntityTagAssignmentsViewRepository, // Pass the function reference instead of calling it
     useQueryOperations: true,
     useMutationOperations: false,
     useBatchOperations: false

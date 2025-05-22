@@ -1,92 +1,94 @@
+
 import { apiClient } from "../core/apiClient";
-import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { ApiResponse, createSuccessResponse, createErrorResponse } from "../core/errorHandler";
 import { logger } from "@/utils/logger";
+import { TagEntityType } from "@/utils/tags/types";
+import { createTagEntityTypesRepository } from "./repositories";
 
 /**
- * Associate a tag with an entity type
- * This handles the case where the association already exists
+ * Create a repository for tag entity type operations
  */
-export const updateTagEntityType = async (
-  tagId: string,
-  entityType: string
-): Promise<ApiResponse<boolean>> => {
-  return apiClient.query(async (client) => {
-    try {
-      // Check if this entity type already exists for this tag
-      const { data: existingType, error: checkError } = await client
-        .from('tag_entity_types')
-        .select('id')
-        .eq('tag_id', tagId)
-        .eq('entity_type', entityType)
-        .maybeSingle();
-        
-      if (checkError) {
-        logger.error(`Failed to check tag entity type: ${checkError.message}`);
-        throw checkError;
-      }
-      
-      // If entity type doesn't exist for this tag, add it
-      if (!existingType) {
-        const { error: insertError } = await client
-          .from('tag_entity_types')
-          .insert({
-            tag_id: tagId,
-            entity_type: entityType
-          });
-          
-        if (insertError) {
-          logger.error(`Failed to create tag entity type: ${insertError.message}`, {
-            details: insertError,
-            tagId,
-            entityType
-          });
-          throw insertError;
-        }
-        
-        logger.info(`Added entity type ${entityType} to tag ${tagId}`);
-      } else {
-        logger.debug(`Entity type ${entityType} already exists for tag ${tagId}`);
-      }
-      
-      return createSuccessResponse(true);
-    } catch (error) {
-      logger.error(`Error in updateTagEntityType: ${error instanceof Error ? error.message : 'Unknown error'}`);
-      throw error;
-    }
-  });
+const tagEntityTypesRepo = createTagEntityTypesRepository();
+
+/**
+ * Get all tag entity types
+ */
+export const getAllTagEntityTypes = async (): Promise<ApiResponse<TagEntityType[]>> => {
+  try {
+    return await tagEntityTypesRepo.getAll();
+  } catch (error) {
+    logger.error("Error getting all tag entity types:", error);
+    return createErrorResponse(error);
+  }
 };
 
 /**
- * Remove a tag entity type if no more assignments with that type exist
+ * Get tag entity type by ID
  */
-export const removeTagEntityTypeIfUnused = async (
-  tagId: string,
-  entityType: string
-): Promise<ApiResponse<boolean>> => {
+export const getTagEntityTypeById = async (id: string): Promise<ApiResponse<TagEntityType>> => {
+  try {
+    return await tagEntityTypesRepo.getById(id);
+  } catch (error) {
+    logger.error(`Error getting tag entity type with ID ${id}:`, error);
+    return createErrorResponse(error);
+  }
+};
+
+/**
+ * Create a tag entity type
+ */
+export const createTagEntityType = async (data: Partial<TagEntityType>): Promise<ApiResponse<TagEntityType>> => {
+  try {
+    return await tagEntityTypesRepo.insert(data);
+  } catch (error) {
+    logger.error("Error creating tag entity type:", error);
+    return createErrorResponse(error);
+  }
+};
+
+/**
+ * Update a tag entity type
+ */
+export const updateTagEntityType = async (id: string, data: Partial<TagEntityType>): Promise<ApiResponse<TagEntityType>> => {
+  try {
+    return await tagEntityTypesRepo.update(id, data);
+  } catch (error) {
+    logger.error(`Error updating tag entity type with ID ${id}:`, error);
+    return createErrorResponse(error);
+  }
+};
+
+/**
+ * Delete a tag entity type
+ */
+export const deleteTagEntityType = async (id: string): Promise<ApiResponse<boolean>> => {
+  try {
+    return await tagEntityTypesRepo.delete(id);
+  } catch (error) {
+    logger.error(`Error deleting tag entity type with ID ${id}:`, error);
+    return createErrorResponse(error);
+  }
+};
+
+/**
+ * Get entity types for a specific tag
+ */
+export const getEntityTypesForTag = async (tagId: string): Promise<ApiResponse<string[]>> => {
   return apiClient.query(async (client) => {
-    // Check if there are any assignments with this tag and entity type
-    const { data: assignments, error: checkError } = await client
-      .from('tag_assignments')
-      .select('id')
-      .eq('tag_id', tagId)
-      .eq('target_type', entityType)
-      .limit(1);
-      
-    if (checkError) throw checkError;
-    
-    // If no assignments found, remove the entity type for this tag
-    if (!assignments || assignments.length === 0) {
-      const { error: removeError } = await client
+    try {
+      logger.debug(`Getting entity types for tag ${tagId}`);
+      const { data, error } = await client
         .from('tag_entity_types')
-        .delete()
-        .eq('tag_id', tagId)
-        .eq('entity_type', entityType);
-        
-      if (removeError) throw removeError;
+        .select('entity_type')
+        .eq('tag_id', tagId);
       
-      logger.info(`Removed entity type ${entityType} from tag ${tagId}`);
+      if (error) throw error;
+      
+      const entityTypes = data.map(entry => entry.entity_type);
+      return createSuccessResponse(entityTypes);
+    } catch (error) {
+      logger.error("Error getting entity types for tag:", error);
+      return createErrorResponse(error);
     }
-    
-    return createSuccessResponse(true);
   });
 };
