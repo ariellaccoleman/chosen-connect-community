@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 // **DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE**
 // *DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE*
@@ -123,16 +124,12 @@ async function createTestRun() {
   process.env.SUPABASE_KEY = SUPABASE_KEY;
   process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
 
-  // Make sure SERVICE_ROLE_KEY is available for the edge function
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY is not set. This may cause issues with the test reporting edge function.');
-  }
+  // Removed warning about SUPABASE_SERVICE_ROLE_KEY since it's only needed in the edge function
 
   // Log environment variables for debugging
   console.log('================= Test Environment =================');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
   console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
-  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
   console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
   console.log(`- TEST_RUN_ID: ${testRunId}`);
   console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);

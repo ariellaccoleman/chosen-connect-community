@@ -1,4 +1,3 @@
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.1'
 
@@ -400,6 +399,7 @@ async function handleRecordTestResult(
 
   if (!testSuiteId) {
     console.warn(`[record-result] No test_suite_id provided for test: ${requestData.test_name}`);
+    console.log(`[record-result] Will attempt to find or create a suite for test: ${requestData.test_name} in suite: ${requestData.test_suite}`);
   } else {
     console.log(`[record-result] Recording test result with suite ID: ${testSuiteId}`);
   }
@@ -425,27 +425,56 @@ async function handleRecordTestResult(
       })
     }
 
-    // If a suite ID is provided, verify it exists
-    if (testSuiteId) {
-      const { data: suite, error: suiteError } = await supabase
+    // Check if we have a valid suite ID or need to find/create one
+    let finalSuiteId = testSuiteId;
+    
+    if (!finalSuiteId) {
+      // Try to find an existing suite by name
+      const { data: existingSuite, error: findError } = await supabase
         .from('test_suites')
         .select('id')
-        .eq('id', testSuiteId)
+        .eq('test_run_id', testRunId)
+        .eq('suite_name', requestData.test_suite)
         .maybeSingle();
+        
+      if (findError) {
+        console.error('[record-result] Error looking up existing suite:', findError);
+      }
       
-      if (suiteError || !suite) {
-        console.warn(`[record-result] Test suite with ID ${testSuiteId} not found, but will continue recording the test result`);
+      if (existingSuite) {
+        console.log(`[record-result] Found existing suite with ID ${existingSuite.id} for ${requestData.test_suite}`);
+        finalSuiteId = existingSuite.id;
       } else {
-        console.log(`[record-result] Verified test suite ID: ${testSuiteId}`);
+        // Create a new suite as a fallback
+        console.log(`[record-result] Creating fallback suite for ${requestData.test_suite}`);
+        const { data: newSuite, error: createError } = await supabase
+          .from('test_suites')
+          .insert({
+            test_run_id: testRunId,
+            suite_name: requestData.test_suite,
+            file_path: `generated-for-${requestData.test_suite}`,
+            status: 'in_progress',
+            test_count: 1,
+            duration_ms: 0
+          })
+          .select('id')
+          .single();
+          
+        if (createError) {
+          console.error('[record-result] Failed to create fallback suite:', createError);
+        } else if (newSuite) {
+          console.log(`[record-result] Created fallback suite with ID ${newSuite.id}`);
+          finalSuiteId = newSuite.id;
+        }
       }
     }
 
-    // Insert the test result
+    // Insert the test result with the suite ID (original or found/created)
     const { error: insertError } = await supabase
       .from('test_results')
       .insert({
         test_run_id: testRunId,
-        test_suite_id: testSuiteId || null,
+        test_suite_id: finalSuiteId,
         test_suite: requestData.test_suite,
         test_name: requestData.test_name,
         status: requestData.status,
@@ -453,35 +482,35 @@ async function handleRecordTestResult(
         error_message: requestData.error_message || null,
         stack_trace: requestData.stack_trace || null,
         console_output: requestData.console_output || null,
-      })
+      });
 
     if (insertError) {
-      console.error('[record-result] Error inserting test result:', insertError)
+      console.error('[record-result] Error inserting test result:', insertError);
       return new Response(JSON.stringify({ 
         error: 'Failed to record test result', 
         details: insertError.message
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      });
     }
 
-    console.log(`[record-result] Successfully recorded test result for ${requestData.test_name} in suite ${requestData.test_suite}`)
+    console.log(`[record-result] Successfully recorded test result for ${requestData.test_name} in suite ${requestData.test_suite}`);
     return new Response(JSON.stringify({ 
       message: 'Test result recorded successfully',
     }), {
       status: 201,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   } catch (error) {
-    console.error('[record-result] Exception recording test result:', error)
+    console.error('[record-result] Exception recording test result:', error);
     return new Response(JSON.stringify({ 
       error: 'Failed to record test result', 
       details: error.message
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    });
   }
 }
 
