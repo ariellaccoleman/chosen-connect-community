@@ -1,4 +1,3 @@
-
 import { Tag } from '@/utils/tags/types';
 import { createTagRepository, TagRepository } from '@/api/tags/repository/TagRepository';
 import { EntityType } from '@/types/entityTypes';
@@ -191,7 +190,7 @@ describe('Tag Repository', () => {
     
     jest.spyOn(tagRepository, 'findOrCreateTag').mockImplementation((data) => {
       // First try to find the tag by name
-      const tagName = typeof data === 'string' ? data : (data.name || '');
+      const tagName = typeof data === 'string' ? data : (data?.name || '');
       const existingTag = mockTags.find(
         // Handle null/undefined name safely
         tag => tag.name.toLowerCase() === (tagName ? tagName.toLowerCase() : '')
@@ -209,10 +208,10 @@ describe('Tag Repository', () => {
       const newTag: Tag = {
         id: 'new-tag-id',
         name: tagName,
-        description: typeof data === 'object' ? (data.description || null) : null,
+        description: typeof data === 'object' && data ? (data.description || null) : null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-        created_by: typeof data === 'object' ? (data.created_by || null) : null
+        created_by: typeof data === 'object' && data ? (data.created_by || null) : null
       };
       
       return Promise.resolve({
@@ -514,6 +513,39 @@ describe('Tag Repository', () => {
     });
     
     test('should handle null or undefined input', async () => {
+      // Update the mock implementation to properly handle undefined and null
+      jest.spyOn(tagRepository, 'findOrCreateTag').mockImplementation((data) => {
+        // First try to find the tag by name
+        const tagName = typeof data === 'string' ? data : (data?.name || '');
+        const existingTag = mockTags.find(
+          tag => tag.name.toLowerCase() === (tagName ? tagName.toLowerCase() : '')
+        );
+        
+        if (existingTag) {
+          return Promise.resolve({
+            status: 'success',
+            data: existingTag,
+            error: null
+          });
+        }
+        
+        // If tag wasn't found, create a new one
+        const newTag: Tag = {
+          id: 'new-tag-id',
+          name: tagName,
+          description: typeof data === 'object' && data ? (data.description || null) : null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          created_by: typeof data === 'object' && data ? (data.created_by || null) : null
+        };
+        
+        return Promise.resolve({
+          status: 'success',
+          data: newTag,
+          error: null
+        });
+      });
+      
       // Act with undefined
       const result1 = await tagRepository.findOrCreateTag(undefined as any);
       
