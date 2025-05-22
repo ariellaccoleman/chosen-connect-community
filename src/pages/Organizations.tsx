@@ -86,36 +86,36 @@ const OrganizationsList = () => {
       </div>
       
       <Card className="mb-6">
-        <CardContent className="pt-6 space-y-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search organizations by name, description, or location"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          
-          <div className="w-full md:max-w-xs">
-            <div className="text-sm text-muted-foreground mb-2">
-              Filter by tag:
+        <CardContent className="pt-6">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search organizations by name, description, or location"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-            <TagSelector
-              targetType={EntityType.ORGANIZATION}
-              onTagSelected={handleTagSelected}
-              currentSelectedTagId={selectedTagId}
-            />
-            {selectedTagId && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={clearTagFilter}
-                className="mt-2"
-              >
-                Clear filter
-              </Button>
-            )}
+            <div className="md:w-64">
+              <TagSelector
+                targetType={EntityType.ORGANIZATION}
+                onTagSelected={handleTagSelected}
+                currentSelectedTagId={selectedTagId}
+              />
+              {selectedTagId && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={clearTagFilter}
+                  className="mt-2"
+                >
+                  Clear filter
+                </Button>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>

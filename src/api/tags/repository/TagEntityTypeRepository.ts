@@ -1,120 +1,150 @@
+
 /**
  * Tag Entity Type Repository
- * Handles data access operations for tag entity types
+ * Repository implementation for managing tag entity types
  */
-import { createRepository, DataRepository } from '@/api/core/repository';
-import { ApiResponse, createSuccessResponse } from '@/api/core/errorHandler';
-import { logger } from '@/utils/logger';
-import { EntityType, isValidEntityType } from '@/types/entityTypes';
+import { DataRepository } from "@/api/core/repository";
+import { supabase } from "@/integrations/supabase/client";
+import { TagEntityType } from "@/utils/tags/types";
+import { logger } from "@/utils/logger";
+import { EntityType } from "@/types/entityTypes";
 
 /**
- * Interface for tag_entity_types table records
+ * Tag entity type repository interface
  */
-export interface TagEntityType {
-  id: string;
-  tag_id: string;
-  entity_type: string;
-  created_at?: string;
-  updated_at?: string;
+export interface TagEntityTypeRepository {
+  /**
+   * Get all tag entity types
+   */
+  getAllTagEntityTypes(): Promise<TagEntityType[]>;
+  
+  /**
+   * Get tag entity types by tag ID
+   */
+  getTagEntityTypesByTagId(tagId: string): Promise<TagEntityType[]>;
+  
+  /**
+   * Get tag entity types by entity type
+   */
+  getTagEntityTypesByEntityType(entityType: EntityType): Promise<TagEntityType[]>;
+  
+  /**
+   * Check if a tag is allowed for an entity type
+   */
+  isTagAllowedForEntityType(tagId: string, entityType: EntityType): Promise<boolean>;
+  
+  /**
+   * Create tag entity type
+   */
+  createTagEntityType(data: Partial<TagEntityType>): Promise<TagEntityType>;
+  
+  /**
+   * Delete tag entity type
+   */
+  deleteTagEntityType(id: string): Promise<void>;
+  
+  /**
+   * Delete all entity types for a tag
+   */
+  deleteEntityTypesForTag(tagId: string): Promise<void>;
 }
 
 /**
- * TagEntityTypeRepository class that implements specialized methods for tag entity type operations
- */
-export class TagEntityTypeRepository {
-  private repo: DataRepository<TagEntityType>;
-  
-  constructor(repository: DataRepository<TagEntityType>) {
-    this.repo = repository;
-  }
-  
-  /**
-   * Get entity types for a specific tag
-   */
-  async getEntityTypesForTag(tagId: string): Promise<ApiResponse<string[]>> {
-    try {
-      const { data, error } = await this.repo
-        .select('entity_type')
-        .eq('tag_id', tagId)
-        .execute();
-      
-      if (error) throw error;
-      
-      const entityTypes = data ? data.map(item => item.entity_type) : [];
-      return createSuccessResponse(entityTypes);
-    } catch (error) {
-      logger.error(`TagEntityTypeRepository.getEntityTypesForTag error for tagId ${tagId}:`, error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Associate a tag with an entity type
-   */
-  async associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<ApiResponse<boolean>> {
-    try {
-      // Validate entity type
-      if (!isValidEntityType(entityType)) {
-        throw new Error(`Invalid entity type: ${entityType}`);
-      }
-      
-      // Check if the association already exists
-      const { data: existingAssociations } = await this.repo
-        .select()
-        .eq('tag_id', tagId)
-        .eq('entity_type', entityType)
-        .execute();
-      
-      // If association already exists, return success
-      if (existingAssociations && existingAssociations.length > 0) {
-        return createSuccessResponse(true);
-      }
-      
-      // Otherwise, create a new association
-      const { error } = await this.repo
-        .insert({
-          tag_id: tagId,
-          entity_type: entityType
-        });
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(true);
-    } catch (error) {
-      logger.error(`TagEntityTypeRepository.associateTagWithEntityType error for tagId ${tagId}:`, error);
-      throw error;
-    }
-  }
-  
-  /**
-   * Remove association between a tag and an entity type
-   */
-  async removeEntityTypeFromTag(tagId: string, entityType: EntityType): Promise<ApiResponse<boolean>> {
-    try {
-      // Validate entity type
-      if (!isValidEntityType(entityType)) {
-        throw new Error(`Invalid entity type: ${entityType}`);
-      }
-      
-      const { error } = await this.repo
-        .delete()
-        .eq('tag_id', tagId)
-        .eq('entity_type', entityType);
-      
-      if (error) throw error;
-      
-      return createSuccessResponse(true);
-    } catch (error) {
-      logger.error(`TagEntityTypeRepository.removeEntityTypeFromTag error for tagId ${tagId}:`, error);
-      throw error;
-    }
-  }
-}
-
-/**
- * Create a TagEntityTypeRepository instance
+ * Create a tag entity type repository
+ * @returns TagEntityTypeRepository instance
  */
 export function createTagEntityTypeRepository(): TagEntityTypeRepository {
-  const repository = createRepository<TagEntityType>('tag_entity_types');
-  return new TagEntityTypeRepository(repository);
+  const repository = new DataRepository<TagEntityType>("tag_entity_types", supabase);
+  
+  return {
+    async getAllTagEntityTypes(): Promise<TagEntityType[]> {
+      try {
+        const result = await repository.findAll();
+        return result.data || [];
+      } catch (err) {
+        logger.error("Error fetching all tag entity types:", err);
+        return [];
+      }
+    },
+    
+    async getTagEntityTypesByTagId(tagId: string): Promise<TagEntityType[]> {
+      try {
+        const result = await repository.findMany({ 
+          filters: { tag_id: tagId } 
+        });
+        return result.data || [];
+      } catch (err) {
+        logger.error(`Error fetching entity types for tag ${tagId}:`, err);
+        return [];
+      }
+    },
+    
+    async getTagEntityTypesByEntityType(entityType: EntityType): Promise<TagEntityType[]> {
+      try {
+        const result = await repository.findMany({ 
+          filters: { entity_type: entityType } 
+        });
+        
+        if (!result.data) {
+          logger.warn(`No tag entity types found for entity type ${entityType}`);
+          return [];
+        }
+        
+        return result.data;
+      } catch (err) {
+        logger.error(`Error fetching tag entity types for entity type ${entityType}:`, err);
+        return [];
+      }
+    },
+    
+    async isTagAllowedForEntityType(tagId: string, entityType: EntityType): Promise<boolean> {
+      try {
+        const result = await repository.findOne({
+          filters: {
+            tag_id: tagId,
+            entity_type: entityType
+          }
+        });
+        
+        // If we find a record, the tag is allowed for this entity type
+        return !!result.data;
+      } catch (err) {
+        logger.error(`Error checking if tag ${tagId} is allowed for entity type ${entityType}:`, err);
+        return false;
+      }
+    },
+    
+    async createTagEntityType(data: Partial<TagEntityType>): Promise<TagEntityType> {
+      try {
+        const result = await repository.create(data);
+        
+        if (!result.data) {
+          throw new Error("Failed to create tag entity type");
+        }
+        
+        return result.data;
+      } catch (err) {
+        logger.error("Error creating tag entity type:", err);
+        throw err;
+      }
+    },
+    
+    async deleteTagEntityType(id: string): Promise<void> {
+      try {
+        await repository.delete(id);
+      } catch (err) {
+        logger.error(`Error deleting tag entity type ${id}:`, err);
+        throw err;
+      }
+    },
+    
+    async deleteEntityTypesForTag(tagId: string): Promise<void> {
+      try {
+        await repository.deleteWhere({ tag_id: tagId });
+      } catch (err) {
+        logger.error(`Error deleting entity types for tag ${tagId}:`, err);
+        throw err;
+      }
+    }
+  };
 }

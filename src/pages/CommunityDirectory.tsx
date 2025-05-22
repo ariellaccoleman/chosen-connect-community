@@ -165,9 +165,6 @@ const CommunityDirectory = () => {
               <CommunitySearch searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
             </div>
             <div className="md:w-64">
-              <div className="text-sm text-muted-foreground mb-2">
-                Filter by interest:
-              </div>
               <TagSelector
                 targetType={EntityType.PERSON}
                 onTagSelected={handleTagSelected}
