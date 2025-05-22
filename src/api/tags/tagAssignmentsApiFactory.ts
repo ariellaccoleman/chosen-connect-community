@@ -1,4 +1,7 @@
 
+import { createApiFactory } from '../core/factory';
+import { createEntityTagAssignmentsViewRepository } from './repositories';
+
 /**
  * Create API operations for entity tag assignments view
  * Using a type assertion to allow using the view name
@@ -13,3 +16,7 @@ export const entityTagAssignmentsViewApi = createApiFactory<any, string, never, 
     useBatchOperations: false
   }
 );
+
+// Export individual operations
+export const getAllEntityTagAssignments = entityTagAssignmentsViewApi.getAll;
+export const getEntityTagAssignments = entityTagAssignmentsViewApi.getByFilter;

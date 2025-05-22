@@ -1,4 +1,8 @@
 
+import { createApiFactory } from '../core/factory';
+import { Tag } from '@/utils/tags/types';
+import { createTagEntityTypesViewRepository, createFilteredEntityTagsViewRepository } from './repositories';
+
 /**
  * Create API operations for the tag entity types view
  * Using a type assertion to allow using the view name
@@ -30,3 +34,7 @@ export const filteredEntityTagsViewApi = createApiFactory<Tag, string, never, ne
     useBatchOperations: false
   }
 );
+
+// Export individual operations
+export const getAllTagsWithEntityTypes = tagEntityTypesViewApi.getAll;
+export const getAllFilteredEntityTags = filteredEntityTagsViewApi.getAll;

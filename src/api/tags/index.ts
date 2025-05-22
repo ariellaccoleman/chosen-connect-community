@@ -10,49 +10,8 @@ export * from './entityTagsApi';
 export * from './getTagsApi';
 export * from './tagEntityTypesApi';
 export * from './cacheApi';
-
-// Export renamed imports from tagApiFactory to prevent name conflicts
-export { 
-  tagsApi as tagsApiFactory,
-  getAllTags,
-  getTagById,
-  getTagsByIds,
-  createTag,
-  updateTag,
-  deleteTag,
-  batchCreateTags,
-  batchUpdateTags,
-  batchDeleteTags,
-  getAllTagsWithEntityTypes,
-  getAllFilteredEntityTags
-} from './tagApiFactory';
-
-// Export renamed imports from tagEntityTypesApiFactory to prevent name conflicts
-export {
-  tagEntityTypesApi,
-  getAllTagEntityTypes,
-  getTagEntityTypeById,
-  createTagEntityType,
-  deleteTagEntityType,
-  getEntityTypesForTag,
-  updateTagEntityType
-} from './tagEntityTypesApiFactory';
-
-// Export renamed imports from tagAssignmentsApiFactory to prevent name conflicts
-export {
-  tagAssignmentsApi,
-  getAllTagAssignments,
-  getTagAssignmentById,
-  createTagAssignment,
-  deleteTagAssignment,
-  getAllEntityTagAssignments,
-  getEntityTagAssignments,
-  assignTag,
-  removeTagAssignment
-} from './tagAssignmentsApiFactory';
-
-// Export functions from tagCrudApi with renamed imports to avoid conflicts
-export { 
-  findOrCreateTag,
-} from './tagCrudApi';
-
+export * from './tagsApi';
+export * from './tagEntityTypesApiFactory';
+export * from './tagAssignmentsApiFactory';
+export * from './tagApiFactory';
+export * from './tagCrudApi';
