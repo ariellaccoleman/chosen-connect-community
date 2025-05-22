@@ -1,15 +1,60 @@
 
-import { EntityType } from './entityTypes';
+import { EntityType } from "./entityTypes";
+import { TagAssignment } from "@/utils/tags/types";
+import { Location } from "./location";
 
-/**
- * Base entity interface
- * Common properties for all entities in the system
+/** 
+ * Generic Entity interface that represents any entity in the system
+ * This could be a person, organization, event, etc.
  */
 export interface Entity {
+  /**
+   * Unique identifier for the entity
+   */
   id: string;
+  
+  /**
+   * The type of entity
+   */
   entityType: EntityType;
+  
+  /**
+   * Name of the entity
+   */
   name: string;
-  createdAt: Date;
-  updatedAt: Date;
+  
+  /**
+   * Brief description or headline for the entity
+   */
+  description?: string;
+  
+  /**
+   * URL to the entity's image, if available
+   */
+  imageUrl?: string;
+  
+  /**
+   * Location information for the entity
+   */
+  location?: Location;
+  
+  /**
+   * Website or external URL for the entity
+   */
+  url?: string;
+  
+  /**
+   * Creation timestamp
+   */
+  created_at?: string;
+  
+  /**
+   * Last updated timestamp
+   */
+  updated_at?: string;
+  
+  /**
+   * Tags associated with this entity
+   */
+  tags?: TagAssignment[];
 }
-

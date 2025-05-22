@@ -14,7 +14,6 @@ export * from './repository/repositoryFactory';
 export * from './repository/DataRepository';
 export * from './repository/BaseRepository';
 export * from './repository/EntityRepository';
-export * from './repository/entities';
 
 // Error handling
 export {
@@ -29,4 +28,3 @@ export * from './apiClient';
 
 // Types
 export * from './types';
-

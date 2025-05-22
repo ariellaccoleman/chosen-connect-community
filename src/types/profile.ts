@@ -1,25 +1,31 @@
 
-import { Entity } from './entity';
-import { EntityType } from './entityTypes';
+import { LocationWithDetails } from "./location";
+import { TagAssignment } from "@/utils/tags/types";
 
-/**
- * Profile entity type
- */
-export interface Profile extends Entity {
-  entityType: EntityType.PERSON;
-  firstName: string;
-  lastName: string;
+export type MembershipTier = "free" | "community" | "pro" | "partner";
+
+export interface Profile {
+  id: string;
   email: string;
-  bio?: string;
-  headline?: string;
-  avatarUrl?: string;
-  company?: string;
-  websiteUrl?: string;
-  twitterUrl?: string;
-  linkedinUrl?: string;
-  timezone: string;
-  isApproved: boolean;
-  membershipTier?: string;
-  locationId?: string | null;
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
+  headline: string | null;
+  bio: string | null;
+  linkedin_url: string | null;
+  twitter_url: string | null;
+  website_url: string | null;
+  location_id: string | null;
+  company?: string | null;
+  created_at?: string;
+  updated_at?: string;
+  is_approved?: boolean;
+  membership_tier?: MembershipTier;
 }
 
+export interface ProfileWithDetails extends Profile {
+  full_name: string;
+  role?: "admin" | "member"; // Keep for compatibility with user.user_metadata.role
+  location?: LocationWithDetails;
+  tags?: TagAssignment[]; // Add tags property
+}

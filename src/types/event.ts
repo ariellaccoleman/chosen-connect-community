@@ -1,21 +1,40 @@
 
-import { Entity } from './entity';
-import { EntityType } from './entityTypes';
+import { Database } from "@/integrations/supabase/types";
+import { LocationWithDetails } from "./location";
+import { Profile } from "./profile";
+import { TagAssignment } from "@/utils/tags/types";
 
-/**
- * Event entity type
- */
-export interface Event extends Entity {
-  entityType: EntityType.EVENT;
-  title: string;
-  description?: string;
-  startTime: Date | null;
-  endTime: Date | null;
-  isVirtual: boolean;
-  isPaid: boolean;
-  price?: number | null;
-  hostId?: string | null;
-  locationId?: string | null;
-  tagId?: string | null;
+// Type from DB
+export type Event = Database["public"]["Tables"]["events"]["Row"];
+
+// Event with extra information
+export interface EventWithDetails extends Event {
+  location?: LocationWithDetails | null;
+  host?: Profile | null;
+  tags?: TagAssignment[]; // Add tags property
 }
 
+// Type for creating a new event
+export interface CreateEventInput {
+  title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  is_virtual: boolean;
+  location_id: string | null;
+  is_paid: boolean;
+  price: number | null;
+  // Remove tag_id as we'll use tag assignments directly
+}
+
+// Event registration type
+export type EventRegistration = {
+  id: string;
+  event_id: string;
+  profile_id: string;
+  created_at: string;
+  profile?: Profile; // Add optional profile field for joined data
+};
+
+// Registration status for the current user
+export type RegistrationStatus = 'registered' | 'not_registered' | 'loading';
