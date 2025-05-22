@@ -3,7 +3,8 @@
  * Tag Assignment Repository
  * Repository implementation for managing tag assignments
  */
-import { DataRepository, RepositoryQuery } from "@/api/core/repository";
+import { RepositoryQuery } from "@/api/core/repository";
+import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { TagAssignment } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
@@ -59,7 +60,7 @@ export interface TagAssignmentRepository {
  * @returns TagAssignmentRepository instance
  */
 export function createTagAssignmentRepository(): TagAssignmentRepository {
-  const repository = new DataRepository<TagAssignment>("tag_assignments", supabase);
+  const repository = createSupabaseRepository<TagAssignment>("tag_assignments", supabase);
   
   return {
     async getAllTagAssignments(): Promise<TagAssignment[]> {

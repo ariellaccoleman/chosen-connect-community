@@ -3,7 +3,7 @@
  * Tag Assignment Service
  * Provides business logic for tag assignment operations
  */
-import { TagAssignment } from '@/utils/tags';
+import { TagAssignment } from '@/utils/tags/types';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
 import { ApiResponse, createSuccessResponse } from '@/api/core/errorHandler';
 import { 
@@ -39,7 +39,8 @@ export class TagAssignmentService {
       throw new Error(`Invalid entity type: ${entityType}`);
     }
     
-    return this.assignmentRepo.getTagsForEntity(entityId, entityType);
+    const assignments = await this.assignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
+    return createSuccessResponse(assignments);
   }
   
   /**
@@ -47,7 +48,8 @@ export class TagAssignmentService {
    */
   async getEntitiesWithTag(tagId: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>> {
     logger.debug(`TagAssignmentService.getEntitiesWithTag: Fetching entities with tag ${tagId}`);
-    return this.assignmentRepo.getAssignmentsByTagId(tagId, entityType);
+    const assignments = await this.assignmentRepo.getEntitiesWithTag(tagId, entityType);
+    return createSuccessResponse(assignments);
   }
   
   /**
@@ -65,7 +67,13 @@ export class TagAssignmentService {
     await this.entityTypeRepo.associateTagWithEntityType(tagId, entityType);
     
     // Create the assignment
-    return this.assignmentRepo.createAssignment(tagId, entityId, entityType);
+    const assignment = await this.assignmentRepo.createTagAssignment({
+      tag_id: tagId,
+      target_id: entityId,
+      target_type: entityType
+    });
+    
+    return createSuccessResponse(assignment);
   }
   
   /**
@@ -73,7 +81,8 @@ export class TagAssignmentService {
    */
   async removeTagAssignment(assignmentId: string): Promise<ApiResponse<boolean>> {
     logger.debug(`TagAssignmentService.removeTagAssignment: Removing tag assignment ${assignmentId}`);
-    return this.assignmentRepo.deleteAssignment(assignmentId);
+    await this.assignmentRepo.deleteTagAssignment(assignmentId);
+    return createSuccessResponse(true);
   }
 }
 

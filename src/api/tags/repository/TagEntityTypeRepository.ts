@@ -3,7 +3,7 @@
  * Tag Entity Type Repository
  * Repository implementation for managing tag entity types
  */
-import { DataRepository } from "@/api/core/repository";
+import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { TagEntityType } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
@@ -47,6 +47,11 @@ export interface TagEntityTypeRepository {
    * Delete all entity types for a tag
    */
   deleteEntityTypesForTag(tagId: string): Promise<void>;
+  
+  /**
+   * Associate a tag with an entity type if not already associated
+   */
+  associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void>;
 }
 
 /**
@@ -54,7 +59,7 @@ export interface TagEntityTypeRepository {
  * @returns TagEntityTypeRepository instance
  */
 export function createTagEntityTypeRepository(): TagEntityTypeRepository {
-  const repository = new DataRepository<TagEntityType>("tag_entity_types", supabase);
+  const repository = createSupabaseRepository<TagEntityType>("tag_entity_types", supabase);
   
   return {
     async getAllTagEntityTypes(): Promise<TagEntityType[]> {
@@ -143,6 +148,25 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
         await repository.deleteWhere({ tag_id: tagId });
       } catch (err) {
         logger.error(`Error deleting entity types for tag ${tagId}:`, err);
+        throw err;
+      }
+    },
+    
+    async associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void> {
+      try {
+        // Check if association already exists
+        const exists = await this.isTagAllowedForEntityType(tagId, entityType);
+        
+        // If association doesn't exist, create it
+        if (!exists) {
+          logger.debug(`Creating tag entity type association for tag ${tagId} and entity type ${entityType}`);
+          await this.createTagEntityType({
+            tag_id: tagId,
+            entity_type: entityType
+          });
+        }
+      } catch (err) {
+        logger.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
         throw err;
       }
     }

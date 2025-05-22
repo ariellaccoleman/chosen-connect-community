@@ -2,11 +2,12 @@
  * Tag Repository
  * Repository implementation for managing tags
  */
-import { DataRepository } from "@/api/core/repository";
+import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { Tag } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
 import { EntityType } from "@/types/entityTypes";
+import { ApiResponse, createSuccessResponse } from "@/api/core/errorHandler";
 
 /**
  * Tag repository interface
@@ -15,47 +16,47 @@ export interface TagRepository {
   /**
    * Get all tags
    */
-  getAllTags(): Promise<Tag[]>;
+  getAllTags(): Promise<ApiResponse<Tag[]>>;
   
   /**
    * Get a tag by ID
    */
-  getTagById(id: string): Promise<Tag | null>;
+  getTagById(id: string): Promise<ApiResponse<Tag | null>>;
   
   /**
    * Get tags by entity type
    */
-  getTagsByEntityType(entityType: EntityType): Promise<Tag[]>;
+  getTagsByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>>;
   
   /**
    * Find a tag by name
    */
-  findTagByName(name: string): Promise<Tag | null>;
+  findTagByName(name: string): Promise<ApiResponse<Tag | null>>;
   
   /**
    * Search tags
    */
-  searchTags(query: string): Promise<Tag[]>;
+  searchTags(query: string): Promise<ApiResponse<Tag[]>>;
   
   /**
    * Create a new tag
    */
-  createTag(data: Partial<Tag>): Promise<Tag>;
+  createTag(data: Partial<Tag>): Promise<ApiResponse<Tag>>;
   
   /**
    * Update a tag
    */
-  updateTag(id: string, data: Partial<Tag>): Promise<Tag>;
+  updateTag(id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>>;
   
   /**
    * Delete a tag
    */
-  deleteTag(id: string): Promise<void>;
+  deleteTag(id: string): Promise<ApiResponse<boolean>>;
   
   /**
    * Find or create a tag by name
    */
-  findOrCreateTag(name: string): Promise<Tag>;
+  findOrCreateTag(name: string): Promise<ApiResponse<Tag>>;
 }
 
 /**
@@ -63,32 +64,32 @@ export interface TagRepository {
  * @returns TagRepository instance
  */
 export function createTagRepository(): TagRepository {
-  const repository = new DataRepository<Tag>("tags", supabase);
+  const repository = createSupabaseRepository<Tag>("tags", supabase);
   
   return {
-    async getAllTags(): Promise<Tag[]> {
+    async getAllTags(): Promise<ApiResponse<Tag[]>> {
       try {
         const result = await repository.findAll({
           orderBy: { column: 'name', ascending: true }
         });
-        return result.data || [];
+        return createSuccessResponse(result.data || []);
       } catch (err) {
         logger.error("Error fetching all tags:", err);
-        return [];
+        return createSuccessResponse([]);
       }
     },
     
-    async getTagById(id: string): Promise<Tag | null> {
+    async getTagById(id: string): Promise<ApiResponse<Tag | null>> {
       try {
         const result = await repository.findById(id);
-        return result.data || null;
+        return createSuccessResponse(result.data || null);
       } catch (err) {
         logger.error(`Error fetching tag with ID ${id}:`, err);
-        return null;
+        return createSuccessResponse(null);
       }
     },
     
-    async getTagsByEntityType(entityType: EntityType): Promise<Tag[]> {
+    async getTagsByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
       try {
         const result = await repository.query(`
           SELECT DISTINCT t.*
@@ -97,14 +98,14 @@ export function createTagRepository(): TagRepository {
           WHERE tet.entity_type = '${entityType}'
           ORDER BY t.name ASC
         `);
-        return result.data || [];
+        return createSuccessResponse(result.data || []);
       } catch (err) {
         logger.error(`Error fetching tags for entity type ${entityType}:`, err);
-        return [];
+        return createSuccessResponse([]);
       }
     },
     
-    async findTagByName(name: string): Promise<Tag | null> {
+    async findTagByName(name: string): Promise<ApiResponse<Tag | null>> {
       try {
         const normalizedName = name.trim().toLowerCase();
         const result = await repository.findOne({
@@ -114,14 +115,14 @@ export function createTagRepository(): TagRepository {
           caseSensitive: false
         });
         
-        return result.data || null;
+        return createSuccessResponse(result.data || null);
       } catch (err) {
         logger.error(`Error finding tag by name "${name}":`, err);
-        return null;
+        return createSuccessResponse(null);
       }
     },
     
-    async searchTags(query: string): Promise<Tag[]> {
+    async searchTags(query: string): Promise<ApiResponse<Tag[]>> {
       try {
         const normalizedQuery = query.trim().toLowerCase();
         
@@ -131,7 +132,7 @@ export function createTagRepository(): TagRepository {
             orderBy: { column: 'name', ascending: true },
             limit: 50
           });
-          return result.data || [];
+          return createSuccessResponse(result.data || []);
         }
         
         // Otherwise, search by name
@@ -140,14 +141,14 @@ export function createTagRepository(): TagRepository {
           query: normalizedQuery,
           config: 'english'
         });
-        return result.data || [];
+        return createSuccessResponse(result.data || []);
       } catch (err) {
         logger.error(`Error searching tags with query "${query}":`, err);
-        return [];
+        return createSuccessResponse([]);
       }
     },
     
-    async createTag(data: Partial<Tag>): Promise<Tag> {
+    async createTag(data: Partial<Tag>): Promise<ApiResponse<Tag>> {
       try {
         const result = await repository.create(data);
         
@@ -155,14 +156,14 @@ export function createTagRepository(): TagRepository {
           throw new Error("Failed to create tag");
         }
         
-        return result.data;
+        return createSuccessResponse(result.data);
       } catch (err) {
         logger.error("Error creating tag:", err);
         throw err;
       }
     },
     
-    async updateTag(id: string, data: Partial<Tag>): Promise<Tag> {
+    async updateTag(id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>> {
       try {
         const result = await repository.update(id, data);
         
@@ -170,30 +171,31 @@ export function createTagRepository(): TagRepository {
           throw new Error("Failed to update tag");
         }
         
-        return result.data;
+        return createSuccessResponse(result.data);
       } catch (err) {
         logger.error(`Error updating tag ${id}:`, err);
         throw err;
       }
     },
     
-    async deleteTag(id: string): Promise<void> {
+    async deleteTag(id: string): Promise<ApiResponse<boolean>> {
       try {
         await repository.delete(id);
+        return createSuccessResponse(true);
       } catch (err) {
         logger.error(`Error deleting tag ${id}:`, err);
         throw err;
       }
     },
     
-    async findOrCreateTag(name: string): Promise<Tag> {
+    async findOrCreateTag(name: string): Promise<ApiResponse<Tag>> {
       try {
         const normalizedName = name.trim().toLowerCase();
         
         // Try to find existing tag
-        const existingTag = await this.findTagByName(normalizedName);
-        if (existingTag) {
-          return existingTag;
+        const existingTagResponse = await this.findTagByName(normalizedName);
+        if (existingTagResponse.data) {
+          return existingTagResponse;
         }
         
         // Create new tag if not found

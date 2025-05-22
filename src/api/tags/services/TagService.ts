@@ -3,10 +3,11 @@
  * Tag Service
  * Provides business logic for tag operations
  */
-import { Tag } from '@/utils/tags';
+import { Tag } from '@/utils/tags/types';
 import { ApiResponse } from '@/api/core/types';
 import { createTagRepository, TagRepository } from '../repository';
 import { logger } from '@/utils/logger';
+import { createSuccessResponse } from '@/api/core/errorHandler';
 
 /**
  * TagService class for handling tag business logic
@@ -45,7 +46,7 @@ export class TagService {
       throw new Error('Tag name is required');
     }
     
-    return this.tagRepo.findOrCreateTag(tagData);
+    return this.tagRepo.findOrCreateTag(tagData.name);
   }
   
   /**
