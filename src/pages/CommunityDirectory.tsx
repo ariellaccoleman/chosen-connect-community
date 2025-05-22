@@ -24,7 +24,7 @@ const CommunityDirectory = () => {
   const { user } = useAuth();
   
   // Use the tag filtering hook
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
+  const { data: tagAssignments = [], isLoading: tagAssignmentsLoading } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
@@ -41,12 +41,14 @@ const CommunityDirectory = () => {
       logger.debug(`Selected tag ID: ${selectedTagId}`);
       logger.debug(`Tag Assignments for ${selectedTagId}:`, tagAssignments);
       
-      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-      const isTargetProfileTagged = tagAssignments.some(ta => ta.target_id === targetProfileId);
+      const targetProfileIds = tagAssignments.map(ta => ta.target_id);
+      logger.debug(`Tagged profile IDs: ${targetProfileIds.join(', ')}`);
       
-      logger.debug(`Is target profile ${targetProfileId} in tag assignments? ${isTargetProfileTagged}`);
+      // Log whether any profiles in our list match the assignments
+      const matchingProfiles = allProfiles.filter(p => targetProfileIds.includes(p.id));
+      logger.debug(`Matching profiles count: ${matchingProfiles.length}`);
     }
-  }, [selectedTagId, tagAssignments]);
+  }, [selectedTagId, tagAssignments, allProfiles]);
 
   // Manually verify tag assignments in the tag_assignments table
   const verifyTagAssignments = async () => {
@@ -63,18 +65,16 @@ const CommunityDirectory = () => {
       } else {
         logger.debug(`Found ${data?.length || 0} tag assignments for people`);
         
-        // Look for specific assignment
-        const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
-        const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-        
-        const targetAssignment = data?.find(a => 
-          a.tag_id === targetTagId && a.target_id === targetProfileId
-        );
-        
-        if (targetAssignment) {
-          logger.debug("Found target tag assignment:", targetAssignment);
-        } else {
-          logger.debug("Target tag assignment NOT found in raw table data");
+        // If a tag is selected, check for assignments with that tag
+        if (selectedTagId) {
+          const filteredAssignments = data?.filter(a => a.tag_id === selectedTagId) || [];
+          logger.debug(`Found ${filteredAssignments.length} assignments with selected tag ID:`);
+          logger.debug(filteredAssignments);
+          
+          // Check if any profiles match these assignments
+          const taggedIds = new Set(filteredAssignments.map(a => a.target_id));
+          const matchingProfiles = allProfiles.filter(p => taggedIds.has(p.id));
+          logger.debug(`Direct DB check - matching profiles: ${matchingProfiles.length}`);
         }
       }
     } catch (e) {
@@ -84,10 +84,10 @@ const CommunityDirectory = () => {
 
   // Run verification when necessary
   useEffect(() => {
-    if (selectedTagId === "2de8fd5d-3311-4e38-94a3-596ee596524b") {
+    if (selectedTagId) {
       verifyTagAssignments();
     }
-  }, [selectedTagId]);
+  }, [selectedTagId, allProfiles]);
 
   // Display error message if profile loading fails
   if (error) {
@@ -109,15 +109,14 @@ const CommunityDirectory = () => {
   // Then filter by tag using the tag assignments from the hook
   const filteredProfiles = selectedTagId
     ? searchFilteredProfiles.filter(profile => {
-        // Use the tag assignments from the useFilterByTag hook
-        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
+        // Create a Set of target_ids from the tag assignments for efficient lookup
+        const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
         
         // Check if the profile ID is in the set of tagged IDs
         const isIncluded = taggedIds.has(profile.id);
         
-        // Extra logging for the specific target profile
-        if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
-          logger.debug(`Target profile filtering: is included = ${isIncluded}`);
+        if (profile.id === currentUserProfile?.id) {
+          logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
         
         return isIncluded;
@@ -153,8 +152,8 @@ const CommunityDirectory = () => {
 
       {showDebugTool && (
         <TagDebugTool 
-          tagId="2de8fd5d-3311-4e38-94a3-596ee596524b"
-          profileId="95ad82bb-4109-4f88-8155-02231dda3b85"
+          tagId={selectedTagId || undefined}
+          profileId={currentUserProfile?.id}
         />
       )}
 
@@ -185,7 +184,11 @@ const CommunityDirectory = () => {
         </CardContent>
       </Card>
 
-      <ProfileGrid profiles={filteredProfiles} isLoading={isLoading} searchQuery={searchQuery} />
+      <ProfileGrid 
+        profiles={filteredProfiles} 
+        isLoading={isLoading || (!!selectedTagId && tagAssignmentsLoading)} 
+        searchQuery={searchQuery} 
+      />
     </div>
   );
 };

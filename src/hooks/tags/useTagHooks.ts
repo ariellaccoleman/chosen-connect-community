@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -67,10 +66,19 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
       }
       
       try {
-        // Use the tagAssignmentApi from factory
-        return await tagAssignmentApi.getForEntity(tagId, entityType);
+        // Log for debugging filters
+        logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
+        
+        // Use the tagAssignmentApi from factory with the corrected method
+        const assignments = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
+        
+        // Log results for debugging
+        logger.debug(`useFilterByTag: Found ${assignments.length} tag assignments for tag ${tagId}`);
+        logger.debug(`Assignment target IDs: ${assignments.map(a => a.target_id).join(', ')}`);
+        
+        return assignments;
       } catch (e) {
-        logger.error(`useFilterByTag: Exception fetching tag assignments`, e);
+        logger.error(`useFilterByTag: Exception fetching tag assignments for tag ${tagId}:`, e);
         return [];
       }
     },

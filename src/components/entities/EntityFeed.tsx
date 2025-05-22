@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
@@ -47,7 +47,7 @@ const EntityFeed = ({
   } = useEntityRegistry();
   
   // Enhanced logging for debugging tag filtering
-  React.useEffect(() => {
+  useEffect(() => {
     logger.debug(`EntityFeed initialized:`, {
       defaultEntityTypes,
       activeTab,
@@ -72,7 +72,7 @@ const EntityFeed = ({
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   
   // Log when selectedTagId changes
-  React.useEffect(() => {
+  useEffect(() => {
     logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
   }, [selectedTagId]);
   
@@ -87,7 +87,7 @@ const EntityFeed = ({
   });
   
   // Log entity count when it changes 
-  React.useEffect(() => {
+  useEffect(() => {
     logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
       activeTab,
       selectedTagId,
