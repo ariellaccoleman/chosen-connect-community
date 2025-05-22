@@ -228,7 +228,7 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
         // Transform the data to flatten the structure
         // Extract the 'tag' property from each item and add the assignment_id
         const tags = result.data.map(item => ({
-          ...(item.tag || {}),
+          ...((item.tag && typeof item.tag === 'object') ? item.tag : {}),
           assignment_id: item.id
         }));
         
