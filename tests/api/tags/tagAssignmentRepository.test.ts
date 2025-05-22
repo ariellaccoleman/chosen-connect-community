@@ -2,6 +2,7 @@
 import { createTagAssignmentRepository, TagAssignmentRepository } from '@/api/tags/repository/TagAssignmentRepository';
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
+import { ApiResponse } from '@/api/core/errorHandler';
 
 // Mock the repository factory module
 jest.mock('@/api/core/repository/repositoryFactory', () => ({
@@ -51,8 +52,16 @@ describe('Tag Assignment Repository', () => {
     // Create the repository instance
     tagAssignmentRepository = createTagAssignmentRepository();
     
-    // Mock specific methods
-    jest.spyOn(tagAssignmentRepository, 'getTagAssignmentsForEntity').mockImplementation((targetId, targetType) => {
+    // Mock specific methods with direct mocks
+    jest.spyOn(tagAssignmentRepository, 'getTagAssignmentsForEntity').mockImplementation((targetId?: string, targetType?: EntityType): Promise<ApiResponse<TagAssignment[]>> => {
+      if (!targetId || !targetType) {
+        return Promise.resolve({
+          status: 'success',
+          data: [],
+          error: null
+        });
+      }
+      
       const assignments = mockTagAssignments.filter(
         a => a.target_id === targetId && a.target_type === targetType
       );
@@ -64,7 +73,15 @@ describe('Tag Assignment Repository', () => {
       });
     });
     
-    jest.spyOn(tagAssignmentRepository, 'createTagAssignment').mockImplementation((data) => {
+    jest.spyOn(tagAssignmentRepository, 'createTagAssignment').mockImplementation((data: Partial<TagAssignment>): Promise<ApiResponse<TagAssignment>> => {
+      if (!data.tag_id || !data.target_id || !data.target_type) {
+        return Promise.resolve({
+          status: 'error',
+          data: null,
+          error: { message: 'Missing required fields' }
+        });
+      }
+      
       const newAssignment = {
         id: 'new-assignment-id',
         ...data,
@@ -79,7 +96,15 @@ describe('Tag Assignment Repository', () => {
       });
     });
     
-    jest.spyOn(tagAssignmentRepository, 'deleteTagAssignment').mockImplementation(() => {
+    jest.spyOn(tagAssignmentRepository, 'deleteTagAssignment').mockImplementation((id?: string): Promise<ApiResponse<boolean>> => {
+      if (!id) {
+        return Promise.resolve({
+          status: 'error',
+          data: null,
+          error: { message: 'Assignment ID is required' }
+        });
+      }
+      
       return Promise.resolve({
         status: 'success',
         data: true,
@@ -87,7 +112,7 @@ describe('Tag Assignment Repository', () => {
       });
     });
     
-    jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation(() => {
+    jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation((): Promise<ApiResponse<any[]>> => {
       return Promise.resolve({
         status: 'success',
         data: mockJoinResult,
@@ -95,7 +120,15 @@ describe('Tag Assignment Repository', () => {
       });
     });
     
-    jest.spyOn(tagAssignmentRepository, 'findTagAssignment').mockImplementation((tagId, targetId, targetType) => {
+    jest.spyOn(tagAssignmentRepository, 'findTagAssignment').mockImplementation((tagId?: string, targetId?: string, targetType?: EntityType): Promise<ApiResponse<TagAssignment | null>> => {
+      if (!tagId || !targetId || !targetType) {
+        return Promise.resolve({
+          status: 'success',
+          data: null,
+          error: null
+        });
+      }
+      
       const assignment = mockTagAssignments.find(
         a => a.tag_id === tagId && a.target_id === targetId && a.target_type === targetType
       );
@@ -147,28 +180,6 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should handle null or undefined parameters', async () => {
-      // Override mock for these tests
-      jest.spyOn(tagAssignmentRepository, 'getTagAssignmentsForEntity').mockImplementation((targetId, targetType) => {
-        // Return empty array for null or undefined parameters
-        if (!targetId || !targetType) {
-          return Promise.resolve({
-            status: 'success',
-            data: [],
-            error: null
-          });
-        }
-        
-        const assignments = mockTagAssignments.filter(
-          a => a.target_id === targetId && a.target_type === targetType
-        );
-        
-        return Promise.resolve({
-          status: 'success',
-          data: assignments,
-          error: null
-        });
-      });
-      
       // Act with undefined targetId
       const result1 = await tagAssignmentRepository.getTagAssignmentsForEntity(
         undefined as any,
@@ -210,31 +221,6 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should handle missing fields', async () => {
-      // Override mock for this test to validate input
-      jest.spyOn(tagAssignmentRepository, 'createTagAssignment').mockImplementation((data) => {
-        // Return error if required fields are missing
-        if (!data.tag_id || !data.target_id || !data.target_type) {
-          return Promise.resolve({
-            status: 'error',
-            data: null,
-            error: { message: 'Missing required fields' }
-          });
-        }
-        
-        const newAssignment = {
-          id: 'new-assignment-id',
-          ...data,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        return Promise.resolve({
-          status: 'success',
-          data: newAssignment as TagAssignment,
-          error: null
-        });
-      });
-      
       // Arrange an incomplete assignment
       const incompleteAssignment: Partial<TagAssignment> = {
         tag_id: 'tag-3',
@@ -261,24 +247,6 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should handle null or undefined assignment ID', async () => {
-      // Override mock for this test
-      jest.spyOn(tagAssignmentRepository, 'deleteTagAssignment').mockImplementation((id) => {
-        // Return error if ID is null or undefined
-        if (!id) {
-          return Promise.resolve({
-            status: 'error',
-            data: null,
-            error: { message: 'Assignment ID is required' }
-          });
-        }
-        
-        return Promise.resolve({
-          status: 'success',
-          data: true,
-          error: null
-        });
-      });
-      
       // Act with undefined ID
       const result = await tagAssignmentRepository.deleteTagAssignment(undefined as any);
       
@@ -316,9 +284,8 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should handle null or undefined parameters', async () => {
-      // Override mock for these tests
-      jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation((targetId, targetType) => {
-        // Return empty array for null or undefined parameters
+      // Override mock for this test
+      jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation((targetId?: string, targetType?: EntityType): Promise<ApiResponse<any[]>> => {
         if (!targetId || !targetType) {
           return Promise.resolve({
             status: 'success',
@@ -374,28 +341,6 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should handle null or undefined parameters', async () => {
-      // Override mock for these tests
-      jest.spyOn(tagAssignmentRepository, 'findTagAssignment').mockImplementation((tagId, targetId, targetType) => {
-        // Return null for null or undefined parameters
-        if (!tagId || !targetId || !targetType) {
-          return Promise.resolve({
-            status: 'success',
-            data: null,
-            error: null
-          });
-        }
-        
-        const assignment = mockTagAssignments.find(
-          a => a.tag_id === tagId && a.target_id === targetId && a.target_type === targetType
-        );
-        
-        return Promise.resolve({
-          status: 'success',
-          data: assignment || null,
-          error: null
-        });
-      });
-      
       // Act with undefined parameters
       const result1 = await tagAssignmentRepository.findTagAssignment(
         undefined as any,

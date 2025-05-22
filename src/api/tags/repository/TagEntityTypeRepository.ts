@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { TagEntityType } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
 import { EntityType } from "@/types/entityTypes";
+import { ApiResponse, createSuccessResponse, createErrorResponse } from "@/api/core/errorHandler";
 
 /**
  * Tag entity type repository interface
@@ -22,6 +23,11 @@ export interface TagEntityTypeRepository {
    * Get tag entity types by tag ID
    */
   getTagEntityTypesByTagId(tagId: string): Promise<TagEntityType[]>;
+  
+  /**
+   * Get entity types by tag ID
+   */
+  getEntityTypesByTagId(tagId?: string): Promise<ApiResponse<string[]>>;
   
   /**
    * Get tag entity types by entity type
@@ -51,7 +57,12 @@ export interface TagEntityTypeRepository {
   /**
    * Associate a tag with an entity type if not already associated
    */
-  associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void>;
+  associateTagWithEntityType(tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>>;
+  
+  /**
+   * Remove association between a tag and an entity type
+   */
+  removeTagEntityTypeAssociation(tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>>;
 }
 
 /**
@@ -81,6 +92,29 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
       } catch (err) {
         logger.error(`Error fetching entity types for tag ${tagId}:`, err);
         return [];
+      }
+    },
+    
+    async getEntityTypesByTagId(tagId?: string): Promise<ApiResponse<string[]>> {
+      try {
+        // Handle undefined or null tagId
+        if (!tagId) {
+          return createSuccessResponse([]);
+        }
+        
+        const result = await repository.select('entity_type')
+                                     .eq('tag_id', tagId)
+                                     .execute();
+        
+        if (!result.data) {
+          return createSuccessResponse([]);
+        }
+        
+        const entityTypes = result.data.map(item => item.entity_type);
+        return createSuccessResponse(entityTypes);
+      } catch (err) {
+        logger.error(`Error fetching entity types for tag ${tagId}:`, err);
+        return createErrorResponse('Failed to get entity types');
       }
     },
     
@@ -150,8 +184,13 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
       }
     },
     
-    async associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void> {
+    async associateTagWithEntityType(tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>> {
       try {
+        // Validate parameters
+        if (!tagId || !entityType) {
+          return createErrorResponse('Missing required parameters');
+        }
+        
         // Check if association already exists
         const exists = await this.isTagAllowedForEntityType(tagId, entityType);
         
@@ -163,9 +202,33 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
             entity_type: entityType
           });
         }
+        
+        return createSuccessResponse(true);
       } catch (err) {
         logger.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
-        throw err;
+        return createErrorResponse(`Error associating tag with entity type: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+    
+    async removeTagEntityTypeAssociation(tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>> {
+      try {
+        // Validate parameters
+        if (!tagId || !entityType) {
+          return createErrorResponse('Missing required parameters');
+        }
+        
+        // Find and delete the association
+        const associations = await this.getTagEntityTypesByTagId(tagId);
+        const association = associations.find(a => a.entity_type === entityType);
+        
+        if (association) {
+          await this.deleteTagEntityType(association.id);
+        }
+        
+        return createSuccessResponse(true);
+      } catch (err) {
+        logger.error(`Error removing tag ${tagId} association with entity type ${entityType}:`, err);
+        return createErrorResponse(`Error removing tag entity type association: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };

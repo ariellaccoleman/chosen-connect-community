@@ -1,6 +1,7 @@
 
 import { createTagEntityTypeRepository, TagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
 import { EntityType } from '@/types/entityTypes';
+import { ApiResponse } from '@/api/core/errorHandler';
 
 // Mock the repository factory module
 jest.mock('@/api/core/repository/repositoryFactory', () => ({
@@ -36,7 +37,7 @@ describe('Tag Entity Type Repository', () => {
     tagEntityTypeRepository = createTagEntityTypeRepository();
     
     // Mock specific methods
-    jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockImplementation((tagId) => {
+    jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockImplementation((tagId?: string): Promise<ApiResponse<string[]>> => {
       if (!tagId) {
         return Promise.resolve({
           status: 'success',
@@ -56,7 +57,7 @@ describe('Tag Entity Type Repository', () => {
       });
     });
     
-    jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockImplementation((tagId, entityType) => {
+    jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockImplementation((tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>> => {
       if (!tagId || !entityType) {
         return Promise.resolve({
           status: 'error',
@@ -72,7 +73,7 @@ describe('Tag Entity Type Repository', () => {
       });
     });
     
-    jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockImplementation((tagId, entityType) => {
+    jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockImplementation((tagId?: string, entityType?: EntityType): Promise<ApiResponse<boolean>> => {
       if (!tagId || !entityType) {
         return Promise.resolve({
           status: 'error',
@@ -144,7 +145,7 @@ describe('Tag Entity Type Repository', () => {
     });
     
     test('should handle missing parameters', async () => {
-      // Act with undefined
+      // Act with undefined tag ID
       const result1 = await tagEntityTypeRepository.associateTagWithEntityType(
         undefined as any,
         'person' as EntityType
@@ -180,7 +181,7 @@ describe('Tag Entity Type Repository', () => {
     });
     
     test('should handle missing parameters', async () => {
-      // Act with undefined
+      // Act with undefined tag ID
       const result1 = await tagEntityTypeRepository.removeTagEntityTypeAssociation(
         undefined as any,
         'person' as EntityType
