@@ -1,3 +1,4 @@
+
 import { entityRegistry } from './entityRegistrySystem';
 import defaultRegistrations from './defaultEntityRegistrations';
 import { EntityType } from '@/types/entityTypes';
@@ -37,6 +38,9 @@ export function initializeEntitySystem(): void {
             case EntityType.CHAT:
               return generatePath(APP_ROUTES.CHAT_CHANNEL, { channelId: id });
               
+            case EntityType.JOB:
+              return `/jobs/${id}`; // Basic job detail URL
+              
             default:
               return `${reg.defaultRoute}/${id}`;
           }
@@ -72,7 +76,9 @@ export function initializeEntitySystem(): void {
             ? `${source.first_name || ''} ${source.last_name || ''}`.trim()
             : (reg.type === EntityType.EVENT && source.title) 
               ? source.title 
-              : ''
+              : (reg.type === EntityType.JOB && source.title)
+                ? source.title
+                : ''
         ),
         description: source.description || source.headline || source.bio || null,
         imageUrl: source.image_url || source.avatar_url || source.logo_url || source.logo_api_url || null,

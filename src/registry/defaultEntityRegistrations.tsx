@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { EntityType } from '@/types/entityTypes';
 import { Users, Building, Calendar, MessageCircle, 
-  FolderKanban, FileText, MessageSquare } from 'lucide-react';
+  FolderKanban, FileText, MessageSquare, Briefcase } from 'lucide-react';
 
 /**
  * Interface for entity registration details
@@ -82,6 +81,15 @@ const defaultRegistrations: Record<EntityType, EntityRegistration> = {
     pluralLabel: 'Posts',
     avatarFallback: (name: string) => name?.charAt(0) || '?',
     defaultRoute: '/feed'
+  },
+  
+  [EntityType.JOB]: {
+    type: EntityType.JOB,
+    icon: <Briefcase className="h-4 w-4" />,
+    label: 'Job',
+    pluralLabel: 'Jobs',
+    avatarFallback: (name: string) => name?.charAt(0) || '?',
+    defaultRoute: '/jobs'
   }
 };
 
