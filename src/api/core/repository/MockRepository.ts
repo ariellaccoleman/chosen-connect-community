@@ -79,7 +79,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   /**
    * Create a select query
    */
-  select(_selectQuery = '*'): RepositoryQuery<T> {
+  select(selectQuery = '*'): RepositoryQuery<T> {
     this.lastOperation = 'select';
     this.resetFilters();
     return new MockQuery<T>(
@@ -283,12 +283,11 @@ class MockQuery<T> implements RepositoryQuery<T> {
       const filtered = this.applyFilters(items);
       
       if (filtered.length === 0) {
-        const error = {
+        return createErrorResponse<T>({
           code: 'not_found',
           message: 'Item not found',
           details: { tableName: this.tableName }
-        };
-        return createErrorResponse(error);
+        });
       }
 
       // Update the first matching item
@@ -308,12 +307,11 @@ class MockQuery<T> implements RepositoryQuery<T> {
     const filtered = this.applyFilters(items);
     
     if (filtered.length === 0) {
-      const error = {
+      return createErrorResponse<T>({
         code: 'not_found',
         message: 'No data found',
         details: { tableName: this.tableName }
-      };
-      return createErrorResponse(error);
+      });
     }
 
     return createSuccessResponse<T>(filtered[0] as unknown as T);
