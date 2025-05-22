@@ -41,6 +41,7 @@ const CommunityDirectory = () => {
       logger.debug(`Selected tag ID: ${selectedTagId}`);
       logger.debug(`Tag Assignments for ${selectedTagId}:`, tagAssignments);
       
+      // Fix #1: Extract target_id values from the tag assignments array instead of passing the whole array
       const targetProfileIds = tagAssignments.map(ta => ta.target_id);
       logger.debug(`Tagged profile IDs: ${targetProfileIds.join(', ')}`);
       
@@ -115,7 +116,8 @@ const CommunityDirectory = () => {
         // Check if the profile ID is in the set of tagged IDs
         const isIncluded = taggedIds.has(profile.id);
         
-        if (profile.id === currentUserProfile?.id) {
+        if (currentUserProfile && profile.id === currentUserProfile.id) {
+          // Fix #2: Access id from currentUserProfile directly, not from ApiResponse
           logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
         
@@ -153,7 +155,8 @@ const CommunityDirectory = () => {
       {showDebugTool && (
         <TagDebugTool 
           tagId={selectedTagId || undefined}
-          profileId={currentUserProfile?.id}
+          // Fix #3: Access currentUserProfile.id directly, not from ApiResponse
+          profileId={currentUserProfile ? currentUserProfile.id : undefined}
         />
       )}
 
@@ -194,3 +197,4 @@ const CommunityDirectory = () => {
 };
 
 export default CommunityDirectory;
+
