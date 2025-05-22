@@ -1,8 +1,7 @@
-
 import { logger } from './logger';
 import { toast } from '@/hooks/use-toast';
 import { RepositoryError } from '@/api/core/repository/DataRepository';
-import { formatRepositoryError as formatRepoError } from '@/api/core/repository/repositoryUtils';
+import { formatRepositoryError } from '@/api/core/repository/repositoryUtils';
 import { ApiError } from '@/api/core/errorHandler';
 
 /**
@@ -68,7 +67,7 @@ export const extractErrorMessage = (error: unknown): string => {
   }
   
   // Use repository error formatter as fallback for other error types
-  const repoError = formatRepoError(error);
+  const repoError = formatRepositoryError(error);
   if (repoError.message) {
     return repoError.message;
   }
