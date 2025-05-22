@@ -1,26 +1,21 @@
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { createSuccessResponse, createErrorResponse } from './repositoryUtils';
+import { BaseRepository } from './BaseRepository';
+import { logger } from '@/utils/logger';
 
 /**
  * Mock implementation of the DataRepository interface for testing
  */
-export class MockRepository<T = any> implements DataRepository<T> {
-  tableName: string;
+export class MockRepository<T = any> extends BaseRepository<T> {
   private mockData: Record<string, any[]> = {};
   private mockResponses: Record<string, any> = {};
   private lastOperation: string | null = null;
   private lastData: any = null;
   private filters: any[] = [];
   private inConditions: { column: string; values: any[] }[] = [];
-  private options: Record<string, any> = {
-    idField: 'id',
-    defaultSelect: '*',
-    softDelete: false,
-    deletedAtColumn: 'deleted_at'
-  };
   
   constructor(tableName: string, initialData: T[] = []) {
-    this.tableName = tableName;
+    super(tableName);
     this.mockData[tableName] = [...initialData];
   }
 
@@ -46,13 +41,6 @@ export class MockRepository<T = any> implements DataRepository<T> {
   }
   
   /**
-   * Set repository options
-   */
-  setOptions(options: Record<string, any>): void {
-    this.options = { ...this.options, ...options };
-  }
-  
-  /**
    * Reset filters and conditions
    */
   private resetFilters(): void {
@@ -61,7 +49,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   }
 
   /**
-   * Get a record by ID
+   * Get a record by ID - implementation from BaseRepository will be used
    */
   async getById(id: string | number): Promise<T | null> {
     const result = await this.select().eq(this.options.idField, id).maybeSingle();
@@ -69,7 +57,7 @@ export class MockRepository<T = any> implements DataRepository<T> {
   }
 
   /**
-   * Get all records
+   * Get all records - implementation from BaseRepository will be used
    */
   async getAll(): Promise<T[]> {
     const result = await this.select().execute();
@@ -159,6 +147,22 @@ export class MockRepository<T = any> implements DataRepository<T> {
       this.filters,
       this.inConditions
     );
+  }
+
+  /**
+   * Standard error handling for repository operations - inherited from BaseRepository
+   * This implementation will be provided by the BaseRepository
+   */
+  protected handleError(operation: string, error: any, context: Record<string, any> = {}): void {
+    super.handleError(operation, error, context);
+  }
+
+  /**
+   * Monitor performance of repository operations - inherited from BaseRepository
+   * This implementation will be provided by the BaseRepository
+   */
+  protected monitorPerformance<R>(operation: string, callback: () => Promise<R>): Promise<R> {
+    return super.monitorPerformance(operation, callback);
   }
 }
 
@@ -457,6 +461,6 @@ class MockQuery<T> implements RepositoryQuery<T> {
 export function createMockRepository<T>(
   tableName: string, 
   initialData: T[] = []
-): MockRepository<T> {
+): BaseRepository<T> {
   return new MockRepository<T>(tableName, initialData);
 }
