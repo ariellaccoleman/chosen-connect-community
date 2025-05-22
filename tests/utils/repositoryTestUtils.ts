@@ -25,7 +25,7 @@ export function createTestMockRepository<T>(tableName: string, initialData: T[] 
   const updateSpy = jest.spyOn(mockRepo, 'update');
   const deleteSpy = jest.spyOn(mockRepo, 'delete');
   
-  // Create a enhanced repository with spies for monitoring
+  // Create an enhanced repository with spies for monitoring
   const enhancedRepo = mockRepo as DataRepository<T> & { 
     mockData: T[],
     spies: Record<string, jest.SpyInstance>
