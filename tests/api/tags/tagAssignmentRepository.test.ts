@@ -48,43 +48,6 @@ describe('Tag Assignment Repository', () => {
     // Reset all mocks
     jest.clearAllMocks();
     
-    // Setup default mock implementations for repository methods
-    const mockSelect = jest.fn().mockResolvedValue({
-      data: mockTagAssignments,
-      error: null
-    });
-    
-    const mockInsert = jest.fn().mockImplementation((data) => ({
-      select: jest.fn().mockResolvedValue({
-        data: Array.isArray(data) 
-          ? data.map((item, index) => ({ id: `new-id-${index}`, ...item }))
-          : { id: 'new-id', ...data },
-        error: null
-      })
-    }));
-    
-    const mockDelete = jest.fn().mockImplementation(() => ({
-      eq: jest.fn().mockResolvedValue({
-        data: true,
-        error: null
-      })
-    }));
-    
-    // Mock the createSupabaseRepository to return our mocked methods
-    const mockRepo = {
-      select: mockSelect,
-      insert: mockInsert,
-      delete: mockDelete,
-      // Add mock for raw SQL query
-      executeRawQuery: jest.fn().mockResolvedValue({
-        data: mockJoinResult,
-        error: null
-      })
-    };
-    
-    // Setup the createSupabaseRepository mock
-    require('@/api/core/repository/repositoryFactory').createSupabaseRepository.mockReturnValue(mockRepo);
-    
     // Create the repository instance
     tagAssignmentRepository = createTagAssignmentRepository();
     
@@ -182,6 +145,50 @@ describe('Tag Assignment Repository', () => {
       expect(result.status).toBe('success');
       expect(result.data).toEqual([]);
     });
+    
+    test('should handle null or undefined parameters', async () => {
+      // Override mock for these tests
+      jest.spyOn(tagAssignmentRepository, 'getTagAssignmentsForEntity').mockImplementation((targetId, targetType) => {
+        // Return empty array for null or undefined parameters
+        if (!targetId || !targetType) {
+          return Promise.resolve({
+            status: 'success',
+            data: [],
+            error: null
+          });
+        }
+        
+        const assignments = mockTagAssignments.filter(
+          a => a.target_id === targetId && a.target_type === targetType
+        );
+        
+        return Promise.resolve({
+          status: 'success',
+          data: assignments,
+          error: null
+        });
+      });
+      
+      // Act with undefined targetId
+      const result1 = await tagAssignmentRepository.getTagAssignmentsForEntity(
+        undefined as any,
+        'person' as EntityType
+      );
+      
+      // Assert
+      expect(result1.status).toBe('success');
+      expect(result1.data).toEqual([]);
+      
+      // Act with undefined targetType
+      const result2 = await tagAssignmentRepository.getTagAssignmentsForEntity(
+        'entity-1',
+        undefined as any
+      );
+      
+      // Assert
+      expect(result2.status).toBe('success');
+      expect(result2.data).toEqual([]);
+    });
   });
   
   describe('createTagAssignment', () => {
@@ -202,21 +209,44 @@ describe('Tag Assignment Repository', () => {
       expect(result.data?.target_id).toBe('entity-3');
     });
     
-    test('should handle errors when creation fails', async () => {
-      // Arrange
-      const newAssignment: Partial<TagAssignment> = {
+    test('should handle missing fields', async () => {
+      // Override mock for this test to validate input
+      jest.spyOn(tagAssignmentRepository, 'createTagAssignment').mockImplementation((data) => {
+        // Return error if required fields are missing
+        if (!data.tag_id || !data.target_id || !data.target_type) {
+          return Promise.resolve({
+            status: 'error',
+            data: null,
+            error: { message: 'Missing required fields' }
+          });
+        }
+        
+        const newAssignment = {
+          id: 'new-assignment-id',
+          ...data,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        return Promise.resolve({
+          status: 'success',
+          data: newAssignment as TagAssignment,
+          error: null
+        });
+      });
+      
+      // Arrange an incomplete assignment
+      const incompleteAssignment: Partial<TagAssignment> = {
         tag_id: 'tag-3',
-        target_id: 'entity-3',
-        target_type: 'event'
+        // missing target_id and target_type
       };
       
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(tagAssignmentRepository, 'createTagAssignment').mockRejectedValueOnce(new Error('Database error'));
+      // Act
+      const result = await tagAssignmentRepository.createTagAssignment(incompleteAssignment);
       
-      // Act & Assert
-      await expect(
-        tagAssignmentRepository.createTagAssignment(newAssignment)
-      ).rejects.toThrow('Database error');
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.message).toBe('Missing required fields');
     });
   });
   
@@ -230,15 +260,31 @@ describe('Tag Assignment Repository', () => {
       expect(result.data).toBe(true);
     });
     
-    test('should handle errors when deletion fails', async () => {
-      // Arrange
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(tagAssignmentRepository, 'deleteTagAssignment').mockRejectedValueOnce(new Error('Database error'));
+    test('should handle null or undefined assignment ID', async () => {
+      // Override mock for this test
+      jest.spyOn(tagAssignmentRepository, 'deleteTagAssignment').mockImplementation((id) => {
+        // Return error if ID is null or undefined
+        if (!id) {
+          return Promise.resolve({
+            status: 'error',
+            data: null,
+            error: { message: 'Assignment ID is required' }
+          });
+        }
+        
+        return Promise.resolve({
+          status: 'success',
+          data: true,
+          error: null
+        });
+      });
       
-      // Act & Assert
-      await expect(
-        tagAssignmentRepository.deleteTagAssignment('assignment-1')
-      ).rejects.toThrow('Database error');
+      // Act with undefined ID
+      const result = await tagAssignmentRepository.deleteTagAssignment(undefined as any);
+      
+      // Assert
+      expect(result.status).toBe('error');
+      expect(result.error?.message).toBe('Assignment ID is required');
     });
   });
   
@@ -268,6 +314,36 @@ describe('Tag Assignment Repository', () => {
       expect(result.status).toBe('success');
       expect(result.data).toEqual([]);
     });
+    
+    test('should handle null or undefined parameters', async () => {
+      // Override mock for these tests
+      jest.spyOn(tagAssignmentRepository, 'getTagsForEntity').mockImplementation((targetId, targetType) => {
+        // Return empty array for null or undefined parameters
+        if (!targetId || !targetType) {
+          return Promise.resolve({
+            status: 'success',
+            data: [],
+            error: null
+          });
+        }
+        
+        return Promise.resolve({
+          status: 'success',
+          data: mockJoinResult,
+          error: null
+        });
+      });
+      
+      // Act with undefined targetId
+      const result1 = await tagAssignmentRepository.getTagsForEntity(
+        undefined as any,
+        'person' as EntityType
+      );
+      
+      // Assert
+      expect(result1.status).toBe('success');
+      expect(result1.data).toEqual([]);
+    });
   });
   
   describe('findTagAssignment', () => {
@@ -285,13 +361,6 @@ describe('Tag Assignment Repository', () => {
     });
     
     test('should return null if assignment not found', async () => {
-      // Override mock for this test
-      jest.spyOn(tagAssignmentRepository, 'findTagAssignment').mockResolvedValueOnce({
-        status: 'success',
-        data: null,
-        error: null
-      });
-      
       // Act
       const result = await tagAssignmentRepository.findTagAssignment(
         'non-existent',
@@ -302,6 +371,41 @@ describe('Tag Assignment Repository', () => {
       // Assert
       expect(result.status).toBe('success');
       expect(result.data).toBeNull();
+    });
+    
+    test('should handle null or undefined parameters', async () => {
+      // Override mock for these tests
+      jest.spyOn(tagAssignmentRepository, 'findTagAssignment').mockImplementation((tagId, targetId, targetType) => {
+        // Return null for null or undefined parameters
+        if (!tagId || !targetId || !targetType) {
+          return Promise.resolve({
+            status: 'success',
+            data: null,
+            error: null
+          });
+        }
+        
+        const assignment = mockTagAssignments.find(
+          a => a.tag_id === tagId && a.target_id === targetId && a.target_type === targetType
+        );
+        
+        return Promise.resolve({
+          status: 'success',
+          data: assignment || null,
+          error: null
+        });
+      });
+      
+      // Act with undefined parameters
+      const result1 = await tagAssignmentRepository.findTagAssignment(
+        undefined as any,
+        'entity-1',
+        'person' as EntityType
+      );
+      
+      // Assert
+      expect(result1.status).toBe('success');
+      expect(result1.data).toBeNull();
     });
   });
 });

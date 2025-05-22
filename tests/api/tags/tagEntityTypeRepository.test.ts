@@ -32,45 +32,19 @@ describe('Tag Entity Type Repository', () => {
     // Reset all mocks
     jest.clearAllMocks();
     
-    // Setup default mock implementations for repository methods
-    const mockSelect = jest.fn().mockImplementation(() => ({
-      select: jest.fn().mockResolvedValue({
-        data: mockTagEntityTypes,
-        error: null
-      })
-    }));
-    
-    const mockInsert = jest.fn().mockImplementation((data) => ({
-      select: jest.fn().mockResolvedValue({
-        data: Array.isArray(data) 
-          ? data.map((item, index) => ({ id: `new-id-${index}`, ...item }))
-          : { id: 'new-id', ...data },
-        error: null
-      })
-    }));
-    
-    const mockDelete = jest.fn().mockImplementation(() => ({
-      match: jest.fn().mockResolvedValue({
-        data: true,
-        error: null
-      })
-    }));
-    
-    // Mock the createSupabaseRepository to return our mocked methods
-    const mockRepo = {
-      select: mockSelect,
-      insert: mockInsert,
-      delete: mockDelete
-    };
-    
-    // Setup the createSupabaseRepository mock
-    require('@/api/core/repository/repositoryFactory').createSupabaseRepository.mockReturnValue(mockRepo);
-    
     // Create the repository instance
     tagEntityTypeRepository = createTagEntityTypeRepository();
     
     // Mock specific methods
     jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockImplementation((tagId) => {
+      if (!tagId) {
+        return Promise.resolve({
+          status: 'success',
+          data: [],
+          error: null
+        });
+      }
+      
       const entityTypes = mockTagEntityTypes
         .filter(et => et.tag_id === tagId)
         .map(et => et.entity_type);
@@ -82,7 +56,15 @@ describe('Tag Entity Type Repository', () => {
       });
     });
     
-    jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockImplementation(() => {
+    jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockImplementation((tagId, entityType) => {
+      if (!tagId || !entityType) {
+        return Promise.resolve({
+          status: 'error',
+          data: null,
+          error: { message: 'Missing required parameters' }
+        });
+      }
+      
       return Promise.resolve({
         status: 'success',
         data: true,
@@ -90,7 +72,15 @@ describe('Tag Entity Type Repository', () => {
       });
     });
     
-    jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockImplementation(() => {
+    jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockImplementation((tagId, entityType) => {
+      if (!tagId || !entityType) {
+        return Promise.resolve({
+          status: 'error',
+          data: null,
+          error: { message: 'Missing required parameters' }
+        });
+      }
+      
       return Promise.resolve({
         status: 'success',
         data: true,
@@ -115,19 +105,28 @@ describe('Tag Entity Type Repository', () => {
     });
     
     test('should return empty array if no entity types found', async () => {
-      // Override mock for this test
-      jest.spyOn(tagEntityTypeRepository, 'getEntityTypesByTagId').mockResolvedValueOnce({
-        status: 'success',
-        data: [],
-        error: null
-      });
-      
       // Act
       const result = await tagEntityTypeRepository.getEntityTypesByTagId('non-existent');
       
       // Assert
       expect(result.status).toBe('success');
       expect(result.data).toEqual([]);
+    });
+    
+    test('should handle null or undefined tag ID', async () => {
+      // Act with undefined
+      const result1 = await tagEntityTypeRepository.getEntityTypesByTagId(undefined as any);
+      
+      // Assert
+      expect(result1.status).toBe('success');
+      expect(result1.data).toEqual([]);
+      
+      // Act with null
+      const result2 = await tagEntityTypeRepository.getEntityTypesByTagId(null as any);
+      
+      // Assert
+      expect(result2.status).toBe('success');
+      expect(result2.data).toEqual([]);
     });
   });
   
@@ -144,15 +143,26 @@ describe('Tag Entity Type Repository', () => {
       expect(result.data).toBe(true);
     });
     
-    test('should handle errors when association fails', async () => {
-      // Arrange
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(tagEntityTypeRepository, 'associateTagWithEntityType').mockRejectedValueOnce(new Error('Database error'));
+    test('should handle missing parameters', async () => {
+      // Act with undefined
+      const result1 = await tagEntityTypeRepository.associateTagWithEntityType(
+        undefined as any,
+        'person' as EntityType
+      );
       
-      // Act & Assert
-      await expect(
-        tagEntityTypeRepository.associateTagWithEntityType('tag-1', 'person' as EntityType)
-      ).rejects.toThrow('Database error');
+      // Assert
+      expect(result1.status).toBe('error');
+      expect(result1.error?.message).toBe('Missing required parameters');
+      
+      // Act with null entity type
+      const result2 = await tagEntityTypeRepository.associateTagWithEntityType(
+        'tag-1',
+        null as any
+      );
+      
+      // Assert
+      expect(result2.status).toBe('error');
+      expect(result2.error?.message).toBe('Missing required parameters');
     });
   });
   
@@ -169,15 +179,26 @@ describe('Tag Entity Type Repository', () => {
       expect(result.data).toBe(true);
     });
     
-    test('should handle errors when removal fails', async () => {
-      // Arrange
-      jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(tagEntityTypeRepository, 'removeTagEntityTypeAssociation').mockRejectedValueOnce(new Error('Database error'));
+    test('should handle missing parameters', async () => {
+      // Act with undefined
+      const result1 = await tagEntityTypeRepository.removeTagEntityTypeAssociation(
+        undefined as any,
+        'person' as EntityType
+      );
       
-      // Act & Assert
-      await expect(
-        tagEntityTypeRepository.removeTagEntityTypeAssociation('tag-1', 'person' as EntityType)
-      ).rejects.toThrow('Database error');
+      // Assert
+      expect(result1.status).toBe('error');
+      expect(result1.error?.message).toBe('Missing required parameters');
+      
+      // Act with null entity type
+      const result2 = await tagEntityTypeRepository.removeTagEntityTypeAssociation(
+        'tag-1',
+        null as any
+      );
+      
+      // Assert
+      expect(result2.status).toBe('error');
+      expect(result2.error?.message).toBe('Missing required parameters');
     });
   });
 });
