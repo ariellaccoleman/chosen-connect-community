@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -108,7 +109,8 @@ class TestReporter {
     };
     
     try {
-      // Record that the suite is starting
+      // Record that the suite is starting - use 'skipped' as initial status instead of 'in_progress'
+      // We'll update this to success/failure when the suite completes
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
         headers: {
@@ -119,7 +121,7 @@ class TestReporter {
           test_run_id: this.testRunId,
           suite_name: suiteName,
           file_path: testFilePath,
-          status: 'in_progress', // Initial status
+          status: 'skipped', // Changed from 'in_progress' to 'skipped' which is in our enum
           test_count: 0,
           duration_ms: 0
         })
