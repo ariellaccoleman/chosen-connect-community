@@ -1742,7 +1742,7 @@ export type Database = {
       pricing_tier: "free" | "community" | "pro" | "partner"
       test_run_status: "success" | "failure" | "in_progress"
       test_status: "passed" | "failed" | "skipped"
-      test_suite_status: "success" | "failure" | "skipped"
+      test_suite_status: "success" | "failure" | "skipped" | "in_progress"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1864,7 +1864,7 @@ export const Constants = {
       pricing_tier: ["free", "community", "pro", "partner"],
       test_run_status: ["success", "failure", "in_progress"],
       test_status: ["passed", "failed", "skipped"],
-      test_suite_status: ["success", "failure", "skipped"],
+      test_suite_status: ["success", "failure", "skipped", "in_progress"],
     },
   },
 } as const

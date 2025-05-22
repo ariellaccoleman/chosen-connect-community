@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -109,7 +110,6 @@ class TestReporter {
     
     try {
       // Record that the suite is starting - use 'in_progress' as initial status
-      // We'll update this to success/failure when the suite completes
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
         headers: {
@@ -120,7 +120,7 @@ class TestReporter {
           test_run_id: this.testRunId,
           suite_name: suiteName,
           file_path: testFilePath,
-          status: 'in_progress', // Changed from 'skipped' to 'in_progress'
+          status: 'in_progress',
           test_count: 0,
           duration_ms: 0
         })
@@ -161,10 +161,11 @@ class TestReporter {
     suite.failed = testResult.numFailingTests;
     suite.skipped = testResult.numPendingTests;
     
-    // Determine final status from actual test results, not initial value
+    // Determine final status from actual test results
     const status = testResult.numFailingTests > 0 ? 'failure' : 'success';
     
     console.log(`Completed test suite: ${suite.name} - ${status} (${testCount} tests, ${duration}ms)`);
+    console.log(`Suite ID for updating results: ${suite.id}`);
     
     if (!this.testRunId) {
       console.error('No testRunId available. Cannot update test suite.');
@@ -172,6 +173,9 @@ class TestReporter {
     }
     
     try {
+      // Now process the individual tests in this suite - do this BEFORE updating suite status
+      await this.processTestResults(testResult, suite);
+      
       // Update the suite record with final results
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
@@ -186,7 +190,8 @@ class TestReporter {
           status: status,
           test_count: testCount,
           duration_ms: duration,
-          error_message: testResult.failureMessage || null
+          error_message: testResult.failureMessage || null,
+          suite_id: suite.id // Include the suite ID for proper updating
         })
       });
       
@@ -195,15 +200,11 @@ class TestReporter {
         console.error(`Failed to update test suite: ${errorText}`);
       } else {
         const data = await response.json();
-        suite.id = data.test_suite_id;
         console.log(`Updated test suite ${suite.name} with ID ${data.test_suite_id}`);
       }
     } catch (error) {
       console.error(`Error updating test suite ${suite.name}:`, error);
     }
-    
-    // Now process the individual tests in this suite
-    await this.processTestResults(testResult, suite);
 
     // Clear current suite
     this.results.currentSuite = null;
@@ -227,8 +228,13 @@ class TestReporter {
       return;
     }
     
+    if (!suite || !suite.id) {
+      console.error(`Missing suite ID for test file: ${testFilePath}`);
+      return;
+    }
+    
     console.log(`Reporting ${testResults?.length || 0} test results for ${testFilePath} to test run ${this.testRunId}`);
-    console.log(`Test suite ID: ${suite?.id || 'unknown'}`);
+    console.log(`Test suite ID for test results: ${suite.id}`);
     
     // Extract test suite name from file path
     const testSuitePath = testFilePath.split('/');
@@ -275,7 +281,7 @@ class TestReporter {
       else if (testStatus === 'failed') this.results.failed++;
       else this.results.skipped++;
       
-      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite?.id || 'unknown'}`);
+      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite.id}`);
       
       // Safely handle possibly undefined properties
       const failureMessages = result.failureMessages || [];
@@ -293,7 +299,7 @@ class TestReporter {
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
-            test_suite_id: suite ? suite.id : null,
+            test_suite_id: suite.id,
             test_suite: testSuiteName,
             test_name: testName,
             status: testStatus,

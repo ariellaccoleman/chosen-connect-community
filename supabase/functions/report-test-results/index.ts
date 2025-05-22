@@ -27,6 +27,7 @@ interface TestSuiteRequest {
   test_count: number
   duration_ms: number
   error_message?: string
+  suite_id?: string // Added to support direct updates
 }
 
 interface TestResultRequest {
@@ -246,7 +247,7 @@ async function handleRecordTestSuite(
   requestData: TestSuiteRequest,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const { test_run_id: testRunId } = requestData
+  const { test_run_id: testRunId, suite_id: specificSuiteId } = requestData;
 
   if (!testRunId) {
     return new Response(JSON.stringify({ 
@@ -258,8 +259,11 @@ async function handleRecordTestSuite(
     })
   }
 
-  console.log(`[record-suite] Recording test suite for test run: ${testRunId}`)
-  console.log(`[record-suite] Suite name: ${requestData.suite_name}, Status: ${requestData.status}`)
+  console.log(`[record-suite] Recording test suite for test run: ${testRunId}`);
+  console.log(`[record-suite] Suite name: ${requestData.suite_name}, Status: ${requestData.status}`);
+  if (specificSuiteId) {
+    console.log(`[record-suite] Specific suite ID provided: ${specificSuiteId}`);
+  }
   
   try {
     // Verify the test run exists
@@ -280,23 +284,12 @@ async function handleRecordTestSuite(
       })
     }
 
-    // First check if this suite already exists
-    const { data: existingSuite, error: findError } = await supabase
-      .from('test_suites')
-      .select('id')
-      .eq('test_run_id', testRunId)
-      .eq('file_path', requestData.file_path)
-      .maybeSingle();
-      
-    if (findError) {
-      console.error('[record-suite] Error checking for existing suite:', findError);
-    }
-    
     let result;
     
-    if (existingSuite) {
-      // Update the existing suite
-      console.log(`[record-suite] Updating existing suite with ID: ${existingSuite.id}`);
+    // If a specific suite ID is provided, use it directly
+    if (specificSuiteId) {
+      // Update the specific suite by ID
+      console.log(`[record-suite] Updating existing suite with ID: ${specificSuiteId}`);
       result = await supabase
         .from('test_suites')
         .update({
@@ -305,24 +298,52 @@ async function handleRecordTestSuite(
           duration_ms: requestData.duration_ms,
           error_message: requestData.error_message || null,
         })
-        .eq('id', existingSuite.id)
+        .eq('id', specificSuiteId)
         .select('id')
         .single();
     } else {
-      // Insert a new test suite
-      result = await supabase
+      // First check if this suite already exists by file path
+      const { data: existingSuite, error: findError } = await supabase
         .from('test_suites')
-        .insert({
-          test_run_id: testRunId,
-          suite_name: requestData.suite_name,
-          file_path: requestData.file_path,
-          status: requestData.status,
-          test_count: requestData.test_count,
-          duration_ms: requestData.duration_ms,
-          error_message: requestData.error_message || null,
-        })
         .select('id')
-        .single();
+        .eq('test_run_id', testRunId)
+        .eq('file_path', requestData.file_path)
+        .maybeSingle();
+        
+      if (findError) {
+        console.error('[record-suite] Error checking for existing suite:', findError);
+      }
+      
+      if (existingSuite) {
+        // Update the existing suite
+        console.log(`[record-suite] Updating existing suite with ID: ${existingSuite.id}`);
+        result = await supabase
+          .from('test_suites')
+          .update({
+            status: requestData.status,
+            test_count: requestData.test_count,
+            duration_ms: requestData.duration_ms,
+            error_message: requestData.error_message || null,
+          })
+          .eq('id', existingSuite.id)
+          .select('id')
+          .single();
+      } else {
+        // Insert a new test suite
+        result = await supabase
+          .from('test_suites')
+          .insert({
+            test_run_id: testRunId,
+            suite_name: requestData.suite_name,
+            file_path: requestData.file_path,
+            status: requestData.status,
+            test_count: requestData.test_count,
+            duration_ms: requestData.duration_ms,
+            error_message: requestData.error_message || null,
+          })
+          .select('id')
+          .single();
+      }
     }
     
     const { data, error: insertError } = result;
@@ -365,7 +386,7 @@ async function handleRecordTestResult(
   requestData: TestResultRequest,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const { test_run_id: testRunId } = requestData
+  const { test_run_id: testRunId, test_suite_id: testSuiteId } = requestData
 
   if (!testRunId) {
     return new Response(JSON.stringify({ 
@@ -377,7 +398,13 @@ async function handleRecordTestResult(
     })
   }
 
-  console.log(`[record-result] Recording test result for test run: ${testRunId}`)
+  if (!testSuiteId) {
+    console.warn(`[record-result] No test_suite_id provided for test: ${requestData.test_name}`);
+  } else {
+    console.log(`[record-result] Recording test result with suite ID: ${testSuiteId}`);
+  }
+
+  console.log(`[record-result] Recording test result for test run: ${testRunId}`);
   
   try {
     // Verify the test run exists
@@ -398,12 +425,27 @@ async function handleRecordTestResult(
       })
     }
 
+    // If a suite ID is provided, verify it exists
+    if (testSuiteId) {
+      const { data: suite, error: suiteError } = await supabase
+        .from('test_suites')
+        .select('id')
+        .eq('id', testSuiteId)
+        .maybeSingle();
+      
+      if (suiteError || !suite) {
+        console.warn(`[record-result] Test suite with ID ${testSuiteId} not found, but will continue recording the test result`);
+      } else {
+        console.log(`[record-result] Verified test suite ID: ${testSuiteId}`);
+      }
+    }
+
     // Insert the test result
     const { error: insertError } = await supabase
       .from('test_results')
       .insert({
         test_run_id: testRunId,
-        test_suite_id: requestData.test_suite_id || null,
+        test_suite_id: testSuiteId || null,
         test_suite: requestData.test_suite,
         test_name: requestData.test_name,
         status: requestData.status,
