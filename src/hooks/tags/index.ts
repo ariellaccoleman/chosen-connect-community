@@ -6,11 +6,13 @@
 export * from './useTagQuery';
 export * from './useTagMutations';
 export * from './useTagAssignments';
-export * from './useTagHooks';
+
+// Export from useTagHooks with unique names to avoid conflicts
+export { 
+  useTagCrudMutations as useTagCrudOperations,
+  useTagAssignmentMutations as useTagAssignmentOperations 
+} from './useTagHooks';
 
 // For backward compatibility with existing code
 export { useSelectionTags as useTags } from './useTagLegacy';
 
-// Re-export with namespaced names to avoid conflicts
-export { useTagCrudMutations as useTagCrudOperations } from './useTagHooks';
-export { useTagAssignmentMutations as useTagAssignmentOperations } from './useTagHooks';

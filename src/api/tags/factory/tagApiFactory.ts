@@ -106,38 +106,38 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
     // Core operations from standard factory
     getById: async (id: string) => {
       const response = await repository.getTagById(id);
-      return response.data as T | null;
+      return response as T | null;
     },
     
     getAll: async () => {
       const response = await repository.getAllTags();
-      return response.data as T[];
+      return response as T[];
     },
     
     create: async (data: Partial<T>) => {
       const response = await repository.createTag(data);
-      return response.data as T;
+      return response as T;
     },
     
     update: async (id: string, data: Partial<T>) => {
       const response = await repository.updateTag(id, data);
-      return response.data as T;
+      return response as T;
     },
     
     delete: async (id: string) => {
       const response = await repository.deleteTag(id);
-      return response.data as boolean;
+      return response as boolean;
     },
     
     // Custom tag-specific operations
     findByName: async (name: string) => {
       const response = await repository.findTagByName(name);
-      return response.data as T | null;
+      return response as T | null;
     },
     
     getByEntityType: async (entityType: EntityType) => {
       const response = await repository.getTagsByEntityType(entityType);
-      return response.data as T[];
+      return response as T[];
     },
     
     findOrCreate: async (data: Partial<T>, entityType?: EntityType) => {
@@ -151,24 +151,24 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
       // First try to find the tag by name
       const existingTag = await repository.findTagByName(data.name);
       
-      if (existingTag.data) {
-        return existingTag.data as T;
+      if (existingTag) {
+        return existingTag as T;
       }
       
       // If not found, create the tag
       const newTag = await repository.createTag(data);
       
       // Associate with entity type if specified
-      if (effectiveEntityType && newTag.data) {
+      if (effectiveEntityType && newTag) {
         try {
-          await repository.associateTagWithEntityType(newTag.data.id, effectiveEntityType);
+          await repository.associateTagWithEntityType(newTag.id, effectiveEntityType);
         } catch (err) {
           // Log but don't fail if entity type association fails
           console.warn(`Failed to associate new tag with entity type: ${err}`);
         }
       }
       
-      return newTag.data as T;
+      return newTag as T;
     },
     
     associateWithEntityType: async (tagId: string, entityType: EntityType) => {
@@ -194,7 +194,7 @@ export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
     // Get assignments for entity
     getForEntity: async (entityId: string, entityType: EntityType) => {
       const response = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
-      return response.data;
+      return response;
     },
     
     // Create assignment
@@ -204,7 +204,7 @@ export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
         target_id: entityId,
         target_type: entityType
       });
-      return response.data;
+      return response;
     },
     
     // Delete assignment
@@ -272,3 +272,4 @@ export const createTagAssignment = async (tagId: string, entityId: string, entit
 export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
   return await tagAssignmentApi.delete(assignmentId);
 };
+

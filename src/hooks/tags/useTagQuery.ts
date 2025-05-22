@@ -90,35 +90,3 @@ export function useAllTags() {
   });
 }
 
-/**
- * Hook to fetch tags for selection lists
- */
-export function useSelectionTags(entityType?: EntityType) {
-  return useQuery({
-    queryKey: ["tags", "selection", entityType],
-    queryFn: async () => {
-      try {
-        if (entityType && !isValidEntityType(entityType)) {
-          logger.warn(`Invalid entity type passed to useSelectionTags: ${entityType}`);
-          return {
-            status: 'success',
-            data: []
-          };
-        }
-        
-        const tags = await tagApi.getAll();
-        
-        logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
-        
-        return {
-          status: 'success',
-          data: tags
-        };
-      } catch (error) {
-        logger.error("Error in useSelectionTags:", error);
-        throw error;
-      }
-    },
-    staleTime: 30000 // Cache for 30 seconds
-  });
-}
