@@ -4,7 +4,7 @@ import {
   getAllTestRuns, 
   getTestRunById, 
   getTestResultsByRunId,
-  getRecentFailedTests
+  getRecentFailedTests 
 } from '@/api/tests';
 
 /**

@@ -70,3 +70,18 @@ export const getTestResultsBySuiteId = async (suiteId: string): Promise<ApiRespo
       .order('test_name', { ascending: true })
   );
 };
+
+/**
+ * Fetch recent failed tests
+ */
+export const getRecentFailedTests = async (limit = 20): Promise<ApiResponse<TestResult[]>> => {
+  return apiClient.query((supabase) => 
+    supabase
+      .from('test_results')
+      .select('*, test_runs!inner(run_at)')
+      .eq('status', 'failed')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+  );
+};
+

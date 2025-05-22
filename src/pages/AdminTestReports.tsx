@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTestRuns, calculateSuccessRate } from '@/hooks/tests/useTestReports';
+import { useTestRuns } from '@/hooks/tests';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,7 +28,7 @@ import { APP_ROUTES } from '@/config/routes';
 
 const AdminTestReports = () => {
   const navigate = useNavigate();
-  const { data: testRuns, isLoading, error } = useTestRuns();
+  const { data: response, isLoading, error } = useTestRuns();
   const [sortField, setSortField] = useState<string>('run_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
@@ -45,8 +45,10 @@ const AdminTestReports = () => {
     }
   };
 
+  const testRuns = response?.data || [];
+
   const sortedRuns = React.useMemo(() => {
-    if (!testRuns) return [];
+    if (!testRuns.length) return [];
     
     return [...testRuns].sort((a, b) => {
       const valueA = a[sortField as keyof typeof a];
@@ -68,11 +70,13 @@ const AdminTestReports = () => {
   }, [testRuns, sortField, sortOrder]);
 
   const successRate = React.useMemo(() => {
-    return calculateSuccessRate(testRuns || []);
+    if (!testRuns.length) return 0;
+    
+    const successfulRuns = testRuns.filter(run => run.status === 'success').length;
+    return (successfulRuns / testRuns.length) * 100;
   }, [testRuns]);
 
   const handleRowClick = (testRunId: string) => {
-    // Fix the navigation to use APP_ROUTES
     navigate(`${APP_ROUTES.ADMIN_TEST_DETAIL.replace(':testRunId', testRunId)}`);
   };
 
@@ -123,7 +127,7 @@ const AdminTestReports = () => {
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : (
-                  testRuns?.length || 0
+                  testRuns.length || 0
                 )}
               </p>
             </div>
@@ -141,7 +145,7 @@ const AdminTestReports = () => {
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
                 ) : (
-                  testRuns?.filter(run => run.status === 'failure').length || 0
+                  testRuns.filter(run => run.status === 'failure').length || 0
                 )}
               </p>
             </div>
