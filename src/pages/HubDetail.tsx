@@ -43,6 +43,13 @@ const HubDetail = () => {
   // Get chat channels associated with this hub's tag
   const { data: chatChannels = [], isLoading: chatChannelsLoading } = useChatChannelsByTag(hub?.tag_id);
   
+  // Enhanced logging to debug tag filtering
+  useEffect(() => {
+    if (hub?.tag_id) {
+      logger.debug(`Using tag_id for filtering: ${hub.tag_id}`);
+    }
+  }, [hub?.tag_id]);
+
   // Use the improved entity feed hook for each entity type with the proper tag_id
   const { 
     entities: people, 

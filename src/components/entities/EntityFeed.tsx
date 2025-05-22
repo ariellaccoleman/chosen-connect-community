@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
 import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { useEntityRegistry } from "@/hooks/useEntityRegistry";
+import { logger } from "@/utils/logger";
 
 interface EntityFeedProps {
   title?: string;
@@ -45,6 +46,18 @@ const EntityFeed = ({
     getEntityTypePlural 
   } = useEntityRegistry();
   
+  // Enhanced logging for debugging tag filtering
+  React.useEffect(() => {
+    logger.debug(`EntityFeed initialized:`, {
+      defaultEntityTypes,
+      activeTab,
+      excludedTypes: excludeEntityTypes,
+      availableTypes: availableEntityTypes,
+      showTagFilter,
+      fixedTagId: tagId
+    });
+  }, []);
+  
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
     ? availableEntityTypes 
@@ -55,15 +68,10 @@ const EntityFeed = ({
     activeTab !== "all" ? activeTab : undefined
   );
   
-  // Get tag assignments using our filter-by-tag hook
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
-  const { data: tagAssignments = [] } = useFilterByTag(
-    selectedTagId,
-    activeTab !== "all" ? activeTab : undefined
-  );
   
-  // Use the entity feed hook
+  // Use the entity feed hook with enhanced tag filtering
   const { 
     entities, 
     isLoading
@@ -73,8 +81,18 @@ const EntityFeed = ({
     tagId: selectedTagId
   });
   
+  // Log entity count when it changes 
+  React.useEffect(() => {
+    logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
+      activeTab,
+      selectedTagId,
+      entityTypes: entityTypes.join(',')
+    });
+  }, [entities, activeTab, selectedTagId]);
+  
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
+    logger.debug(`EntityFeed: Tab changed to ${value}`);
   };
   
   // Extract tags from the response - ensuring we have an array

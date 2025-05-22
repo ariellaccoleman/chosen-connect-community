@@ -5,6 +5,13 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
 
+interface UseEntityFeedOptions {
+  entityTypes: EntityType[];
+  tagId?: string | null;
+  limit?: number;
+  filterByUserId?: string | null;
+}
+
 /**
  * Custom hook to fetch entities of specified types, optionally filtered by tag
  */
@@ -13,12 +20,7 @@ export const useEntityFeed = ({
   tagId = null,
   limit = 10,
   filterByUserId = null,
-}: {
-  entityTypes: EntityType[];
-  tagId?: string | null;
-  limit?: number;
-  filterByUserId?: string | null;
-}) => {
+}: UseEntityFeedOptions) => {
   // This query fetches entities based on the provided entityTypes
   const { data: entitiesData, isLoading, error } = useQuery({
     queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId }],
@@ -26,6 +28,34 @@ export const useEntityFeed = ({
       const allEntities: Entity[] = [];
       
       logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}`);
+      
+      // If tagId is provided, get all tagged entity IDs first
+      let taggedEntityIds: Record<string, string[]> = {};
+      
+      if (tagId) {
+        logger.debug(`EntityFeed: Fetching tagged entities for tagId=${tagId}`);
+        
+        // Get all entities tagged with this tag ID
+        const { data: tagAssignments, error: tagError } = await supabase
+          .from('entity_tag_assignments_view')
+          .select('target_id, target_type')
+          .eq('tag_id', tagId);
+          
+        if (tagError) {
+          logger.error("EntityFeed: Failed to fetch tag assignments", tagError);
+        } else if (tagAssignments) {
+          // Group entity IDs by type for efficient filtering
+          taggedEntityIds = tagAssignments.reduce((acc, assignment) => {
+            const type = assignment.target_type;
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(assignment.target_id);
+            return acc;
+          }, {} as Record<string, string[]>);
+          
+          logger.debug(`EntityFeed: Found tagged entities:`, 
+            Object.entries(taggedEntityIds).map(([type, ids]) => `${type}: ${ids.length} items`));
+        }
+      }
       
       // Conditionally fetch each entity type
       await Promise.all(
@@ -38,25 +68,26 @@ export const useEntityFeed = ({
               case EntityType.PERSON:
                 logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
                 
-                // Using our people_with_tags view with query builder
-                let peopleQuery = supabase
-                  .from('people_with_tags')
-                  .select('*');
+                // Basic query for people
+                let peopleQuery = supabase.from('profiles').select('*');
                 
-                // Apply filters if needed
-                if (tagId) {
-                  peopleQuery = peopleQuery.eq('assigned_tag_id', tagId);
-                  logger.debug(`EntityFeed: Filtering PERSON entities by tag_id=${tagId}`);
-                }
-                
+                // Apply filters
                 if (filterByUserId) {
                   peopleQuery = peopleQuery.eq('id', filterByUserId);
-                  logger.debug(`EntityFeed: Filtering PERSON entities by user_id=${filterByUserId}`);
+                }
+                
+                // Apply tag filtering if we have tagged person IDs
+                if (tagId && taggedEntityIds['person']?.length) {
+                  peopleQuery = peopleQuery.in('id', taggedEntityIds['person']);
+                  logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds['person'].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds['person']?.length) {
+                  // If we're filtering by tag but no people have this tag, return empty
+                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}`);
+                  return;
                 }
                 
                 // Apply limit and get results
-                const { data: profiles, error: profilesError } = await peopleQuery
-                  .limit(limit);
+                const { data: profiles, error: profilesError } = await peopleQuery.limit(limit);
                   
                 if (profilesError) {
                   logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesError);
@@ -70,20 +101,21 @@ export const useEntityFeed = ({
               case EntityType.ORGANIZATION:
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
                 
-                // Using our organizations_with_tags view with query builder
-                let orgsQuery = supabase
-                  .from('organizations_with_tags')
-                  .select('*');
+                // Basic query for organizations
+                let orgsQuery = supabase.from('organizations').select('*');
                 
-                // Apply tag filter if needed
-                if (tagId) {
-                  orgsQuery = orgsQuery.eq('assigned_tag_id', tagId);
-                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by tag_id=${tagId}`);
+                // Apply tag filtering if we have tagged organization IDs
+                if (tagId && taggedEntityIds['organization']?.length) {
+                  orgsQuery = orgsQuery.in('id', taggedEntityIds['organization']);
+                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds['organization'].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds['organization']?.length) {
+                  // If we're filtering by tag but no organizations have this tag, return empty
+                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}`);
+                  return;
                 }
                 
                 // Apply limit and get results
-                const { data: organizations, error: orgsError } = await orgsQuery
-                  .limit(limit);
+                const { data: organizations, error: orgsError } = await orgsQuery.limit(limit);
                   
                 if (orgsError) {
                   logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsError);
@@ -97,20 +129,21 @@ export const useEntityFeed = ({
               case EntityType.EVENT:
                 logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
                 
-                // Using our events_with_tags view with query builder
-                let eventsQuery = supabase
-                  .from('events_with_tags')
-                  .select('*');
+                // Basic query for events
+                let eventsQuery = supabase.from('events').select('*');
                 
-                // Apply tag filter if needed
-                if (tagId) {
-                  eventsQuery = eventsQuery.eq('assigned_tag_id', tagId);
-                  logger.debug(`EntityFeed: Filtering EVENT entities by assigned_tag_id=${tagId}`);
+                // Apply tag filtering if we have tagged event IDs
+                if (tagId && taggedEntityIds['event']?.length) {
+                  eventsQuery = eventsQuery.in('id', taggedEntityIds['event']);
+                  logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds['event'].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds['event']?.length) {
+                  // If we're filtering by tag but no events have this tag, return empty
+                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}`);
+                  return;
                 }
                 
                 // Apply limit and get results
-                const { data: events, error: eventsError } = await eventsQuery
-                  .limit(limit);
+                const { data: events, error: eventsError } = await eventsQuery.limit(limit);
                   
                 if (eventsError) {
                   logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsError);
@@ -119,23 +152,11 @@ export const useEntityFeed = ({
                 
                 items = events || [];
                 logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities`);
-                
-                // Debug the first event if available
-                if (items.length > 0) {
-                  logger.debug(`EntityFeed: Sample event:`, { id: items[0].id, title: items[0].title });
-                }
                 break;
                 
               default:
                 logger.warn(`Unsupported entity type: ${type}`);
                 return;
-            }
-            
-            // Log the structure of first item to help debug conversion issues
-            if (items && items.length > 0) {
-              logger.debug(`Sample ${type} item structure:`, JSON.stringify(items[0]).substring(0, 200) + "...");
-            } else {
-              logger.debug(`No ${type} items found for the given filters`);
             }
             
             // Convert each item to an Entity and add to results
@@ -158,22 +179,7 @@ export const useEntityFeed = ({
                           url: item.website_url,
                           created_at: item.created_at,
                           updated_at: item.updated_at,
-                          tags: item.tag_id ? [{ 
-                            id: '', 
-                            tag_id: item.assigned_tag_id, 
-                            target_id: item.id, 
-                            target_type: 'profile', 
-                            created_at: item.created_at || '', 
-                            updated_at: item.updated_at || '',
-                            tag: {
-                              id: item.assigned_tag_id,
-                              name: item.tag_name,
-                              description: null,
-                              created_by: null,
-                              created_at: item.created_at || '',
-                              updated_at: item.updated_at || ''
-                            }
-                          }] : []
+                          tags: [] // We'll fetch tags separately if needed
                         };
                         break;
                         
@@ -188,22 +194,7 @@ export const useEntityFeed = ({
                           url: item.website_url,
                           created_at: item.created_at,
                           updated_at: item.updated_at,
-                          tags: item.assigned_tag_id ? [{ 
-                            id: '', 
-                            tag_id: item.assigned_tag_id, 
-                            target_id: item.id, 
-                            target_type: 'organization', 
-                            created_at: item.created_at || '', 
-                            updated_at: item.updated_at || '',
-                            tag: {
-                              id: item.assigned_tag_id,
-                              name: item.tag_name,
-                              description: null,
-                              created_by: null,
-                              created_at: item.created_at || '',
-                              updated_at: item.updated_at || ''
-                            }
-                          }] : []
+                          tags: [] // We'll fetch tags separately if needed
                         };
                         break;
                         
@@ -216,22 +207,7 @@ export const useEntityFeed = ({
                           location: item.location,
                           created_at: item.created_at,
                           updated_at: item.updated_at,
-                          tags: item.assigned_tag_id ? [{ 
-                            id: '', 
-                            tag_id: item.assigned_tag_id, 
-                            target_id: item.id, 
-                            target_type: 'event', 
-                            created_at: item.created_at || '', 
-                            updated_at: item.updated_at || '',
-                            tag: {
-                              id: item.assigned_tag_id,
-                              name: item.tag_name,
-                              description: null,
-                              created_by: null,
-                              created_at: item.created_at || '',
-                              updated_at: item.updated_at || ''
-                            }
-                          }] : []
+                          tags: [] // We'll fetch tags separately if needed
                         };
                         break;
                     }
@@ -258,19 +234,48 @@ export const useEntityFeed = ({
         })
       );
       
-      logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
-      
-      // Log a sample of the final entities to verify types
-      if (allEntities.length > 0) {
-        logger.debug(`EntityFeed: Sample of entities being returned:`, 
-          allEntities.slice(0, 2).map(e => ({
-            id: e.id,
-            entityType: e.entityType,
-            name: e.name
-          }))
-        );
+      // After all entities are fetched, if tagId was provided, fetch tags for each entity
+      if (tagId) {
+        try {
+          logger.debug(`EntityFeed: Fetching tags for each entity`);
+          
+          // For each entity, fetch its tags - this is now just to get the tag details
+          // since we already filtered by tag
+          for (const entity of allEntities) {
+            const { data: tagAssignments, error: tagError } = await supabase
+              .from('entity_tag_assignments_view')
+              .select('*, tag:tag_id(id, name, description)')
+              .eq('target_id', entity.id)
+              .eq('target_type', entity.entityType);
+              
+            if (tagError) {
+              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagError);
+            } else if (tagAssignments && tagAssignments.length > 0) {
+              // Add tags to entity
+              entity.tags = tagAssignments.map(assignment => ({
+                id: assignment.id,
+                tag_id: assignment.tag_id,
+                target_id: assignment.target_id,
+                target_type: assignment.target_type,
+                created_at: assignment.created_at || '',
+                updated_at: assignment.updated_at || '',
+                tag: {
+                  id: assignment.tag?.id || '',
+                  name: assignment.tag?.name || '',
+                  description: assignment.tag?.description || null,
+                  created_by: null,
+                  created_at: '',
+                  updated_at: ''
+                }
+              }));
+            }
+          }
+        } catch (e) {
+          logger.error(`EntityFeed: Error fetching tags for entities:`, e);
+        }
       }
       
+      logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
       return allEntities;
     },
     enabled: entityTypes.length > 0,
