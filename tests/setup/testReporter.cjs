@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -108,7 +109,7 @@ class TestReporter {
     };
     
     try {
-      // Record that the suite is starting - use 'skipped' as initial status instead of 'in_progress'
+      // Record that the suite is starting - use 'in_progress' as initial status
       // We'll update this to success/failure when the suite completes
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
@@ -120,7 +121,7 @@ class TestReporter {
           test_run_id: this.testRunId,
           suite_name: suiteName,
           file_path: testFilePath,
-          status: 'skipped', // Changed from 'in_progress' to 'skipped' which is in our enum
+          status: 'in_progress', // Changed from 'skipped' to 'in_progress'
           test_count: 0,
           duration_ms: 0
         })
@@ -154,8 +155,14 @@ class TestReporter {
     // Calculate test duration
     const duration = Date.now() - suite.startTime;
 
-    // Update suite stats
+    // Update suite stats based on test results
     const testCount = testResult.numPassingTests + testResult.numFailingTests + testResult.numPendingTests;
+    suite.testCount = testCount;
+    suite.passed = testResult.numPassingTests;
+    suite.failed = testResult.numFailingTests;
+    suite.skipped = testResult.numPendingTests;
+    
+    // Determine final status from actual test results, not initial value
     const status = testResult.numFailingTests > 0 ? 'failure' : 'success';
     
     console.log(`Completed test suite: ${suite.name} - ${status} (${testCount} tests, ${duration}ms)`);
@@ -221,7 +228,8 @@ class TestReporter {
       return;
     }
     
-    console.log(`Reporting test results for ${testFilePath} to test run ${this.testRunId}`);
+    console.log(`Reporting ${testResults?.length || 0} test results for ${testFilePath} to test run ${this.testRunId}`);
+    console.log(`Test suite ID: ${suite?.id || 'unknown'}`);
     
     // Extract test suite name from file path
     const testSuitePath = testFilePath.split('/');
@@ -268,7 +276,7 @@ class TestReporter {
       else if (testStatus === 'failed') this.results.failed++;
       else this.results.skipped++;
       
-      console.log(`- Test: ${testName}, Status: ${testStatus}`);
+      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite?.id || 'unknown'}`);
       
       // Safely handle possibly undefined properties
       const failureMessages = result.failureMessages || [];

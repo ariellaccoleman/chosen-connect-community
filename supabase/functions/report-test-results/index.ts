@@ -23,7 +23,7 @@ interface TestSuiteRequest {
   test_run_id: string
   suite_name: string
   file_path: string
-  status: 'success' | 'failure' | 'skipped'
+  status: 'success' | 'failure' | 'skipped' | 'in_progress'
   test_count: number
   duration_ms: number
   error_message?: string
@@ -259,6 +259,7 @@ async function handleRecordTestSuite(
   }
 
   console.log(`[record-suite] Recording test suite for test run: ${testRunId}`)
+  console.log(`[record-suite] Suite name: ${requestData.suite_name}, Status: ${requestData.status}`)
   
   try {
     // Verify the test run exists
@@ -279,23 +280,55 @@ async function handleRecordTestSuite(
       })
     }
 
-    // Insert the test suite
-    const { data, error: insertError } = await supabase
+    // First check if this suite already exists
+    const { data: existingSuite, error: findError } = await supabase
       .from('test_suites')
-      .insert({
-        test_run_id: testRunId,
-        suite_name: requestData.suite_name,
-        file_path: requestData.file_path,
-        status: requestData.status,
-        test_count: requestData.test_count,
-        duration_ms: requestData.duration_ms,
-        error_message: requestData.error_message || null,
-      })
       .select('id')
-      .single()
+      .eq('test_run_id', testRunId)
+      .eq('file_path', requestData.file_path)
+      .maybeSingle();
+      
+    if (findError) {
+      console.error('[record-suite] Error checking for existing suite:', findError);
+    }
+    
+    let result;
+    
+    if (existingSuite) {
+      // Update the existing suite
+      console.log(`[record-suite] Updating existing suite with ID: ${existingSuite.id}`);
+      result = await supabase
+        .from('test_suites')
+        .update({
+          status: requestData.status,
+          test_count: requestData.test_count,
+          duration_ms: requestData.duration_ms,
+          error_message: requestData.error_message || null,
+        })
+        .eq('id', existingSuite.id)
+        .select('id')
+        .single();
+    } else {
+      // Insert a new test suite
+      result = await supabase
+        .from('test_suites')
+        .insert({
+          test_run_id: testRunId,
+          suite_name: requestData.suite_name,
+          file_path: requestData.file_path,
+          status: requestData.status,
+          test_count: requestData.test_count,
+          duration_ms: requestData.duration_ms,
+          error_message: requestData.error_message || null,
+        })
+        .select('id')
+        .single();
+    }
+    
+    const { data, error: insertError } = result;
 
     if (insertError) {
-      console.error('[record-suite] Error inserting test suite:', insertError)
+      console.error('[record-suite] Error inserting/updating test suite:', insertError)
       return new Response(JSON.stringify({ 
         error: 'Failed to record test suite', 
         details: insertError.message
