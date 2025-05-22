@@ -221,6 +221,12 @@ export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
   };
 }
 
+// Create a default tag API instance
+export const tagApi = createTagApiFactory();
+
+// Create a default tag assignment API instance
+export const tagAssignmentApi = createTagAssignmentApiFactory();
+
 // Export standard functions that match the original API
 export const getAllTags = async (): Promise<Tag[]> => {
   return await tagApi.getAll();
@@ -253,16 +259,6 @@ export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityTyp
 export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
   return await tagApi.getByEntityType(entityType);
 };
-
-/**
- * Create a default tag API instance
- */
-export const tagApi = createTagApiFactory();
-
-/**
- * Create a default tag assignment API instance
- */
-export const tagAssignmentApi = createTagAssignmentApiFactory();
 
 // For tag assignments
 export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {

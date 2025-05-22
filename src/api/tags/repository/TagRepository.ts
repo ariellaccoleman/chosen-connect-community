@@ -1,3 +1,4 @@
+
 /**
  * Tag Repository
  * Repository implementation for managing tags
@@ -57,6 +58,11 @@ export interface TagRepository {
    * Find or create a tag by name
    */
   findOrCreateTag(name: string): Promise<ApiResponse<Tag>>;
+  
+  /**
+   * Associate a tag with an entity type
+   */
+  associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void>;
 }
 
 /**
@@ -204,6 +210,20 @@ export function createTagRepository(): TagRepository {
         return await this.createTag({ name: normalizedName });
       } catch (err) {
         logger.error(`Error in find or create tag "${name}":`, err);
+        throw err;
+      }
+    },
+    
+    async associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void> {
+      try {
+        // Import the TagEntityTypeRepository dynamically to avoid circular dependencies
+        const { createTagEntityTypeRepository } = await import('./index');
+        const tagEntityTypeRepo = createTagEntityTypeRepository();
+        
+        // Associate the tag with the entity type
+        await tagEntityTypeRepo.associateTagWithEntityType(tagId, entityType);
+      } catch (err) {
+        logger.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
         throw err;
       }
     }
