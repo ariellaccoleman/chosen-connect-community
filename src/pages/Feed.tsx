@@ -9,16 +9,22 @@ import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
+import { logger } from "@/utils/logger";
 
 const Feed: React.FC = () => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: tagsResponse } = useSelectionTags(EntityType.POST);
+  const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(EntityType.POST);
   const tags = tagsResponse?.data || [];
   const { user } = useAuth();
   
-  console.log("Feed page rendered, auth user:", user);
+  logger.debug("Feed page rendering with tags:", { 
+    tagsCount: tags.length, 
+    selectedTagId, 
+    isLoading: tagsLoading 
+  });
 
   const handleTagSelect = (tagId: string | null) => {
+    logger.debug(`Feed: Tag selected: ${tagId}`);
     setSelectedTagId(tagId);
   };
 
@@ -50,6 +56,7 @@ const Feed: React.FC = () => {
             selectedTagId={selectedTagId}
             onTagSelect={handleTagSelect}
             tags={tags}
+            isLoading={tagsLoading}
             label="Filter posts by tag"
           />
         </div>

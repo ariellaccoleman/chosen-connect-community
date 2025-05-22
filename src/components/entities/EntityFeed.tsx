@@ -56,7 +56,7 @@ const EntityFeed = ({
       showTagFilter,
       fixedTagId: tagId
     });
-  }, []);
+  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId]);
   
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
@@ -70,6 +70,11 @@ const EntityFeed = ({
   
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
+  
+  // Log when selectedTagId changes
+  React.useEffect(() => {
+    logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
+  }, [selectedTagId]);
   
   // Use the entity feed hook with enhanced tag filtering
   const { 
@@ -86,14 +91,18 @@ const EntityFeed = ({
     logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
       activeTab,
       selectedTagId,
-      entityTypes: entityTypes.join(',')
+      entityTypes: entityTypes.join(','),
+      entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
     });
-  }, [entities, activeTab, selectedTagId]);
+  }, [entities, activeTab, selectedTagId, entityTypes]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
     logger.debug(`EntityFeed: Tab changed to ${value}`);
   };
+  
+  // Make sure we don't allow changing the tag if it's fixed via props
+  const onTagSelect = tagId ? undefined : setSelectedTagId;
   
   // Extract tags from the response - ensuring we have an array
   const tags = tagsResponse?.data || [];
@@ -119,7 +128,7 @@ const EntityFeed = ({
         {showTagFilter && !tagId && ( // Only show tag filter if not using a fixed tagId
           <TagFilter
             selectedTagId={selectedTagId}
-            onTagSelect={setSelectedTagId}
+            onTagSelect={onTagSelect}
             tags={tags}
             isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}

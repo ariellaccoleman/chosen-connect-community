@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,21 @@ const Events: React.FC = () => {
   
   useEffect(() => {
     logger.info("Events page mounted");
-    logger.info("Events data:", { count: events.length, events });
+    logger.debug("Events data:", { count: events.length, hasTagData: events.some(e => e.tags && e.tags.length > 0) });
+    
+    // Check event tags for debugging
+    if (events.length > 0) {
+      const eventsWithTags = events.filter(event => event.tags && event.tags.length > 0);
+      if (eventsWithTags.length > 0) {
+        logger.debug(`Found ${eventsWithTags.length} events with tags:`, 
+          eventsWithTags.slice(0, 3).map(e => ({ 
+            id: e.id, 
+            title: e.title, 
+            tags: e.tags?.map(t => t.tag?.name || t.tag_id) 
+          }))
+        );
+      }
+    }
     
     if (selectedTagIds.length > 0) {
       logger.debug("Filtering events by tags:", selectedTagIds);
@@ -75,6 +90,24 @@ const Events: React.FC = () => {
         event.tags && event.tags.some(tag => selectedTagIds.includes(tag.tag_id))
       )
     : events;
+    
+  // Debug filtered events
+  useEffect(() => {
+    if (selectedTagIds.length > 0) {
+      logger.debug(`Filtered to ${filteredEvents.length} events out of ${events.length}`);
+      if (filteredEvents.length > 0) {
+        logger.debug("First few filtered events:", 
+          filteredEvents.slice(0, 3).map(e => ({ 
+            id: e.id, 
+            title: e.title,
+            tags: e.tags?.map(t => t.tag?.name || t.tag_id)
+          }))
+        );
+      } else {
+        logger.debug("No events match the selected tags");
+      }
+    }
+  }, [filteredEvents.length, events.length, selectedTagIds]);
 
   return (
     <div className="container py-8">

@@ -93,8 +93,17 @@ const CommunityDirectory = () => {
   useEffect(() => {
     if (selectedTagIds.length > 0) {
       logger.debug(`Filtered to ${filteredProfiles.length} profiles out of ${allProfiles.length}`);
+      if (filteredProfiles.length > 0) {
+        logger.debug("First few filtered profiles:", 
+          filteredProfiles.slice(0, 3).map(p => ({ 
+            id: p.id, 
+            name: `${p.first_name} ${p.last_name}`,
+            tags: p.tags?.map(t => t.tag?.name || t.tag_id)
+          }))
+        );
+      }
     }
-  }, [filteredProfiles.length, allProfiles.length, selectedTagIds.length]);
+  }, [filteredProfiles.length, allProfiles.length, selectedTagIds.length, filteredProfiles]);
 
   // Display error message if profile loading fails
   if (error) {
@@ -123,6 +132,7 @@ const CommunityDirectory = () => {
                 onTagsSelect={setSelectedTagIds}
                 tags={tags}
                 isLoading={isTagsLoading}
+                label="Filter by interest"
               />
             </div>
           </div>
