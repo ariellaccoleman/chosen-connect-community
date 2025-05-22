@@ -9,7 +9,8 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useSelectionTags } from "@/hooks/tags";
+import { ProfileWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
 
 const CommunityDirectory = () => {
@@ -33,6 +34,14 @@ const CommunityDirectory = () => {
   useEffect(() => {
     if (tagsResponse?.data) {
       logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
+      
+      // Find and log the Campus Issues tag
+      const campusIssuesTag = tagsResponse.data.find(tag => tag.name === "Campus Issues");
+      if (campusIssuesTag) {
+        logger.debug("Found Campus Issues tag:", campusIssuesTag);
+      } else {
+        logger.debug("Campus Issues tag not found in available tags");
+      }
     }
   }, [tagsResponse?.data]);
 
@@ -43,25 +52,41 @@ const CommunityDirectory = () => {
       const profilesWithTags = allProfiles.filter(p => p.tags && p.tags.length > 0);
       logger.debug(`Profiles with tags: ${profilesWithTags.length} out of ${allProfiles.length}`);
       
-      if (selectedTagIds.length > 0) {
-        logger.debug("Selected tag IDs:", selectedTagIds);
+      // Look for profiles with Campus Issues tag
+      const campusIssuesProfiles = allProfiles.filter(profile => 
+        profile.tags && profile.tags.some(tag => tag.tag && tag.tag.name === "Campus Issues")
+      );
+      
+      if (campusIssuesProfiles.length > 0) {
+        logger.debug(`Found ${campusIssuesProfiles.length} profiles with Campus Issues tag:`, 
+          campusIssuesProfiles.map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }))
+        );
+      } else {
+        logger.debug("No profiles found with Campus Issues tag");
       }
     }
-  }, [allProfiles, selectedTagIds]);
+  }, [allProfiles]);
 
-  // Client-side filtering for tags - Fixed to properly check tag assignments
+  // Debug tag filtering when selectedTagIds changes
+  useEffect(() => {
+    if (selectedTagIds.length > 0) {
+      logger.debug("Selected tag IDs:", selectedTagIds);
+      
+      // Get tag names for debugging
+      const selectedTagNames = tagsResponse?.data
+        ?.filter(tag => selectedTagIds.includes(tag.id))
+        .map(tag => tag.name);
+      
+      logger.debug("Selected tag names:", selectedTagNames);
+    }
+  }, [selectedTagIds, tagsResponse?.data]);
+
+  // Client-side filtering for tags
   const filteredProfiles = selectedTagIds.length > 0 
-    ? allProfiles.filter(profile => {
-        // Check if profile has tags array
-        if (!profile.tags || !Array.isArray(profile.tags)) {
-          return false;
-        }
-        
-        // Check if any of the profile's tags match the selected tags
-        return profile.tags.some(tagAssignment => 
-          selectedTagIds.includes(tagAssignment.tag_id)
-        );
-      })
+    ? allProfiles.filter(profile => 
+        profile.tags && 
+        profile.tags.some(tag => selectedTagIds.includes(tag.tag_id))
+      )
     : allProfiles;
   
   // Log filtered profiles
@@ -77,7 +102,7 @@ const CommunityDirectory = () => {
     toast.error("Failed to load community members. Please try again.");
   }
 
-  // Extract tags from the response - safely
+  // Extract tags from the response
   const tags = tagsResponse?.data || [];
 
   return (

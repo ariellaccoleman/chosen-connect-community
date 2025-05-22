@@ -12,14 +12,10 @@ import { initializeRegistry } from "./registry";
 const App = () => {
   logger.info("App component rendering");
   
-  // Initialize entity registry on app start, but only once
+  // Initialize entity registry on app start
   useEffect(() => {
-    try {
-      initializeRegistry();
-      logger.info("Entity registry initialized");
-    } catch (error) {
-      logger.error("Failed to initialize entity registry:", error);
-    }
+    initializeRegistry();
+    logger.info("Entity registry initialized");
   }, []);
   
   return (

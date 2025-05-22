@@ -1,52 +1,92 @@
-
-import { createApiFactory } from '@/api/core/factory';
-import { TagEntityType } from '@/utils/tags/types';
-import { createTagEntityTypesRepository } from './repositories';
-import { logger } from '@/utils/logger';
-import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
-import { apiClient } from '@/api/core/apiClient';
+import { apiClient } from "../core/apiClient";
+import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { logger } from "@/utils/logger";
 
 /**
- * Create API operations for tag entity types using the factory pattern
+ * Associate a tag with an entity type
+ * This handles the case where the association already exists
  */
-export const tagEntityTypesApi = createApiFactory<TagEntityType, string, Partial<TagEntityType>, Partial<TagEntityType>, 'tag_entity_types'>(
-  {
-    tableName: 'tag_entity_types',
-    entityName: 'tag entity type',
-    defaultOrderBy: 'entity_type',
-    repository: createTagEntityTypesRepository,
-    useQueryOperations: true,
-    useMutationOperations: true,
-    useBatchOperations: true
-  }
-);
-
-// Extract individual operations for direct usage
-export const getAllTagEntityTypes = tagEntityTypesApi.getAll;
-export const getTagEntityTypeById = tagEntityTypesApi.getById;
-export const createTagEntityType = tagEntityTypesApi.create;
-export const updateTagEntityType = tagEntityTypesApi.update;
-export const deleteTagEntityType = tagEntityTypesApi.delete;
+export const updateTagEntityType = async (
+  tagId: string,
+  entityType: string
+): Promise<ApiResponse<boolean>> => {
+  return apiClient.query(async (client) => {
+    try {
+      // Check if this entity type already exists for this tag
+      const { data: existingType, error: checkError } = await client
+        .from('tag_entity_types')
+        .select('id')
+        .eq('tag_id', tagId)
+        .eq('entity_type', entityType)
+        .maybeSingle();
+        
+      if (checkError) {
+        logger.error(`Failed to check tag entity type: ${checkError.message}`);
+        throw checkError;
+      }
+      
+      // If entity type doesn't exist for this tag, add it
+      if (!existingType) {
+        const { error: insertError } = await client
+          .from('tag_entity_types')
+          .insert({
+            tag_id: tagId,
+            entity_type: entityType
+          });
+          
+        if (insertError) {
+          logger.error(`Failed to create tag entity type: ${insertError.message}`, {
+            details: insertError,
+            tagId,
+            entityType
+          });
+          throw insertError;
+        }
+        
+        logger.info(`Added entity type ${entityType} to tag ${tagId}`);
+      } else {
+        logger.debug(`Entity type ${entityType} already exists for tag ${tagId}`);
+      }
+      
+      return createSuccessResponse(true);
+    } catch (error) {
+      logger.error(`Error in updateTagEntityType: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw error;
+    }
+  });
+};
 
 /**
- * Get entity types for a specific tag
+ * Remove a tag entity type if no more assignments with that type exist
  */
-export const getEntityTypesForTag = async (tagId: string): Promise<ApiResponse<string[]>> => {
-  try {
-    logger.debug(`Getting entity types for tag ${tagId}`);
-    const response = await getAllTagEntityTypes();
+export const removeTagEntityTypeIfUnused = async (
+  tagId: string,
+  entityType: string
+): Promise<ApiResponse<boolean>> => {
+  return apiClient.query(async (client) => {
+    // Check if there are any assignments with this tag and entity type
+    const { data: assignments, error: checkError } = await client
+      .from('tag_assignments')
+      .select('id')
+      .eq('tag_id', tagId)
+      .eq('target_type', entityType)
+      .limit(1);
+      
+    if (checkError) throw checkError;
     
-    if (response.status !== 'success' || !response.data) {
-      return createErrorResponse(response.error);
+    // If no assignments found, remove the entity type for this tag
+    if (!assignments || assignments.length === 0) {
+      const { error: removeError } = await client
+        .from('tag_entity_types')
+        .delete()
+        .eq('tag_id', tagId)
+        .eq('entity_type', entityType);
+        
+      if (removeError) throw removeError;
+      
+      logger.info(`Removed entity type ${entityType} from tag ${tagId}`);
     }
     
-    const entityTypes = response.data
-      .filter(entry => entry.tag_id === tagId)
-      .map(entry => entry.entity_type);
-    
-    return createSuccessResponse(entityTypes);
-  } catch (error) {
-    logger.error("Error getting entity types for tag:", error);
-    return createErrorResponse(error);
-  }
+    return createSuccessResponse(true);
+  });
 };

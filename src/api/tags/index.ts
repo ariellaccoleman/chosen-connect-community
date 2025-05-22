@@ -4,51 +4,19 @@
  * @module api/tags
  */
 
-// Export from getTagsApi without ambiguity
-export { 
-  getSelectionTags as getTags,
-  getFilterTags
-} from './getTagsApi';
-
-// Export assignment APIs
-export {
-  assignTag,
-  removeTagAssignment
-} from './assignmentApi';
-
-// Export entity types API from the factory 
-export { 
-  getEntityTypesForTag,
-  getAllTagEntityTypes,
-  createTagEntityType,
-  getTagEntityTypeById,
-  deleteTagEntityType,
-  updateTagEntityType
-} from './tagEntityTypesApiFactory';
-
-// Export from updateEntityTypeFactory without ambiguity
-export { 
-  updateTagEntityTypeFromFactory
-} from './tagEntityTypesApiFactory';
-
-// Export tag factory APIs
-export { 
-  getAllTagsWithEntityTypes,
-  getAllFilteredEntityTags 
-} from './tagApiFactory';
-
-// Export tag assignments factory APIs
-export {
-  getAllEntityTagAssignments,
-  getEntityTagAssignments
-} from './tagAssignmentsApiFactory';
-
-// Export cache APIs
+// Re-export all tag-related API functions
+export * from './assignmentApi';
+export * from './entityTagsApi';
+export * from './getTagsApi';
+export * from './tagEntityTypesApi';
 export * from './cacheApi';
+export * from './tagsApi';
 
-// Export tag CRUD APIs
+// Export functions from tagCrudApi with renamed imports to avoid conflicts
+// since similar names are exported from tagsApi
 export { 
-  createTag,
-  updateTag,
-  deleteTag
+  findOrCreateTag,
 } from './tagCrudApi';
+
+// No need to redefine tagsApi here since we're exporting from tagsApi.ts
+

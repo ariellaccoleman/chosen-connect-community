@@ -31,12 +31,7 @@ const OrganizationsList = () => {
   // Use tag hooks directly instead of useTagFilter
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
-  const { data: tagAssignmentsResponse } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
-  
-  // Safely extract tag assignments, ensuring we handle both array and {data: array} formats
-  const tagAssignments = Array.isArray(tagAssignmentsResponse) 
-    ? tagAssignmentsResponse 
-    : (tagAssignmentsResponse?.data || []);
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
   
   // Extract tags from the response
   const filterTags = tagsResponse?.data || [];
@@ -54,22 +49,14 @@ const OrganizationsList = () => {
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
-  // Debug number of tagAssignments when selectedTagId changes
-  logger.debug(`Selected tag ID: ${selectedTagId}, Found ${tagAssignments.length} tag assignments`);
-  
-  // Filter by tag id if selected - using the target_id from tag assignments
+  // Filter by tag id if selected
   const filteredOrganizations = selectedTagId
     ? searchFilteredOrgs.filter(org => {
-        // Get array of entity IDs that have the selected tag assigned
-        const taggedEntityIds = tagAssignments.map(assignment => assignment.target_id);
-        // Check if current organization ID is in the array of tag assignments
-        return taggedEntityIds.includes(org.id);
+        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
+        return taggedIds.has(org.id);
       })
     : searchFilteredOrgs;
     
-  // Log filtering results
-  logger.debug(`Filtering organizations: ${filteredOrganizations.length} of ${organizations.length} matched`);
-  
   // Handle clicking on an organization card
   const handleViewOrganization = (orgId: string) => {
     // Use generatePath to correctly create the URL with parameters

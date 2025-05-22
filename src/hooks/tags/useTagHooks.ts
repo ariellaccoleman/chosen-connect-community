@@ -1,12 +1,81 @@
 
+import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { 
+  getAllTags, 
+  createTag, 
+  updateTag,
+  deleteTag
+} from "@/api/tags";
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
-import { createTag, updateTag, deleteTag } from "@/api/tags/tagCrudApi";
-import { assignTag, removeTagAssignment } from "@/api/tags/assignmentApi";
-import { getTags } from "@/api/tags";
-import { getAllFilteredEntityTags, getEntityTagAssignments } from "@/api/tags";
+import { apiClient } from "@/api/core/apiClient";
+import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
+import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
 import { logger } from "@/utils/logger";
+
+/**
+ * Hook to fetch tags for selection lists
+ */
+export function useSelectionTags(entityType?: EntityType) {
+  return useQuery({
+    queryKey: ["tags", "selection", entityType],
+    queryFn: async () => {
+      try {
+        // Use the updated fetchSelectionTags function that uses the new views
+        const tags = await fetchSelectionTags({
+          targetType: entityType,
+          skipCache: false
+        });
+        
+        logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
+        
+        return {
+          status: 'success',
+          data: tags
+        };
+      } catch (error) {
+        logger.error("Error in useSelectionTags:", error);
+        throw error;
+      }
+    },
+    staleTime: 30000 // Cache for 30 seconds
+  });
+}
+
+/**
+ * Hook to filter entities by a selected tag
+ */
+export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
+  return useQuery({
+    queryKey: ["tag-assignments", tagId, entityType],
+    queryFn: async () => {
+      if (!tagId) return [];
+      
+      // Use the new entity_tag_assignments_view for better performance
+      const { data, error } = await apiClient.query(client => 
+        client
+          .from("entity_tag_assignments_view")
+          .select("*")
+          .eq("tag_id", tagId)
+          .then(res => {
+            // Filter by entity type if provided
+            if (entityType && res.data) {
+              return {
+                ...res,
+                data: res.data.filter(item => item.target_type === entityType)
+              };
+            }
+            return res;
+          })
+      );
+      
+      if (error) throw error;
+      return data as TagAssignment[];
+    },
+    enabled: !!tagId // Only run query if tagId is provided
+  });
+}
 
 /**
  * Hook for CRUD operations on tags
@@ -15,7 +84,7 @@ export function useTagCrudMutations() {
   const queryClient = useQueryClient();
   
   const createTagMutation = useMutation({
-    mutationFn: (data: Partial<Tag>) => createTag(data),
+    mutationFn: createTag,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
@@ -47,115 +116,65 @@ export function useTagCrudMutations() {
 }
 
 /**
- * Hook for selecting tags with optional entity type filtering
- */
-export function useSelectionTags(entityType?: EntityType) {
-  return useQuery({
-    queryKey: ["tags", "selection", entityType],
-    queryFn: async () => {
-      try {
-        // Use getTags for all tag selection needs
-        const response = await getTags({ targetType: entityType });
-        logger.debug(`Retrieved ${response?.data?.length || 0} tags for entity type: ${entityType || 'all'}`);
-        return response;
-      } catch (error) {
-        logger.error(`Error fetching selection tags for entity type ${entityType || 'all'}:`, error);
-        throw error;
-      }
-    }
-  });
-}
-
-/**
- * Hook for filtering entities by tag
- * Returns a consistent array format for tag assignments
- */
-export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
-  return useQuery({
-    queryKey: ["tagAssignments", "filter", tagId, entityType],
-    queryFn: async () => {
-      if (!tagId) return [];
-      
-      logger.debug(`Fetching tag assignments for tag: ${tagId}, entity type: ${entityType || 'all'}`);
-      
-      try {
-        const response = await getEntityTagAssignments();
-        
-        if (response.status === "success" && response.data) {
-          // Filter the results client-side
-          const filteredData = response.data.filter(item => 
-            item.tag_id === tagId && (!entityType || item.target_type === entityType)
-          );
-          
-          logger.debug(`Found ${filteredData.length} tag assignments for tag ${tagId}`);
-          // Return the array directly for consistent access pattern
-          return filteredData;
-        }
-        
-        logger.warn(`No tag assignments found for tag ${tagId} or error in response`);
-        return [];
-      } catch (error) {
-        logger.error(`Error fetching tag assignments for tag ${tagId}:`, error);
-        return [];
-      }
-    },
-    enabled: !!tagId
-  });
-}
-
-/**
- * Hook for getting tags assigned to a specific entity
+ * Hook to fetch tags for a specific entity
  */
 export function useEntityTags(entityId: string, entityType: EntityType) {
   return useQuery({
     queryKey: ["entity", entityId, "tags"],
     queryFn: async () => {
-      if (!entityId) return { data: [] };
+      if (!entityId) return { status: 'success', data: [] };
       
-      try {
-        const response = await getEntityTagAssignments();
-        // Filter by entity ID and type client-side
-        const filteredData = response.data ? response.data.filter(item => 
-          item.target_id === entityId && item.target_type === entityType
-        ) : [];
+      // Use the entity_tag_assignments_view for more efficient queries
+      return apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from("entity_tag_assignments_view")
+          .select("*")
+          .eq("target_id", entityId)
+          .eq("target_type", entityType);
         
-        return { data: filteredData };
-      } catch (error) {
-        logger.error(`Error fetching tags for entity ${entityId}:`, error);
-        return { data: [] };
-      }
+        if (error) throw error;
+        
+        return { 
+          status: 'success', 
+          data: data || [] 
+        };
+      });
     },
-    enabled: !!entityId && !!entityType
+    enabled: !!entityId
   });
 }
 
 /**
- * Hook for tag assignment mutations
+ * Hook for tag assignment operations
  */
 export function useTagAssignmentMutations() {
   const queryClient = useQueryClient();
   
   const assignTagMutation = useMutation({
-    mutationFn: ({ 
+    mutationFn: async ({ 
       tagId, 
       entityId, 
       entityType 
     }: { 
-      tagId: string; 
-      entityId: string; 
+      tagId: string, 
+      entityId: string, 
       entityType: EntityType 
-    }) => assignTag(tagId, entityId, entityType),
+    }) => {
+      return assignTag(tagId, entityId, entityType);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["entity", variables.entityId, "tags"] });
-      queryClient.invalidateQueries({ queryKey: ["tagAssignments"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
   const removeTagMutation = useMutation({
-    mutationFn: (assignmentId: string) => removeTagAssignment(assignmentId),
+    mutationFn: async (assignmentId: string) => {
+      return removeTagAssignment(assignmentId);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entity"] });
-      queryClient.invalidateQueries({ queryKey: ["tagAssignments"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
@@ -166,4 +185,22 @@ export function useTagAssignmentMutations() {
     isRemoving: removeTagMutation.isPending,
     error: assignTagMutation.error || removeTagMutation.error
   };
+}
+
+/**
+ * Deprecated: Use useFilterByTag instead
+ * @deprecated Use useFilterByTag instead
+ */
+export function useFilterTags(tagId: string | null, entityType?: EntityType) {
+  console.warn('useFilterTags is deprecated, use useFilterByTag instead');
+  return useFilterByTag(tagId, entityType);
+}
+
+/**
+ * Deprecated: Use useSelectionTags instead
+ * @deprecated Use useSelectionTags instead
+ */
+export function useTags(entityType?: EntityType) {
+  console.warn('useTags is deprecated, use useSelectionTags instead');
+  return useSelectionTags(entityType);
 }

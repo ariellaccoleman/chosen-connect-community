@@ -4,7 +4,7 @@ import {
   getFilterTags 
 } from "@/api/tags/getTagsApi"; 
 import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
-import { updateTagEntityTypeFromFactory } from "@/api/tags/tagEntityTypesApiFactory";
+import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -122,7 +122,7 @@ export const updateTagEntityType = async (
       return false;
     }
     
-    const response = await updateTagEntityTypeFromFactory(tagId, entityType);
+    const response = await apiUpdateTagEntityType(tagId, entityType);
     
     if (response.status !== 'success') {
       logger.error("Error updating tag entity type:", response.error);
