@@ -64,8 +64,8 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
   return {
     async getAllTagEntityTypes(): Promise<TagEntityType[]> {
       try {
-        const result = await repository.findAll();
-        return result.data || [];
+        const result = await repository.getAll();
+        return result || [];
       } catch (err) {
         logger.error("Error fetching all tag entity types:", err);
         return [];
@@ -74,9 +74,9 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async getTagEntityTypesByTagId(tagId: string): Promise<TagEntityType[]> {
       try {
-        const result = await repository.findMany({ 
-          filters: { tag_id: tagId } 
-        });
+        const result = await repository.select()
+                                     .eq('tag_id', tagId)
+                                     .execute();
         return result.data || [];
       } catch (err) {
         logger.error(`Error fetching entity types for tag ${tagId}:`, err);
@@ -86,9 +86,9 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async getTagEntityTypesByEntityType(entityType: EntityType): Promise<TagEntityType[]> {
       try {
-        const result = await repository.findMany({ 
-          filters: { entity_type: entityType } 
-        });
+        const result = await repository.select()
+                                     .eq('entity_type', entityType)
+                                     .execute();
         
         if (!result.data) {
           logger.warn(`No tag entity types found for entity type ${entityType}`);
@@ -104,15 +104,13 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async isTagAllowedForEntityType(tagId: string, entityType: EntityType): Promise<boolean> {
       try {
-        const result = await repository.findOne({
-          filters: {
-            tag_id: tagId,
-            entity_type: entityType
-          }
-        });
+        const result = await repository.select()
+                                      .eq('tag_id', tagId)
+                                      .eq('entity_type', entityType)
+                                      .execute();
         
         // If we find a record, the tag is allowed for this entity type
-        return !!result.data;
+        return result.data?.length > 0;
       } catch (err) {
         logger.error(`Error checking if tag ${tagId} is allowed for entity type ${entityType}:`, err);
         return false;
@@ -121,13 +119,13 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async createTagEntityType(data: Partial<TagEntityType>): Promise<TagEntityType> {
       try {
-        const result = await repository.create(data);
+        const result = await repository.insert(data).execute();
         
-        if (!result.data) {
+        if (!result.data || result.data.length === 0) {
           throw new Error("Failed to create tag entity type");
         }
         
-        return result.data;
+        return result.data[0];
       } catch (err) {
         logger.error("Error creating tag entity type:", err);
         throw err;
@@ -136,7 +134,7 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async deleteTagEntityType(id: string): Promise<void> {
       try {
-        await repository.delete(id);
+        await repository.delete().eq('id', id).execute();
       } catch (err) {
         logger.error(`Error deleting tag entity type ${id}:`, err);
         throw err;
@@ -145,7 +143,7 @@ export function createTagEntityTypeRepository(): TagEntityTypeRepository {
     
     async deleteEntityTypesForTag(tagId: string): Promise<void> {
       try {
-        await repository.deleteWhere({ tag_id: tagId });
+        await repository.delete().eq('tag_id', tagId).execute();
       } catch (err) {
         logger.error(`Error deleting entity types for tag ${tagId}:`, err);
         throw err;

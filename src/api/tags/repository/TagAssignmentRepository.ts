@@ -3,12 +3,12 @@
  * Tag Assignment Repository
  * Repository implementation for managing tag assignments
  */
-import { RepositoryQuery } from "@/api/core/repository";
 import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { TagAssignment } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
 import { EntityType } from "@/types/entityTypes";
+import { ApiResponse, createSuccessResponse } from "@/api/core/errorHandler";
 
 /**
  * Tag assignment repository interface
@@ -65,8 +65,8 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
   return {
     async getAllTagAssignments(): Promise<TagAssignment[]> {
       try {
-        const result = await repository.findAll();
-        return result.data || [];
+        const result = await repository.getAll();
+        return result || [];
       } catch (err) {
         logger.error("Error fetching all tag assignments:", err);
         return [];
@@ -75,9 +75,9 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
     
     async getTagAssignmentsByTagId(tagId: string): Promise<TagAssignment[]> {
       try {
-        const result = await repository.findMany({ 
-          filters: { tag_id: tagId } 
-        });
+        const query = repository.select()
+                               .eq('tag_id', tagId);
+        const result = await query.execute();
         return result.data || [];
       } catch (err) {
         logger.error(`Error fetching tag assignments for tag ${tagId}:`, err);
@@ -90,13 +90,10 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
       entityType: EntityType
     ): Promise<TagAssignment[]> {
       try {
-        const result = await repository.findMany({ 
-          filters: { 
-            target_id: entityId,
-            target_type: entityType
-          },
-          query: `*, tag:tags(*)` 
-        });
+        const query = repository.select(`*, tag:tags(*)`)
+                               .eq('target_id', entityId)
+                               .eq('target_type', entityType);
+        const result = await query.execute();
         return result.data || [];
       } catch (err) {
         logger.error(`Error fetching tag assignments for entity ${entityId}:`, err);
@@ -109,13 +106,13 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
       entityType?: EntityType
     ): Promise<TagAssignment[]> {
       try {
-        const filters: Record<string, any> = { tag_id: tagId };
+        let query = repository.select().eq('tag_id', tagId);
         
         if (entityType) {
-          filters.target_type = entityType;
+          query = query.eq('target_type', entityType);
         }
         
-        const result = await repository.findMany({ filters });
+        const result = await query.execute();
         
         if (!result.data) {
           logger.warn(`No entities found with tag ${tagId}`);
@@ -133,13 +130,13 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
       data: Partial<TagAssignment>
     ): Promise<TagAssignment> {
       try {
-        const result = await repository.create(data);
+        const result = await repository.insert(data).execute();
         
         if (!result.data) {
           throw new Error("Failed to create tag assignment");
         }
         
-        return result.data;
+        return result.data[0];
       } catch (err) {
         logger.error("Error creating tag assignment:", err);
         throw err;
@@ -148,7 +145,7 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
     
     async deleteTagAssignment(id: string): Promise<void> {
       try {
-        await repository.delete(id);
+        await repository.delete().eq('id', id).execute();
       } catch (err) {
         logger.error(`Error deleting tag assignment ${id}:`, err);
         throw err;
@@ -157,7 +154,7 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
     
     async deleteTagAssignmentsForTag(tagId: string): Promise<void> {
       try {
-        await repository.deleteWhere({ tag_id: tagId });
+        await repository.delete().eq('tag_id', tagId).execute();
       } catch (err) {
         logger.error(`Error deleting assignments for tag ${tagId}:`, err);
         throw err;
@@ -169,10 +166,10 @@ export function createTagAssignmentRepository(): TagAssignmentRepository {
       entityType: EntityType
     ): Promise<void> {
       try {
-        await repository.deleteWhere({ 
-          target_id: entityId,
-          target_type: entityType
-        });
+        await repository.delete()
+                      .eq('target_id', entityId)
+                      .eq('target_type', entityType)
+                      .execute();
       } catch (err) {
         logger.error(`Error deleting tag assignments for entity ${entityId}:`, err);
         throw err;
