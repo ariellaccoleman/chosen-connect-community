@@ -1,49 +1,104 @@
 
 /**
  * Tag Mutation Hooks
- * Provides hooks for creating, updating and deleting tags
+ * Provides hooks for tag CRUD operations
  */
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag } from '@/utils/tags/types';
-import { createTagService } from '@/api/tags/services';
-
-// Create service instance
-const tagService = createTagService();
+import { EntityType } from '@/types/entityTypes';
+import { tagApi } from '@/api/tags';
+import { logger } from '@/utils/logger';
 
 /**
- * Hook for CRUD operations on tags
+ * Hook for tag creation
  */
-export function useTagCrudMutations() {
+export function useCreateTag() {
   const queryClient = useQueryClient();
   
-  const createTagMutation = useMutation({
-    mutationFn: (tagData: Partial<Tag>) => tagService.createTag(tagData),
+  return useMutation({
+    mutationFn: (data: Partial<Tag>) => {
+      logger.debug("Creating tag:", data);
+      return tagApi.create(data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
+}
+
+/**
+ * Hook for updating a tag
+ */
+export function useUpdateTag() {
+  const queryClient = useQueryClient();
   
-  const updateTagMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => tagService.updateTag(id, data),
-    onSuccess: () => {
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => {
+      logger.debug(`Updating tag ${id}:`, data);
+      return tagApi.update(id, data);
+    },
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+      queryClient.invalidateQueries({ queryKey: ["tags", "byId", variables.id] });
     }
   });
+}
+
+/**
+ * Hook for deleting a tag
+ */
+export function useDeleteTag() {
+  const queryClient = useQueryClient();
   
-  const deleteTagMutation = useMutation({
-    mutationFn: (id: string) => tagService.deleteTag(id),
+  return useMutation({
+    mutationFn: (id: string) => {
+      logger.debug(`Deleting tag ${id}`);
+      return tagApi.delete(id);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
+}
+
+/**
+ * Hook for finding or creating a tag
+ */
+export function useFindOrCreateTag() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ 
+      data, 
+      entityType 
+    }: { 
+      data: Partial<Tag>; 
+      entityType?: EntityType 
+    }) => {
+      logger.debug(`Finding or creating tag:`, data);
+      return tagApi.findOrCreate(data, entityType);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    }
+  });
+}
+
+/**
+ * Hook for tag CRUD operations (combined)
+ */
+export function useTagCrudMutations() {
+  const createTag = useCreateTag();
+  const updateTag = useUpdateTag();
+  const deleteTag = useDeleteTag();
   
   return {
-    createTag: createTagMutation.mutate,
-    updateTag: updateTagMutation.mutate,
-    deleteTag: deleteTagMutation.mutate,
-    isCreating: createTagMutation.isPending,
-    isUpdating: updateTagMutation.isPending,
-    isDeleting: deleteTagMutation.isPending,
-    error: createTagMutation.error || updateTagMutation.error || deleteTagMutation.error
+    createTag: createTag.mutate,
+    updateTag: updateTag.mutate,
+    deleteTag: deleteTag.mutate,
+    isCreating: createTag.isPending,
+    isUpdating: updateTag.isPending,
+    isDeleting: deleteTag.isPending,
+    error: createTag.error || updateTag.error || deleteTag.error
   };
 }

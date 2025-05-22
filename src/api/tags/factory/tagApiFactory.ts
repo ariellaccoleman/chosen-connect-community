@@ -2,6 +2,7 @@ import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag, TagAssignment, TagEntityType } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { createTagRepository } from '../repository';
+import { createTagAssignmentRepository } from '../repository';
 import { TagRepository } from '../repository/TagRepository';
 
 /**
@@ -185,8 +186,7 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
  * Create tag assignment API factory
  */
 export function createTagAssignmentApiFactory(options: TagApiOptions = {}) {
-  // Implementation for tag assignments operations
-  const { createTagAssignmentRepository } = require('../repository');
+  // Use import instead of require
   const tagAssignmentRepo = createTagAssignmentRepository();
   
   return {

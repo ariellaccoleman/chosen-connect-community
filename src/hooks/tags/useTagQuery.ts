@@ -7,100 +7,85 @@ import { useQuery } from '@tanstack/react-query';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
 import { logger } from '@/utils/logger';
 import { Tag } from '@/utils/tags/types';
-import { createTagService, createTagAssignmentService } from '@/api/tags/services';
-
-// Create service instances
-const tagService = createTagService();
-const tagAssignmentService = createTagAssignmentService();
+import { tagApi, tagAssignmentApi } from '@/api/tags';
 
 /**
- * Hook to fetch tags for selection lists
+ * Hook to fetch tags filtered by entity type
  */
-export function useSelectionTags(entityType?: EntityType) {
+export function useTagQuery(entityType?: EntityType) {
   return useQuery({
-    queryKey: ["tags", "selection", entityType],
+    queryKey: ["tags", "query", entityType],
     queryFn: async () => {
       try {
-        if (entityType && !isValidEntityType(entityType)) {
-          logger.warn(`Invalid entity type passed to useSelectionTags: ${entityType}`);
-          return {
-            status: 'success',
-            data: []
-          };
+        if (entityType) {
+          if (!isValidEntityType(entityType)) {
+            logger.warn(`Invalid entity type passed to useTagQuery: ${entityType}`);
+            return [];
+          }
+          return await tagApi.getByEntityType(entityType);
         }
-        
-        // Use the tag service to fetch all tags
-        return tagService.getAllTags();
+        return await tagApi.getAll();
       } catch (error) {
-        logger.error("Error in useSelectionTags:", error);
+        logger.error("Error in useTagQuery:", error);
         throw error;
       }
     },
-    staleTime: 30000 // Cache for 30 seconds
+    staleTime: 30000
   });
 }
 
 /**
- * Hook to filter entities by a selected tag
+ * Hook to fetch a specific tag by ID
  */
-export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
+export function useTagById(tagId: string | null) {
   return useQuery({
-    queryKey: ["tag-assignments", tagId, entityType],
+    queryKey: ["tags", "byId", tagId],
     queryFn: async () => {
-      if (!tagId) return [];
-      
-      if (entityType && !isValidEntityType(entityType)) {
-        logger.warn(`Invalid entity type passed to useFilterByTag: ${entityType}`);
-        return [];
-      }
-      
+      if (!tagId) return null;
       try {
-        // Use the tag assignment service to filter entities
-        const response = await tagAssignmentService.getEntitiesWithTag(tagId, entityType);
-        return response.data || [];
-      } catch (e) {
-        logger.error(`useFilterByTag: Exception fetching tag assignments`, e);
-        return [];
+        return await tagApi.getById(tagId);
+      } catch (error) {
+        logger.error(`Error fetching tag with ID ${tagId}:`, error);
+        throw error;
       }
     },
-    enabled: !!tagId // Only run query if tagId is provided
+    enabled: !!tagId
   });
 }
 
 /**
- * Hook to fetch tags for a specific entity
+ * Hook to find a tag by name
  */
-export function useEntityTags(entityId: string, entityType: EntityType) {
+export function useFindTagByName(name: string | null) {
   return useQuery({
-    queryKey: ["entity", entityId, "tags"],
+    queryKey: ["tags", "byName", name],
     queryFn: async () => {
-      if (!entityId) return { status: 'success', data: [] };
-      
-      if (!isValidEntityType(entityType)) {
-        logger.warn(`Invalid entity type passed to useEntityTags: ${entityType}`);
-        return { status: 'success', data: [] };
+      if (!name) return null;
+      try {
+        return await tagApi.findByName(name);
+      } catch (error) {
+        logger.error(`Error finding tag with name "${name}":`, error);
+        throw error;
       }
-      
-      return tagAssignmentService.getTagsForEntity(entityId, entityType);
     },
-    enabled: !!entityId && isValidEntityType(entityType)
+    enabled: !!name
   });
 }
 
 /**
- * Deprecated: Use useFilterByTag instead
- * @deprecated Use useFilterByTag instead
+ * Hook to fetch all available tags
  */
-export function useFilterTags(tagId: string | null, entityType?: EntityType) {
-  console.warn('useFilterTags is deprecated, use useFilterByTag instead');
-  return useFilterByTag(tagId, entityType);
-}
-
-/**
- * Deprecated: Use useSelectionTags instead
- * @deprecated Use useSelectionTags instead
- */
-export function useTags(entityType?: EntityType) {
-  console.warn('useTags is deprecated, use useSelectionTags instead');
-  return useSelectionTags(entityType);
+export function useAllTags() {
+  return useQuery({
+    queryKey: ["tags", "all"],
+    queryFn: async () => {
+      try {
+        return await tagApi.getAll();
+      } catch (error) {
+        logger.error("Error fetching all tags:", error);
+        throw error;
+      }
+    },
+    staleTime: 60000 // Cache for 1 minute
+  });
 }

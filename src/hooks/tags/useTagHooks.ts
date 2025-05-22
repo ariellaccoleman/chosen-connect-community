@@ -1,7 +1,9 @@
+
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  tagApi, // Import the factory API instance instead
+  tagApi,
+  tagAssignmentApi,
   createTag, 
   updateTag,
   deleteTag
@@ -9,9 +11,7 @@ import {
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
-import { supabase } from "@/integrations/supabase/client"; // Added this import
-import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
-import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
+import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
 
 /**
@@ -30,7 +30,7 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the tagApi from factory instead of the getAllTags function
+        // Use the tagApi from factory
         const tags = await tagApi.getAll();
         
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
@@ -63,56 +63,8 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
       }
       
       try {
-        // Use the entity_tag_assignments_view for better performance
-        const { data, error } = await apiClient.query(client => 
-          client
-            .from("entity_tag_assignments_view")
-            .select("*")
-            .eq("tag_id", tagId)
-            .then(res => {
-              // Filter by entity type if provided
-              if (entityType && res.data) {
-                logger.debug(`useFilterByTag: Filtering assignments by entity type ${entityType}`);
-                return {
-                  ...res,
-                  data: res.data.filter(item => item.target_type === entityType)
-                };
-              }
-              return res;
-            })
-        );
-        
-        if (error) {
-          logger.error(`useFilterByTag: Error fetching tag assignments for tagId ${tagId}`, error);
-          throw error;
-        }
-        
-        logger.debug(`useFilterByTag: Found ${data?.length || 0} assignments for tagId ${tagId}${entityType ? ` and entityType ${entityType}` : ''}`);
-        
-        if (tagId === "2de8fd5d-3311-4e38-94a3-596ee596524b" && entityType === EntityType.PERSON) {
-          logger.debug("Target tag assignments:", data);
-          
-          // Check if the target profile is in the results
-          const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-          const hasTargetProfile = data?.some(ta => ta.target_id === targetProfileId);
-          logger.debug(`Target profile ${targetProfileId} in tag assignments: ${hasTargetProfile}`);
-          
-          // Also check directly with Supabase
-          const { data: directData, error: directError } = await supabase
-            .from("tag_assignments")
-            .select("*")
-            .eq("tag_id", tagId)
-            .eq("target_type", "person")
-            .eq("target_id", targetProfileId);
-            
-          if (directError) {
-            logger.error("Direct query error:", directError);
-          } else {
-            logger.debug(`Direct query for target assignment: ${directData?.length || 0} results`, directData);
-          }
-        }
-        
-        return data as TagAssignment[];
+        // Use the tagAssignmentApi from factory
+        return await tagAssignmentApi.getForEntity(tagId, entityType);
       } catch (e) {
         logger.error(`useFilterByTag: Exception fetching tag assignments`, e);
         return [];
@@ -174,21 +126,17 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
         return { status: 'success', data: [] };
       }
       
-      // Use the entity_tag_assignments_view for more efficient queries
-      return apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from("entity_tag_assignments_view")
-          .select("*")
-          .eq("target_id", entityId)
-          .eq("target_type", entityType);
-        
-        if (error) throw error;
-        
+      try {
+        // Use tagAssignmentApi
+        const assignments = await tagAssignmentApi.getForEntity(entityId, entityType);
         return { 
           status: 'success', 
-          data: data || [] 
+          data: assignments
         };
-      });
+      } catch (error) {
+        logger.error(`Error fetching tags for entity ${entityId}:`, error);
+        throw error;
+      }
     },
     enabled: !!entityId && isValidEntityType(entityType)
   });
@@ -215,7 +163,7 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      return assignTag(tagId, entityId, entityType);
+      return tagAssignmentApi.create(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["entity", variables.entityId, "tags"] });
@@ -225,7 +173,7 @@ export function useTagAssignmentMutations() {
   
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      return removeTagAssignment(assignmentId);
+      return tagAssignmentApi.delete(assignmentId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entity"] });
