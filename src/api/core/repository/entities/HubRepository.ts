@@ -1,0 +1,114 @@
+
+import { EntityRepository } from '../EntityRepository';
+import { Hub } from '@/types/hub';
+import { EntityType } from '@/types/entityTypes';
+import { RepositoryResponse } from '../DataRepository';
+
+/**
+ * Repository for managing Hub entities
+ */
+export class HubRepository extends EntityRepository<Hub> {
+  /**
+   * Convert database record to Hub entity
+   */
+  convertToEntity(record: any): Hub {
+    return {
+      id: record.id,
+      name: record.name,
+      description: record.description || null,
+      tag_id: record.tag_id || null,
+      is_featured: record.is_featured || false,
+      created_at: record.created_at,
+      updated_at: record.updated_at,
+    };
+  }
+
+  /**
+   * Convert Hub entity to database record
+   */
+  convertFromEntity(entity: Hub): Record<string, any> {
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      tag_id: entity.tag_id,
+      is_featured: entity.is_featured,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at,
+    };
+  }
+
+  /**
+   * Get featured hubs
+   */
+  async getFeatured(): Promise<RepositoryResponse<Hub[]>> {
+    try {
+      const result = await this.baseRepository.select()
+        .eq('is_featured', true)
+        .order('name', { ascending: true })
+        .execute();
+      
+      if (result.isSuccess() && result.data) {
+        return {
+          data: result.data.map(record => this.convertToEntity(record)),
+          error: null,
+          isSuccess: () => true,
+          isError: () => false,
+          getErrorMessage: () => null
+        };
+      }
+      
+      return result as RepositoryResponse<Hub[]>;
+    } catch (error) {
+      this.handleError('getFeatured', error);
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: 'Failed to get featured hubs',
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => 'Failed to get featured hubs'
+      };
+    }
+  }
+
+  /**
+   * Get hub by tag ID
+   * @param tagId Tag ID to filter by
+   */
+  async getByTagId(tagId: string): Promise<RepositoryResponse<Hub | null>> {
+    try {
+      const result = await this.baseRepository.select()
+        .eq('tag_id', tagId)
+        .maybeSingle();
+      
+      if (result.isSuccess() && result.data) {
+        return {
+          data: this.convertToEntity(result.data),
+          error: null,
+          isSuccess: () => true,
+          isError: () => false,
+          getErrorMessage: () => null
+        };
+      }
+      
+      return result as RepositoryResponse<Hub | null>;
+    } catch (error) {
+      this.handleError('getByTagId', error, { tagId });
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: `Failed to get hub by tag ID: ${tagId}`,
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => `Failed to get hub by tag ID: ${tagId}`
+      };
+    }
+  }
+}
