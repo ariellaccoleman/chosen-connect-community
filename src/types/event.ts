@@ -43,20 +43,20 @@ export interface EventWithDetails extends Event {
 export interface CreateEventInput {
   title: string;
   description: string;
-  start_time: string;
-  end_time: string;
-  is_virtual: boolean;
-  location_id: string | null;
-  is_paid: boolean;
+  startTime: string;
+  endTime: string;
+  isOnline: boolean;
+  locationId: string | null;
+  isPaid: boolean;
   price: number | null;
 }
 
 // Event registration type
 export type EventRegistration = {
   id: string;
-  event_id: string;
-  profile_id: string;
-  created_at: string;
+  eventId: string;
+  profileId: string;
+  createdAt: string;
   profile?: Profile;
 };
 

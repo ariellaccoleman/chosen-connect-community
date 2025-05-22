@@ -51,14 +51,14 @@ export abstract class EntityRepository<T extends Entity> {
    * @param entity Entity object
    * @returns Database record
    */
-  abstract convertFromEntity(entity: T): Record<string, any>;
+  abstract convertFromEntity(entity: Partial<T>): Record<string, any>;
 
   /**
    * The select method used to start a query
    * @param columns Columns to select
    * @returns A query builder
    */
-  select(columns?: string): BaseRepository<any> {
+  select(columns?: string) {
     return this.baseRepository.select(columns);
   }
 
@@ -67,12 +67,12 @@ export abstract class EntityRepository<T extends Entity> {
    * @param values Values to insert
    * @returns A query builder
    */
-  insert(values: Partial<T> | Partial<T>[]): BaseRepository<any> {
-    return this.baseRepository.insert(
-      Array.isArray(values)
-        ? values.map(value => this.convertFromEntity(value as T)) 
-        : this.convertFromEntity(values as T)
-    );
+  insert(values: Partial<T> | Partial<T>[]) {
+    const convertedValues = Array.isArray(values)
+      ? values.map(value => this.convertFromEntity(value as T)) 
+      : this.convertFromEntity(values as T);
+    
+    return this.baseRepository.insert(convertedValues);
   }
   
   /**
@@ -80,7 +80,7 @@ export abstract class EntityRepository<T extends Entity> {
    * @param values Values to update
    * @returns A query builder
    */
-  update(values: Partial<T>): BaseRepository<any> {
+  update(values: Partial<T>) {
     return this.baseRepository.update(this.convertFromEntity(values as T));
   }
   
@@ -88,7 +88,7 @@ export abstract class EntityRepository<T extends Entity> {
    * The delete method used to delete data
    * @returns A query builder
    */
-  delete(): BaseRepository<any> {
+  delete() {
     return this.baseRepository.delete();
   }
 

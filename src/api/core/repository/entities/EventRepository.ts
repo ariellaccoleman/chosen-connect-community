@@ -116,10 +116,11 @@ export class EventRepository extends EntityRepository<Event> {
   async getUpcoming(): Promise<RepositoryResponse<Event[]>> {
     try {
       const now = new Date();
-      // Fix: Use gte method from the baseRepository
-      const query = this.baseRepository.select();
-      const result = await query
-        .gte('start_time', now.toISOString())
+      const nowIso = now.toISOString();
+      
+      // Use the baseRepository method correctly
+      const result = await this.baseRepository.select()
+        .filter('start_time', 'gte', nowIso)
         .order('start_time', { ascending: true })
         .execute();
       

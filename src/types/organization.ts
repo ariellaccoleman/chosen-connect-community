@@ -1,7 +1,7 @@
 
 import { Entity } from './entity';
 import { EntityType } from './entityTypes';
-import { OrganizationRelationship } from './relationships';
+import { ProfileOrganizationRelationship } from './profile';
 
 // Organization data from database
 export interface Organization extends Entity {
@@ -9,27 +9,27 @@ export interface Organization extends Entity {
   entityType: EntityType.ORGANIZATION;
   name: string;
   description: string;
-  website_url: string;
-  logo_url: string;
-  logo_api_url: string;
-  is_verified: boolean;
-  location_id: string | null;
-  created_at: string;
-  updated_at: string;
+  websiteUrl: string;
+  logoUrl: string;
+  logoApiUrl: string;
+  isVerified: boolean;
+  locationId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Organization form data
 export interface OrganizationFormValues {
   name: string;
   description: string;
-  website_url?: string;
-  logo_url?: string;
-  location_id?: string | null;
+  websiteUrl?: string;
+  logoUrl?: string;
+  locationId?: string | null;
 }
 
 // Organization with relationships
 export interface OrganizationWithRelationships extends Organization {
-  relationships?: OrganizationRelationship[];
+  relationships?: ProfileOrganizationRelationship[];
 }
 
 // Organization with location details
