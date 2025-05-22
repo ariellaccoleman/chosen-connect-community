@@ -1,7 +1,7 @@
 
 import { createTagEntityTypeRepository, TagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
 import { EntityType } from '@/types/entityTypes';
-import { mockRepositoryFactory, resetRepositoryFactoryMock } from '@/tests/utils/repositoryTestUtils';
+import { mockRepositoryFactory, resetRepositoryFactoryMock } from '../../../tests/utils/repositoryTestUtils';
 
 // Mock data
 const mockTagEntityTypes = [

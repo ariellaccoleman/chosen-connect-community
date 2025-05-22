@@ -2,7 +2,7 @@
 import { createTagAssignmentRepository, TagAssignmentRepository } from '@/api/tags/repository/TagAssignmentRepository';
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { mockRepositoryFactory, resetRepositoryFactoryMock } from '@/tests/utils/repositoryTestUtils';
+import { mockRepositoryFactory, resetRepositoryFactoryMock } from '../../../tests/utils/repositoryTestUtils';
 
 // Mock data
 const mockTagAssignments: TagAssignment[] = [
