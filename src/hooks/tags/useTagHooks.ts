@@ -6,6 +6,7 @@ import { createTag, updateTag, deleteTag } from "@/api/tags/tagCrudApi";
 import { assignTag, removeTagAssignment } from "@/api/tags/assignmentApi";
 import { getTags } from "@/api/tags";
 import { getAllFilteredEntityTags, getEntityTagAssignments } from "@/api/tags";
+import { logger } from "@/utils/logger";
 
 /**
  * Hook for CRUD operations on tags
@@ -68,13 +69,22 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
     queryFn: async () => {
       if (!tagId) return [];
       
-      const response = await getEntityTagAssignments();
-      // Filter the results client-side if needed
-      const filteredData = response.data ? response.data.filter(item => 
-        item.tag_id === tagId && (!entityType || item.target_type === entityType)
-      ) : [];
+      logger.debug(`Fetching tag assignments for tag: ${tagId}, entity type: ${entityType || 'all'}`);
       
-      return filteredData;
+      const response = await getEntityTagAssignments();
+      
+      if (response.status === "success" && response.data) {
+        // Filter the results client-side
+        const filteredData = response.data.filter(item => 
+          item.tag_id === tagId && (!entityType || item.target_type === entityType)
+        );
+        
+        logger.debug(`Found ${filteredData.length} tag assignments for tag ${tagId}`);
+        return filteredData;
+      }
+      
+      logger.warn(`No tag assignments found for tag ${tagId} or error in response`);
+      return [];
     },
     enabled: !!tagId
   });

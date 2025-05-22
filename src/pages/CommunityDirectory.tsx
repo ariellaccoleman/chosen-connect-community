@@ -34,14 +34,6 @@ const CommunityDirectory = () => {
   useEffect(() => {
     if (tagsResponse?.data) {
       logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
-      
-      // Find and log the Campus Issues tag
-      const campusIssuesTag = tagsResponse.data.find(tag => tag.name === "Campus Issues");
-      if (campusIssuesTag) {
-        logger.debug("Found Campus Issues tag:", campusIssuesTag);
-      } else {
-        logger.debug("Campus Issues tag not found in available tags");
-      }
     }
   }, [tagsResponse?.data]);
 
@@ -52,41 +44,25 @@ const CommunityDirectory = () => {
       const profilesWithTags = allProfiles.filter(p => p.tags && p.tags.length > 0);
       logger.debug(`Profiles with tags: ${profilesWithTags.length} out of ${allProfiles.length}`);
       
-      // Look for profiles with Campus Issues tag
-      const campusIssuesProfiles = allProfiles.filter(profile => 
-        profile.tags && profile.tags.some(tag => tag.tag && tag.tag.name === "Campus Issues")
-      );
-      
-      if (campusIssuesProfiles.length > 0) {
-        logger.debug(`Found ${campusIssuesProfiles.length} profiles with Campus Issues tag:`, 
-          campusIssuesProfiles.map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }))
-        );
-      } else {
-        logger.debug("No profiles found with Campus Issues tag");
+      if (selectedTagIds.length > 0) {
+        logger.debug("Selected tag IDs:", selectedTagIds);
       }
     }
-  }, [allProfiles]);
+  }, [allProfiles, selectedTagIds]);
 
-  // Debug tag filtering when selectedTagIds changes
-  useEffect(() => {
-    if (selectedTagIds.length > 0) {
-      logger.debug("Selected tag IDs:", selectedTagIds);
-      
-      // Get tag names for debugging
-      const selectedTagNames = tagsResponse?.data
-        ?.filter(tag => selectedTagIds.includes(tag.id))
-        .map(tag => tag.name);
-      
-      logger.debug("Selected tag names:", selectedTagNames);
-    }
-  }, [selectedTagIds, tagsResponse?.data]);
-
-  // Client-side filtering for tags
+  // Client-side filtering for tags - Fixed to properly check tag assignments
   const filteredProfiles = selectedTagIds.length > 0 
-    ? allProfiles.filter(profile => 
-        profile.tags && 
-        profile.tags.some(tag => selectedTagIds.includes(tag.tag_id))
-      )
+    ? allProfiles.filter(profile => {
+        // Check if profile has tags array
+        if (!profile.tags || !Array.isArray(profile.tags)) {
+          return false;
+        }
+        
+        // Check if any of the profile's tags match the selected tags
+        return profile.tags.some(tagAssignment => 
+          selectedTagIds.includes(tagAssignment.tag_id)
+        );
+      })
     : allProfiles;
   
   // Log filtered profiles

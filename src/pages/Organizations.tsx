@@ -49,14 +49,22 @@ const OrganizationsList = () => {
       (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
   });
   
-  // Filter by tag id if selected
+  // Debug number of tagAssignments when selectedTagId changes
+  logger.debug(`Selected tag ID: ${selectedTagId}, Found ${tagAssignments.length} tag assignments`);
+  
+  // Filter by tag id if selected - using the target_id from tag assignments
   const filteredOrganizations = selectedTagId
     ? searchFilteredOrgs.filter(org => {
-        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
-        return taggedIds.has(org.id);
+        // Get array of entity IDs that have the selected tag assigned
+        const taggedEntityIds = tagAssignments.map(assignment => assignment.target_id);
+        // Check if current organization ID is in the array of tag assignments
+        return taggedEntityIds.includes(org.id);
       })
     : searchFilteredOrgs;
     
+  // Log filtering results
+  logger.debug(`Filtering organizations: ${filteredOrganizations.length} of ${organizations.length} matched`);
+  
   // Handle clicking on an organization card
   const handleViewOrganization = (orgId: string) => {
     // Use generatePath to correctly create the URL with parameters
