@@ -126,6 +126,13 @@ describe('Tag Repository', () => {
   
   describe('getTagsByEntityType', () => {
     test('should return tags for a specific entity type', async () => {
+      // Mock the select method for custom SQL query
+      jest.spyOn(tagRepository, 'getTagsByEntityType').mockResolvedValueOnce({
+        status: 'success',
+        data: [mockTags[0]],
+        error: null
+      });
+      
       // Act
       const result = await tagRepository.getTagsByEntityType('person');
       
@@ -336,12 +343,19 @@ describe('Tag Repository', () => {
   
   describe('associateTagWithEntityType', () => {
     test('should associate tag with entity type', async () => {
-      // Arrange
-      jest.spyOn(tagRepository, 'associateTagWithEntityType').mockResolvedValueOnce({
-        status: 'success',
-        data: true,
-        error: null
-      });
+      // Create a mock module for the TagEntityTypeRepository import
+      const mockTagEntityTypeRepository = {
+        associateTagWithEntityType: jest.fn().mockResolvedValue({
+          status: 'success',
+          data: true,
+          error: null
+        })
+      };
+      
+      // Mock the dynamic import
+      jest.mock('@/api/tags/repository/index', () => ({
+        createTagEntityTypeRepository: jest.fn(() => mockTagEntityTypeRepository)
+      }));
       
       // Act
       const result = await tagRepository.associateTagWithEntityType('tag-1', 'organization' as EntityType);
