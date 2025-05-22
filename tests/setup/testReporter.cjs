@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -89,6 +90,12 @@ class TestReporter {
       return;
     }
 
+    // Add defensive check for test
+    if (!test) {
+      console.error('Test object is undefined in onTestFileStart');
+      return;
+    }
+
     const testFilePath = test.path;
     // Extract suite name from file path
     const testSuitePath = testFilePath.split('/');
@@ -142,11 +149,23 @@ class TestReporter {
   }
 
   async onTestFileResult(test, testResult) {
+    // Add detailed logging to debug the issue
+    console.log(`onTestFileResult called with test: ${test ? 'defined' : 'undefined'} and testResult: ${testResult ? 'defined' : 'undefined'}`);
+    
+    if (!test) {
+      console.error('Test object is undefined in onTestFileResult');
+      return;
+    }
+
     const { testFilePath } = test;
+    console.log(`Looking for suite with testFilePath: ${testFilePath}`);
+    
     const suite = this.results.suites.get(testFilePath);
     
     if (!suite) {
       console.error(`No suite found for ${testFilePath}`);
+      // Let's see what suites we do have
+      console.log('Current suites in map:', Array.from(this.results.suites.keys()));
       return;
     }
     
@@ -210,6 +229,17 @@ class TestReporter {
   }
 
   async processTestResults(testResult, suite) {
+    // Add more logging to debug the issue
+    if (!testResult) {
+      console.error('testResult is undefined in processTestResults');
+      return;
+    }
+    
+    if (!suite) {
+      console.error('suite is undefined in processTestResults');
+      return;
+    }
+    
     const { testResults, testFilePath } = testResult;
     
     if (!this.testRunId) {
@@ -325,11 +355,24 @@ class TestReporter {
   }
 
   async onTestResult(test, testResult) {
+    console.log(`onTestResult called with test: ${test ? 'defined' : 'undefined'} and testResult: ${testResult ? 'defined' : 'undefined'}`);
+    
     // Most of the work is done in onTestFileResult now
     // This method is kept for backward compatibility
     if (!test || test === undefined) {
       console.warn('Received undefined test in onTestResult - skipping');
       return;
+    }
+    
+    // Defensive check for testResult
+    if (!testResult) {
+      console.warn('Received undefined testResult in onTestResult - skipping');
+      return;
+    }
+    
+    // Log testFilePath to help debugging
+    if (test && test.path) {
+      console.log(`onTestResult for test path: ${test.path}`);
     }
   }
 
