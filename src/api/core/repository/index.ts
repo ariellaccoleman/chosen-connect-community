@@ -8,6 +8,8 @@
 
 // Export the main repository interfaces and types
 export * from './DataRepository';
+export * from './BaseRepository';
+export * from './EntityRepository';
 export * from './SupabaseRepository';
 export * from './MockRepository';
 
@@ -15,9 +17,9 @@ export * from './MockRepository';
 export * from './repositoryFactory';
 export * from './enhancedRepositoryFactory';
 
-// Export standard operations
-export * from './standardOperations';
+// Export utility functions
 export * from './repositoryUtils';
 
-// Export integration examples
+// Export standard operations
+export * from './standardOperations';
 export * from './integrationExamples';

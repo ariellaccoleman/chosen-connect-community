@@ -1,7 +1,7 @@
 
-import { DataRepository } from './DataRepository';
-import { createSupabaseRepository } from './SupabaseRepository';
-import { createMockRepository, MockRepository } from './MockRepository';
+import { BaseRepository } from './BaseRepository';
+import { SupabaseRepository, createSupabaseRepository } from './SupabaseRepository';
+import { MockRepository, createMockRepository } from './MockRepository';
 
 /**
  * Repository type to differentiate between real and mock implementations
@@ -15,7 +15,7 @@ export function createRepository<T>(
   tableName: string, 
   type: RepositoryType = 'supabase',
   initialData: T[] = []
-): DataRepository<T> {
+): BaseRepository<T> {
   switch (type) {
     case 'mock':
       return createMockRepository<T>(tableName, initialData);
@@ -29,5 +29,6 @@ export function createRepository<T>(
  * Export repository types for easier imports
  */
 export * from './DataRepository';
+export * from './BaseRepository';
 export * from './SupabaseRepository';
 export * from './MockRepository';

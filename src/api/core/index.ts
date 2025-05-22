@@ -9,7 +9,11 @@ export * from './factory/operations';
 export * from './factory/types';
 
 // Repository pattern
+export * from './repository/index';
 export * from './repository/repositoryFactory';
+export * from './repository/DataRepository';
+export * from './repository/BaseRepository';
+export * from './repository/EntityRepository';
 
 // Error handling
 export {

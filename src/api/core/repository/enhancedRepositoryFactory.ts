@@ -1,8 +1,11 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { DataRepository } from "./DataRepository";
+import { BaseRepository } from "./BaseRepository";
 import { SupabaseRepository } from "./SupabaseRepository";
 import { MockRepository } from "./MockRepository";
+import { EntityRepository } from "./EntityRepository";
+import { Entity } from "@/types/entity";
+import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 export type EnhancedRepositoryType = "supabase" | "mock";
@@ -57,16 +60,16 @@ export interface EnhancedRepositoryOptions<T> {
  * @param tableName Name of the table
  * @param type Repository type (supabase or mock)
  * @param options Repository configuration options
- * @returns A DataRepository instance
+ * @returns A BaseRepository instance
  */
 export function createEnhancedRepository<T>(
   tableName: string,
   type: EnhancedRepositoryType = "supabase",
   initialData?: T[],
   options: EnhancedRepositoryOptions<T> = {}
-): DataRepository<T> {
+): BaseRepository<T> {
   // Create base repository
-  let repository: DataRepository<T>;
+  let repository: BaseRepository<T>;
   
   // Initialize the repository based on type
   if (type === "mock") {
@@ -94,4 +97,48 @@ export function createEnhancedRepository<T>(
   }
   
   return repository;
+}
+
+/**
+ * Abstract factory class for creating entity repositories
+ * To be extended by specific entity repository factories
+ */
+export abstract class EntityRepositoryFactory<T extends Entity> {
+  /**
+   * Create an entity repository
+   * @param type Repository type (supabase or mock)
+   * @param initialData Initial data for mock repositories
+   * @returns EntityRepository instance
+   */
+  abstract createRepository(
+    type: EnhancedRepositoryType,
+    initialData?: T[]
+  ): EntityRepository<T>;
+  
+  /**
+   * Get the table name for this entity type
+   */
+  abstract getTableName(): string;
+  
+  /**
+   * Get the entity type this factory creates repositories for
+   */
+  abstract getEntityType(): EntityType;
+  
+  /**
+   * Create a mock repository for testing
+   * @param initialData Initial data
+   * @returns EntityRepository instance
+   */
+  createMockRepository(initialData: T[] = []): EntityRepository<T> {
+    return this.createRepository('mock', initialData);
+  }
+  
+  /**
+   * Create a production Supabase repository
+   * @returns EntityRepository instance
+   */
+  createSupabaseRepository(): EntityRepository<T> {
+    return this.createRepository('supabase');
+  }
 }

@@ -1,51 +1,19 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
+import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
+import { BaseRepository } from './BaseRepository';
 import { logger } from '@/utils/logger';
 import { createSuccessResponse, createErrorResponse, handleRepositoryError } from './repositoryUtils';
 
 /**
- * Supabase implementation of the DataRepository interface
+ * Supabase implementation of the BaseRepository abstract class
  */
-export class SupabaseRepository<T = any> implements DataRepository<T> {
-  tableName: string;
+export class SupabaseRepository<T = any> extends BaseRepository<T> {
   private supabaseClient: any;
-  private options: Record<string, any> = {
-    idField: 'id',
-    defaultSelect: '*',
-    softDelete: false,
-    deletedAtColumn: 'deleted_at'
-  };
 
   constructor(tableName: string, client?: any) {
-    this.tableName = tableName;
+    super(tableName);
     this.supabaseClient = client || supabase;
-  }
-
-  /**
-   * Set repository options
-   */
-  setOptions(options: Record<string, any>): void {
-    this.options = { ...this.options, ...options };
-  }
-
-  /**
-   * Get a record by ID
-   */
-  async getById(id: string | number): Promise<T | null> {
-    const result = await this.select()
-      .eq(this.options.idField, id)
-      .maybeSingle();
-    
-    return result.data as T | null;
-  }
-
-  /**
-   * Get all records
-   */
-  async getAll(): Promise<T[]> {
-    const result = await this.select().execute();
-    return result.data as T[];
   }
 
   /**
@@ -320,6 +288,6 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
 /**
  * Create a Supabase repository for a specific table
  */
-export function createSupabaseRepository<T>(tableName: string, client?: any): DataRepository<T> {
+export function createSupabaseRepository<T>(tableName: string, client?: any): SupabaseRepository<T> {
   return new SupabaseRepository<T>(tableName, client);
 }
