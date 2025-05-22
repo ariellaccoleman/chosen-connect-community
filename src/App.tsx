@@ -13,9 +13,10 @@ const App = () => {
   logger.info("App component rendering");
   
   // Initialize entity registry on app start
+  // This is now the single point of initialization
   useEffect(() => {
     initializeRegistry();
-    logger.info("Entity registry initialized");
+    logger.info("Entity registry initialized in App component");
   }, []);
   
   return (

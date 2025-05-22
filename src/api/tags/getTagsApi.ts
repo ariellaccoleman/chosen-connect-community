@@ -3,6 +3,7 @@ import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse, createErrorResponse } from "../core/errorHandler";
 import { typedRpc } from "../core/typedRpc";
 import { logger } from "@/utils/logger";
+import { isValidEntityTypeInRegistry } from "@/registry";
 
 /**
  * API functions for retrieving tags with various filters
@@ -21,6 +22,12 @@ export const getFilterTags = async (options: {
   return apiClient.query(async (client) => {
     try {
       logger.debug("getFilterTags called with options:", options);
+      
+      // Validate entity type if provided
+      if (options.targetType && !isValidEntityTypeInRegistry(options.targetType)) {
+        logger.warn(`Invalid entity type in getFilterTags: ${options.targetType}`);
+        return createSuccessResponse([]);
+      }
       
       // Use the new filtered_entity_tags_view for more efficient querying
       let query = `
@@ -114,16 +121,21 @@ export const getSelectionTags = async (options: {
     try {
       logger.debug("getSelectionTags called with options:", options);
       
+      // Validate entity type if provided
+      if (options.targetType && !isValidEntityTypeInRegistry(options.targetType)) {
+        logger.warn(`Invalid entity type in getSelectionTags: ${options.targetType}`);
+        return createSuccessResponse([]);
+      }
+      
       // Use our new all_tags_with_entity_types_view for efficient querying
       let query;
       
       if (options.targetType) {
-        // If target type is specified, get tags that are either specific to this entity type 
-        // or don't have any entity type associations
+        // If target type is specified, get tags that are associated with this entity type
         query = `
           SELECT *
           FROM all_tags_with_entity_types_view
-          WHERE $1 = ANY(entity_types) OR array_length(entity_types, 1) IS NULL
+          WHERE $1 = ANY(entity_types)
         `;
         
         if (options.searchQuery) {
@@ -201,38 +213,12 @@ export const getSelectionTags = async (options: {
         // Final fallback to direct query
         logger.warn("Standard RPC query failed, falling back to direct query:", e);
         
-        // Note: We can't query entity_types directly in a normal query with the current setup
-        // since it's an array type. We'll need to add them after fetching.
         const { data, error } = await client
-          .from('tags')
+          .from('all_tags_with_entity_types_view')
           .select('*')
           .order('name');
         
         if (error) throw error;
-        
-        // Fetch entity types for each tag
-        if (data && data.length > 0) {
-          const tagIds = data.map(tag => tag.id);
-          const { data: entityTypesData, error: entityTypesError } = await client
-            .from('tag_entity_types')
-            .select('tag_id, entity_type')
-            .in('tag_id', tagIds);
-          
-          if (!entityTypesError && entityTypesData) {
-            // Create a map of tag_id -> entity_types
-            const entityTypeMap = new Map<string, string[]>();
-            entityTypesData.forEach(item => {
-              const types = entityTypeMap.get(item.tag_id) || [];
-              types.push(item.entity_type);
-              entityTypeMap.set(item.tag_id, types);
-            });
-            
-            // Add entity_types to each tag
-            data.forEach(tag => {
-              tag.entity_types = entityTypeMap.get(tag.id) || [];
-            });
-          }
-        }
         
         logger.debug(`getSelectionTags direct query found ${data?.length || 0} tags`);
         return createSuccessResponse(data || []);

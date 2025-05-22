@@ -384,6 +384,13 @@ export type Database = {
             foreignKeyName: "events_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "filtered_entity_tags_view"
             referencedColumns: ["id"]
           },
@@ -508,6 +515,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hubs_tag_id_fkey"
             columns: ["tag_id"]
@@ -1025,6 +1039,13 @@ export type Database = {
             foreignKeyName: "tag_assignments_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "filtered_entity_tags_view"
             referencedColumns: ["id"]
           },
@@ -1074,6 +1095,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tag_entity_types_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tag_entity_types_tag_id_fkey"
             columns: ["tag_id"]
@@ -1247,7 +1275,22 @@ export type Database = {
           name: string | null
           updated_at: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "people_with_tags"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tags_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       chat_reply_counts: {
         Row: {
@@ -1278,6 +1321,13 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tag_assignments_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tag_assignments_tag_id_fkey"
             columns: ["tag_id"]
@@ -1366,6 +1416,13 @@ export type Database = {
             foreignKeyName: "events_tag_id_fkey"
             columns: ["tag_id"]
             isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
             referencedRelation: "filtered_entity_tags_view"
             referencedColumns: ["id"]
           },
@@ -1432,6 +1489,13 @@ export type Database = {
           updated_at: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "hubs_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "all_tags_with_entity_types_view"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hubs_tag_id_fkey"
             columns: ["tag_id"]

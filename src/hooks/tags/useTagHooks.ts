@@ -8,7 +8,7 @@ import {
   deleteTag
 } from "@/api/tags";
 import { Tag, TagAssignment } from "@/utils/tags/types";
-import { EntityType } from "@/types/entityTypes";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { apiClient } from "@/api/core/apiClient";
 import { assignTag, removeTagAssignment } from "@/utils/tags/tagAssignments";
 import { fetchSelectionTags, fetchFilterTags } from "@/utils/tags/tagOperations";
@@ -22,6 +22,14 @@ export function useSelectionTags(entityType?: EntityType) {
     queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
       try {
+        if (entityType && !isValidEntityType(entityType)) {
+          logger.warn(`Invalid entity type passed to useSelectionTags: ${entityType}`);
+          return {
+            status: 'success',
+            data: []
+          };
+        }
+        
         // Use the updated fetchSelectionTags function that uses the new views
         const tags = await fetchSelectionTags({
           targetType: entityType,
@@ -51,6 +59,11 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
     queryKey: ["tag-assignments", tagId, entityType],
     queryFn: async () => {
       if (!tagId) return [];
+      
+      if (entityType && !isValidEntityType(entityType)) {
+        logger.warn(`Invalid entity type passed to useFilterByTag: ${entityType}`);
+        return [];
+      }
       
       // Use the new entity_tag_assignments_view for better performance
       const { data, error } = await apiClient.query(client => 
@@ -124,6 +137,11 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
     queryFn: async () => {
       if (!entityId) return { status: 'success', data: [] };
       
+      if (!isValidEntityType(entityType)) {
+        logger.warn(`Invalid entity type passed to useEntityTags: ${entityType}`);
+        return { status: 'success', data: [] };
+      }
+      
       // Use the entity_tag_assignments_view for more efficient queries
       return apiClient.query(async (client) => {
         const { data, error } = await client
@@ -140,7 +158,7 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
         };
       });
     },
-    enabled: !!entityId
+    enabled: !!entityId && isValidEntityType(entityType)
   });
 }
 
@@ -160,6 +178,11 @@ export function useTagAssignmentMutations() {
       entityId: string, 
       entityType: EntityType 
     }) => {
+      // Validate entity type
+      if (!isValidEntityType(entityType)) {
+        throw new Error(`Invalid entity type: ${entityType}`);
+      }
+      
       return assignTag(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {

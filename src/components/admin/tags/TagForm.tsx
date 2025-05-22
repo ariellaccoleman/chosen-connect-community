@@ -14,6 +14,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { EntityType } from "@/types/entityTypes";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getRegisteredEntityTypes } from "@/registry";
 
 // Schema moved from parent component
 const tagSchema = z.object({
@@ -21,7 +23,9 @@ const tagSchema = z.object({
     message: "Tag name must be at least 2 characters.",
   }),
   description: z.string().optional(),
-  entityType: z.enum(["person", "organization"]),
+  entityType: z.string().min(1, {
+    message: "Entity type is required.",
+  }),
 });
 
 export type TagFormValues = z.infer<typeof tagSchema>;
@@ -39,7 +43,7 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
     defaultValues: {
       name: "",
       description: "",
-      entityType: "person",
+      entityType: EntityType.PERSON,
     },
   });
 
@@ -47,6 +51,9 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
     await onSubmit(values);
     form.reset();
   };
+
+  // Get registered entity types from the registry
+  const entityTypes = getRegisteredEntityTypes();
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -56,7 +63,7 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
             <DialogHeader>
               <DialogTitle>Create New Tag</DialogTitle>
               <DialogDescription>
-                Add a new tag to the database.
+                Add a new tag to the database with its associated entity type.
               </DialogDescription>
             </DialogHeader>
 
@@ -94,12 +101,23 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting }: TagFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Entity Type</FormLabel>
-                  <FormControl>
-                    <select {...field} className="rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50">
-                      <option value="person">Person</option>
-                      <option value="organization">Organization</option>
-                    </select>
-                  </FormControl>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an entity type" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {entityTypes.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {type.charAt(0).toUpperCase() + type.slice(1)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

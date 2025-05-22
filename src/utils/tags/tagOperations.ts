@@ -8,7 +8,7 @@ import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEnt
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
-import { apiClient } from "@/api/core/apiClient";
+import { isValidEntityTypeInRegistry } from "@/registry";
 
 // Fetch tags for filtering (showing assigned tags only)
 export const fetchFilterTags = async (options: {
@@ -22,7 +22,7 @@ export const fetchFilterTags = async (options: {
     let validOptions = { ...options };
     
     // Convert string to EntityType if needed
-    if (validOptions.targetType && !isValidEntityType(validOptions.targetType)) {
+    if (validOptions.targetType && !isValidEntityTypeInRegistry(validOptions.targetType)) {
       logger.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
       validOptions.targetType = undefined;
     }
@@ -44,7 +44,7 @@ export const fetchFilterTags = async (options: {
   }
 };
 
-// Fetch tags for selection (showing entity-specific and general tags)
+// Fetch tags for selection (showing entity-specific tags)
 export const fetchSelectionTags = async (options: {
   createdBy?: string;
   searchQuery?: string;
@@ -56,7 +56,7 @@ export const fetchSelectionTags = async (options: {
     let validOptions = { ...options };
     
     // Convert string to EntityType if needed
-    if (validOptions.targetType && !isValidEntityType(validOptions.targetType)) {
+    if (validOptions.targetType && !isValidEntityTypeInRegistry(validOptions.targetType)) {
       logger.warn(`Invalid entity type: ${validOptions.targetType}, ignoring`);
       validOptions.targetType = undefined;
     }
@@ -82,9 +82,15 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Find or create a tag
-export const findOrCreateTag = async (tagData: Partial<Tag>, entityType?: EntityType | string): Promise<Tag | null> => {
+// Find or create a tag - entityType is now required
+export const findOrCreateTag = async (tagData: Partial<Tag>, entityType: EntityType | string): Promise<Tag | null> => {
   try {
+    // Validate entity type - this is now required
+    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
+      logger.error(`Invalid or missing entity type in findOrCreateTag: ${entityType}`);
+      throw new Error(`Entity type is required and must be valid`);
+    }
+    
     // Call the API function that properly uses the apiClient
     const response = await apiFindOrCreateTag(tagData);
     
@@ -94,13 +100,11 @@ export const findOrCreateTag = async (tagData: Partial<Tag>, entityType?: Entity
     }
     
     // If entity type is provided, associate it with the tag
-    if (entityType && isValidEntityType(entityType)) {
-      try {
-        await updateTagEntityType(response.data.id, entityType);
-      } catch (entityTypeError) {
-        logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
-        // Continue even if this fails
-      }
+    try {
+      await updateTagEntityType(response.data.id, entityType);
+    } catch (entityTypeError) {
+      logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
+      // Continue even if this fails
     }
     
     return response.data;
@@ -116,10 +120,10 @@ export const updateTagEntityType = async (
   entityType: EntityType | string
 ): Promise<boolean> => {
   try {
-    // Validate entity type
-    if (!isValidEntityType(entityType)) {
-      logger.error(`Invalid entity type: ${entityType}`);
-      return false;
+    // Validate entity type - this is now required
+    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
+      logger.error(`Invalid or missing entity type in updateTagEntityType: ${entityType}`);
+      throw new Error(`Entity type is required and must be valid`);
     }
     
     const response = await apiUpdateTagEntityType(tagId, entityType);
@@ -137,9 +141,15 @@ export const updateTagEntityType = async (
   }
 };
 
-// Create a new tag - Use the API function instead of direct fetch
-export const createTag = async (tagData: Partial<Tag>, entityType?: EntityType | string): Promise<Tag | null> => {
+// Create a new tag - entityType is now required
+export const createTag = async (tagData: Partial<Tag>, entityType: EntityType | string): Promise<Tag | null> => {
   try {
+    // Validate entity type - this is now required
+    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
+      logger.error(`Invalid or missing entity type in createTag: ${entityType}`);
+      throw new Error(`Entity type is required and must be valid`);
+    }
+    
     // Call the API function that properly uses the apiClient
     const response = await apiCreateTag(tagData);
     
@@ -148,14 +158,12 @@ export const createTag = async (tagData: Partial<Tag>, entityType?: EntityType |
       return null;
     }
     
-    // If entity type is provided, associate it with the tag
-    if (entityType && isValidEntityType(entityType)) {
-      try {
-        await updateTagEntityType(response.data.id, entityType);
-      } catch (entityTypeError) {
-        logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
-        // Continue even if this fails
-      }
+    // Associate it with the specified entity type
+    try {
+      await updateTagEntityType(response.data.id, entityType);
+    } catch (entityTypeError) {
+      logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
+      // Continue even if this fails
     }
     
     return response.data;

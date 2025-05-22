@@ -39,11 +39,11 @@ const AdminTags = () => {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      // Create the tag first
+      // Create the tag first, with the created_by property
       await createTag({
         name: values.name,
         description: values.description,
-        created_by: user?.id // Add the created_by property with the current user's ID
+        created_by: user?.id
       });
       
       // Then associate it with the selected entity type
@@ -53,7 +53,7 @@ const AdminTags = () => {
           await updateTagEntityType(values.name, values.entityType);
         } catch (entityTypeError) {
           console.error("Error setting entity type:", entityTypeError);
-          // Continue even if this fails
+          // Continue even if this fails, the trigger should handle this
         }
       }
       
