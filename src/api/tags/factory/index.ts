@@ -2,4 +2,9 @@
 /**
  * Export tag API factories
  */
-export * from './tagApiFactory';
+export { 
+  createTagApiFactory,
+  createTagAssignmentApiFactory,
+  tagApi,
+  tagAssignmentApi
+} from './tagApiFactory';
