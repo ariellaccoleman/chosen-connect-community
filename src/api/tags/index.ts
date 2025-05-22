@@ -21,14 +21,36 @@ import {
   tagApi,
   tagAssignmentApi,
   createTagApiFactory,
-  createTagAssignmentApiFactory
+  createTagAssignmentApiFactory,
+  getAllTags,
+  getTagById,
+  findTagByName,
+  createTag,
+  updateTag,
+  deleteTag,
+  findOrCreateTag,
+  getTagsByEntityType,
+  getTagAssignmentsForEntity,
+  createTagAssignment,
+  deleteTagAssignment
 } from './factory/tagApiFactory';
 
 export {
   tagApi,
   tagAssignmentApi,
   createTagApiFactory,
-  createTagAssignmentApiFactory
+  createTagAssignmentApiFactory,
+  getAllTags,
+  getTagById,
+  findTagByName,
+  createTag,
+  updateTag,
+  deleteTag,
+  findOrCreateTag,
+  getTagsByEntityType,
+  getTagAssignmentsForEntity,
+  createTagAssignment,
+  deleteTagAssignment
 };
 
 // For backward compatibility, we export the legacy APIs with different names

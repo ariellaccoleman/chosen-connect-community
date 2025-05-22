@@ -1,8 +1,7 @@
-
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  getAllTags, 
+  tagApi, // Import the factory API instance instead
   createTag, 
   updateTag,
   deleteTag
@@ -31,11 +30,8 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the updated fetchSelectionTags function that uses the new views
-        const tags = await fetchSelectionTags({
-          targetType: entityType,
-          skipCache: false
-        });
+        // Use the tagApi from factory instead of the getAllTags function
+        const tags = await tagApi.getAll();
         
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
