@@ -158,10 +158,10 @@ export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}):
       // If not found, create the tag
       const newTag = await repository.createTag(data);
       
-      // Associate with entity type if specified
-      if (effectiveEntityType && newTag && newTag.id) {
+      // Associate with entity type if specified - fix: access the data.id property
+      if (effectiveEntityType && newTag && newTag.data && newTag.data.id) {
         try {
-          await repository.associateTagWithEntityType(newTag.id, effectiveEntityType);
+          await repository.associateTagWithEntityType(newTag.data.id, effectiveEntityType);
         } catch (err) {
           // Log but don't fail if entity type association fails
           console.warn(`Failed to associate new tag with entity type: ${err}`);
