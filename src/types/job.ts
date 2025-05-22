@@ -1,5 +1,6 @@
 
 import { Entity } from "./entity";
+import { Location } from "./location";
 
 /**
  * Job post entity type
@@ -9,7 +10,7 @@ export interface Job extends Entity {
   company: string;
   description: string;
   salary?: string;
-  location?: string;
+  location?: Location; // Fixed: Changed from string to Location type
   remote?: boolean;
   applyUrl?: string;
   postedDate: string;
@@ -25,7 +26,7 @@ export interface JobCreateData {
   company: string;
   description: string;
   salary?: string;
-  location?: string;
+  location?: string | Location; // Allow string or Location for creation
   remote?: boolean;
   applyUrl?: string;
   closingDate?: string;
@@ -40,7 +41,7 @@ export interface JobUpdateData {
   company?: string;
   description?: string;
   salary?: string;
-  location?: string;
+  location?: string | Location; // Allow string or Location for updates
   remote?: boolean;
   applyUrl?: string;
   closingDate?: string;

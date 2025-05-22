@@ -1,4 +1,3 @@
-
 import { entityRegistry } from './entityRegistrySystem';
 import defaultRegistrations from './defaultEntityRegistrations';
 import { EntityType } from '@/types/entityTypes';
@@ -7,6 +6,9 @@ import { APP_ROUTES } from '@/config/routes';
 import { Entity } from '@/types/entity';
 import { EntityTypeDefinition } from '@/types/entityRegistry';
 import { logger } from '@/utils/logger';
+
+// Export the entityRegistry so it can be imported from other modules
+export { entityRegistry };
 
 /**
  * Initialize the entity registry system with default entity types
