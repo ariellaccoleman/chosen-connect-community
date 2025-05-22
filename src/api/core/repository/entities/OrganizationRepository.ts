@@ -10,56 +10,23 @@ import { BaseRepository } from '../BaseRepository';
  */
 export class OrganizationRepository extends EntityRepository<Organization> {
   /**
-   * The base repository to delegate database operations to
-   */
-  protected baseRepository: BaseRepository<Organization>;
-
-  /**
    * Create a new OrganizationRepository
    * 
    * @param tableName The table name
+   * @param entityType The entity type
    * @param baseRepository The base repository to delegate to
    */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<Organization>) {
-    super(tableName, entityType);
-    this.baseRepository = baseRepository;
-  }
-
-  /**
-   * Delegate select operation to base repository
-   */
-  select(columns?: string): BaseRepository<Organization> {
-    return this.baseRepository.select(columns);
-  }
-
-  /**
-   * Delegate insert operation to base repository
-   */
-  insert(values: Partial<Organization> | Partial<Organization>[]): BaseRepository<Organization> {
-    return this.baseRepository.insert(values);
-  }
-
-  /**
-   * Delegate update operation to base repository
-   */
-  update(values: Partial<Organization>): BaseRepository<Organization> {
-    return this.baseRepository.update(values);
-  }
-
-  /**
-   * Delegate delete operation to base repository
-   */
-  delete(): BaseRepository<Organization> {
-    return this.baseRepository.delete();
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
+    super(tableName, entityType, baseRepository);
   }
 
   /**
    * Convert database record to Organization entity
    */
   convertToEntity(record: any): Organization {
-    const organization: Organization = {
+    return {
       id: record.id,
-      entityType: EntityType.ORGANIZATION,
+      entityType: EntityType.ORGANIZATION, // Add entityType to satisfy Entity interface
       name: record.name,
       description: record.description || '',
       website_url: record.website_url || '',
@@ -70,26 +37,26 @@ export class OrganizationRepository extends EntityRepository<Organization> {
       created_at: record.created_at,
       updated_at: record.updated_at,
     };
-    
-    return organization;
   }
 
   /**
    * Convert Organization entity to database record
    */
-  convertFromEntity(entity: Organization): Record<string, any> {
-    return {
-      id: entity.id,
-      name: entity.name,
-      description: entity.description,
-      website_url: entity.website_url,
-      logo_url: entity.logo_url,
-      logo_api_url: entity.logo_api_url,
-      is_verified: entity.is_verified,
-      location_id: entity.location_id,
-      created_at: entity.created_at,
-      updated_at: entity.updated_at,
-    };
+  convertFromEntity(entity: Partial<Organization>): Record<string, any> {
+    const record: Record<string, any> = {};
+    
+    if (entity.id !== undefined) record.id = entity.id;
+    if (entity.name !== undefined) record.name = entity.name;
+    if (entity.description !== undefined) record.description = entity.description;
+    if (entity.website_url !== undefined) record.website_url = entity.website_url;
+    if (entity.logo_url !== undefined) record.logo_url = entity.logo_url;
+    if (entity.logo_api_url !== undefined) record.logo_api_url = entity.logo_api_url;
+    if (entity.is_verified !== undefined) record.is_verified = entity.is_verified;
+    if (entity.location_id !== undefined) record.location_id = entity.location_id;
+    if (entity.created_at !== undefined) record.created_at = entity.created_at;
+    if (entity.updated_at !== undefined) record.updated_at = entity.updated_at;
+    
+    return record;
   }
 
   /**
@@ -112,7 +79,7 @@ export class OrganizationRepository extends EntityRepository<Organization> {
         };
       }
       
-      return result as RepositoryResponse<Organization[]>;
+      return result as unknown as RepositoryResponse<Organization[]>;
     } catch (error) {
       this.handleError('findByName', error, { name });
       return {

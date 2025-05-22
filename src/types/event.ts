@@ -10,7 +10,7 @@ import { EntityType } from "./entityTypes";
 export interface Event extends Entity {
   id: string;
   entityType: EntityType.EVENT;
-  name: string;
+  name: string; // Using title as name to satisfy the Entity interface
   title: string;
   description: string;
   startTime: Date;

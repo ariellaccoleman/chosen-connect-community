@@ -30,7 +30,7 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactory<Organ
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Organization[]
   ): OrganizationRepository {
-    const baseRepository = createEnhancedRepository<Organization>(
+    const baseRepository = createEnhancedRepository<any>(
       this.getTableName(),
       type,
       initialData,

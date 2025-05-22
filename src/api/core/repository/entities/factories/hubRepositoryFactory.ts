@@ -30,7 +30,7 @@ export class HubRepositoryFactory extends EntityRepositoryFactory<Hub> {
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Hub[]
   ): HubRepository {
-    const baseRepository = createEnhancedRepository<Hub>(
+    const baseRepository = createEnhancedRepository<any>(
       this.getTableName(),
       type,
       initialData,

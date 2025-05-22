@@ -22,14 +22,21 @@ export abstract class EntityRepository<T extends Entity> {
   readonly tableName: string;
 
   /**
+   * The base repository to delegate database operations to
+   */
+  protected baseRepository: BaseRepository<any>;
+
+  /**
    * Create a new EntityRepository
    * 
    * @param tableName Table name in the database
    * @param entityType Type of entity this repository handles
+   * @param baseRepository Base repository for delegation
    */
-  constructor(tableName: string, entityType: EntityType) {
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
     this.tableName = tableName;
     this.entityType = entityType;
+    this.baseRepository = baseRepository;
   }
 
   /**
@@ -51,27 +58,39 @@ export abstract class EntityRepository<T extends Entity> {
    * @param columns Columns to select
    * @returns A query builder
    */
-  abstract select(columns?: string): BaseRepository<T>;
+  select(columns?: string): BaseRepository<any> {
+    return this.baseRepository.select(columns);
+  }
 
   /**
    * The insert method used to insert data
    * @param values Values to insert
    * @returns A query builder
    */
-  abstract insert(values: Partial<T> | Partial<T>[]): BaseRepository<T>;
+  insert(values: Partial<T> | Partial<T>[]): BaseRepository<any> {
+    return this.baseRepository.insert(
+      Array.isArray(values)
+        ? values.map(value => this.convertFromEntity(value as T)) 
+        : this.convertFromEntity(values as T)
+    );
+  }
   
   /**
    * The update method used to update data
    * @param values Values to update
    * @returns A query builder
    */
-  abstract update(values: Partial<T>): BaseRepository<T>;
+  update(values: Partial<T>): BaseRepository<any> {
+    return this.baseRepository.update(this.convertFromEntity(values as T));
+  }
   
   /**
    * The delete method used to delete data
    * @returns A query builder
    */
-  abstract delete(): BaseRepository<T>;
+  delete(): BaseRepository<any> {
+    return this.baseRepository.delete();
+  }
 
   /**
    * Handle errors in repository operations
@@ -95,7 +114,7 @@ export abstract class EntityRepository<T extends Entity> {
    */
   async getById(id: string): Promise<T | null> {
     try {
-      const result = await this.select()
+      const result = await this.baseRepository.select()
         .eq('id', id)
         .maybeSingle();
         
@@ -116,7 +135,7 @@ export abstract class EntityRepository<T extends Entity> {
    */
   async getAll(): Promise<T[]> {
     try {
-      const result = await this.select().execute();
+      const result = await this.baseRepository.select().execute();
       
       if (result.isSuccess() && result.data) {
         return result.data.map(record => this.convertToEntity(record));
@@ -189,10 +208,10 @@ export abstract class EntityRepository<T extends Entity> {
       }
       
       // Convert to database record
-      const record = this.convertFromEntity(entityWithType as T);
+      const dbRecord = this.convertFromEntity(entityWithType as T);
       
       // Insert into database
-      const result = await this.insert(record).execute();
+      const result = await this.baseRepository.insert(dbRecord).execute();
       
       // If successful, convert back to entity
       if (result.isSuccess() && result.data && Array.isArray(result.data) && result.data.length > 0) {
@@ -269,10 +288,10 @@ export abstract class EntityRepository<T extends Entity> {
       }
       
       // Convert to database record
-      const record = this.convertFromEntity(updatedEntity);
+      const dbRecord = this.convertFromEntity(updatedEntity);
       
       // Update in database
-      const result = await this.update(record).eq('id', id).execute();
+      const result = await this.baseRepository.update(dbRecord).eq('id', id).execute();
       
       // If successful, convert back to entity
       if (result.isSuccess() && result.data && Array.isArray(result.data) && result.data.length > 0) {

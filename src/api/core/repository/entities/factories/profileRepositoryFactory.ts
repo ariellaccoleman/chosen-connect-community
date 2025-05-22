@@ -30,7 +30,7 @@ export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Profile[]
   ): ProfileRepository {
-    const baseRepository = createEnhancedRepository<Profile>(
+    const baseRepository = createEnhancedRepository<any>(
       this.getTableName(),
       type,
       initialData,

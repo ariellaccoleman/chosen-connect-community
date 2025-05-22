@@ -10,57 +10,26 @@ import { BaseRepository } from '../BaseRepository';
  */
 export class EventRepository extends EntityRepository<Event> {
   /**
-   * The base repository to delegate database operations to
-   */
-  protected baseRepository: BaseRepository<Event>;
-  
-  /**
    * Create a new EventRepository
    * 
    * @param tableName The table name
+   * @param entityType The entity type
    * @param baseRepository The base repository to delegate to
    */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<Event>) {
-    super(tableName, entityType);
-    this.baseRepository = baseRepository;
-  }
-
-  /**
-   * Delegate select operation to base repository
-   */
-  select(columns?: string): BaseRepository<Event> {
-    return this.baseRepository.select(columns);
-  }
-
-  /**
-   * Delegate insert operation to base repository
-   */
-  insert(values: Partial<Event> | Partial<Event>[]): BaseRepository<Event> {
-    return this.baseRepository.insert(values);
-  }
-
-  /**
-   * Delegate update operation to base repository
-   */
-  update(values: Partial<Event>): BaseRepository<Event> {
-    return this.baseRepository.update(values);
-  }
-
-  /**
-   * Delegate delete operation to base repository
-   */
-  delete(): BaseRepository<Event> {
-    return this.baseRepository.delete();
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
+    super(tableName, entityType, baseRepository);
   }
 
   /**
    * Convert database record to Event entity
    */
   convertToEntity(record: any): Event {
-    const event = {
-      ...record,
+    return {
+      id: record.id,
       entityType: EntityType.EVENT,
-      name: record.title,
+      name: record.title, // Map title to name for Entity interface
+      title: record.title,
+      description: record.description || '',
       // Map the database fields to the entity fields
       startTime: new Date(record.start_time),
       endTime: new Date(record.end_time),
@@ -77,32 +46,31 @@ export class EventRepository extends EntityRepository<Event> {
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at),
     };
-    return event as Event;
   }
 
   /**
    * Convert Event entity to database record
    */
-  convertFromEntity(entity: Event): Record<string, any> {
-    return {
-      id: entity.id,
-      title: entity.title,
-      description: entity.description,
-      start_time: entity.startTime,
-      end_time: entity.endTime,
-      timezone: entity.timezone,
-      location_id: entity.locationId,
-      address: entity.address,
-      is_virtual: entity.isOnline,
-      meeting_link: entity.meetingLink,
-      host_id: entity.creatorId,
-      is_paid: entity.isPaid,
-      price: entity.price,
-      currency: entity.currency,
-      capacity: entity.capacity,
-      created_at: entity.createdAt,
-      updated_at: entity.updatedAt,
-    };
+  convertFromEntity(entity: Partial<Event>): Record<string, any> {
+    const record: Record<string, any> = {};
+    
+    if (entity.id !== undefined) record.id = entity.id;
+    if (entity.title !== undefined) record.title = entity.title;
+    if (entity.description !== undefined) record.description = entity.description;
+    if (entity.startTime !== undefined) record.start_time = entity.startTime;
+    if (entity.endTime !== undefined) record.end_time = entity.endTime;
+    if (entity.timezone !== undefined) record.timezone = entity.timezone;
+    if (entity.locationId !== undefined) record.location_id = entity.locationId;
+    if (entity.address !== undefined) record.address = entity.address;
+    if (entity.isOnline !== undefined) record.is_virtual = entity.isOnline;
+    if (entity.meetingLink !== undefined) record.meeting_link = entity.meetingLink;
+    if (entity.creatorId !== undefined) record.host_id = entity.creatorId;
+    if (entity.isPaid !== undefined) record.is_paid = entity.isPaid;
+    if (entity.price !== undefined) record.price = entity.price;
+    if (entity.currency !== undefined) record.currency = entity.currency;
+    if (entity.capacity !== undefined) record.capacity = entity.capacity;
+    
+    return record;
   }
 
   /**
@@ -125,7 +93,7 @@ export class EventRepository extends EntityRepository<Event> {
         };
       }
       
-      return result as RepositoryResponse<Event[]>;
+      return result as unknown as RepositoryResponse<Event[]>;
     } catch (error) {
       this.handleError('getByCreator', error, { creatorId });
       return {
@@ -148,7 +116,9 @@ export class EventRepository extends EntityRepository<Event> {
   async getUpcoming(): Promise<RepositoryResponse<Event[]>> {
     try {
       const now = new Date();
-      const result = await this.baseRepository.select()
+      // Fix: Use gte method from the baseRepository
+      const query = this.baseRepository.select();
+      const result = await query
         .gte('start_time', now.toISOString())
         .order('start_time', { ascending: true })
         .execute();
@@ -163,7 +133,7 @@ export class EventRepository extends EntityRepository<Event> {
         };
       }
       
-      return result as RepositoryResponse<Event[]>;
+      return result as unknown as RepositoryResponse<Event[]>;
     } catch (error) {
       this.handleError('getUpcoming', error);
       return {

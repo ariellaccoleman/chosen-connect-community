@@ -30,7 +30,7 @@ export class EventRepositoryFactory extends EntityRepositoryFactory<Event> {
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Event[]
   ): EventRepository {
-    const baseRepository = createEnhancedRepository<Event>(
+    const baseRepository = createEnhancedRepository<any>(
       this.getTableName(),
       type,
       initialData,

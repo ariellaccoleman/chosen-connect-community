@@ -1,31 +1,52 @@
 
-import { LocationWithDetails } from "./location";
-import { TagAssignment } from "@/utils/tags/types";
+import { Entity } from './entity';
+import { EntityType } from './entityTypes';
 
-export type MembershipTier = "free" | "community" | "pro" | "partner";
-
-export interface Profile {
+// User profile data from database
+export interface Profile extends Entity {
   id: string;
+  firstName: string;
+  lastName: string;
+  entityType: EntityType.PERSON;
+  name: string; // Concatenated firstName + lastName to satisfy Entity interface
   email: string;
-  first_name: string;
-  last_name: string;
-  avatar_url: string | null;
-  headline: string | null;
-  bio: string | null;
-  linkedin_url: string | null;
-  twitter_url: string | null;
-  website_url: string | null;
-  location_id: string | null;
-  company?: string | null;
-  created_at?: string;
-  updated_at?: string;
-  is_approved?: boolean;
-  membership_tier?: MembershipTier;
+  bio: string;
+  headline: string;
+  avatarUrl: string;
+  company: string;
+  websiteUrl: string;
+  twitterUrl: string;
+  linkedinUrl: string;
+  timezone: string;
+  isApproved: boolean;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ProfileWithDetails extends Profile {
-  full_name: string;
-  role?: "admin" | "member"; // Keep for compatibility with user.user_metadata.role
-  location?: LocationWithDetails;
-  tags?: TagAssignment[]; // Add tags property
+// Organization form data
+export interface ProfileFormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
+  bio?: string;
+  headline?: string;
+  avatarUrl?: string;
+  company?: string;
+  websiteUrl?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+  timezone?: string;
+}
+
+// Public profile display data
+export interface PublicProfile {
+  id: string;
+  fullName: string;
+  avatarUrl?: string;
+  headline?: string;
+  bio?: string;
+  company?: string;
+  websiteUrl?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
 }
