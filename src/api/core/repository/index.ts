@@ -13,6 +13,9 @@ export * from './EntityRepository';
 export * from './SupabaseRepository';
 export * from './MockRepository';
 
+// Export entity-specific repositories
+export * from './entities';
+
 // Export the repository factories
 export * from './repositoryFactory';
 export * from './enhancedRepositoryFactory';

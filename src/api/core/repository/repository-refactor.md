@@ -13,14 +13,14 @@ DataRepository (Interface)
     ├── BaseRepository (Abstract Class)
     │       │
     │       ├── SupabaseRepository
-    │       └── MockRepository
+    │       ├── MockRepository
+    │       └── TagRepository (and other non-entity repositories)
     │
     └── EntityRepository (Abstract Class)
             │
             ├── ProfileRepository
             ├── OrganizationRepository
             ├── EventRepository
-            ├── TagRepository
             └── Other Entity-Specific Repositories
 ```
 
@@ -53,8 +53,7 @@ Develop an abstract `EntityRepository<T extends Entity>` class that:
 - Implements standard CRUD operations for entities
 - Handles entity validation
 - Manages entity metadata and fields
-- Implements tag management functionality
-- Provides relationship handling methods
+- Implements relationship handling methods
 
 ### 2.2 Entity-Specific Methods
 
@@ -75,7 +74,6 @@ Develop specialized repository implementations for key entities:
 - `ProfileRepository` - User profile operations
 - `OrganizationRepository` - Organization operations
 - `EventRepository` - Event operations
-- `TagRepository` - Tag operations
 - `PostRepository` - Post and content operations
 - `HubRepository` - Hub operations
 
@@ -84,6 +82,18 @@ Each specialized repository will:
 - Implement entity-specific query methods
 - Handle specialized transformations and validations
 - Provide optimized access patterns for the entity
+
+### 3.2 Non-Entity Specialized Repositories
+
+Implement specialized repositories for data types that aren't entities:
+- **TagRepository** (already implemented) - Extends `BaseRepository` directly
+- Other non-entity data stores as needed
+
+These repositories will:
+- Extend `BaseRepository` directly
+- Implement specialized methods for their specific data types
+- Not use entity-specific methods like `convertToEntity`
+- Handle their own data transformations and validations
 
 ## Phase 4: Modularity and Organization
 
@@ -160,3 +170,12 @@ This refactoring will provide:
 - More maintainable and extensible data layer
 - Reduced duplication across repositories
 - Clearer, more intuitive API for data access
+
+## Special Considerations for Tag Repository
+
+Since tags are a different concept from entities in our system:
+
+1. The existing `TagRepository` will continue to extend `BaseRepository` directly, not `EntityRepository`.
+2. The tag-related functions in `EntityRepository` will still use the existing `TagRepository` through composition.
+3. Tag assignment operations will remain decoupled from entity operations but will be accessible through entity repositories.
+4. This separation maintains a cleaner architecture where entities can have tags without tags themselves being entities.
