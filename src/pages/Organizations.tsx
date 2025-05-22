@@ -31,7 +31,12 @@ const OrganizationsList = () => {
   // Use tag hooks directly instead of useTagFilter
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.ORGANIZATION);
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
+  const { data: tagAssignmentsResponse } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
+  
+  // Safely extract tag assignments, ensuring we handle both array and {data: array} formats
+  const tagAssignments = Array.isArray(tagAssignmentsResponse) 
+    ? tagAssignmentsResponse 
+    : (tagAssignmentsResponse?.data || []);
   
   // Extract tags from the response
   const filterTags = tagsResponse?.data || [];

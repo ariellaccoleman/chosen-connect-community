@@ -68,12 +68,13 @@ export function useSelectionTags(entityType?: EntityType) {
 
 /**
  * Hook for filtering entities by tag
+ * Returns a consistent array format for tag assignments
  */
 export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
   return useQuery({
     queryKey: ["tagAssignments", "filter", tagId, entityType],
     queryFn: async () => {
-      if (!tagId) return { data: [] };
+      if (!tagId) return [];
       
       logger.debug(`Fetching tag assignments for tag: ${tagId}, entity type: ${entityType || 'all'}`);
       
@@ -87,14 +88,15 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
           );
           
           logger.debug(`Found ${filteredData.length} tag assignments for tag ${tagId}`);
-          return { data: filteredData };
+          // Return the array directly for consistent access pattern
+          return filteredData;
         }
         
         logger.warn(`No tag assignments found for tag ${tagId} or error in response`);
-        return { data: [] };
+        return [];
       } catch (error) {
         logger.error(`Error fetching tag assignments for tag ${tagId}:`, error);
-        return { data: [] };
+        return [];
       }
     },
     enabled: !!tagId

@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags } from "@/hooks/tags";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { logger } from "@/utils/logger";
 
 const CommunityDirectory = () => {
