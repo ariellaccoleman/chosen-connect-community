@@ -1,12 +1,20 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { TagAssignment } from '@/utils/tags';
 import { EntityType } from '@/types/entityTypes';
 import { logger } from '@/utils/logger';
+import { createTagAssignmentService } from '@/api/tags/services';
+
+// Create service instance
+const tagAssignmentService = createTagAssignmentService();
 
 // Type that includes the tag details joined from the tags table
-export interface TagAssignmentWithDetails extends TagAssignment {
+export interface TagAssignmentWithDetails {
+  id: string;
+  tag_id: string;
+  target_id: string;
+  target_type: string;
+  created_at?: string;
+  updated_at?: string;
   tag: {
     id: string;
     name: string;
@@ -29,22 +37,13 @@ export const usePublicProfileTags = (profileId: string | undefined) => {
       
       logger.info(`usePublicProfileTags: Fetching tags for profile ${profileId}`);
       
-      const { data, error } = await supabase
-        .from('tag_assignments')
-        .select(`
-          *,
-          tag:tags(*)
-        `)
-        .eq('target_id', profileId)
-        .eq('target_type', EntityType.PERSON);
-      
-      if (error) {
+      try {
+        const response = await tagAssignmentService.getTagsForEntity(profileId, EntityType.PERSON);
+        return response.data as TagAssignmentWithDetails[] || [];
+      } catch (error) {
         logger.error(`usePublicProfileTags: Error fetching tags for profile ${profileId}:`, error);
         return [];
       }
-      
-      logger.info(`usePublicProfileTags: Found ${data?.length || 0} tags for profile ${profileId}`);
-      return data || [] as TagAssignmentWithDetails[];
     },
     enabled: !!profileId,
   });
