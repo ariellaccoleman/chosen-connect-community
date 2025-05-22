@@ -13,16 +13,13 @@ import EventCardRegistrationButton from "@/components/events/EventCardRegistrati
 import { APP_ROUTES } from "@/config/routes";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
+import { useSelectionTags } from "@/hooks/tags";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const { data: events = [], isLoading, error, refetch } = useEvents();
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.EVENT);
-  
-  // Use the useFilterByTag hook (same approach as Community Directory)
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.EVENT);
   
   // Extract tags from the response
   const tags = tagsResponse?.data || [];
@@ -45,11 +42,10 @@ const Events: React.FC = () => {
       }
     }
     
-    if (selectedTagId) {
-      logger.debug("Filtering events by tag:", selectedTagId);
-      logger.debug("Tag assignments:", tagAssignments);
+    if (selectedTagIds.length > 0) {
+      logger.debug("Filtering events by tags:", selectedTagIds);
     }
-  }, [events.length, selectedTagId, tagAssignments]);
+  }, [events.length, selectedTagIds]);
 
   const formatEventDate = (dateString: string) => {
     try {
@@ -88,19 +84,16 @@ const Events: React.FC = () => {
     navigate(eventUrl);
   };
 
-  // Filter events based on selected tags using the consistent approach
-  const filteredEvents = selectedTagId
-    ? events.filter(event => {
-        // Get the set of IDs that have the selected tag
-        const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
-        // Return true if this event's ID is in the set
-        return taggedIds.has(event.id);
-      })
+  // Filter events based on selected tags
+  const filteredEvents = selectedTagIds.length > 0
+    ? events.filter(event => 
+        event.tags && event.tags.some(tag => selectedTagIds.includes(tag.tag_id))
+      )
     : events;
     
   // Debug filtered events
   useEffect(() => {
-    if (selectedTagId) {
+    if (selectedTagIds.length > 0) {
       logger.debug(`Filtered to ${filteredEvents.length} events out of ${events.length}`);
       if (filteredEvents.length > 0) {
         logger.debug("First few filtered events:", 
@@ -111,10 +104,10 @@ const Events: React.FC = () => {
           }))
         );
       } else {
-        logger.debug("No events match the selected tag");
+        logger.debug("No events match the selected tags");
       }
     }
-  }, [filteredEvents.length, events.length, selectedTagId]);
+  }, [filteredEvents.length, events.length, selectedTagIds]);
 
   return (
     <div className="container py-8">
@@ -142,8 +135,8 @@ const Events: React.FC = () => {
       <div className="bg-white rounded-lg shadow p-6">
         <div className="mb-6 w-full md:max-w-xs">
           <TagFilter
-            selectedTagId={selectedTagId}
-            onTagSelect={setSelectedTagId}
+            selectedTagIds={selectedTagIds}
+            onTagsSelect={setSelectedTagIds}
             tags={tags}
             isLoading={isTagsLoading}
             label="Filter Events by Tags"
@@ -174,15 +167,15 @@ const Events: React.FC = () => {
         ) : filteredEvents.length === 0 ? (
           <div>
             <p className="text-gray-500 mb-6">
-              {selectedTagId 
+              {selectedTagIds.length > 0 
                 ? "No events match your selected tag filters. Try selecting different tags or clear the filters."
                 : "Your events will appear here. Refresh to check for new events."
               }
             </p>
-            {selectedTagId && (
+            {selectedTagIds.length > 0 && (
               <Button 
                 variant="outline" 
-                onClick={() => setSelectedTagId(null)}
+                onClick={() => setSelectedTagIds([])}
                 className="flex items-center gap-2"
               >
                 <Filter className="h-4 w-4" />
@@ -193,7 +186,7 @@ const Events: React.FC = () => {
         ) : (
           <>
             <p className="text-sm text-gray-500 mb-4">
-              {selectedTagId 
+              {selectedTagIds.length > 0 
                 ? `Found ${filteredEvents.length} matching event(s)`
                 : `Found ${filteredEvents.length} event(s)`
               }
