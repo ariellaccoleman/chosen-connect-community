@@ -106,7 +106,7 @@ jest.mock("@/integrations/supabase/client", () => ({
   supabase: {}
 }));
 
-describe("Tag Repository Tests", () => {
+describe("TagsRepository Tests", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
