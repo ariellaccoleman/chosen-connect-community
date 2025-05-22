@@ -7,7 +7,7 @@ import {
   createTagEntityTypeRepository 
 } from "@/api/tags/repository";
 import { createMockRepository } from "@/api/core/repository/MockRepository";
-import { createSuccessResponse } from "@/api/core/errorHandler";
+import { createSuccessResponse } from "@/api/core/repository/repositoryUtils";
 import { DataRepository } from "@/api/core/repository/DataRepository";
 
 // Mock data for tests

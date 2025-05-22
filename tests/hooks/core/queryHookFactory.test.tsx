@@ -1,6 +1,6 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react';
-import { createQueryHooks } from '@/hooks/core/queryHookFactory';
+import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { ApiResponse } from '@/api/core/errorHandler';
