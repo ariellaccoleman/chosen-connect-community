@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useToggleHubFeatured } from '@/hooks/hubs/useHubHooks';
 import { TagAssignment } from '@/utils/tags/types';
 import { logger } from '@/utils/logger';
+import { Hub } from '@/types';
 
 interface HubGridProps {
   isAdmin?: boolean;
@@ -20,8 +21,11 @@ const HubGrid: React.FC<HubGridProps> = ({
   filterTagId = null,
   tagAssignments = []
 }) => {
-  const { data: hubs = [], isLoading, error, refetch } = useHubs();
+  const { data: hubsData = [], isLoading, error, refetch } = useHubs();
   const { mutate: toggleFeatured } = useToggleHubFeatured();
+  
+  // Ensure hubsData is always an array
+  const hubs = Array.isArray(hubsData) ? hubsData : [];
 
   useEffect(() => {
     if (filterTagId) {
@@ -40,8 +44,7 @@ const HubGrid: React.FC<HubGridProps> = ({
         // Get the set of IDs that have the selected tag
         const taggedIds = new Set(tagAssignments.map(ta => ta.target_id));
         // Return true if this hub's ID is in the set
-        const isIncluded = taggedIds.has(hub.id);
-        return isIncluded;
+        return taggedIds.has(hub.id);
       })
     : hubs;
 
