@@ -3,29 +3,73 @@ import { EntityRepository } from '../EntityRepository';
 import { Event } from '@/types/event';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
+import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Event entities
  */
 export class EventRepository extends EntityRepository<Event> {
   /**
+   * The base repository to delegate database operations to
+   */
+  protected baseRepository: BaseRepository<Event>;
+  
+  /**
+   * Create a new EventRepository
+   * 
+   * @param tableName The table name
+   * @param baseRepository The base repository to delegate to
+   */
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<Event>) {
+    super(tableName, entityType);
+    this.baseRepository = baseRepository;
+  }
+
+  /**
+   * Delegate select operation to base repository
+   */
+  select(columns?: string): BaseRepository<Event> {
+    return this.baseRepository.select(columns);
+  }
+
+  /**
+   * Delegate insert operation to base repository
+   */
+  insert(values: Partial<Event> | Partial<Event>[]): BaseRepository<Event> {
+    return this.baseRepository.insert(values);
+  }
+
+  /**
+   * Delegate update operation to base repository
+   */
+  update(values: Partial<Event>): BaseRepository<Event> {
+    return this.baseRepository.update(values);
+  }
+
+  /**
+   * Delegate delete operation to base repository
+   */
+  delete(): BaseRepository<Event> {
+    return this.baseRepository.delete();
+  }
+
+  /**
    * Convert database record to Event entity
    */
   convertToEntity(record: any): Event {
-    return {
-      id: record.id,
+    const event = {
+      ...record,
       entityType: EntityType.EVENT,
       name: record.title,
-      title: record.title,
-      description: record.description || '',
+      // Map the database fields to the entity fields
       startTime: new Date(record.start_time),
       endTime: new Date(record.end_time),
       timezone: record.timezone || 'UTC',
       locationId: record.location_id,
       address: record.address || '',
-      isOnline: record.is_online || false,
+      isOnline: record.is_virtual || false,
       meetingLink: record.meeting_link || '',
-      creatorId: record.creator_id,
+      creatorId: record.host_id,
       isPaid: record.is_paid || false,
       price: record.price || 0,
       currency: record.currency || 'USD',
@@ -33,6 +77,7 @@ export class EventRepository extends EntityRepository<Event> {
       createdAt: new Date(record.created_at),
       updatedAt: new Date(record.updated_at),
     };
+    return event as Event;
   }
 
   /**
@@ -48,9 +93,9 @@ export class EventRepository extends EntityRepository<Event> {
       timezone: entity.timezone,
       location_id: entity.locationId,
       address: entity.address,
-      is_online: entity.isOnline,
+      is_virtual: entity.isOnline,
       meeting_link: entity.meetingLink,
-      creator_id: entity.creatorId,
+      host_id: entity.creatorId,
       is_paid: entity.isPaid,
       price: entity.price,
       currency: entity.currency,
@@ -67,7 +112,7 @@ export class EventRepository extends EntityRepository<Event> {
   async getByCreator(creatorId: string): Promise<RepositoryResponse<Event[]>> {
     try {
       const result = await this.baseRepository.select()
-        .eq('creator_id', creatorId)
+        .eq('host_id', creatorId)
         .execute();
       
       if (result.isSuccess() && result.data) {

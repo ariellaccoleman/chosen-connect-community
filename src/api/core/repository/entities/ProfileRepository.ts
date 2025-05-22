@@ -3,11 +3,56 @@ import { EntityRepository } from '../EntityRepository';
 import { Profile } from '@/types/profile';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
+import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Profile entities
  */
 export class ProfileRepository extends EntityRepository<Profile> {
+  /**
+   * The base repository to delegate database operations to
+   */
+  protected baseRepository: BaseRepository<Profile>;
+
+  /**
+   * Create a new ProfileRepository
+   * 
+   * @param tableName The table name
+   * @param baseRepository The base repository to delegate to
+   */
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<Profile>) {
+    super(tableName, entityType);
+    this.baseRepository = baseRepository;
+  }
+
+  /**
+   * Delegate select operation to base repository
+   */
+  select(columns?: string): BaseRepository<Profile> {
+    return this.baseRepository.select(columns);
+  }
+
+  /**
+   * Delegate insert operation to base repository
+   */
+  insert(values: Partial<Profile> | Partial<Profile>[]): BaseRepository<Profile> {
+    return this.baseRepository.insert(values);
+  }
+
+  /**
+   * Delegate update operation to base repository
+   */
+  update(values: Partial<Profile>): BaseRepository<Profile> {
+    return this.baseRepository.update(values);
+  }
+
+  /**
+   * Delegate delete operation to base repository
+   */
+  delete(): BaseRepository<Profile> {
+    return this.baseRepository.delete();
+  }
+
   /**
    * Convert database record to Profile entity
    */

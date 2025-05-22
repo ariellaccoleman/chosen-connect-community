@@ -1,12 +1,15 @@
 
 import { Tag } from './index';
+import { Entity } from './entity';
+import { EntityType } from './entityTypes';
 
 /**
  * Hub type definition
  */
-export interface Hub {
+export interface Hub extends Entity {
   id: string;
   name: string;
+  entityType: EntityType.HUB;
   description: string | null;
   tag_id: string | null;
   is_featured: boolean;

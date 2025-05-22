@@ -2,7 +2,7 @@
 import { EntityRepositoryFactory } from '../../../repository/enhancedRepositoryFactory';
 import { EntityType } from '@/types/entityTypes';
 import { Organization } from '@/types/organization';
-import { EntityRepository } from '../../../repository/EntityRepository';
+import { OrganizationRepository } from '../OrganizationRepository';
 import { createEnhancedRepository, EnhancedRepositoryType } from '../../../repository/enhancedRepositoryFactory';
 
 /**
@@ -29,7 +29,7 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactory<Organ
   createRepository(
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Organization[]
-  ): EntityRepository<Organization> {
+  ): OrganizationRepository {
     const baseRepository = createEnhancedRepository<Organization>(
       this.getTableName(),
       type,
@@ -41,8 +41,8 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactory<Organ
       }
     );
     
-    // Create and return entity repository
-    return new EntityRepository<Organization>(
+    // Create and return organization repository with the entity-specific implementation
+    return new OrganizationRepository(
       this.getTableName(),
       this.getEntityType(),
       baseRepository

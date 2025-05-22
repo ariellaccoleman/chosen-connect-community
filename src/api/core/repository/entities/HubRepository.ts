@@ -3,11 +3,56 @@ import { EntityRepository } from '../EntityRepository';
 import { Hub } from '@/types/hub';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
+import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Hub entities
  */
 export class HubRepository extends EntityRepository<Hub> {
+  /**
+   * The base repository to delegate database operations to
+   */
+  protected baseRepository: BaseRepository<Hub>;
+
+  /**
+   * Create a new HubRepository
+   * 
+   * @param tableName The table name
+   * @param baseRepository The base repository to delegate to
+   */
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<Hub>) {
+    super(tableName, entityType);
+    this.baseRepository = baseRepository;
+  }
+
+  /**
+   * Delegate select operation to base repository
+   */
+  select(columns?: string): BaseRepository<Hub> {
+    return this.baseRepository.select(columns);
+  }
+
+  /**
+   * Delegate insert operation to base repository
+   */
+  insert(values: Partial<Hub> | Partial<Hub>[]): BaseRepository<Hub> {
+    return this.baseRepository.insert(values);
+  }
+
+  /**
+   * Delegate update operation to base repository
+   */
+  update(values: Partial<Hub>): BaseRepository<Hub> {
+    return this.baseRepository.update(values);
+  }
+
+  /**
+   * Delegate delete operation to base repository
+   */
+  delete(): BaseRepository<Hub> {
+    return this.baseRepository.delete();
+  }
+
   /**
    * Convert database record to Hub entity
    */

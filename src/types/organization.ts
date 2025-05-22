@@ -1,11 +1,15 @@
 import { LocationWithDetails } from "./location";
 import { ProfileWithDetails } from "./profile";
 import { TagAssignment } from "@/utils/tags";
+import { EntityType } from "./entityTypes";
+import { Entity } from "./entity";
 
 export type ConnectionType = "current" | "former" | "connected_insider";
 
-export type Organization = {
+// Update Organization to match Entity interface requirements
+export interface Organization extends Entity {
   id: string;
+  entityType: EntityType.ORGANIZATION;
   name: string;
   description?: string;
   website_url?: string;
@@ -15,7 +19,7 @@ export type Organization = {
   is_verified: boolean;
   created_at: string;
   updated_at: string;
-};
+}
 
 export type OrganizationWithLocation = Organization & {
   location?: LocationWithDetails;
