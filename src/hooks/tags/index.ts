@@ -9,7 +9,7 @@ export * from './useTagAssignments';
 export * from './useTagHooks';
 
 // For backward compatibility with existing code
-export { useSelectionTags as useTags } from './useTagQuery';
+export { useSelectionTags as useTags } from './useTagLegacy';
 
 // Re-export with namespaced names to avoid conflicts
 export { useTagCrudMutations as useTagCrudOperations } from './useTagHooks';
