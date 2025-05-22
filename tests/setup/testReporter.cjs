@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -183,8 +184,14 @@ class TestReporter {
     suite.failed = testResult.numFailingTests;
     suite.skipped = testResult.numPendingTests;
     
-    // Determine final status from actual test results
-    const status = testResult.numFailingTests > 0 ? 'failure' : 'success';
+    // FIX: Properly determine status from actual test results
+    // Check if the test suite failed to run (testExecError will be present)
+    const status = testResult.testExecError || testResult.numFailingTests > 0 ? 'failure' : 'success';
+    
+    // Add extra logging to debug test errors
+    if (testResult.testExecError) {
+      console.log(`Test suite execution error detected for ${suite.name}:`, testResult.testExecError.message);
+    }
     
     console.log(`Completed test suite: ${suite.name} - ${status} (${testCount} tests, ${duration}ms)`);
     console.log(`Suite ID for updating results: ${suite.id}`);
@@ -212,7 +219,7 @@ class TestReporter {
           status: status,
           test_count: testCount,
           duration_ms: duration,
-          error_message: testResult.failureMessage || null,
+          error_message: testResult.testExecError ? testResult.testExecError.message : (testResult.failureMessage || null),
           suite_id: suite.id // Include the suite ID for proper updating
         })
       });
@@ -272,6 +279,45 @@ class TestReporter {
     // Extract test suite name from file path
     const testSuitePath = testFilePath.split('/');
     const testSuiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
+    
+    // Add special handling for suites that failed to run
+    if (testResult.testExecError) {
+      // Create a synthetic test result for suites that failed to run
+      try {
+        // Submit a synthetic test result for the entire suite failure
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.TEST_REPORTING_API_KEY
+          },
+          body: JSON.stringify({
+            test_run_id: this.testRunId,
+            test_suite_id: suite.id,
+            test_suite: testSuiteName,
+            test_name: 'Suite Failed To Run',
+            status: 'failed',
+            duration_ms: 0,
+            error_message: testResult.testExecError.message,
+            stack_trace: testResult.testExecError.stack || null,
+            console_output: null
+          })
+        });
+
+        if (!response.ok) {
+          const responseText = await response.text();
+          console.error(`Failed to save suite failure test result: ${responseText}`);
+        } else {
+          console.log(`Successfully reported suite failure for: ${testSuiteName}`);
+        }
+      } catch (error) {
+        console.error(`Error saving suite failure result for ${testSuiteName}:`, error);
+      }
+      
+      // Add synthetic test to our totals
+      this.results.total++;
+      this.results.failed++;
+    }
     
     // Process each test and send individually
     for (const result of testResults || []) {
