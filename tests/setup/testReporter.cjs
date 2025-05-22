@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -327,6 +328,10 @@ class TestReporter {
   async onTestResult(test, testResult) {
     // Most of the work is done in onTestFileResult now
     // This method is kept for backward compatibility
+    if (!test || test === undefined) {
+      console.warn('Received undefined test in onTestResult - skipping');
+      return;
+    }
   }
 
   async onRunComplete(contexts, results) {

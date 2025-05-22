@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 // **DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE**
 // *DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE*
@@ -122,8 +123,6 @@ async function createTestRun() {
   process.env.SUPABASE_URL = SUPABASE_URL;
   process.env.SUPABASE_KEY = SUPABASE_KEY;
   process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
-
-  // Removed warning about SUPABASE_SERVICE_ROLE_KEY since it's only needed in the edge function
 
   // Log environment variables for debugging
   console.log('================= Test Environment =================');
