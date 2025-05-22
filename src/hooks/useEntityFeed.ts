@@ -1,9 +1,9 @@
-
 import { useQuery } from "@tanstack/react-query";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
+import { entityRegistry } from "@/registry";
 
 interface UseEntityFeedOptions {
   entityTypes: EntityType[];
@@ -164,53 +164,8 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Convert item to entity based on entity type - EXPLICITLY set the entityType
-                    let entity: Entity | null = null;
-
-                    switch (type) {
-                      case EntityType.PERSON:
-                        entity = {
-                          id: item.id,
-                          entityType: EntityType.PERSON, // Explicit string value
-                          name: `${item.first_name || ''} ${item.last_name || ''}`.trim(),
-                          description: item.headline || item.bio,
-                          imageUrl: item.avatar_url,
-                          location: item.location,
-                          url: item.website_url,
-                          created_at: item.created_at,
-                          updated_at: item.updated_at,
-                          tags: [] // We'll fetch tags separately if needed
-                        };
-                        break;
-                        
-                      case EntityType.ORGANIZATION:
-                        entity = {
-                          id: item.id,
-                          entityType: EntityType.ORGANIZATION, // Explicit string value
-                          name: item.name,
-                          description: item.description,
-                          imageUrl: item.logo_url || item.logo_api_url,
-                          location: item.location,
-                          url: item.website_url,
-                          created_at: item.created_at,
-                          updated_at: item.updated_at,
-                          tags: [] // We'll fetch tags separately if needed
-                        };
-                        break;
-                        
-                      case EntityType.EVENT:
-                        entity = {
-                          id: item.id,
-                          entityType: EntityType.EVENT, // Explicit string value
-                          name: item.title || '',
-                          description: item.description,
-                          location: item.location,
-                          created_at: item.created_at,
-                          updated_at: item.updated_at,
-                          tags: [] // We'll fetch tags separately if needed
-                        };
-                        break;
-                    }
+                    // Use the entity registry to convert data to entity
+                    const entity = entityRegistry.toEntity(item, type);
                     
                     if (entity) {
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
@@ -218,6 +173,9 @@ export const useEntityFeed = ({
                         entityType: entity.entityType,
                         name: entity.name
                       });
+                      
+                      // Initialize empty tags array that will be populated later if needed
+                      entity.tags = [];
                       allEntities.push(entity);
                     } else {
                       logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });

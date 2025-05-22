@@ -1,7 +1,6 @@
-
 import { EntityType } from "@/types/entityTypes";
 import { EntityTypeDefinition } from "@/types/entityRegistry";
-import { entityRegistry } from "./entityRegistrySystem";
+import { entityRegistry } from "./index";
 
 export interface EntityTypeExtension {
   type: EntityType;

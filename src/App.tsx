@@ -7,7 +7,7 @@ import FooterWrapper from "./components/layout/FooterWrapper";
 import ErrorBoundary from "./components/common/ErrorBoundary";
 import { logger } from "./utils/logger";
 import { useEffect } from "react";
-import { initializeRegistry } from "./registry";
+import { initializeEntitySystem } from "./registry";
 
 const App = () => {
   logger.info("App component rendering");
@@ -15,7 +15,7 @@ const App = () => {
   // Initialize entity registry on app start
   // This is now the single point of initialization
   useEffect(() => {
-    initializeRegistry();
+    initializeEntitySystem();
     logger.info("Entity registry initialized in App component");
   }, []);
   

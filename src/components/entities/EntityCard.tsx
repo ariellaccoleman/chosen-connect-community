@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Link } from "react-router-dom";
 import { Entity } from "@/types/entity";
@@ -8,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { MapPin, Calendar } from "lucide-react";
 import TagList from "../tags/TagList";
 import { format } from "date-fns";
-import { useEntityRegistry } from "@/hooks/useEntityRegistry";
+import { useEntitySystem } from "@/hooks/useEntitySystem";
 import { logger } from "@/utils/logger";
 import { formatLocation } from "@/utils/formatters/locationFormatters";
 
@@ -28,7 +27,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     getEntityIcon, 
     getEntityTypeLabel, 
     getEntityAvatarFallback 
-  } = useEntityRegistry();
+  } = useEntitySystem();
 
   // Safe check for entity type
   if (!entity || !entity.entityType) {

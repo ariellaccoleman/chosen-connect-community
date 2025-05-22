@@ -11,7 +11,8 @@ import {
 export { 
   entityRegistry,
   getEntityTypeDefinition,
-  getAllEntityTypes 
+  getAllEntityTypes,
+  initializeEntitySystem
 } from './initializeEntitySystem';
 
 export { 
@@ -20,14 +21,8 @@ export {
   isValidEntityType
 } from './entityRegistrySystem';
 
-// Create an alias for the function name used in imports
+// Provide backward compatibility for the function name used in imports
 export const isValidEntityTypeInRegistry = isValidEntityType;
-
-// Provide backward compatibility for the initialization function
-export const initializeRegistry = initializeEntitySystem;
-
-// Initialize the registry on module import
-initializeEntitySystem();
 
 // Export the initialized registry
 export default entityRegistry;

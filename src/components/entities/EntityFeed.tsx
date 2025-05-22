@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
@@ -6,7 +5,7 @@ import { EntityType } from "@/types/entityTypes";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
 import { useSelectionTags } from "@/hooks/tags";
-import { useEntityRegistry } from "@/hooks/useEntityRegistry";
+import { useEntitySystem } from "@/hooks/useEntitySystem";
 import { logger } from "@/utils/logger";
 
 interface EntityFeedProps {
@@ -44,7 +43,7 @@ const EntityFeed = ({
   const { 
     getEntityTypeLabel,
     getEntityTypePlural 
-  } = useEntityRegistry();
+  } = useEntitySystem();
   
   // Enhanced logging for debugging tag filtering
   useEffect(() => {
