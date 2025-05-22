@@ -8,32 +8,17 @@ export * from "./tagAssignmentsRepository";
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createTagEntityTypesViewRepository = () => {
-  // Using the enhanced repository pattern
-  const repository = {
-    tableName: 'all_tags_with_entity_types_view',
-    getAll: async () => {
-      return { data: [], error: null };
-    },
-    getByFilter: async () => {
-      return { data: [], error: null };
-    },
-    getById: async () => {
-      return { data: null, error: null };
-    },
-    select: async () => {
-      return { data: [], error: null };
-    },
-    insert: async () => {
-      return { data: null, error: null };
-    },
-    update: async () => {
-      return { data: null, error: null };
-    },
-    delete: async () => {
-      return { data: null, error: null };
+  const { createEnhancedRepository } = require("@/api/core/repository");
+  return createEnhancedRepository(
+    'all_tags_with_entity_types_view',
+    'supabase',
+    undefined,
+    { 
+      idField: 'id',
+      defaultSelect: '*',
+      enableLogging: true
     }
-  };
-  return repository;
+  );
 };
 
 /**
@@ -41,32 +26,17 @@ export const createTagEntityTypesViewRepository = () => {
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createFilteredEntityTagsViewRepository = () => {
-  // Using the enhanced repository pattern
-  const repository = {
-    tableName: 'filtered_entity_tags_view',
-    getAll: async () => {
-      return { data: [], error: null };
-    },
-    getByFilter: async () => {
-      return { data: [], error: null };
-    },
-    getById: async () => {
-      return { data: null, error: null };
-    },
-    select: async () => {
-      return { data: [], error: null };
-    },
-    insert: async () => {
-      return { data: null, error: null };
-    },
-    update: async () => {
-      return { data: null, error: null };
-    },
-    delete: async () => {
-      return { data: null, error: null };
+  const { createEnhancedRepository } = require("@/api/core/repository");
+  return createEnhancedRepository(
+    'filtered_entity_tags_view',
+    'supabase',
+    undefined,
+    { 
+      idField: 'id',
+      defaultSelect: '*',
+      enableLogging: true
     }
-  };
-  return repository;
+  );
 };
 
 /**
@@ -74,30 +44,15 @@ export const createFilteredEntityTagsViewRepository = () => {
  * This conforms to the DataRepository interface expected by createApiFactory
  */
 export const createEntityTagAssignmentsViewRepository = () => {
-  // Using the enhanced repository pattern
-  const repository = {
-    tableName: 'entity_tag_assignments_view',
-    getAll: async () => {
-      return { data: [], error: null };
-    },
-    getByFilter: async () => {
-      return { data: [], error: null };
-    },
-    getById: async () => {
-      return { data: null, error: null };
-    },
-    select: async () => {
-      return { data: [], error: null };
-    },
-    insert: async () => {
-      return { data: null, error: null };
-    },
-    update: async () => {
-      return { data: null, error: null };
-    },
-    delete: async () => {
-      return { data: null, error: null };
+  const { createEnhancedRepository } = require("@/api/core/repository");
+  return createEnhancedRepository(
+    'entity_tag_assignments_view',
+    'supabase',
+    undefined,
+    { 
+      idField: 'id',
+      defaultSelect: '*',
+      enableLogging: true
     }
-  };
-  return repository;
+  );
 };

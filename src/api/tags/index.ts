@@ -16,18 +16,19 @@ export {
   removeTagAssignment
 } from './assignmentApi';
 
-// Export entity types API 
+// Export entity types API from the factory 
 export { 
   getEntityTypesForTag,
   getAllTagEntityTypes,
   createTagEntityType,
   getTagEntityTypeById,
-  deleteTagEntityType
-} from './tagEntityTypesApi';
+  deleteTagEntityType,
+  updateTagEntityType
+} from './tagEntityTypesApiFactory';
 
 // Export from updateEntityTypeFactory without ambiguity
 export { 
-  updateTagEntityTypeFromFactory as updateTagEntityType 
+  updateTagEntityTypeFromFactory
 } from './tagEntityTypesApiFactory';
 
 // Export tag factory APIs

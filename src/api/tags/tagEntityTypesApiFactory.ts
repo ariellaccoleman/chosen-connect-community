@@ -14,7 +14,7 @@ export const tagEntityTypesApi = createApiFactory<TagEntityType, string, Partial
     tableName: 'tag_entity_types',
     entityName: 'tag entity type',
     defaultOrderBy: 'entity_type',
-    repository: createTagEntityTypesRepository(),
+    repository: createTagEntityTypesRepository,
     useQueryOperations: true,
     useMutationOperations: true,
     useBatchOperations: true
@@ -22,36 +22,11 @@ export const tagEntityTypesApi = createApiFactory<TagEntityType, string, Partial
 );
 
 // Extract individual operations for direct usage
-export const {
-  getAll: getAllTagEntityTypes,
-  getById: getTagEntityTypeById,
-  create: createTagEntityType,
-  update: updateTagEntityType,
-  delete: deleteTagEntityType
-} = tagEntityTypesApi;
-
-/**
- * Get entity types for a specific tag
- */
-export const getEntityTypesForTag = async (tagId: string): Promise<ApiResponse<string[]>> => {
-  try {
-    logger.debug(`Getting entity types for tag ${tagId}`);
-    const response = await getAllTagEntityTypes();
-    
-    if (response.status !== 'success' || !response.data) {
-      return createErrorResponse(response.error);
-    }
-    
-    const entityTypes = response.data
-      .filter(entry => entry.tag_id === tagId)
-      .map(entry => entry.entity_type);
-    
-    return createSuccessResponse(entityTypes);
-  } catch (error) {
-    logger.error("Error getting entity types for tag:", error);
-    return createErrorResponse(error);
-  }
-};
+export const getAllTagEntityTypes = tagEntityTypesApi.getAll;
+export const getTagEntityTypeById = tagEntityTypesApi.getById;
+export const createTagEntityType = tagEntityTypesApi.create;
+export const updateTagEntityType = tagEntityTypesApi.update;
+export const deleteTagEntityType = tagEntityTypesApi.delete;
 
 /**
  * Update the entity types for a tag

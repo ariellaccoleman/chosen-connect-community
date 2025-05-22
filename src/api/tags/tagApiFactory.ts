@@ -12,7 +12,7 @@ export const tagEntityTypesViewApi = createApiFactory<Tag, string, never, never,
     tableName: 'all_tags_with_entity_types_view' as any,
     entityName: 'tag view',
     defaultOrderBy: 'name',
-    repository: createTagEntityTypesViewRepository, // Passing the function reference instead of calling it
+    repository: createTagEntityTypesViewRepository, // Pass the function reference instead of calling it
     useQueryOperations: true,
     useMutationOperations: false,
     useBatchOperations: false
@@ -28,7 +28,7 @@ export const filteredEntityTagsViewApi = createApiFactory<Tag, string, never, ne
     tableName: 'filtered_entity_tags_view' as any,
     entityName: 'filtered tag',
     defaultOrderBy: 'name',
-    repository: createFilteredEntityTagsViewRepository, // Passing the function reference instead of calling it
+    repository: createFilteredEntityTagsViewRepository, // Pass the function reference instead of calling it
     useQueryOperations: true,
     useMutationOperations: false,
     useBatchOperations: false
