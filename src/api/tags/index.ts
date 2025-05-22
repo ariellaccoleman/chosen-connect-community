@@ -14,15 +14,15 @@ export * from './cacheApi';
 // Export renamed imports from tagApiFactory to prevent name conflicts
 export { 
   tagsApi as tagsApiFactory,
-  getAllTags as getAllTagsFromFactory,
-  getTagById as getTagByIdFromFactory,
-  getTagsByIds as getTagsByIdsFromFactory,
-  createTag as createTagFromFactory,
-  updateTag as updateTagFromFactory,
-  deleteTag as deleteTagFromFactory,
-  batchCreateTags as batchCreateTagsFromFactory,
-  batchUpdateTags as batchUpdateTagsFromFactory,
-  batchDeleteTags as batchDeleteTagsFromFactory,
+  getAllTags,
+  getTagById,
+  getTagsByIds,
+  createTag,
+  updateTag,
+  deleteTag,
+  batchCreateTags,
+  batchUpdateTags,
+  batchDeleteTags,
   getAllTagsWithEntityTypes,
   getAllFilteredEntityTags
 } from './tagApiFactory';
@@ -35,7 +35,7 @@ export {
   createTagEntityType,
   deleteTagEntityType,
   getEntityTypesForTag,
-  updateTagEntityType as updateTagEntityTypeFromFactory
+  updateTagEntityType
 } from './tagEntityTypesApiFactory';
 
 // Export renamed imports from tagAssignmentsApiFactory to prevent name conflicts
@@ -47,11 +47,12 @@ export {
   deleteTagAssignment,
   getAllEntityTagAssignments,
   getEntityTagAssignments,
-  assignTag as assignTagFromFactory,
-  removeTagAssignment as removeTagAssignmentFromFactory
+  assignTag,
+  removeTagAssignment
 } from './tagAssignmentsApiFactory';
 
 // Export functions from tagCrudApi with renamed imports to avoid conflicts
 export { 
   findOrCreateTag,
 } from './tagCrudApi';
+

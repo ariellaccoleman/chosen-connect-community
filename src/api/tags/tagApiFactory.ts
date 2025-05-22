@@ -1,40 +1,4 @@
 
-import { createApiFactory } from '@/api/core/factory';
-import { Tag } from '@/utils/tags/types';
-import { createTagRepository, createTagEntityTypesViewRepository, createFilteredEntityTagsViewRepository } from './repositories';
-import { logger } from '@/utils/logger';
-
-/**
- * Create API operations for tags using the factory pattern
- */
-export const tagsApi = createApiFactory<Tag, string, Partial<Tag>, Partial<Tag>, 'tags'>(
-  {
-    tableName: 'tags',
-    entityName: 'tag',
-    defaultOrderBy: 'name',
-    repository: createTagRepository(),
-    transformResponse: (data) => ({
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      created_by: data.created_by,
-      entity_types: data.entity_types || []
-    }),
-    transformRequest: (data) => {
-      const transformed: Record<string, any> = {};
-      if (data.name !== undefined) transformed.name = data.name;
-      if (data.description !== undefined) transformed.description = data.description;
-      if (data.created_by !== undefined) transformed.created_by = data.created_by;
-      return transformed;
-    },
-    useQueryOperations: true,
-    useMutationOperations: true,
-    useBatchOperations: true
-  }
-);
-
 /**
  * Create API operations for the tag entity types view
  * Using a type assertion to allow using the view name
@@ -66,25 +30,3 @@ export const filteredEntityTagsViewApi = createApiFactory<Tag, string, never, ne
     useBatchOperations: false
   }
 );
-
-// Extract individual operations for direct usage
-export const {
-  getAll: getAllTags,
-  getById: getTagById,
-  getByIds: getTagsByIds,
-  create: createTag,
-  update: updateTag,
-  delete: deleteTag,
-  batchCreate: batchCreateTags,
-  batchUpdate: batchUpdateTags,
-  batchDelete: batchDeleteTags
-} = tagsApi;
-
-// Extract operations from view factories
-export const {
-  getAll: getAllTagsWithEntityTypes
-} = tagEntityTypesViewApi;
-
-export const {
-  getAll: getAllFilteredEntityTags
-} = filteredEntityTagsViewApi;
