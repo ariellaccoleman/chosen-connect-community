@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { EventWithDetails } from "@/types";
 import { Calendar, MapPin, Video, DollarSign, UserCheck, Users } from "lucide-react";
@@ -7,8 +8,8 @@ import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import EventRegistrationButton from "./EventRegistrationButton";
-import { useEventRegistrants } from "@/hooks/events/useEventRegistrants";
-import EventRegistrantsList from "./EventRegistrantsList"; // Add this import
+import { useEventRegistrants } from "@/hooks/events/useEventRegistration";
+import EventRegistrantsList from "./EventRegistrantsList";
 
 interface EventDetailsProps {
   event: EventWithDetails;
@@ -23,7 +24,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
     data: registrants = [],
     isLoading: registrantsLoading,
     error: registrantsError
-  } = useEventRegistrants(event.id);
+  } = useEventRegistrants(event?.id);
   
   // Explicitly log auth status and host matching for debugging
   React.useEffect(() => {
@@ -38,8 +39,14 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
     }
   }, [event, user, isAdmin]);
 
-  const formatEventDate = (dateString: string) => {
+  // Safety check to prevent uninitialized variable access
+  if (!event) {
+    return <div className="p-4">Event information is not available.</div>;
+  }
+
+  const formatEventDate = (dateString: string | undefined) => {
     try {
+      if (!dateString) return "Date unavailable";
       return format(new Date(dateString), "EEEE, MMMM d, yyyy • h:mm a");
     } catch (e) {
       return "Date unavailable";
@@ -112,7 +119,7 @@ const EventDetails = ({ event, isAdmin = false }: EventDetailsProps) => {
           <EventRegistrantsList 
             eventId={event.id} 
             isHost={isAdmin}
-            registrants={registrants}
+            registrants={registrants || []}
             isLoading={registrantsLoading}
             error={registrantsError}
           />
