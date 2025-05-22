@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { profileApi } from '@/api/profiles';
 import { ProfileWithDetails } from '@/types';
 import { logger } from '@/utils/logger';
+import { supabase } from '@/integrations/supabase/client';
 
 interface CommunityProfilesParams {
   search?: string;
@@ -31,8 +32,8 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
         search: params.search,
         limit: params.limit,
         // We need to get tag data for each profile
-        // This is passed as a custom parameter to the API
-        query: `*, tags:tag_assignments(*, tag:tags(*))` 
+        // The query parameter adds tag assignments and tag details to each profile
+        query: `*, tags:tag_assignments(*, tag:tags(*))`
       });
       
       if (response.error) {
@@ -41,9 +42,64 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
       
       logger.debug(`Fetched ${response.data?.length || 0} community profiles`);
       
+      // Enhanced debugging: check for specific profile
+      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+      const targetProfile = response.data?.find(p => p.id === targetProfileId);
+      
+      if (targetProfile) {
+        logger.debug(`Target profile found in API response:`, {
+          id: targetProfile.id,
+          name: `${targetProfile.first_name} ${targetProfile.last_name}`,
+          email: targetProfile.email
+        });
+        
+        // Log tag assignments for this profile
+        logger.debug(`Target profile tags:`, targetProfile.tags);
+      } else {
+        logger.debug(`Target profile not found in API response`);
+      }
+
+      // Check tag assignments via direct query for verification
+      if (response.data && response.data.length > 0) {
+        try {
+          const { data: assignments, error } = await supabase
+            .from('entity_tag_assignments_view')
+            .select('*')
+            .eq('target_type', 'person')
+            .eq('target_id', targetProfileId);
+          
+          if (error) {
+            logger.error('Error fetching tag assignments for target profile:', error);
+          } else {
+            logger.debug(`Tag assignments for target profile (direct query):`, assignments);
+          }
+        } catch (e) {
+          logger.error('Exception while fetching tag assignments:', e);
+        }
+      }
+      
       // Log some sample tag data if available
       if (response.data && response.data.length > 0 && response.data[0].tags) {
-        logger.debug(`Sample profile tags structure:`, response.data[0].tags);
+        logger.debug(`Sample profile tags structure:`, 
+          response.data.slice(0, 2).map(p => ({
+            id: p.id, 
+            name: `${p.first_name} ${p.last_name}`,
+            tags: p.tags?.map(t => ({ tag_id: t.tag_id, tag_name: t.tag?.name }))
+          }))
+        );
+        
+        // Check profiles with the specific tag we're interested in
+        const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
+        const profilesWithTargetTag = response.data.filter(profile => 
+          profile.tags && profile.tags.some(t => t.tag_id === targetTagId)
+        );
+        
+        logger.debug(`Profiles with target tag ${targetTagId}: ${profilesWithTargetTag.length}`, 
+          profilesWithTargetTag.map(p => ({ 
+            id: p.id, 
+            name: `${p.first_name} ${p.last_name}` 
+          }))
+        );
       }
       
       // If tag filter is applied and we have tag assignments, filter the profiles client-side

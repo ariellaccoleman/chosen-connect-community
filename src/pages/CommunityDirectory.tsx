@@ -12,10 +12,15 @@ import { EntityType } from "@/types/entityTypes";
 import { useSelectionTags } from "@/hooks/tags";
 import { ProfileWithDetails } from "@/types";
 import { logger } from "@/utils/logger";
+import { supabase } from "@/integrations/supabase/client";
+import TagDebugTool from "@/components/filters/TagDebugTool";
+import { Button } from "@/components/ui/button";
+import { Wrench } from "lucide-react";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [showDebugTool, setShowDebugTool] = useState(false);
   const { user } = useAuth();
   
   // Use the hooks for tags - now uses the improved useSelectionTags hook
@@ -35,15 +40,73 @@ const CommunityDirectory = () => {
     if (tagsResponse?.data) {
       logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
       
-      // Find and log the Campus Issues tag
-      const campusIssuesTag = tagsResponse.data.find(tag => tag.name === "Campus Issues");
-      if (campusIssuesTag) {
-        logger.debug("Found Campus Issues tag:", campusIssuesTag);
+      // Log all available tags
+      logger.debug("Available tags:", tagsResponse.data.map(tag => ({ id: tag.id, name: tag.name })));
+      
+      // Find and log the specific target tag
+      const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
+      const targetTag = tagsResponse.data.find(tag => tag.id === targetTagId);
+      if (targetTag) {
+        logger.debug("Found target tag:", targetTag);
       } else {
-        logger.debug("Campus Issues tag not found in available tags");
+        logger.debug("Target tag not found in available tags");
       }
     }
   }, [tagsResponse?.data]);
+
+  // Manually verify tag assignments in the tag_assignments table
+  const verifyTagAssignments = async () => {
+    try {
+      // Check assignments directly in the tag_assignments table
+      logger.debug("Checking tag_assignments table directly...");
+      const { data, error } = await supabase
+        .from("tag_assignments")
+        .select("*")
+        .eq("target_type", "person");
+      
+      if (error) {
+        logger.error("Error querying tag_assignments:", error);
+      } else {
+        logger.debug(`Found ${data?.length || 0} tag assignments for people`);
+        
+        // Look for specific assignment
+        const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
+        const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+        
+        const targetAssignment = data?.find(a => 
+          a.tag_id === targetTagId && a.target_id === targetProfileId
+        );
+        
+        if (targetAssignment) {
+          logger.debug("Found target tag assignment:", targetAssignment);
+        } else {
+          logger.debug("Target tag assignment NOT found in raw table data");
+        }
+      }
+      
+      // Check raw profiles data
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", "95ad82bb-4109-4f88-8155-02231dda3b85")
+        .single();
+        
+      if (profileError) {
+        logger.error("Error querying profile:", profileError);
+      } else {
+        logger.debug("Raw profile data:", profileData);
+      }
+    } catch (e) {
+      logger.error("Error during tag assignment verification:", e);
+    }
+  };
+
+  // Direct query to verify tag assignment - run when needed
+  useEffect(() => {
+    if (selectedTagIds.includes("2de8fd5d-3311-4e38-94a3-596ee596524b")) {
+      verifyTagAssignments();
+    }
+  }, [selectedTagIds]);
 
   // Debug profiles with tags
   useEffect(() => {
@@ -52,17 +115,25 @@ const CommunityDirectory = () => {
       const profilesWithTags = allProfiles.filter(p => p.tags && p.tags.length > 0);
       logger.debug(`Profiles with tags: ${profilesWithTags.length} out of ${allProfiles.length}`);
       
-      // Look for profiles with Campus Issues tag
-      const campusIssuesProfiles = allProfiles.filter(profile => 
-        profile.tags && profile.tags.some(tag => tag.tag && tag.tag.name === "Campus Issues")
-      );
+      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+      const targetProfile = allProfiles.find(p => p.id === targetProfileId);
       
-      if (campusIssuesProfiles.length > 0) {
-        logger.debug(`Found ${campusIssuesProfiles.length} profiles with Campus Issues tag:`, 
-          campusIssuesProfiles.map(p => ({ id: p.id, name: `${p.first_name} ${p.last_name}` }))
-        );
+      if (targetProfile) {
+        logger.debug("Target profile found:", {
+          id: targetProfile.id,
+          name: `${targetProfile.first_name} ${targetProfile.last_name}`,
+          tagCount: targetProfile.tags?.length || 0
+        });
+        
+        if (targetProfile.tags) {
+          logger.debug("Target profile tags:", targetProfile.tags.map(t => ({
+            id: t.id,
+            tag_id: t.tag_id,
+            tag: t.tag ? t.tag.name : 'unknown'
+          })));
+        }
       } else {
-        logger.debug("No profiles found with Campus Issues tag");
+        logger.debug("Target profile not found in fetched profiles");
       }
     }
   }, [allProfiles]);
@@ -81,24 +152,64 @@ const CommunityDirectory = () => {
     }
   }, [selectedTagIds, tagsResponse?.data]);
 
-  // Client-side filtering for tags
+  // Improved client-side filtering for tags with direct tag ID check
   const filteredProfiles = selectedTagIds.length > 0 
-    ? allProfiles.filter(profile => 
-        profile.tags && 
-        profile.tags.some(tag => selectedTagIds.includes(tag.tag_id))
-      )
+    ? allProfiles.filter(profile => {
+        // Enhanced debugging for the specific profile we're looking for
+        const isTargetProfile = profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85";
+        
+        if (isTargetProfile) {
+          logger.debug("Checking target profile during filtering:", {
+            id: profile.id,
+            name: `${profile.first_name} ${profile.last_name}`,
+            hasTags: !!profile.tags,
+            tagCount: profile.tags?.length || 0
+          });
+        }
+        
+        // Make sure profile has tags array
+        if (!profile.tags || profile.tags.length === 0) {
+          if (isTargetProfile) {
+            logger.debug("Target profile has no tags");
+          }
+          return false;
+        }
+        
+        // Check if any of the selected tags are on the profile
+        const hasSelectedTag = profile.tags.some(tag => {
+          const tagMatch = selectedTagIds.includes(tag.tag_id);
+          
+          if (isTargetProfile) {
+            logger.debug(`Tag ${tag.tag_id} match: ${tagMatch}`);
+          }
+          
+          return tagMatch;
+        });
+        
+        if (isTargetProfile) {
+          logger.debug(`Target profile match result: ${hasSelectedTag}`);
+        }
+        
+        return hasSelectedTag;
+      })
     : allProfiles;
   
   // Log filtered profiles
   useEffect(() => {
     if (selectedTagIds.length > 0) {
       logger.debug(`Filtered to ${filteredProfiles.length} profiles out of ${allProfiles.length}`);
+      
+      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+      const hasTargetProfile = filteredProfiles.some(p => p.id === targetProfileId);
+      
+      logger.debug(`Target profile (${targetProfileId}) is ${hasTargetProfile ? 'INCLUDED' : 'NOT INCLUDED'} in filtered results`);
+      
       if (filteredProfiles.length > 0) {
         logger.debug("First few filtered profiles:", 
           filteredProfiles.slice(0, 3).map(p => ({ 
             id: p.id, 
             name: `${p.first_name} ${p.last_name}`,
-            tags: p.tags?.map(t => t.tag?.name || t.tag_id)
+            tags: p.tags?.map(t => ({id: t.tag_id, name: t.tag?.name}))
           }))
         );
       }
@@ -116,9 +227,26 @@ const CommunityDirectory = () => {
 
   return (
     <div className="container max-w-6xl px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-        Community Directory
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          Community Directory
+        </h1>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => setShowDebugTool(!showDebugTool)}
+        >
+          <Wrench className="h-4 w-4 mr-2" />
+          {showDebugTool ? "Hide Debug" : "Show Debug"}
+        </Button>
+      </div>
+
+      {showDebugTool && (
+        <TagDebugTool 
+          tagId="2de8fd5d-3311-4e38-94a3-596ee596524b"
+          profileId="95ad82bb-4109-4f88-8155-02231dda3b85"
+        />
+      )}
 
       <Card className="mb-6">
         <CardContent className="pt-6">

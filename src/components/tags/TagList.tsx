@@ -1,90 +1,70 @@
 
-import React from 'react';
-import { Badge } from '@/components/ui/badge';
-import { TagAssignment } from '@/utils/tags';
-import { logger } from '@/utils/logger';
-import { EntityType } from '@/types/entityTypes';
+import { Badge } from "@/components/ui/badge";
+import { TagAssignment } from "@/utils/tags/types";
+import { cn } from "@/lib/utils";
+import { logger } from "@/utils/logger";
 
 interface TagListProps {
-  tagAssignments?: TagAssignment[] | null;
+  tagAssignments: TagAssignment[] | undefined;
   className?: string;
-  max?: number;
-  showMore?: boolean;
-  onRemove?: (assignmentId: string) => void;
-  isRemoving?: boolean;
+  maxTags?: number; 
+  showDebugInfo?: boolean; // Option to show more debug info in console
 }
 
-const TagList: React.FC<TagListProps> = ({ 
-  tagAssignments = [], 
-  className = '', 
-  max, 
-  showMore = false,
-  onRemove,
-  isRemoving = false
-}) => {
-  // Safety check for null or undefined
+/**
+ * Component to display a list of tags as badges
+ */
+const TagList = ({
+  tagAssignments,
+  className,
+  maxTags = 10,
+  showDebugInfo = false,
+}: TagListProps) => {
   if (!tagAssignments || tagAssignments.length === 0) {
     return null;
   }
 
-  // Debug the tag assignments structure
-  React.useEffect(() => {
-    logger.debug(`TagList: Received ${tagAssignments.length} tag assignments`, 
+  // Enhanced logging for debugging specific tag issues
+  if (showDebugInfo) {
+    logger.debug("TagList received tagAssignments:", 
       tagAssignments.map(t => ({
         id: t.id,
         tag_id: t.tag_id,
-        tag: t.tag ? { id: t.tag.id, name: t.tag.name } : 'undefined'
+        target_id: t.target_id,
+        target_type: t.target_type,
+        tag: t.tag ? { id: t.tag.id, name: t.tag.name } : null
       }))
     );
-  }, [tagAssignments]);
+  }
 
-  // Limit the number of tags to display if max is specified
-  const displayedTags = max ? tagAssignments.slice(0, max) : tagAssignments;
-  const hiddenCount = max && tagAssignments.length > max ? tagAssignments.length - max : 0;
+  // In case we have more tags than we want to show
+  const displayTags = maxTags > 0 ? tagAssignments.slice(0, maxTags) : tagAssignments;
+  const extraTagsCount = Math.max(0, tagAssignments.length - maxTags);
 
   return (
-    <div className={`flex flex-wrap gap-2 ${className}`}>
-      {displayedTags.map((assignment) => {
-        // Handle both tag access patterns (nested tag object or direct properties)
-        const tagName = assignment.tag ? assignment.tag.name : undefined;
-        
-        // Skip if we don't have a tag name
-        if (!tagName) {
-          logger.debug(`TagList: Missing tag name for assignment:`, assignment);
-          return null;
+    <div className={cn("flex flex-wrap gap-1", className)}>
+      {displayTags.map((tagAssignment) => {
+        if (!tagAssignment.tag) {
+          return null; // Skip tags that don't have a tag object
         }
         
         return (
           <Badge 
-            key={assignment.id || assignment.tag_id} 
-            variant="secondary"
-            className="text-xs py-1 px-2 inline-flex items-center"
+            key={tagAssignment.id} 
+            variant="outline"
+            className="text-xs px-2 py-0.5 bg-opacity-50 text-gray-700 dark:text-gray-300"
           >
-            {tagName}
-            {onRemove && (
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onRemove(assignment.id);
-                }}
-                disabled={isRemoving}
-                className="ml-1 hover:text-red-500"
-                aria-label="Remove tag"
-              >
-                ×
-              </button>
-            )}
+            {tagAssignment.tag.name || "Unnamed tag"}
           </Badge>
         );
       })}
       
-      {showMore && hiddenCount > 0 && (
+      {extraTagsCount > 0 && (
         <Badge 
           variant="outline"
-          className="text-xs py-1 cursor-default"
+          className="text-xs px-2 py-0.5 bg-opacity-50 text-gray-700 dark:text-gray-300"
         >
-          +{hiddenCount} more
+          +{extraTagsCount} more
         </Badge>
       )}
     </div>

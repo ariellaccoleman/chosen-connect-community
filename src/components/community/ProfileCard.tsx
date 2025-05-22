@@ -20,16 +20,17 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
   
-  // Debug profile tags
+  // Debug profile tags - enhanced to show more details
   useEffect(() => {
-    if (profile.id && profile.tags) {
-      logger.debug(`ProfileCard: Profile ${profile.id} (${profile.first_name} ${profile.last_name}) has ${profile.tags.length} tags:`, 
-        profile.tags.map(t => ({ 
-          id: t.id, 
-          tag_id: t.tag_id, 
-          tag: t.tag ? t.tag.name : 'undefined' 
+    // Only log detailed information for the specific profile we're interested in
+    if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
+      logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
+        tags: profile.tags?.map(t => ({
+          id: t.id,
+          tag_id: t.tag_id,
+          tag_name: t.tag ? t.tag.name : 'undefined'
         }))
-      );
+      });
     }
   }, [profile]);
 
@@ -53,6 +54,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
                 <TagList 
                   tagAssignments={profile.tags} 
                   className="flex flex-wrap gap-2" 
+                  showDebugInfo={profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85"}
                 />
               </div>
             </div>
