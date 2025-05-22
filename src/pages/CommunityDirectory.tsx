@@ -9,8 +9,7 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import TagFilter from "@/components/filters/TagFilter";
 import { EntityType } from "@/types/entityTypes";
-import { useSelectionTags } from "@/hooks/tags";
-import { ProfileWithDetails } from "@/types";
+import { useSelectionTags, useFilterByTag } from "@/hooks/tags";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
 import TagDebugTool from "@/components/filters/TagDebugTool";
@@ -19,12 +18,15 @@ import { Wrench } from "lucide-react";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [showDebugTool, setShowDebugTool] = useState(false);
   const { user } = useAuth();
   
-  // Use the hooks for tags - now uses the improved useSelectionTags hook
+  // Use the consistent hooks for tags
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags(EntityType.PERSON);
+  
+  // Use the same tag filtering approach as the Organizations page
+  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
@@ -35,24 +37,39 @@ const CommunityDirectory = () => {
     isApproved: true
   });
 
-  // Debug tag data
+  // Log tag data for debugging
   useEffect(() => {
     if (tagsResponse?.data) {
       logger.debug("Community Directory - Available tags:", tagsResponse.data.length);
       
-      // Log all available tags
-      logger.debug("Available tags:", tagsResponse.data.map(tag => ({ id: tag.id, name: tag.name })));
-      
+      if (selectedTagId) {
+        logger.debug(`Selected tag ID: ${selectedTagId}`);
+        const selectedTag = tagsResponse.data.find(tag => tag.id === selectedTagId);
+        if (selectedTag) {
+          logger.debug("Selected tag details:", selectedTag);
+        }
+      }
+
       // Find and log the specific target tag
       const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
       const targetTag = tagsResponse.data.find(tag => tag.id === targetTagId);
       if (targetTag) {
         logger.debug("Found target tag:", targetTag);
-      } else {
-        logger.debug("Target tag not found in available tags");
       }
     }
-  }, [tagsResponse?.data]);
+  }, [tagsResponse?.data, selectedTagId]);
+
+  // Log details about filtered profiles and tag assignments
+  useEffect(() => {
+    if (selectedTagId) {
+      logger.debug(`Tag Assignments for ${selectedTagId}:`, tagAssignments);
+      
+      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+      const isTargetProfileTagged = tagAssignments.some(ta => ta.target_id === targetProfileId);
+      
+      logger.debug(`Is target profile ${targetProfileId} in tag assignments? ${isTargetProfileTagged}`);
+    }
+  }, [selectedTagId, tagAssignments]);
 
   // Manually verify tag assignments in the tag_assignments table
   const verifyTagAssignments = async () => {
@@ -83,144 +100,77 @@ const CommunityDirectory = () => {
           logger.debug("Target tag assignment NOT found in raw table data");
         }
       }
-      
-      // Check raw profiles data
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", "95ad82bb-4109-4f88-8155-02231dda3b85")
-        .single();
-        
-      if (profileError) {
-        logger.error("Error querying profile:", profileError);
-      } else {
-        logger.debug("Raw profile data:", profileData);
-      }
     } catch (e) {
       logger.error("Error during tag assignment verification:", e);
     }
   };
 
-  // Direct query to verify tag assignment - run when needed
+  // Run verification when necessary
   useEffect(() => {
-    if (selectedTagIds.includes("2de8fd5d-3311-4e38-94a3-596ee596524b")) {
+    if (selectedTagId === "2de8fd5d-3311-4e38-94a3-596ee596524b") {
       verifyTagAssignments();
     }
-  }, [selectedTagIds]);
-
-  // Debug profiles with tags
-  useEffect(() => {
-    if (allProfiles.length > 0) {
-      // Log profiles with tags
-      const profilesWithTags = allProfiles.filter(p => p.tags && p.tags.length > 0);
-      logger.debug(`Profiles with tags: ${profilesWithTags.length} out of ${allProfiles.length}`);
-      
-      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-      const targetProfile = allProfiles.find(p => p.id === targetProfileId);
-      
-      if (targetProfile) {
-        logger.debug("Target profile found:", {
-          id: targetProfile.id,
-          name: `${targetProfile.first_name} ${targetProfile.last_name}`,
-          tagCount: targetProfile.tags?.length || 0
-        });
-        
-        if (targetProfile.tags) {
-          logger.debug("Target profile tags:", targetProfile.tags.map(t => ({
-            id: t.id,
-            tag_id: t.tag_id,
-            tag: t.tag ? t.tag.name : 'unknown'
-          })));
-        }
-      } else {
-        logger.debug("Target profile not found in fetched profiles");
-      }
-    }
-  }, [allProfiles]);
-
-  // Debug tag filtering when selectedTagIds changes
-  useEffect(() => {
-    if (selectedTagIds.length > 0) {
-      logger.debug("Selected tag IDs:", selectedTagIds);
-      
-      // Get tag names for debugging
-      const selectedTagNames = tagsResponse?.data
-        ?.filter(tag => selectedTagIds.includes(tag.id))
-        .map(tag => tag.name);
-      
-      logger.debug("Selected tag names:", selectedTagNames);
-    }
-  }, [selectedTagIds, tagsResponse?.data]);
-
-  // Improved client-side filtering for tags with direct tag ID check
-  const filteredProfiles = selectedTagIds.length > 0 
-    ? allProfiles.filter(profile => {
-        // Enhanced debugging for the specific profile we're looking for
-        const isTargetProfile = profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85";
-        
-        if (isTargetProfile) {
-          logger.debug("Checking target profile during filtering:", {
-            id: profile.id,
-            name: `${profile.first_name} ${profile.last_name}`,
-            hasTags: !!profile.tags,
-            tagCount: profile.tags?.length || 0
-          });
-        }
-        
-        // Make sure profile has tags array
-        if (!profile.tags || profile.tags.length === 0) {
-          if (isTargetProfile) {
-            logger.debug("Target profile has no tags");
-          }
-          return false;
-        }
-        
-        // Check if any of the selected tags are on the profile
-        const hasSelectedTag = profile.tags.some(tag => {
-          const tagMatch = selectedTagIds.includes(tag.tag_id);
-          
-          if (isTargetProfile) {
-            logger.debug(`Tag ${tag.tag_id} match: ${tagMatch}`);
-          }
-          
-          return tagMatch;
-        });
-        
-        if (isTargetProfile) {
-          logger.debug(`Target profile match result: ${hasSelectedTag}`);
-        }
-        
-        return hasSelectedTag;
-      })
-    : allProfiles;
-  
-  // Log filtered profiles
-  useEffect(() => {
-    if (selectedTagIds.length > 0) {
-      logger.debug(`Filtered to ${filteredProfiles.length} profiles out of ${allProfiles.length}`);
-      
-      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
-      const hasTargetProfile = filteredProfiles.some(p => p.id === targetProfileId);
-      
-      logger.debug(`Target profile (${targetProfileId}) is ${hasTargetProfile ? 'INCLUDED' : 'NOT INCLUDED'} in filtered results`);
-      
-      if (filteredProfiles.length > 0) {
-        logger.debug("First few filtered profiles:", 
-          filteredProfiles.slice(0, 3).map(p => ({ 
-            id: p.id, 
-            name: `${p.first_name} ${p.last_name}`,
-            tags: p.tags?.map(t => ({id: t.tag_id, name: t.tag?.name}))
-          }))
-        );
-      }
-    }
-  }, [filteredProfiles.length, allProfiles.length, selectedTagIds.length, filteredProfiles]);
+  }, [selectedTagId]);
 
   // Display error message if profile loading fails
   if (error) {
     console.error("Error loading community profiles:", error);
     toast.error("Failed to load community members. Please try again.");
   }
+
+  // Filter profiles based on search query first
+  const searchFilteredProfiles = allProfiles.filter(profile => {
+    const fullName = `${profile.first_name || ''} ${profile.last_name || ''}`.toLowerCase();
+    const searchLower = searchQuery.toLowerCase();
+    
+    return fullName.includes(searchLower) || 
+           (profile.bio && profile.bio.toLowerCase().includes(searchLower)) ||
+           (profile.headline && profile.headline.toLowerCase().includes(searchLower)) ||
+           (profile.email && profile.email.toLowerCase().includes(searchLower));
+  });
+  
+  // Then filter by tag using the tag assignments from the hook
+  // This matches how filtering is done in the Organizations page
+  const filteredProfiles = selectedTagId
+    ? searchFilteredProfiles.filter(profile => {
+        // Use the tag assignments from the useFilterByTag hook
+        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
+        
+        // Check if the profile ID is in the set of tagged IDs
+        const isIncluded = taggedIds.has(profile.id);
+        
+        // Extra logging for the specific target profile
+        if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
+          logger.debug(`Target profile filtering: is included = ${isIncluded}`);
+        }
+        
+        return isIncluded;
+      })
+    : searchFilteredProfiles;
+
+  // Log filtered results for debugging
+  useEffect(() => {
+    if (selectedTagId) {
+      logger.debug(`Filtered profiles: ${filteredProfiles.length} of ${searchFilteredProfiles.length}`);
+      
+      const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+      const targetProfile = filteredProfiles.find(p => p.id === targetProfileId);
+      
+      if (targetProfile) {
+        logger.debug("Target profile is in filtered results:", targetProfile);
+      } else {
+        logger.debug("Target profile is NOT in filtered results");
+        
+        // Check if the profile exists in unfiltered results
+        const profileInAllResults = searchFilteredProfiles.find(p => p.id === targetProfileId);
+        if (profileInAllResults) {
+          logger.debug("Target profile exists in search results but was filtered out by tag");
+        } else {
+          logger.debug("Target profile does not exist in search results at all");
+        }
+      }
+    }
+  }, [filteredProfiles, searchFilteredProfiles, selectedTagId]);
 
   // Extract tags from the response
   const tags = tagsResponse?.data || [];
@@ -256,8 +206,8 @@ const CommunityDirectory = () => {
             </div>
             <div className="md:w-64">
               <TagFilter
-                selectedTagIds={selectedTagIds}
-                onTagsSelect={setSelectedTagIds}
+                selectedTagId={selectedTagId}
+                onTagSelect={setSelectedTagId}
                 tags={tags}
                 isLoading={isTagsLoading}
                 label="Filter by interest"

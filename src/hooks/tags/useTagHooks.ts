@@ -65,26 +65,61 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         return [];
       }
       
-      // Use the new entity_tag_assignments_view for better performance
-      const { data, error } = await apiClient.query(client => 
-        client
-          .from("entity_tag_assignments_view")
-          .select("*")
-          .eq("tag_id", tagId)
-          .then(res => {
-            // Filter by entity type if provided
-            if (entityType && res.data) {
-              return {
-                ...res,
-                data: res.data.filter(item => item.target_type === entityType)
-              };
-            }
-            return res;
-          })
-      );
-      
-      if (error) throw error;
-      return data as TagAssignment[];
+      try {
+        // Use the entity_tag_assignments_view for better performance
+        const { data, error } = await apiClient.query(client => 
+          client
+            .from("entity_tag_assignments_view")
+            .select("*")
+            .eq("tag_id", tagId)
+            .then(res => {
+              // Filter by entity type if provided
+              if (entityType && res.data) {
+                logger.debug(`useFilterByTag: Filtering assignments by entity type ${entityType}`);
+                return {
+                  ...res,
+                  data: res.data.filter(item => item.target_type === entityType)
+                };
+              }
+              return res;
+            })
+        );
+        
+        if (error) {
+          logger.error(`useFilterByTag: Error fetching tag assignments for tagId ${tagId}`, error);
+          throw error;
+        }
+        
+        logger.debug(`useFilterByTag: Found ${data?.length || 0} assignments for tagId ${tagId}${entityType ? ` and entityType ${entityType}` : ''}`);
+        
+        if (tagId === "2de8fd5d-3311-4e38-94a3-596ee596524b" && entityType === EntityType.PERSON) {
+          logger.debug("Target tag assignments:", data);
+          
+          // Check if the target profile is in the results
+          const targetProfileId = "95ad82bb-4109-4f88-8155-02231dda3b85";
+          const hasTargetProfile = data?.some(ta => ta.target_id === targetProfileId);
+          logger.debug(`Target profile ${targetProfileId} in tag assignments: ${hasTargetProfile}`);
+          
+          // Also check directly with Supabase
+          const { data: directData, error: directError } = await supabase
+            .from("tag_assignments")
+            .select("*")
+            .eq("tag_id", tagId)
+            .eq("target_type", "person")
+            .eq("target_id", targetProfileId);
+            
+          if (directError) {
+            logger.error("Direct query error:", directError);
+          } else {
+            logger.debug(`Direct query for target assignment: ${directData?.length || 0} results`, directData);
+          }
+        }
+        
+        return data as TagAssignment[];
+      } catch (e) {
+        logger.error(`useFilterByTag: Exception fetching tag assignments`, e);
+        return [];
+      }
     },
     enabled: !!tagId // Only run query if tagId is provided
   });
