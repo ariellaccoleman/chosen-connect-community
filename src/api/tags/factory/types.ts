@@ -101,6 +101,11 @@ export interface TagAssignmentOperations {
    * Delete tag assignment by tag and entity
    */
   deleteByTagAndEntity(tagId: string, entityId: string, entityType: EntityType): Promise<boolean>;
+
+  /**
+   * Delete all tag assignments for an entity
+   */
+  deleteForEntity(entityId: string, entityType: EntityType): Promise<boolean>;
   
   /**
    * Check if a tag is assigned to an entity

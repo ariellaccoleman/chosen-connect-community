@@ -18,6 +18,12 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
       return response;
     },
     
+    // Get entities by tag ID
+    getEntitiesByTagId: async (tagId: string, entityType?: EntityType) => {
+      // Implementation needed
+      return [];
+    },
+    
     // Create assignment
     create: async (tagId: string, entityId: string, entityType: EntityType) => {
       const response = await tagAssignmentRepo.createTagAssignment({
@@ -34,10 +40,22 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
       return true;
     },
     
+    // Delete by tag and entity
+    deleteByTagAndEntity: async (tagId: string, entityId: string, entityType: EntityType) => {
+      // Implementation needed
+      return true;
+    },
+    
     // Delete all assignments for an entity
     deleteForEntity: async (entityId: string, entityType: EntityType) => {
       await tagAssignmentRepo.deleteTagAssignmentsForEntity(entityId, entityType);
       return true;
+    },
+    
+    // Check if tag is assigned
+    isTagAssigned: async (tagId: string, entityId: string, entityType: EntityType) => {
+      // Implementation needed
+      return false;
     }
   };
 }

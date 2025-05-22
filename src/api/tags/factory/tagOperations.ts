@@ -9,7 +9,8 @@ import { logger } from '@/utils/logger';
  * Create tag operations with provided options
  */
 export function createTagOperations<T extends Tag>(options: TagApiOptions = {}): TagOperations<T> {
-  const tableName = options.tableName || 'tags';
+  // Get the table name from options or use default
+  const TABLE_NAME = options.tableName || 'tags';
 
   return {
     /**
@@ -20,7 +21,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .select('*')
           .order('name');
       });
@@ -41,7 +42,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .select('*')
           .eq('id', id)
           .single();
@@ -63,7 +64,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .select('*')
           .ilike('name', name)
           .single();
@@ -88,7 +89,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .select('*')
           .ilike('name', `%${query}%`)
           .order('name')
@@ -116,7 +117,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data: createdTag, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .insert([data])
           .select()
           .single();
@@ -138,7 +139,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { data: updatedTag, error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .update(data)
           .eq('id', id)
           .select()
@@ -161,7 +162,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       const { error } = await apiClient.query(async (client) => {
         return client
-          .from(tableName)
+          .from('tags')
           .delete()
           .eq('id', id);
       });
