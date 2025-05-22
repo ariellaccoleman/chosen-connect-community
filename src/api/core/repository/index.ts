@@ -23,3 +23,7 @@ export * from './repositoryUtils';
 // Export standard operations
 export * from './standardOperations';
 export * from './integrationExamples';
+
+// Export entity repositories
+export * from './entities';
+
