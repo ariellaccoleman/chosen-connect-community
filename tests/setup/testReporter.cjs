@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -14,7 +15,7 @@ class TestReporter {
       testResults: [],
       // Track which tests we've already reported to prevent double counting
       reportedTests: new Set(),
-      // Track test suites
+      // Track test suites by normalized path
       suites: new Map(),
       // Track current suite being processed
       currentSuite: null
@@ -23,6 +24,11 @@ class TestReporter {
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
     console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || 'not set'}`);
     console.log(`TEST_REPORTING_API_KEY: ${process.env.TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
+  }
+
+  // Normalize file paths to be consistent across different methods
+  normalizePath(filePath) {
+    return filePath.replace(/\\/g, '/').trim();
   }
 
   async onRunStart() {
@@ -95,7 +101,8 @@ class TestReporter {
       return;
     }
 
-    const testFilePath = test.path;
+    const testFilePath = this.normalizePath(test.path);
+    
     // Extract suite name from file path
     const testSuitePath = testFilePath.split('/');
     const suiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
@@ -143,13 +150,13 @@ class TestReporter {
       console.error(`Error recording test suite start for ${suiteName}:`, error);
     }
 
-    // Store the suite in our map
+    // Store the suite in our map using normalized path
     this.results.suites.set(testFilePath, this.results.currentSuite);
   }
 
   async onTestFileResult(test, testResult) {
     // Add detailed logging to debug the issue
-    console.log(`onTestFileResult called with test: ${test ? 'defined' : 'undefined'} and testResult: ${testResult ? 'defined' : 'undefined'}`);
+    console.log(`onTestFileResult called with test path: ${test ? test.path : 'undefined'}`);
     
     if (!test) {
       console.error('Test object is undefined in onTestFileResult');
@@ -161,20 +168,65 @@ class TestReporter {
       return;
     }
 
-    const testFilePath = test.path;
-    console.log(`Looking for suite with testFilePath: ${testFilePath}`);
+    const testFilePath = this.normalizePath(test.path);
+    console.log(`Looking for suite with normalized testFilePath: ${testFilePath}`);
     
-    const suite = this.results.suites.get(testFilePath);
+    // Check if we have the suite in our map
+    let suite = this.results.suites.get(testFilePath);
     
+    // If suite not found, create it on the fly as fallback
     if (!suite) {
-      console.error(`No suite found for ${testFilePath}`);
-      // Let's see what suites we do have
-      console.log('Current suites in map:', Array.from(this.results.suites.keys()));
-      return;
+      console.warn(`No suite found for ${testFilePath}, creating one now as fallback`);
+      const testSuitePath = testFilePath.split('/');
+      const suiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
+      
+      suite = {
+        path: testFilePath,
+        name: suiteName,
+        startTime: Date.now() - 1000, // Assume it started 1 second ago as fallback
+        testCount: 0,
+        passed: 0,
+        failed: 0,
+        skipped: 0,
+        id: null
+      };
+      
+      // Store the suite in our map
+      this.results.suites.set(testFilePath, suite);
+      
+      // Try to register this suite in the database
+      try {
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.TEST_REPORTING_API_KEY
+          },
+          body: JSON.stringify({
+            test_run_id: this.testRunId,
+            suite_name: suiteName,
+            file_path: testFilePath,
+            status: 'in_progress',
+            test_count: 0,
+            duration_ms: 0
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          suite.id = data.test_suite_id;
+          console.log(`Created fallback suite ${suiteName} with ID ${data.test_suite_id}`);
+        } else {
+          const errorText = await response.text();
+          console.error(`Failed to create fallback suite: ${errorText}`);
+        }
+      } catch (error) {
+        console.error(`Error creating fallback suite for ${suiteName}:`, error);
+      }
     }
     
     // Calculate test duration
-    const duration = Date.now() - suite.startTime;
+    const duration = suite.startTime ? (Date.now() - suite.startTime) : 0;
 
     // Update suite stats based on test results
     const testCount = testResult.numPassingTests + testResult.numFailingTests + testResult.numPendingTests;
@@ -183,8 +235,7 @@ class TestReporter {
     suite.failed = testResult.numFailingTests;
     suite.skipped = testResult.numPendingTests;
     
-    // FIX: Properly determine status from actual test results
-    // Check if the test suite failed to run (testExecError will be present)
+    // Determine status from actual test results
     const status = testResult.testExecError || testResult.numFailingTests > 0 ? 'failure' : 'success';
     
     // Add extra logging to debug test errors
@@ -234,8 +285,10 @@ class TestReporter {
       console.error(`Error updating test suite ${suite.name}:`, error);
     }
 
-    // Clear current suite
-    this.results.currentSuite = null;
+    // Clear current suite if it matches the one we just processed
+    if (this.results.currentSuite && this.results.currentSuite.path === testFilePath) {
+      this.results.currentSuite = null;
+    }
   }
 
   async processTestResults(testResult, suite) {
@@ -267,17 +320,11 @@ class TestReporter {
       return;
     }
     
-    if (!suite || !suite.id) {
-      console.error(`Missing suite ID for test file: ${testFilePath}`);
-      return;
-    }
-    
     console.log(`Reporting ${testResults?.length || 0} test results for ${testFilePath} to test run ${this.testRunId}`);
-    console.log(`Test suite ID for test results: ${suite.id}`);
+    console.log(`Test suite ID for test results: ${suite.id || 'not set yet'}`);
     
-    // Extract test suite name from file path
-    const testSuitePath = testFilePath.split('/');
-    const testSuiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
+    // Extract test suite name from file path or use suite name
+    const testSuiteName = suite.name || 'Unknown Suite';
     
     // Add special handling for suites that failed to run
     if (testResult.testExecError) {
@@ -359,7 +406,13 @@ class TestReporter {
       else if (testStatus === 'failed') this.results.failed++;
       else this.results.skipped++;
       
-      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite.id}`);
+      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite.id || 'not set'}`);
+      
+      // Only send results if we have a valid suite ID
+      if (!suite.id) {
+        console.warn(`Cannot record test result for ${testName} because suite ID is not set. Will skip this result.`);
+        continue;
+      }
       
       // Safely handle possibly undefined properties
       const failureMessages = result.failureMessages || [];
@@ -404,22 +457,12 @@ class TestReporter {
   }
 
   async onTestResult(test, testResult) {
-    console.log(`onTestResult called with test: ${test ? 'defined' : 'undefined'} and testResult: ${testResult ? 'defined' : 'undefined'}`);
-    
-    // Most of the work is done in onTestFileResult now
-    // This method is kept for backward compatibility
-    if (!test || test === undefined) {
-      console.warn('Received undefined test in onTestResult - skipping');
+    if (!test || !testResult) {
+      console.warn('Received undefined test or testResult in onTestResult - skipping');
       return;
     }
     
-    // Defensive check for testResult
-    if (!testResult) {
-      console.warn('Received undefined testResult in onTestResult - skipping');
-      return;
-    }
-    
-    // Log testFilePath to help debugging
+    // Most work is done in onTestFileResult - this is mostly kept for compatibility
     if (test && test.path) {
       console.log(`onTestResult for test path: ${test.path}`);
     }
