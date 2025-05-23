@@ -1,29 +1,26 @@
 
-import { createTestingProfileRepository } from '@/api/core/repository/entities/factories/profileRepositoryFactory';
 import { 
   setupTestSchema, 
+  cleanupOldTestSchemas,
   clearTestTable, 
   seedTestData,
-  teardownTestingEnvironment,
   createTestContext
 } from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
 
-// Generate a unique test ID for this test run
-const TEST_RUN_ID = uuidv4().substring(0, 8);
-
 describe('ProfileRepository with Schema-Based Testing', () => {
-  // Use testContext to manage repository lifecycle, schema, and cleanup
+  // Set up test context for managing database schema and lifecycle
   const testContext = createTestContext<Profile>('profiles', {
     requiredTables: ['profiles'],
-    mockDataInTestEnv: true
+    // Never use mock data, always use a real database
+    mockDataInTestEnv: false
   });
   
   // Generate test profiles before each test
   let mockProfiles: Profile[];
   
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create fresh profiles for each test
     mockProfiles = Array(3).fill(null).map(() => ({
       id: uuidv4(),
@@ -34,13 +31,18 @@ describe('ProfileRepository with Schema-Based Testing', () => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     }));
-    return testContext.setup({ initialData: mockProfiles });
+    
+    // Set up test schema and seed data
+    await testContext.setup({ initialData: mockProfiles });
   });
   
-  afterEach(() => testContext.cleanup());
+  afterEach(async () => {
+    // Clean up test data after each test
+    await testContext.cleanup();
+  });
   
   test('should create and retrieve a profile', async () => {
-    // Create a repository using the test context
+    // Get repository from test context
     const repository = testContext.getRepository();
     
     // Create a mock profile
@@ -83,9 +85,9 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     
     // Use an existing profile from mockProfiles
     const mockProfile = mockProfiles[0];
+    const updatedName = 'Updated Name';
     
     // Update the profile
-    const updatedName = 'Updated Name';
     const updateResult = await repository
       .update({ first_name: updatedName })
       .eq('id', mockProfile.id)
@@ -94,13 +96,13 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     // Verify update was successful
     expect(updateResult.error).toBeNull();
     
-    // Retrieve the updated profile
+    // Retrieve the updated profile to verify changes
     const retrieveResult = await repository
       .select()
       .eq('id', mockProfile.id)
       .single();
     
-    // Verify the update was applied
+    // Verify the update was applied correctly
     expect(retrieveResult.error).toBeNull();
     expect(retrieveResult.data).toMatchObject({
       id: mockProfile.id,
@@ -135,6 +137,11 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     expect(retrieveResult.data).toBeNull();
   });
   
-  // Release the test schema after all tests
-  afterAll(() => testContext.release());
+  // Clean up test schema after all tests
+  afterAll(async () => {
+    await testContext.release();
+    
+    // Also clean up any old test schemas that might be lingering
+    await cleanupOldTestSchemas();
+  });
 });

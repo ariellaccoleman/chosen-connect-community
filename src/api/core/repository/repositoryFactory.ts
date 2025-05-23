@@ -1,3 +1,4 @@
+
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
 import { createMockRepository } from './MockRepository';
@@ -33,12 +34,8 @@ export function createTestingRepository<T>(
     enableLogging?: boolean;
   } = {}
 ): BaseRepository<T> {
-  // If we're in a test environment, use a mock repository
-  if (process.env.NODE_ENV === 'test') {
-    return createMockRepository<T>(tableName, options.initialData || []);
-  }
-  
-  // Otherwise, use a real repository with the specified schema
+  // Always use a real Supabase repository with the specified schema
+  // Never use mock repositories, even in test environments
   return createRepository<T>(tableName, { 
     schema: options.schema || 'testing',
     enableLogging: options.enableLogging

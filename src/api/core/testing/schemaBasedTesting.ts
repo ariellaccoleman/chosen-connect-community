@@ -465,28 +465,15 @@ export function createTestContext<T>(tableName: string, options: {
   // The schema to use - will be determined during setup
   let testSchema = options.schema || 'testing';
   
-  // Use mock repository for tests to avoid actual DB calls
-  const repository = process.env.NODE_ENV === 'test'
-    ? createMockRepository<T>(tableName, options.initialData || [])
-    : createTestingRepository<T>(tableName, { schema: testSchema });
+  // Always use real database repository, never mock
+  const repository = createTestingRepository<T>(tableName, { schema: testSchema });
   
   const setup = async (setupOptions: {
     initialData?: T[];
     seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
     validateSchema?: boolean;
   } = {}): Promise<void> => {
-    // In test environment, use mock data
-    if (process.env.NODE_ENV === 'test') {
-      if (options.mockDataInTestEnv !== false) {
-        const mockRepo = repository as any;
-        if (mockRepo.mockData && setupOptions.initialData && setupOptions.initialData.length > 0) {
-          mockRepo.mockData[tableName] = [...setupOptions.initialData];
-        }
-      }
-      return;
-    }
-    
-    // For real database tests, ensure we have a valid schema
+    // Ensure we have a valid schema
     if (!testSchema || testSchema === 'testing') {
       // Create a unique schema for this test context
       testSchema = await setupTestSchema({
