@@ -12,26 +12,35 @@ jest.mock('@/api/core/repository/repositoryFactory', () => {
     update: jest.fn(() => mockRepository),
     delete: jest.fn(() => mockRepository),
     eq: jest.fn(() => mockRepository),
-    execute: jest.fn().mockResolvedValue({ 
-      data: [], 
-      error: null,
-      isSuccess: () => true,
-      isError: () => false,
-      getErrorMessage: () => ''
+    execute: jest.fn().mockImplementation(function() {
+      console.log('[Mock Repository] execute called');
+      return Promise.resolve({ 
+        data: [], 
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      });
     }),
-    single: jest.fn().mockResolvedValue({ 
-      data: { id: 'test-id', name: 'Test Entity' }, 
-      error: null,
-      isSuccess: () => true,
-      isError: () => false,
-      getErrorMessage: () => ''
+    single: jest.fn().mockImplementation(function() {
+      console.log('[Mock Repository] single called');
+      return Promise.resolve({ 
+        data: { id: 'test-id', name: 'Test Entity' }, 
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      });
     }),
-    maybeSingle: jest.fn().mockResolvedValue({ 
-      data: { id: 'test-id', name: 'Test Entity' }, 
-      error: null,
-      isSuccess: () => true,
-      isError: () => false,
-      getErrorMessage: () => ''
+    maybeSingle: jest.fn().mockImplementation(function() {
+      console.log('[Mock Repository] maybeSingle called');
+      return Promise.resolve({ 
+        data: { id: 'test-id', name: 'Test Entity' }, 
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      });
     })
   };
   
@@ -45,6 +54,7 @@ describe('API Factory with Repository Integration', () => {
   // Reset mocks before each test
   beforeEach(() => {
     jest.clearAllMocks();
+    console.log('--- Starting new test ---');
   });
 
   test('should automatically create repository when not provided', () => {
@@ -65,26 +75,35 @@ describe('API Factory with Repository Integration', () => {
       update: jest.fn(() => mockRepository),
       delete: jest.fn(() => mockRepository),
       eq: jest.fn(() => mockRepository),
-      execute: jest.fn().mockResolvedValue({
-        data: [],
-        error: null,
-        isSuccess: () => true,
-        isError: () => false,
-        getErrorMessage: () => ''
+      execute: jest.fn().mockImplementation(function() {
+        console.log('[Custom Mock Repository] execute called');
+        return Promise.resolve({
+          data: [],
+          error: null,
+          isSuccess: () => true,
+          isError: () => false,
+          getErrorMessage: () => ''
+        });
       }),
-      single: jest.fn().mockResolvedValue({
-        data: {},
-        error: null,
-        isSuccess: () => true,
-        isError: () => false,
-        getErrorMessage: () => ''
+      single: jest.fn().mockImplementation(function() {
+        console.log('[Custom Mock Repository] single called');
+        return Promise.resolve({
+          data: {},
+          error: null,
+          isSuccess: () => true,
+          isError: () => false,
+          getErrorMessage: () => ''
+        });
       }),
-      maybeSingle: jest.fn().mockResolvedValue({
-        data: {},
-        error: null,
-        isSuccess: () => true,
-        isError: () => false,
-        getErrorMessage: () => ''
+      maybeSingle: jest.fn().mockImplementation(function() {
+        console.log('[Custom Mock Repository] maybeSingle called');
+        return Promise.resolve({
+          data: {},
+          error: null,
+          isSuccess: () => true,
+          isError: () => false,
+          getErrorMessage: () => ''
+        });
       })
     } as unknown as DataRepository<any>;
     
@@ -154,6 +173,7 @@ describe('API Factory with Repository Integration', () => {
     // Mock repository that throws error
     const mockRepository = {
       select: jest.fn().mockImplementation(() => {
+        console.log('[Error Mock Repository] Throwing error');
         throw new Error('Repository error');
       })
     } as unknown as DataRepository<any>;

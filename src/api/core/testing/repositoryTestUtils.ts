@@ -87,6 +87,11 @@ export interface TestRepositoryOptions<T> {
    * Name of the ID field (defaults to 'id')
    */
   idField?: string;
+  
+  /**
+   * Enable debug logging
+   */
+  debug?: boolean;
 }
 
 /**
@@ -99,11 +104,20 @@ export function createTestRepository<T>(
     tableName, 
     initialData = [], 
     entityType,
-    idField = 'id'
+    idField = 'id',
+    debug = true
   } = options;
   
+  if (debug) {
+    console.log(`[createTestRepository] Creating repository for ${tableName}`);
+    console.log(`[createTestRepository] Initial data: ${JSON.stringify(initialData)}`);
+  }
+  
+  // Create deep clone of initial data to avoid reference issues
+  const clonedData = JSON.parse(JSON.stringify(initialData));
+  
   // Create the base mock repository
-  const mockRepo = createMockRepository<T>(tableName, initialData);
+  const mockRepo = createMockRepository<T>(tableName, clonedData);
   
   // Create data generator if entity type is provided
   const dataGenerator = options.dataGenerator || 
@@ -124,7 +138,7 @@ export function createTestRepository<T>(
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
   
   // Store original data reference for test manipulations
-  enhancedRepo.mockData = initialData;
+  enhancedRepo.mockData = clonedData;
   
   // Setup spies for monitoring method calls
   enhancedRepo.spies = {
@@ -147,43 +161,61 @@ export function createTestRepository<T>(
   
   // Method to add items to the mock data
   enhancedRepo.addItems = (items: T | T[]) => {
+    if (debug) console.log(`[${tableName}] Adding items to repository`);
+    
     if (Array.isArray(items)) {
       enhancedRepo.mockData.push(...items);
     } else {
       enhancedRepo.mockData.push(items);
     }
+    
+    if (debug) console.log(`[${tableName}] Repository now has ${enhancedRepo.mockData.length} items`);
   };
   
   // Method to clear all items
   enhancedRepo.clearItems = () => {
+    if (debug) console.log(`[${tableName}] Clearing all items from repository`);
     enhancedRepo.mockData.length = 0;
   };
   
   // Find an item by ID
   enhancedRepo.findById = (id: string) => {
-    return enhancedRepo.mockData.find(item => 
+    if (debug) console.log(`[${tableName}] Finding item by ID: ${id}`);
+    const item = enhancedRepo.mockData.find(item => 
       (item as any)[idField] === id
     );
+    if (debug) {
+      if (item) console.log(`[${tableName}] Found item: ${JSON.stringify(item)}`);
+      else console.log(`[${tableName}] No item found with ID: ${id}`);
+    }
+    return item;
   };
   
   // Update an item directly
   enhancedRepo.updateItem = (id: string, updates: Partial<T>) => {
+    if (debug) console.log(`[${tableName}] Updating item ${id} with: ${JSON.stringify(updates)}`);
+    
     const index = enhancedRepo.mockData.findIndex(
       item => (item as any)[idField] === id
     );
     
-    if (index === -1) return undefined;
+    if (index === -1) {
+      if (debug) console.log(`[${tableName}] No item found with ID: ${id} for update`);
+      return undefined;
+    }
     
     enhancedRepo.mockData[index] = { 
       ...enhancedRepo.mockData[index], 
       ...updates 
     };
     
+    if (debug) console.log(`[${tableName}] Updated item: ${JSON.stringify(enhancedRepo.mockData[index])}`);
     return enhancedRepo.mockData[index];
   };
   
   // Mock specific error responses
   enhancedRepo.mockError = (operation: string, code: string, message: string) => {
+    if (debug) console.log(`[${tableName}] Mocking error for ${operation}: ${code} - ${message}`);
     (mockRepo as any).setMockResponse(operation, {
       data: null,
       error: { code, message },
@@ -195,6 +227,7 @@ export function createTestRepository<T>(
   
   // Mock specific success responses
   enhancedRepo.mockSuccess = (operation: string, data: any) => {
+    if (debug) console.log(`[${tableName}] Mocking success for ${operation} with data: ${JSON.stringify(data)}`);
     (mockRepo as any).setMockResponse(operation, {
       data,
       error: null,
@@ -206,6 +239,7 @@ export function createTestRepository<T>(
   
   // Create snapshot of current data
   enhancedRepo.createSnapshot = () => {
+    if (debug) console.log(`[${tableName}] Creating snapshot of repository data`);
     return [...enhancedRepo.mockData];
   };
   
@@ -214,15 +248,21 @@ export function createTestRepository<T>(
    */
   if (dataGenerator) {
     (enhancedRepo as any).generateTestData = (count: number, overrides?: Partial<T>) => {
+      if (debug) console.log(`[${tableName}] Generating ${count} test items`);
       const data = dataGenerator.generateMany(count, overrides);
       return data;
     };
     
     (enhancedRepo as any).generateAndAddTestData = (count: number, overrides?: Partial<T>) => {
+      if (debug) console.log(`[${tableName}] Generating and adding ${count} test items`);
       const data = dataGenerator.generateMany(count, overrides);
       enhancedRepo.addItems(data);
       return data;
     };
+  }
+  
+  if (debug && clonedData.length > 0) {
+    console.log(`[createTestRepository] First item in repository: ${JSON.stringify(clonedData[0])}`);
   }
   
   return enhancedRepo;

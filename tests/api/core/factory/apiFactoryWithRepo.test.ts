@@ -19,6 +19,18 @@ describe('API Factory with Repository', () => {
     created_at: () => new Date().toISOString(),
   });
 
+  beforeEach(() => {
+    // Add global console log spy to help debug test failures
+    jest.spyOn(console, 'log');
+    jest.spyOn(console, 'error');
+    
+    console.log('--- Starting new test ---');
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   test('creates operations with repository', () => {
     const mockRepo = createTestRepository<TestEntity>({
       tableName: 'test_table',
@@ -50,6 +62,12 @@ describe('API Factory with Repository', () => {
       tableName: 'test_table',
       initialData: testData
     });
+
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Spy on the select method to ensure it's called
+    const selectSpy = jest.spyOn(mockRepo, 'select');
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -60,9 +78,16 @@ describe('API Factory with Repository', () => {
     // Call getAll
     const result = await factory.getAll();
     
+    // Log the result for debugging
+    console.log(`getAll result: ${JSON.stringify(result)}`);
+    
+    // Verify the select method was called
+    expect(selectSpy).toHaveBeenCalled();
+    
     // Verify results without depending on order
     expect(result.status).toBe('success');
     expect(result.data).toHaveLength(2);
+    
     // Check that both entities are present by ID, not relying on specific order
     const resultIds = result.data!.map(entity => entity.id).sort();
     expect(resultIds).toEqual(['1', '2']);
@@ -81,6 +106,12 @@ describe('API Factory with Repository', () => {
       initialData: testData
     });
     
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Spy on the select and eq methods
+    const selectSpy = jest.spyOn(mockRepo, 'select');
+    
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
       tableName: 'test_table',
@@ -90,7 +121,13 @@ describe('API Factory with Repository', () => {
     // Call getById
     const result = await factory.getById('2');
     
-    // Verify
+    // Log the result for debugging
+    console.log(`getById result: ${JSON.stringify(result)}`);
+    
+    // Verify method calls
+    expect(selectSpy).toHaveBeenCalled();
+    
+    // Verify results
     expect(result.status).toBe('success');
     expect(result.data?.id).toBe('2');
     expect(result.data?.name).toBe('Entity 2');
@@ -102,6 +139,9 @@ describe('API Factory with Repository', () => {
       tableName: 'test_table',
       initialData: []
     });
+    
+    // Spy on insert method
+    const insertSpy = jest.spyOn(mockRepo, 'insert');
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -118,7 +158,13 @@ describe('API Factory with Repository', () => {
     // Call create
     const result = await factory.create(newEntity);
     
-    // Verify
+    // Log the result for debugging
+    console.log(`create result: ${JSON.stringify(result)}`);
+    
+    // Verify method calls
+    expect(insertSpy).toHaveBeenCalledWith(newEntity);
+    
+    // Verify result
     expect(result.status).toBe('success');
     expect(result.data?.name).toBe('New Entity');
     expect(result.data?.description).toBe('New Description');
@@ -140,6 +186,12 @@ describe('API Factory with Repository', () => {
       initialData: testData
     });
     
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Spy on update method
+    const updateSpy = jest.spyOn(mockRepo, 'update');
+    
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
       tableName: 'test_table',
@@ -154,7 +206,13 @@ describe('API Factory with Repository', () => {
     // Call update
     const result = await factory.update('1', updateData);
     
-    // Verify
+    // Log the result for debugging
+    console.log(`update result: ${JSON.stringify(result)}`);
+    
+    // Verify method calls
+    expect(updateSpy).toHaveBeenCalledWith(updateData);
+    
+    // Verify result
     expect(result.status).toBe('success');
     expect(result.data?.name).toBe('Entity 1'); // Unchanged
     expect(result.data?.description).toBe('Updated Description'); // Updated
@@ -177,6 +235,12 @@ describe('API Factory with Repository', () => {
       initialData: testData
     });
     
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Spy on delete method
+    const deleteSpy = jest.spyOn(mockRepo, 'delete');
+    
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
       tableName: 'test_table',
@@ -186,12 +250,20 @@ describe('API Factory with Repository', () => {
     // Call delete
     const result = await factory.delete('1');
     
-    // Verify
+    // Log the result for debugging
+    console.log(`delete result: ${JSON.stringify(result)}`);
+    
+    // Verify method calls
+    expect(deleteSpy).toHaveBeenCalled();
+    
+    // Verify result
     expect(result.status).toBe('success');
     expect(result.data).toBe(true);
     
-    // Check it was removed from repository - using length check instead of order-dependent checks
+    // Check it was removed from repository
     const allEntities = await mockRepo.select().execute();
+    console.log(`Remaining entities after delete: ${JSON.stringify(allEntities.data)}`);
+    
     expect(allEntities.data).toHaveLength(1);
     expect(allEntities.data![0].id).toBe('2');
   });
@@ -210,6 +282,9 @@ describe('API Factory with Repository', () => {
       initialData: testData
     });
     
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
       tableName: 'test_table',
@@ -221,7 +296,10 @@ describe('API Factory with Repository', () => {
       filters: { name: 'AppleDevice' } 
     });
     
-    // Verify
+    // Log the result for debugging
+    console.log(`getAll with filters result: ${JSON.stringify(result)}`);
+    
+    // Verify results
     expect(result.status).toBe('success');
     expect(result.data).toHaveLength(1);
     expect(result.data![0].id).toBe('1');
