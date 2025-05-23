@@ -50,13 +50,15 @@ export const cachedTagApi = {
   async getByEntityType(entityType: EntityType): Promise<Tag[]> {
     try {
       const tagRepo = createCachedTagRepository();
-      const result = await tagRepo.select(`
-        SELECT DISTINCT t.*
-        FROM tags t
-        JOIN tag_entity_types tet ON t.id = tet.tag_id
-        WHERE tet.entity_type = '${entityType}'
-        ORDER BY t.name ASC
-      `).execute();
+      const result = await tagRepo.select()
+        .select(`
+          SELECT DISTINCT t.*
+          FROM tags t
+          JOIN tag_entity_types tet ON t.id = tet.tag_id
+          WHERE tet.entity_type = '${entityType}'
+          ORDER BY t.name ASC
+        `)
+        .execute();
       return result.data || [];
     } catch (err) {
       logger.error(`Error fetching tags for entity type ${entityType}:`, err);
