@@ -94,12 +94,12 @@ describe('API Factory with Repository', () => {
     });
 
     // Create and add an entity using the repository
-    const entity = testEntityGenerator.generateOne({
+    const testEntity = testEntityGenerator.generateOne({
       id: '1',
       name: 'Entity 1',
       description: 'Description 1'
     });
-    await mockRepo.insert(entity).execute();
+    await mockRepo.insert(testEntity).execute();
     
     // Log to verify the data is in the repository
     console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
@@ -131,12 +131,12 @@ describe('API Factory with Repository', () => {
     });
     
     // Create and add an entity using the repository
-    const entity = testEntityGenerator.generateOne({
+    const testEntity = testEntityGenerator.generateOne({
       id: '1',
       name: 'Entity 1',
       description: 'Original Description'
     });
-    await mockRepo.insert(entity).execute();
+    await mockRepo.insert(testEntity).execute();
     
     // Log to verify the entity was added
     console.log(`Repository data before update: ${JSON.stringify(mockRepo.mockData)}`);
@@ -165,8 +165,8 @@ describe('API Factory with Repository', () => {
     expect(result.data?.description).toBe('Updated Description'); // Updated
     
     // Check it was updated in repository
-    const entity = await mockRepo.select().eq('id', '1').single();
-    expect(entity.data?.description).toBe('Updated Description');
+    const updatedEntity = await mockRepo.select().eq('id', '1').maybeSingle();
+    expect(updatedEntity.data?.description).toBe('Updated Description');
   });
   
   test('getAll uses repository to fetch data', async () => {
