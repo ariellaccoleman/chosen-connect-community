@@ -1,3 +1,4 @@
+
 import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -136,10 +137,16 @@ export function createTestRepository<T>(
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
   
-  // Store original data reference for test manipulations
-  // This is now directly accessing mockRepo.mockData[tableName], not a copy, 
-  // so they share reference
+  // Get the actual mockData reference directly from the repository to ensure we're
+  // using the same reference throughout the code, avoiding any data synchronization issues
   enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
+  
+  if (debug) {
+    console.log(`[createTestRepository] Setting up enhanced repo with mockData (length: ${enhancedRepo.mockData.length})`);
+    if (enhancedRepo.mockData.length > 0) {
+      console.log(`[createTestRepository] First item: ${JSON.stringify(enhancedRepo.mockData[0])}`);
+    }
+  }
   
   // Setup spies for monitoring method calls
   enhancedRepo.spies = {

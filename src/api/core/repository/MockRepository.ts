@@ -18,6 +18,7 @@ export class MockRepository<T = any> extends BaseRepository<T> {
     super(tableName);
     // Create a deep clone of initialData to avoid reference issues
     this.mockData[tableName] = JSON.parse(JSON.stringify(initialData));
+    console.log(`[MockRepository] Created repository for ${tableName} with ${initialData.length} items`);
   }
 
   /**
@@ -103,6 +104,8 @@ export class MockRepository<T = any> extends BaseRepository<T> {
         ...(this.mockData[this.tableName] || []),
         ...newItems
       ];
+      
+      console.log(`[MockRepository] Inserted ${newItems.length} items. Repository now has ${this.mockData[this.tableName].length} items`);
     }
     
     return new MockQuery<T>(
@@ -200,15 +203,18 @@ class MockQuery<T> implements RepositoryQuery<T> {
     this.filters = [...filters]; // Create a copy to avoid modifying shared array
     this.inConditions = [...inConditions]; // Create a copy to avoid modifying shared array
     this.operationData = operationData;
+    
+    console.log(`[MockQuery] Created query for ${operation} operation on ${tableName}`);
+    console.log(`[MockQuery] Current table data has ${this.mockData[tableName]?.length || 0} items`);
   }
 
   eq(column: string, value: any): RepositoryQuery<T> {
     // Log for debugging
-    console.log(`Adding filter for ${column} === ${value}`);
+    console.log(`[MockQuery] Adding filter for ${column} === ${value}`);
     
     this.filters.push(item => {
       const result = item[column] === value;
-      console.log(`Filter ${column} === ${value} on item ${JSON.stringify(item)} result: ${result}`);
+      console.log(`[MockQuery] Filter ${column} === ${value} on item ${JSON.stringify(item)} result: ${result}`);
       return result;
     });
     return this;
@@ -574,8 +580,12 @@ class MockQuery<T> implements RepositoryQuery<T> {
       const idsToDelete = itemsToDelete.map(item => item.id);
       console.log(`[MockQuery] IDs to delete: ${JSON.stringify(idsToDelete)}`);
       
-      // Remove items from mockData
-      this.mockData[this.tableName] = items.filter(item => !idsToDelete.includes(item.id));
+      // Remove items from mockData - use direct array assignment to ensure reference is maintained
+      const remainingItems = items.filter(item => !idsToDelete.includes(item.id));
+      
+      // Important: We need to replace the entire array while maintaining the reference
+      this.mockData[this.tableName].length = 0; // Clear the array
+      this.mockData[this.tableName].push(...remainingItems); // Add filtered items back
       
       console.log(`[MockQuery] Items after delete: ${this.mockData[this.tableName].length}`);
       console.log(`[MockQuery] Remaining IDs: ${JSON.stringify(this.mockData[this.tableName].map(item => item.id))}`);

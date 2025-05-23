@@ -117,6 +117,7 @@ describe('API Factory with Repository', () => {
     
     // Verify results
     expect(result.status).toBe('success');
+    expect(result.data).toBeDefined();
     expect(result.data?.id).toBe('2');
     expect(result.data?.name).toBe('Entity 2');
   });
@@ -212,7 +213,7 @@ describe('API Factory with Repository', () => {
       initialData: [...testData] // Create a copy to ensure test isolation
     });
     
-    // Log to verify the data is in the repository
+    // Log to verify the data is in the repository before delete
     console.log(`Test data in repository before delete: ${JSON.stringify(mockRepo.mockData)}`);
     console.log(`Test data length before delete: ${mockRepo.mockData.length}`);
     
@@ -235,13 +236,15 @@ describe('API Factory with Repository', () => {
     
     // Check repository state directly
     console.log(`Repository data after delete: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // This should now work with the fixed repository
     expect(mockRepo.mockData.length).toBe(1);
     expect(mockRepo.mockData[0].id).toBe('2');
     
     // Verify result
     expect(result.status).toBe('success');
     
-    // Check it was removed from repository via API call
+    // Check using the API to verify data was removed
     const allEntities = await mockRepo.select().execute();
     console.log(`Remaining entities after delete: ${JSON.stringify(allEntities.data)}`);
     

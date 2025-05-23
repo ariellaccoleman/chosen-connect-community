@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -27,7 +28,31 @@ class TestReporter {
 
   // Normalize file paths to be consistent across different methods
   normalizePath(filePath) {
-    return filePath.replace(/\\/g, '/').trim();
+    if (!filePath) return '';
+    
+    // Ensure consistent path format regardless of OS
+    const normalized = filePath.replace(/\\/g, '/').trim();
+    console.log(`Normalized path: ${normalized} from original: ${filePath}`);
+    return normalized;
+  }
+
+  // Extract suite name from file path with improved reliability
+  extractSuiteName(filePath) {
+    if (!filePath) return 'unknown-suite';
+    
+    const normalizedPath = this.normalizePath(filePath);
+    
+    // Extract filename without extension
+    const pathParts = normalizedPath.split('/');
+    let filename = pathParts[pathParts.length - 1];
+    
+    // Remove .test.ts or .test.tsx extension
+    const suiteName = filename
+      .replace(/\.test\.(ts|tsx)$/, '')
+      .replace(/\.(ts|tsx)$/, '');
+    
+    console.log(`Extracted suite name: ${suiteName} from path: ${normalizedPath}`);
+    return suiteName;
   }
 
   async onRunStart() {
@@ -102,9 +127,8 @@ class TestReporter {
 
     const testFilePath = this.normalizePath(test.path);
     
-    // Extract suite name from file path
-    const testSuitePath = testFilePath.split('/');
-    const suiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
+    // Extract suite name using the improved method
+    const suiteName = this.extractSuiteName(test.path);
     
     console.log(`Starting test suite: ${suiteName} (${testFilePath})`);
 
@@ -170,18 +194,20 @@ class TestReporter {
     const testFilePath = this.normalizePath(test.path);
     console.log(`Looking for suite with normalized testFilePath: ${testFilePath}`);
     
+    // Extract the suite name consistently
+    const testSuiteName = this.extractSuiteName(test.path);
+    console.log(`Extracted suite name: ${testSuiteName}`);
+    
     // Check if we have the suite in our map
     let suite = this.results.suites.get(testFilePath);
     
     // If suite not found, create it on the fly as fallback
     if (!suite) {
       console.warn(`No suite found for ${testFilePath}, creating one now as fallback`);
-      const testSuitePath = testFilePath.split('/');
-      const suiteName = testSuitePath[testSuitePath.length - 1].replace('.test.ts', '').replace('.test.tsx', '');
       
       suite = {
         path: testFilePath,
-        name: suiteName,
+        name: testSuiteName,
         startTime: Date.now() - 1000, // Assume it started 1 second ago as fallback
         testCount: 0,
         passed: 0,
@@ -203,7 +229,7 @@ class TestReporter {
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
-            suite_name: suiteName,
+            suite_name: testSuiteName,
             file_path: testFilePath,
             status: 'in_progress',
             test_count: 0,
@@ -214,13 +240,13 @@ class TestReporter {
         if (response.ok) {
           const data = await response.json();
           suite.id = data.test_suite_id;
-          console.log(`Created fallback suite ${suiteName} with ID ${data.test_suite_id}`);
+          console.log(`Created fallback suite ${testSuiteName} with ID ${data.test_suite_id}`);
         } else {
           const errorText = await response.text();
           console.error(`Failed to create fallback suite: ${errorText}`);
         }
       } catch (error) {
-        console.error(`Error creating fallback suite for ${suiteName}:`, error);
+        console.error(`Error creating fallback suite for ${testSuiteName}:`, error);
       }
     }
     
