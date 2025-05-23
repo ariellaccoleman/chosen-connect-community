@@ -23,3 +23,13 @@ export function getCurrentSchema(): string {
   // Use environment override or fallback to public
   return envSchema || 'public';
 }
+
+/**
+ * Determines if we're currently in a test environment
+ */
+export function isTestEnvironment(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' || 
+    import.meta.env?.MODE === 'test'
+  );
+}

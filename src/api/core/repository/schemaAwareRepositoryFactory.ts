@@ -1,24 +1,23 @@
 
-import { SchemaAwareRepository } from './SchemaAwareRepository';
 import { BaseRepository } from './BaseRepository';
-import { createRepository } from './repositoryFactory';
-import { getCurrentSchema } from './schemaAwareClientFactory';
+import { createRepository, RepositoryType } from './repositoryFactory';
 
 /**
- * Create a schema-aware repository
+ * Creates a repository that uses the specified schema for all operations.
+ * This is a compatibility wrapper for existing code that uses this function.
+ * 
+ * @param tableName - The name of the table
+ * @param type - The type of repository (supabase or mock)
+ * @param initialData - Optional initial data for mock repositories
+ * @param schema - The schema to use (defaults to 'public')
+ * @returns A repository instance configured to use the specified schema
  */
 export function createSchemaAwareRepository<T>(
   tableName: string,
-  type: 'mock' | 'supabase' = 'supabase',
-  initialData: T[] = []
-): SchemaAwareRepository<T> {
-  // Create base repository
-  // Pass only the required arguments to createRepository (it expects 1-3 arguments)
-  const baseRepo = createRepository<T>(tableName, type, initialData);
-  
-  // Get current schema from environment
-  const schema = getCurrentSchema();
-  
-  // Wrap with schema awareness
-  return new SchemaAwareRepository<T>(baseRepo as BaseRepository<T>, schema);
+  type: RepositoryType = 'supabase',
+  initialData: T[] = [],
+  schema: string = 'public'
+): BaseRepository<T> {
+  // Simply use the createRepository function with schema parameter
+  return createRepository<T>(tableName, type, initialData, schema);
 }

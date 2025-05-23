@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder, PostgrestQueryBuilder } from '@supabase/postgrest-js';
+import { PostgrestFilterBuilder } from '@supabase/supabase-js';
 import { BaseRepository } from './BaseRepository';
 import { DataRepository, RepositoryResponse } from './DataRepository';
 
@@ -9,81 +9,65 @@ import { DataRepository, RepositoryResponse } from './DataRepository';
  */
 export class SupabaseRepository<T> implements BaseRepository<T> {
   tableName: string;
-  private currentSchema: string | null = null;
+  private schema: string;
 
-  constructor(tableName: string) {
+  constructor(tableName: string, schema: string = 'public') {
     this.tableName = tableName;
+    this.schema = schema;
   }
 
   /**
    * Set the schema to use for all operations
    */
   setSchema(schema: string) {
-    this.currentSchema = schema;
+    this.schema = schema;
+  }
+
+  /**
+   * Get the current schema
+   */
+  getSchema(): string {
+    return this.schema;
   }
 
   /**
    * Select query builder
    */
   select(columns = '*'): PostgrestFilterBuilder<T, any, any> {
-    let query = supabase
+    return supabase
       .from(this.tableName)
-      .select(columns);
-      
-    // Apply schema if set
-    if (this.currentSchema) {
-      query = query.schema(this.currentSchema);
-    }
-    
-    return query;
+      .select(columns)
+      .schema(this.schema);
   }
 
   /**
    * Insert query builder
    */
   insert(data: Partial<T> | Partial<T>[]): PostgrestFilterBuilder<T, any, any> {
-    let query = supabase
+    return supabase
       .from(this.tableName)
-      .insert(data);
-      
-    // Apply schema if set
-    if (this.currentSchema) {
-      query = query.schema(this.currentSchema);
-    }
-    
-    return query;
+      .insert(data as any)
+      .schema(this.schema);
   }
 
   /**
    * Update query builder
    */
   update(data: Partial<T>): PostgrestFilterBuilder<T, any, any> {
-    let query = supabase
+    return supabase
       .from(this.tableName)
-      .update(data);
-      
-    // Apply schema if set
-    if (this.currentSchema) {
-      query = query.schema(this.currentSchema);
-    }
-    
-    return query;
+      .update(data as any)
+      .schema(this.schema);
   }
 
   /**
    * Delete query builder
    */
   delete(): PostgrestFilterBuilder<T, any, any> {
-    let query = supabase
+    return supabase
       .from(this.tableName)
-      .delete();
-      
-    // Apply schema if set
-    if (this.currentSchema) {
-      query = query.schema(this.currentSchema);
-    }
-    
-    return query;
+      .delete()
+      .schema(this.schema);
   }
 
   /**
@@ -99,4 +83,14 @@ export class SupabaseRepository<T> implements BaseRepository<T> {
   async getAll(): Promise<RepositoryResponse<T[]>> {
     return this.select().execute();
   }
+}
+
+/**
+ * Factory function to create a Supabase repository
+ */
+export function createSupabaseRepository<T>(
+  tableName: string, 
+  schema: string = 'public'
+): BaseRepository<T> {
+  return new SupabaseRepository<T>(tableName, schema);
 }
