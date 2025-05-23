@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
@@ -68,8 +69,9 @@ async function getSchemaTableNames(schemaName: string): Promise<string[]> {
       throw error;
     }
     
-    // Extract table names from the result
-    return (data || []).map((row: any) => row.table_name);
+    // Type cast and extract table names from the result
+    const dataArray = (data as any[] || []);
+    return dataArray.map((row: any) => row.table_name);
   } catch (error) {
     logger.error(`Error fetching tables from schema ${schemaName}:`, error);
     return [];
@@ -148,9 +150,9 @@ async function getTableStructure(schema: string, tableName: string): Promise<Tab
     }
     
     return {
-      columns: columns || [],
-      constraints: constraints || [],
-      indexes: indexes || []
+      columns: (columns as any[]) || [],
+      constraints: (constraints as any[]) || [],
+      indexes: (indexes as any[]) || []
     };
   } catch (error) {
     logger.error(`Error getting structure for table ${schema}.${tableName}:`, error);
@@ -373,17 +375,17 @@ export async function compareSchemasDDL(
 
     // Parse the result correctly by ensuring arrays and accessing schema_ddl property
     let sourceSchemaString = '';
-    const sourceArray = (sourceDDL || []) as any[];
+    const sourceArray = (sourceDDL as any[] || []);
     if (sourceArray.length > 0 && typeof sourceArray[0] === 'object') {
       const firstRow = sourceArray[0] as Record<string, any>;
-      sourceSchemaString = (firstRow.schema_ddl || "").toString();
+      sourceSchemaString = String(firstRow.schema_ddl || "");
     }
     
     let targetSchemaString = '';
-    const targetArray = (targetDDL || []) as any[];
+    const targetArray = (targetDDL as any[] || []);
     if (targetArray.length > 0 && typeof targetArray[0] === 'object') {
       const firstRow = targetArray[0] as Record<string, any>;
-      targetSchemaString = (firstRow.schema_ddl || "").toString();
+      targetSchemaString = String(firstRow.schema_ddl || "");
     }
     
     return {

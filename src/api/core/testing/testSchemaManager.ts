@@ -77,9 +77,8 @@ export async function createTestSchema(options: {
       throw tablesError;
     }
     
-    // Create tables in the new schema
-    // Fix: Check if tables exists and is an array before iterating
-    const tableRows = tables && Array.isArray(tables) ? tables : [];
+    // Type cast and ensure we have an array before iterating
+    const tableRows = (tables as any[] || []);
     
     for (const tableRow of tableRows) {
       const tableName = tableRow.table_name;
@@ -95,8 +94,9 @@ export async function createTestSchema(options: {
         continue;
       }
       
-      // Replace schema name in the definition
-      const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
+      // Type cast the table definition and replace schema name
+      const tableDefString = String(tableDef || '');
+      const testTableDef = tableDefString.replace(/public\./g, `${schemaName}.`);
       
       // Create table in test schema
       const { error: createTableError } = await supabase.rpc('exec_sql', { 
@@ -204,8 +204,9 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
       throw error;
     }
     
-    // Use the (data || []) pattern to handle null data gracefully
-    return (data || []).length > 0;
+    // Type cast and check length safely
+    const dataArray = (data as any[] || []);
+    return dataArray.length > 0;
   } catch (error) {
     logger.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
