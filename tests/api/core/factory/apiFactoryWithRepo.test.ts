@@ -49,81 +49,9 @@ describe('API Factory with Repository', () => {
     expect(factory).toHaveProperty('update');
     expect(factory).toHaveProperty('delete');
   });
-  
-  test('getAll uses repository to fetch data', async () => {
-    // Test data
-    const testData: TestEntity[] = [
-      { id: '1', name: 'Entity 1', description: 'Description 1', created_at: new Date().toISOString() },
-      { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
-    ];
-    
-    // Create test repository with initial data
-    const mockRepo = createTestRepository<TestEntity>({
-      tableName: 'test_table',
-      initialData: testData
-    });
 
-    // Log to verify the data is in the repository
-    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
-    
-    // Create API factory with mock repository
-    const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table',
-      repository: mockRepo
-    });
-    
-    // Call getAll
-    const result = await factory.getAll();
-    
-    // Log the result for debugging
-    console.log(`getAll result: ${JSON.stringify(result)}`);
-    
-    // Verify results without depending on order
-    expect(result.status).toBe('success');
-    expect(result.data).toHaveLength(2);
-    
-    // Check that both entities are present by ID, not relying on specific order
-    const resultIds = result.data!.map(entity => entity.id).sort();
-    expect(resultIds).toEqual(['1', '2']);
-  });
-  
-  test('getById returns entity with matching ID', async () => {
-    // Test data
-    const testData: TestEntity[] = [
-      { id: '1', name: 'Entity 1', description: 'Description 1', created_at: new Date().toISOString() },
-      { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
-    ];
-    
-    // Create test repository with initial data
-    const mockRepo = createTestRepository<TestEntity>({
-      tableName: 'test_table',
-      initialData: testData
-    });
-    
-    // Log to verify the data is in the repository
-    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
-    
-    // Create API factory with mock repository
-    const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table',
-      repository: mockRepo
-    });
-    
-    // Call getById
-    const result = await factory.getById('2');
-    
-    // Log the result for debugging
-    console.log(`getById result: ${JSON.stringify(result)}`);
-    
-    // Verify results
-    expect(result.status).toBe('success');
-    expect(result.data).toBeDefined();
-    expect(result.data?.id).toBe('2');
-    expect(result.data?.name).toBe('Entity 2');
-  });
-  
   test('create adds new entity', async () => {
-    // Create test repository
+    // Create test repository with empty initial data
     const mockRepo = createTestRepository<TestEntity>({
       tableName: 'test_table',
       initialData: []
@@ -158,20 +86,60 @@ describe('API Factory with Repository', () => {
     expect(allEntities.data?.[0].name).toBe('New Entity');
   });
   
-  test('update modifies existing entity', async () => {
-    // Test data
-    const testData: TestEntity[] = [
-      { id: '1', name: 'Entity 1', description: 'Original Description', created_at: new Date().toISOString() }
-    ];
-    
-    // Create test repository with initial data
+  test('getById returns entity with matching ID', async () => {
+    // Create test repository
     const mockRepo = createTestRepository<TestEntity>({
       tableName: 'test_table',
-      initialData: testData
+      initialData: []
     });
+
+    // Create and add an entity using the repository
+    const entity = testEntityGenerator.generateOne({
+      id: '1',
+      name: 'Entity 1',
+      description: 'Description 1'
+    });
+    await mockRepo.insert(entity).execute();
     
     // Log to verify the data is in the repository
     console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Create API factory with mock repository
+    const factory = createApiFactory<TestEntity>({
+      tableName: 'test_table',
+      repository: mockRepo
+    });
+    
+    // Call getById
+    const result = await factory.getById('1');
+    
+    // Log the result for debugging
+    console.log(`getById result: ${JSON.stringify(result)}`);
+    
+    // Verify results
+    expect(result.status).toBe('success');
+    expect(result.data).toBeDefined();
+    expect(result.data?.id).toBe('1');
+    expect(result.data?.name).toBe('Entity 1');
+  });
+
+  test('update modifies existing entity', async () => {
+    // Create test repository
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
+    
+    // Create and add an entity using the repository
+    const entity = testEntityGenerator.generateOne({
+      id: '1',
+      name: 'Entity 1',
+      description: 'Original Description'
+    });
+    await mockRepo.insert(entity).execute();
+    
+    // Log to verify the entity was added
+    console.log(`Repository data before update: ${JSON.stringify(mockRepo.mockData)}`);
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -187,8 +155,9 @@ describe('API Factory with Repository', () => {
     // Call update
     const result = await factory.update('1', updateData);
     
-    // Log the result for debugging
+    // Log the result and repository state for debugging
     console.log(`update result: ${JSON.stringify(result)}`);
+    console.log(`Repository data after update: ${JSON.stringify(mockRepo.mockData)}`);
     
     // Verify result
     expect(result.status).toBe('success');
@@ -200,18 +169,128 @@ describe('API Factory with Repository', () => {
     expect(entity.data?.description).toBe('Updated Description');
   });
   
-  test('delete removes entity', async () => {
-    // Test data
-    const testData: TestEntity[] = [
-      { id: '1', name: 'Entity 1', description: 'Description 1', created_at: new Date().toISOString() },
-      { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
-    ];
-    
-    // Create test repository with initial data
+  test('getAll uses repository to fetch data', async () => {
+    // Create test repository
     const mockRepo = createTestRepository<TestEntity>({
       tableName: 'test_table',
-      initialData: [...testData] // Create a copy to ensure test isolation
+      initialData: []
     });
+    
+    // Create multiple entities using the repository
+    const entity1 = testEntityGenerator.generateOne({
+      id: '1',
+      name: 'Entity 1',
+      description: 'Description 1'
+    });
+    
+    const entity2 = testEntityGenerator.generateOne({
+      id: '2',
+      name: 'Entity 2',
+      description: 'Description 2'
+    });
+    
+    // Add entities to repository
+    await mockRepo.insert([entity1, entity2]).execute();
+
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Create API factory with mock repository
+    const factory = createApiFactory<TestEntity>({
+      tableName: 'test_table',
+      repository: mockRepo
+    });
+    
+    // Call getAll
+    const result = await factory.getAll();
+    
+    // Log the result for debugging
+    console.log(`getAll result: ${JSON.stringify(result)}`);
+    
+    // Verify results without depending on order
+    expect(result.status).toBe('success');
+    expect(result.data).toHaveLength(2);
+    
+    // Check that both entities are present by ID, not relying on specific order
+    const resultIds = result.data!.map(entity => entity.id).sort();
+    expect(resultIds).toEqual(['1', '2']);
+  });
+  
+  test('applies correct filters in getAll', async () => {
+    // Create test repository
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
+    
+    // Create multiple entities with varied names using the repository
+    const entity1 = testEntityGenerator.generateOne({
+      id: '1',
+      name: 'AppleDevice',
+      description: 'Description 1'
+    });
+    
+    const entity2 = testEntityGenerator.generateOne({
+      id: '2',
+      name: 'SamsungDevice',
+      description: 'Description 2'
+    });
+    
+    const entity3 = testEntityGenerator.generateOne({
+      id: '3',
+      name: 'AppleComputer',
+      description: 'Description 3'
+    });
+    
+    // Add entities to repository
+    await mockRepo.insert([entity1, entity2, entity3]).execute();
+    
+    // Log to verify the data is in the repository
+    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
+    
+    // Create API factory with mock repository
+    const factory = createApiFactory<TestEntity>({
+      tableName: 'test_table',
+      repository: mockRepo
+    });
+    
+    // Call getAll with filters
+    const result = await factory.getAll({ 
+      filters: { name: 'AppleDevice' } 
+    });
+    
+    // Log the result for debugging
+    console.log(`getAll with filters result: ${JSON.stringify(result)}`);
+    
+    // Verify results
+    expect(result.status).toBe('success');
+    expect(result.data).toHaveLength(1);
+    expect(result.data![0].id).toBe('1');
+    expect(result.data![0].name).toBe('AppleDevice');
+  });
+  
+  test('delete removes entity', async () => {
+    // Create test repository
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
+    
+    // Create multiple entities using the repository
+    const entity1 = testEntityGenerator.generateOne({
+      id: '1',
+      name: 'Entity 1',
+      description: 'Description 1'
+    });
+    
+    const entity2 = testEntityGenerator.generateOne({
+      id: '2',
+      name: 'Entity 2',
+      description: 'Description 2'
+    });
+    
+    // Add entities to repository
+    await mockRepo.insert([entity1, entity2]).execute();
     
     // Log to verify the data is in the repository before delete
     console.log(`Test data in repository before delete: ${JSON.stringify(mockRepo.mockData)}`);
@@ -251,45 +330,7 @@ describe('API Factory with Repository', () => {
     expect(allEntities.data).toHaveLength(1);
     expect(allEntities.data![0].id).toBe('2');
   });
-  
-  test('applies correct filters in getAll', async () => {
-    // Test data with varied names
-    const testData: TestEntity[] = [
-      { id: '1', name: 'AppleDevice', description: 'Description 1', created_at: new Date().toISOString() },
-      { id: '2', name: 'SamsungDevice', description: 'Description 2', created_at: new Date().toISOString() },
-      { id: '3', name: 'AppleComputer', description: 'Description 3', created_at: new Date().toISOString() }
-    ];
-    
-    // Create test repository with initial data
-    const mockRepo = createTestRepository<TestEntity>({
-      tableName: 'test_table',
-      initialData: testData
-    });
-    
-    // Log to verify the data is in the repository
-    console.log(`Test data in repository: ${JSON.stringify(mockRepo.mockData)}`);
-    
-    // Create API factory with mock repository
-    const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table',
-      repository: mockRepo
-    });
-    
-    // Call getAll with filters
-    const result = await factory.getAll({ 
-      filters: { name: 'AppleDevice' } 
-    });
-    
-    // Log the result for debugging
-    console.log(`getAll with filters result: ${JSON.stringify(result)}`);
-    
-    // Verify results
-    expect(result.status).toBe('success');
-    expect(result.data).toHaveLength(1);
-    expect(result.data![0].id).toBe('1');
-    expect(result.data![0].name).toBe('AppleDevice');
-  });
-  
+
   test('supports extended operations', async () => {
     // Create test repository
     const mockRepo = createTestRepository<TestEntity>({
