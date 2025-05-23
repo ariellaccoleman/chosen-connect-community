@@ -160,7 +160,7 @@ const OrganizationCard = ({
       <CardContent className="p-6">
         <div className="flex space-x-4">
           <Avatar className="h-16 w-16 flex-shrink-0">
-            <AvatarImage src={organization.logo_url || organization.logo_api_url || ""} />
+            <AvatarImage src={organization.logoUrl || organization.logoApiUrl || ""} />
             <AvatarFallback className="bg-chosen-blue text-white">
               {orgInitials}
             </AvatarFallback>

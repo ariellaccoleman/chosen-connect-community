@@ -79,14 +79,14 @@ const AdminRequestDetails = ({
             <p className="text-sm font-medium mb-1">Organization</p>
             <div className="flex items-center justify-between">
               <p className="text-base">{request.organization?.name}</p>
-              {request.organization?.website_url && (
+              {request.organization?.websiteUrl && (
                 <Button
                   variant="ghost"
                   size="icon"
                   asChild
                   className="h-8 w-8"
                 >
-                  <a href={request.organization.website_url} target="_blank" rel="noopener noreferrer">
+                  <a href={request.organization.websiteUrl} target="_blank" rel="noopener noreferrer">
                     <ExternalLink className="h-4 w-4" />
                   </a>
                 </Button>
