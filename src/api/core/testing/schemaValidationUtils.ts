@@ -327,68 +327,47 @@ export async function compareSchemasDDL(
   targetSchema: string
 ): Promise<{source: string, target: string}> {
   try {
-    // This function gets the DDL for recreating tables in a schema
-    const { data: sourceDDL, error: sourceError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT array_to_string(array_agg(table_ddl), E'\n\n') as schema_ddl
-        FROM (
-          SELECT 
-            table_name,
-            public.pg_get_tabledef('${sourceSchema}', table_name) as table_ddl
-          FROM 
-            information_schema.tables
-          WHERE 
-            table_schema = '${sourceSchema}'
-            AND table_type = 'BASE TABLE'
-          ORDER BY table_name
-        ) tables
-      `
-    });
+    // Get table names for both schemas
+    const sourceTables = await getSchemaTableNames(sourceSchema);
+    const targetTables = await getSchemaTableNames(targetSchema);
     
-    if (sourceError) {
-      throw sourceError;
+    // Get DDL for source schema tables
+    let sourceDDL = '';
+    for (const tableName of sourceTables) {
+      try {
+        const { data: tableDef, error } = await supabase.rpc('pg_get_tabledef', {
+          p_schema: sourceSchema,
+          p_table: tableName
+        });
+        
+        if (!error && tableDef) {
+          sourceDDL += tableDef + '\n\n';
+        }
+      } catch (error) {
+        logger.warn(`Failed to get DDL for ${sourceSchema}.${tableName}:`, error);
+      }
     }
     
-    // Get DDL for target schema
-    const { data: targetDDL, error: targetError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT array_to_string(array_agg(table_ddl), E'\n\n') as schema_ddl
-        FROM (
-          SELECT 
-            table_name,
-            public.pg_get_tabledef('${targetSchema}', table_name) as table_ddl
-          FROM 
-            information_schema.tables
-          WHERE 
-            table_schema = '${targetSchema}'
-            AND table_type = 'BASE TABLE'
-          ORDER BY table_name
-        ) tables
-      `
-    });
-    
-    if (targetError) {
-      throw targetError;
-    }
-
-    // Parse the result correctly by ensuring arrays and accessing schema_ddl property
-    let sourceSchemaString = '';
-    const sourceArray = (sourceDDL || []) as any[];
-    if (sourceArray.length > 0 && typeof sourceArray[0] === 'object') {
-      const firstRow = sourceArray[0] as Record<string, any>;
-      sourceSchemaString = (firstRow.schema_ddl || "").toString();
-    }
-    
-    let targetSchemaString = '';
-    const targetArray = (targetDDL || []) as any[];
-    if (targetArray.length > 0 && typeof targetArray[0] === 'object') {
-      const firstRow = targetArray[0] as Record<string, any>;
-      targetSchemaString = (firstRow.schema_ddl || "").toString();
+    // Get DDL for target schema tables
+    let targetDDL = '';
+    for (const tableName of targetTables) {
+      try {
+        const { data: tableDef, error } = await supabase.rpc('pg_get_tabledef', {
+          p_schema: targetSchema,
+          p_table: tableName
+        });
+        
+        if (!error && tableDef) {
+          targetDDL += tableDef + '\n\n';
+        }
+      } catch (error) {
+        logger.warn(`Failed to get DDL for ${targetSchema}.${tableName}:`, error);
+      }
     }
     
     return {
-      source: sourceSchemaString,
-      target: targetSchemaString
+      source: sourceDDL.trim(),
+      target: targetDDL.trim()
     };
   } catch (error) {
     logger.error(`Error comparing schema DDL:`, error);
