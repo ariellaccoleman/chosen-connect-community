@@ -110,15 +110,14 @@ export const extendedEventApi = {
     // If we have tags, create assignments
     if (tagIds.length > 0 && eventResult.data.id) {
       const { data, error } = await apiClient.query(async (client) => {
-        // Create tag assignments with proper type casting
+        // Create tag assignments
         const assignments = tagIds.map(tagId => ({
           target_id: eventResult.data.id,
-          target_type: 'event' as const,
+          target_type: 'event',
           tag_id: tagId
         }));
         
-        // Type cast the assignments to bypass strict typing
-        return client.from('tag_assignments').insert(assignments as any);
+        return client.from('tag_assignments').insert(assignments);
       });
       
       if (error) {

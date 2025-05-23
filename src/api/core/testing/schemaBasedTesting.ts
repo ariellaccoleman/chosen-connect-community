@@ -85,11 +85,8 @@ export async function cloneSchemaStructure(targetSchema: string): Promise<void> 
       throw tablesError;
     }
     
-    // Type cast and ensure we have an array to iterate over
-    const tableRows = (tables as any[] || []);
-    
     // For each table, get its definition and create in test schema
-    for (const tableRow of tableRows) {
+    for (const tableRow of tables || []) {
       const tableName = tableRow.table_name;
       
       // Get table definition using the pg_get_tabledef function
@@ -103,9 +100,8 @@ export async function cloneSchemaStructure(targetSchema: string): Promise<void> 
         continue;
       }
       
-      // Type cast the table definition and replace schema name
-      const tableDefString = String(tableDef || '');
-      const testTableDef = tableDefString.replace(/public\./g, `${targetSchema}.`);
+      // Replace schema name in the definition
+      const testTableDef = tableDef.replace(/public\./, `${targetSchema}.`);
       
       // Create table in test schema
       await supabase.rpc('exec_sql', { query: testTableDef });
@@ -151,9 +147,8 @@ export async function verifySchemaSetup(
       return false;
     }
     
-    // Type cast and extract table names from result
-    const dataArray = (data as any[] || []);
-    const existingTables = dataArray.map((row: any) => row.table_name);
+    // Extract table names from result
+    const existingTables = (data || []).map((row: any) => row.table_name);
     
     // Check required tables
     const requiredTables = options.requiredTables || [];

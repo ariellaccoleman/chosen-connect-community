@@ -1,4 +1,3 @@
-
 import { apiClient } from '../core/apiClient';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
@@ -237,14 +236,11 @@ export class ChatMessageService {
     try {
       if (!messageIds.length) return {};
       
-      // Convert string IDs to the format expected by Supabase
-      const uuidArray = messageIds as any[];
-      
       // Execute a single query to count replies for all messages
       const { data, error } = await supabase
         .from('chat_reply_counts')
         .select('*')
-        .in('parent_id', uuidArray);
+        .in('parent_id', messageIds);
         
       if (error) {
         logger.error('[API] Error fetching reply counts:', error);
