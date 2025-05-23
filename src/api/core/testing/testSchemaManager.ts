@@ -78,33 +78,36 @@ export async function createTestSchema(options: {
     }
     
     // Create tables in the new schema
-    // Fix: Check if tables exists and is an array before iterating
-    const tableRows = tables && Array.isArray(tables) ? tables : [];
+    // Fix: Ensure tables is treated as an array with proper type checking
+    const tableRows = Array.isArray(tables) ? tables : [];
     
     for (const tableRow of tableRows) {
-      const tableName = tableRow.table_name;
-      
-      // Get table definition
-      const { data: tableDef, error: defError } = await supabase.rpc('pg_get_tabledef', {
-        p_schema: 'public',
-        p_table: tableName
-      });
-      
-      if (defError) {
-        logger.error(`Error getting definition for table ${tableName}:`, defError);
-        continue;
-      }
-      
-      // Replace schema name in the definition
-      const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
-      
-      // Create table in test schema
-      const { error: createTableError } = await supabase.rpc('exec_sql', { 
-        query: testTableDef 
-      });
-      
-      if (!createTableError) {
-        schemaInfo.tablesCreated.push(tableName);
+      // Type check to ensure tableRow has the expected structure
+      if (tableRow && typeof tableRow === 'object' && 'table_name' in tableRow) {
+        const tableName = (tableRow as { table_name: string }).table_name;
+        
+        // Get table definition
+        const { data: tableDef, error: defError } = await supabase.rpc('pg_get_tabledef', {
+          p_schema: 'public',
+          p_table: tableName
+        });
+        
+        if (defError) {
+          logger.error(`Error getting definition for table ${tableName}:`, defError);
+          continue;
+        }
+        
+        // Replace schema name in the definition
+        const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
+        
+        // Create table in test schema
+        const { error: createTableError } = await supabase.rpc('exec_sql', { 
+          query: testTableDef 
+        });
+        
+        if (!createTableError) {
+          schemaInfo.tablesCreated.push(tableName);
+        }
       }
     }
     
@@ -204,8 +207,9 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
       throw error;
     }
     
-    // Use the (data || []) pattern to handle null data gracefully
-    return (data || []).length > 0;
+    // Handle the data as an array properly
+    const schemas = Array.isArray(data) ? data : [];
+    return schemas.length > 0;
   } catch (error) {
     logger.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
@@ -284,6 +288,8 @@ export async function releaseSchema(schemaId: string): Promise<void> {
     schema.status = 'released';
     // Immediately drop the schema instead of waiting for cleanup
     await dropSchema(schema.name);
+    // Remove from tracking immediately
+    activeSchemas.delete(schemaId);
   }
 }
 
@@ -349,10 +355,14 @@ export async function cleanupReleasedSchemas(maxAgeMs: number = 3600000): Promis
     });
     
     if (!error && schemas) {
-      for (const schemaRow of schemas) {
-        const schemaName = schemaRow.schema_name;
-        logger.info(`Cleaning up orphaned test schema: ${schemaName}`);
-        await dropSchema(schemaName);
+      // Handle the data as an array properly
+      const schemaRows = Array.isArray(schemas) ? schemas : [];
+      for (const schemaRow of schemaRows) {
+        if (schemaRow && typeof schemaRow === 'object' && 'schema_name' in schemaRow) {
+          const schemaName = (schemaRow as { schema_name: string }).schema_name;
+          logger.info(`Cleaning up orphaned test schema: ${schemaName}`);
+          await dropSchema(schemaName);
+        }
       }
     }
   } catch (error) {
@@ -391,11 +401,15 @@ export async function forceCleanupAllTestSchemas(): Promise<void> {
     });
     
     if (!error && schemas) {
-      for (const schemaRow of schemas) {
-        const schemaName = schemaRow.schema_name;
-        await dropSchema(schemaName);
+      // Handle the data as an array properly
+      const schemaRows = Array.isArray(schemas) ? schemas : [];
+      for (const schemaRow of schemaRows) {
+        if (schemaRow && typeof schemaRow === 'object' && 'schema_name' in schemaRow) {
+          const schemaName = (schemaRow as { schema_name: string }).schema_name;
+          await dropSchema(schemaName);
+        }
       }
-      logger.info(`Force cleaned ${schemas.length} test schemas`);
+      logger.info(`Force cleaned ${schemaRows.length} test schemas`);
     }
     
     // Clear all tracking
