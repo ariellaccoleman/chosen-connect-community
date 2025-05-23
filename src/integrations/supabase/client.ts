@@ -9,26 +9,11 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined";
 
-// Create appropriate storage for the environment
-const createStorage = () => {
-  if (isNodeEnvironment) {
-    // For Node.js/test environment, use a simple in-memory storage
-    const memoryStorage = new Map<string, string>();
-    return {
-      getItem: (key: string) => memoryStorage.get(key) || null,
-      setItem: (key: string, value: string) => memoryStorage.set(key, value),
-      removeItem: (key: string) => memoryStorage.delete(key),
-    };
-  }
-  return localStorage;
-};
-
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: createStorage(),
     persistSession: !isNodeEnvironment, // Don't persist sessions in test environment
     autoRefreshToken: !isNodeEnvironment, // Don't auto-refresh in test environment
   }
