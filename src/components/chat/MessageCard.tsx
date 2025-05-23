@@ -5,6 +5,7 @@ import UserAvatar from '@/components/navigation/UserAvatar';
 import { MessageSquare } from 'lucide-react';
 import { MembershipTier, Profile } from '@/types/profile';
 import { formatRelativeTime } from '@/utils/formatters/timeFormatters';
+import { EntityType } from '@/types/entityTypes';
 
 interface MessageCardProps {
   message: ChatMessageWithAuthor;
@@ -40,7 +41,11 @@ const MessageCard: React.FC<MessageCardProps> = ({
     updated_at: '',
     is_approved: true,
     membership_tier: 'free' as MembershipTier,
-    location_id: null
+    location_id: null,
+    // Add Entity required fields
+    entityType: EntityType.PERSON,
+    name: `${message.author.first_name} ${message.author.last_name}`,
+    full_name: `${message.author.first_name} ${message.author.last_name}`
   } : null;
 
   // Add clear visual indication that the message is clickable when onClick is provided

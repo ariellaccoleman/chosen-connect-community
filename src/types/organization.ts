@@ -1,7 +1,7 @@
 
 import { Entity, EntityCreateInput, EntityUpdateInput } from "./entity";
 import { EntityType } from "./entityTypes";
-import { Location } from "./location";
+import { Location, LocationWithDetails } from "./location";
 import { Profile } from "./profile";
 
 /**
@@ -75,6 +75,26 @@ export interface OrganizationWithAdmins extends Organization {
 }
 
 /**
+ * Organization with location details
+ */
+export interface OrganizationWithLocation extends Organization {
+  /**
+   * Detailed location information
+   */
+  location?: LocationWithDetails;
+  
+  /**
+   * Database field mappings for compatibility
+   */
+  logo_url?: string;
+  website_url?: string;
+  location_id?: string;
+  is_verified?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
  * Organization administrator
  */
 export interface OrganizationAdmin {
@@ -112,6 +132,11 @@ export interface OrganizationAdmin {
    * Profile details
    */
   profile?: Profile;
+  
+  /**
+   * Creation timestamp
+   */
+  created_at?: string;
 }
 
 /**

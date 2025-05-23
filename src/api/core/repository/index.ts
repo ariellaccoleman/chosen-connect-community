@@ -19,7 +19,7 @@ export * from './entities';
 // Export the repository factories
 export * from './repositoryFactory';
 export * from './enhancedRepositoryFactory';
-// Fix: don't export EntityRepositoryFactory from both files
+// Don't re-export these to avoid duplicate export errors
 // export * from './entities/factories/entityRepositoryFactory';
 
 // Export utility functions

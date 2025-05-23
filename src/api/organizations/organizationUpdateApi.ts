@@ -23,8 +23,8 @@ export const organizationUpdateApi = {
         .update({
           name: data.name,
           description: data.description,
-          website_url: data.website_url,
-          logo_url: data.logo_url,
+          website_url: data.websiteUrl, // Fixed property name
+          logo_url: data.logoUrl, // Fixed property name
           updated_at: data.updated_at || new Date().toISOString(),
         })
         .eq('id', orgId);

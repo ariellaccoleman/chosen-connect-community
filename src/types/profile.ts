@@ -25,6 +25,9 @@ export interface Profile extends Entity {
   membership_tier?: MembershipTier;
   entityType: EntityType.PERSON;
   name: string; // Will be derived from first_name + last_name
+  
+  // Add additional fields for compatibility with component usage
+  full_name?: string;
 }
 
 export interface ProfileWithDetails extends Profile {
