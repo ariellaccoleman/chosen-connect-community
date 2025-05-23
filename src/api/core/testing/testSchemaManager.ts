@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -179,12 +178,8 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
       throw error;
     }
     
-    // Fix: Be more explicit with null checking and use a type guard pattern
-    if (data === null) {
-      return false;
-    }
-    
-    return Array.isArray(data) && data.length > 0;
+    // Use the (data || []) pattern to handle null data gracefully
+    return (data || []).length > 0;
   } catch (error) {
     console.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
