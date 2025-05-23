@@ -179,6 +179,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
   private inConditions: { column: string; values: any[] }[];
   private sortConfig: { column: string; ascending: boolean } | null = null;
   private limitValue: number | null = null;
+  private offsetValue: number | null = null;
   private rangeValues: [number, number] | null = null;
   private selectFields: string = '*';
 
@@ -240,6 +241,38 @@ class MockQuery<T> implements RepositoryQuery<T> {
         item[column] !== null && item[column] !== undefined
       );
     }
+    return this;
+  }
+
+  /**
+   * Filter by greater than
+   */
+  gt(column: string, value: any): RepositoryQuery<T> {
+    this.filters.push(item => {
+      const itemValue = item[column];
+      const compareValue = value;
+      
+      if (itemValue === null || itemValue === undefined) {
+        return false;
+      }
+      
+      // Handle date comparison
+      if (itemValue instanceof Date && compareValue instanceof Date) {
+        return itemValue > compareValue;
+      }
+      
+      // Handle string dates
+      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
+        const itemDate = new Date(itemValue);
+        const compareDate = new Date(compareValue);
+        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
+          return itemDate > compareDate;
+        }
+      }
+      
+      // Default comparison
+      return itemValue > compareValue;
+    });
     return this;
   }
 
@@ -309,6 +342,38 @@ class MockQuery<T> implements RepositoryQuery<T> {
   }
   
   /**
+   * Filter by less than or equal to
+   */
+  lte(column: string, value: any): RepositoryQuery<T> {
+    this.filters.push(item => {
+      const itemValue = item[column];
+      const compareValue = value;
+      
+      if (itemValue === null || itemValue === undefined) {
+        return false;
+      }
+      
+      // Handle date comparison
+      if (itemValue instanceof Date && compareValue instanceof Date) {
+        return itemValue <= compareValue;
+      }
+      
+      // Handle string dates
+      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
+        const itemDate = new Date(itemValue);
+        const compareDate = new Date(compareValue);
+        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
+          return itemDate <= compareDate;
+        }
+      }
+      
+      // Default comparison
+      return itemValue <= compareValue;
+    });
+    return this;
+  }
+  
+  /**
    * Filter with OR conditions
    */
   or(filter: string): RepositoryQuery<T> {
@@ -358,6 +423,14 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
   limit(count: number): RepositoryQuery<T> {
     this.limitValue = count;
+    return this;
+  }
+  
+  /**
+   * Skip a number of results
+   */
+  offset(count: number): RepositoryQuery<T> {
+    this.offsetValue = count;
     return this;
   }
 
@@ -552,11 +625,18 @@ class MockQuery<T> implements RepositoryQuery<T> {
       return items.slice(from, to + 1);
     }
     
-    if (this.limitValue) {
-      return items.slice(0, this.limitValue);
+    // Apply offset if set
+    let result = items;
+    if (this.offsetValue) {
+      result = result.slice(this.offsetValue);
     }
     
-    return items;
+    // Then apply limit if set
+    if (this.limitValue) {
+      result = result.slice(0, this.limitValue);
+    }
+    
+    return result;
   }
 }
 

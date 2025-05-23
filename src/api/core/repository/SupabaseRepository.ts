@@ -146,6 +146,19 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
   }
 
   /**
+   * Filter by greater than
+   */
+  gt(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.gt(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in gt operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.gt(${column})`);
+    }
+  }
+
+  /**
    * Filter by greater than or equal to
    */
   gte(column: string, value: any): RepositoryQuery<T> {
@@ -168,6 +181,19 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     } catch (error) {
       logger.error(`Error in lt operation on ${this.context}:`, error);
       return new ErrorQuery<T>(error, `${this.context}.lt(${column})`);
+    }
+  }
+  
+  /**
+   * Filter by less than or equal to
+   */
+  lte(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.lte(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in lte operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.lte(${column})`);
     }
   }
   
@@ -201,6 +227,19 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     } catch (error) {
       logger.error(`Error in limit operation on ${this.context}:`, error);
       return new ErrorQuery<T>(error, `${this.context}.limit(${count})`);
+    }
+  }
+
+  /**
+   * Skip a number of results
+   */
+  offset(count: number): RepositoryQuery<T> {
+    try {
+      this.query = this.query.offset(count);
+      return this;
+    } catch (error) {
+      logger.error(`Error in offset operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.offset(${count})`);
     }
   }
 
@@ -304,11 +343,14 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   in(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
   ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
   is(_column: string, _isNull: null | boolean): RepositoryQuery<T> { return this; }
+  gt(_column: string, _value: any): RepositoryQuery<T> { return this; }
   gte(_column: string, _value: any): RepositoryQuery<T> { return this; }
   lt(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  lte(_column: string, _value: any): RepositoryQuery<T> { return this; }
   or(_filter: string): RepositoryQuery<T> { return this; }
   order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
   limit(_count: number): RepositoryQuery<T> { return this; }
+  offset(_count: number): RepositoryQuery<T> { return this; }
   range(_from: number, _to: number): RepositoryQuery<T> { return this; }
   select(_select?: string): RepositoryQuery<T> { return this; }
 

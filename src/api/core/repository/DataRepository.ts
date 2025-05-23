@@ -102,6 +102,14 @@ export interface RepositoryQuery<T = any> {
   is(column: string, isNull: null | boolean): RepositoryQuery<T>;
   
   /**
+   * Filter by greater than
+   * @param column Column name
+   * @param value Value to compare
+   * @returns The query builder for chaining
+   */
+  gt(column: string, value: any): RepositoryQuery<T>;
+  
+  /**
    * Filter by greater than or equal to
    * @param column Column name
    * @param value Value to compare
@@ -116,6 +124,14 @@ export interface RepositoryQuery<T = any> {
    * @returns The query builder for chaining
    */
   lt(column: string, value: any): RepositoryQuery<T>;
+  
+  /**
+   * Filter by less than or equal to
+   * @param column Column name
+   * @param value Value to compare
+   * @returns The query builder for chaining
+   */
+  lte(column: string, value: any): RepositoryQuery<T>;
   
   /**
    * Filter with OR conditions
@@ -138,6 +154,13 @@ export interface RepositoryQuery<T = any> {
    * @returns The query builder for chaining
    */
   limit(count: number): RepositoryQuery<T>;
+  
+  /**
+   * Skip a number of results
+   * @param count Number of results to skip
+   * @returns The query builder for chaining
+   */
+  offset(count: number): RepositoryQuery<T>;
   
   /**
    * Get a range of results
