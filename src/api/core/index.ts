@@ -7,7 +7,6 @@
 export * from './factory/apiFactory';
 // Export specific operations to avoid name conflicts
 export { 
-  createCoreOperations,
   createQueryOperations,
   createMutationOperations 
 } from './factory/operations';

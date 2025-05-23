@@ -10,7 +10,7 @@ import { logger } from '@/utils/logger';
  */
 export class CachedRepository<T> extends BaseRepository<T> {
   private cacheStorage: CacheStorage;
-  private options: CacheOptions;
+  private cacheOptions: CacheOptions;
   private repository: DataRepository<T>;
   
   constructor(
@@ -19,19 +19,19 @@ export class CachedRepository<T> extends BaseRepository<T> {
   ) {
     super(repository.tableName);
     this.repository = repository;
-    this.options = { ...DEFAULT_CACHE_OPTIONS, ...options };
+    this.cacheOptions = { ...DEFAULT_CACHE_OPTIONS, ...options };
     
     this.cacheStorage = createCacheStorage({
-      persistent: this.options.persistent,
+      persistent: this.cacheOptions.persistent,
       namespace: this.tableName
     });
     
     // Log caching setup in development
     if (process.env.NODE_ENV === 'development') {
       logger.debug(`CachedRepository created for ${this.tableName}`, {
-        strategy: this.options.strategy,
-        ttl: this.options.ttl,
-        persistent: this.options.persistent
+        strategy: this.cacheOptions.strategy,
+        ttl: this.cacheOptions.ttl,
+        persistent: this.cacheOptions.persistent
       });
     }
   }
@@ -40,8 +40,8 @@ export class CachedRepository<T> extends BaseRepository<T> {
    * Generate a cache key based on operation and arguments
    */
   private getCacheKey(operation: string, args: any[] = []): string {
-    if (this.options.keyGenerator) {
-      return this.options.keyGenerator(operation, args);
+    if (this.cacheOptions.keyGenerator) {
+      return this.cacheOptions.keyGenerator(operation, args);
     }
     
     // Default key generation logic
@@ -63,17 +63,17 @@ export class CachedRepository<T> extends BaseRepository<T> {
     const cacheKey = this.getCacheKey(operation, args);
     
     // Fast path for no caching
-    if (this.options.strategy === CacheStrategy.NONE) {
+    if (this.cacheOptions.strategy === CacheStrategy.NONE) {
       return action();
     }
     
     // Check cache first for cache-first and stale-while-revalidate strategies
-    if (this.options.strategy === CacheStrategy.CACHE_FIRST || 
-        this.options.strategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
+    if (this.cacheOptions.strategy === CacheStrategy.CACHE_FIRST || 
+        this.cacheOptions.strategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
       const cachedResult = await this.cacheStorage.get(cacheKey);
       if (cachedResult !== null) {
         // For stale-while-revalidate, refresh cache in background
-        if (this.options.strategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
+        if (this.cacheOptions.strategy === CacheStrategy.STALE_WHILE_REVALIDATE) {
           this.refreshCache(operation, action, cacheKey);
         }
         return cachedResult;
@@ -84,7 +84,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
     const result = await action();
     
     // Cache the result
-    await this.cacheStorage.set(cacheKey, result, this.options.ttl);
+    await this.cacheStorage.set(cacheKey, result, this.cacheOptions.ttl);
     
     return result;
   }
@@ -99,7 +99,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
   ): Promise<void> {
     try {
       const freshResult = await action();
-      await this.cacheStorage.set(cacheKey, freshResult, this.options.ttl);
+      await this.cacheStorage.set(cacheKey, freshResult, this.cacheOptions.ttl);
       logger.debug(`Refreshed cache for ${operation} in background`);
     } catch (error) {
       logger.error(`Failed to refresh cache for ${operation}`, error);
@@ -135,7 +135,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
     return new CachedRepositoryQuery<T>(
       this.repository.select(select),
       this.cacheStorage,
-      this.options,
+      this.cacheOptions,
       'select',
       [select],
       this.tableName
@@ -145,7 +145,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
   insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     const query = this.repository.insert(data);
     
-    if (this.options.clearOnMutation) {
+    if (this.cacheOptions.clearOnMutation) {
       this.invalidateCache();
     }
     
@@ -155,7 +155,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
   update(data: Record<string, any>): RepositoryQuery<T> {
     const query = this.repository.update(data);
     
-    if (this.options.clearOnMutation) {
+    if (this.cacheOptions.clearOnMutation) {
       this.invalidateCache();
     }
     
@@ -165,7 +165,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
   delete(): RepositoryQuery<T> {
     const query = this.repository.delete();
     
-    if (this.options.clearOnMutation) {
+    if (this.cacheOptions.clearOnMutation) {
       this.invalidateCache();
     }
     
@@ -173,7 +173,9 @@ export class CachedRepository<T> extends BaseRepository<T> {
   }
   
   setOptions(options: Record<string, any>): void {
-    this.options = { ...this.options, ...options };
+    if (typeof options === 'object') {
+      this.cacheOptions = { ...this.cacheOptions, ...options };
+    }
     
     if (this.repository && typeof this.repository.setOptions === 'function') {
       this.repository.setOptions(options);
@@ -188,7 +190,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
       error: error?.message || error,
       context,
       tableName: this.tableName,
-      cacheStrategy: this.options.strategy
+      cacheStrategy: this.cacheOptions.strategy
     });
   }
 
@@ -201,11 +203,11 @@ export class CachedRepository<T> extends BaseRepository<T> {
       const result = await callback();
       const duration = performance.now() - start;
       
-      if (this.options.enableLogging) {
+      if (this.options && this.options.enableLogging) {
         logger.debug(`CachedRepository.${operation} performance`, {
           duration: `${duration.toFixed(2)}ms`,
           table: this.tableName,
-          cacheStrategy: this.options.strategy
+          cacheStrategy: this.cacheOptions.strategy
         });
       }
       
@@ -215,7 +217,7 @@ export class CachedRepository<T> extends BaseRepository<T> {
       logger.error(`CachedRepository.${operation} failed after ${duration.toFixed(2)}ms`, {
         error: error?.message || error,
         table: this.tableName,
-        cacheStrategy: this.options.strategy
+        cacheStrategy: this.cacheOptions.strategy
       });
       throw error;
     }
@@ -374,12 +376,6 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
     return this;
   }
   
-  like(column: string, pattern: string): RepositoryQuery<T> {
-    this.args.push({ like: { column, pattern } });
-    this.query.like(column, pattern);
-    return this;
-  }
-  
   ilike(column: string, pattern: string): RepositoryQuery<T> {
     this.args.push({ ilike: { column, pattern } });
     this.query.ilike(column, pattern);
@@ -398,30 +394,6 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
     return this;
   }
   
-  contains(column: string, value: any): RepositoryQuery<T> {
-    this.args.push({ contains: { column, value } });
-    this.query.contains(column, value);
-    return this;
-  }
-  
-  containedBy(column: string, value: any): RepositoryQuery<T> {
-    this.args.push({ containedBy: { column, value } });
-    this.query.containedBy(column, value);
-    return this;
-  }
-  
-  filter(column: string, operator: string, value: any): RepositoryQuery<T> {
-    this.args.push({ filter: { column, operator, value } });
-    this.query.filter(column, operator, value);
-    return this;
-  }
-  
-  or(filters: string): RepositoryQuery<T> {
-    this.args.push({ or: filters });
-    this.query.or(filters);
-    return this;
-  }
-  
   order(column: string, options?: { ascending?: boolean }): RepositoryQuery<T> {
     this.args.push({ order: { column, options } });
     this.query.order(column, options);
@@ -434,12 +406,6 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
     return this;
   }
   
-  offset(count: number): RepositoryQuery<T> {
-    this.args.push({ offset: count });
-    this.query.offset(count);
-    return this;
-  }
-  
   range(from: number, to: number): RepositoryQuery<T> {
     this.args.push({ range: { from, to } });
     this.query.range(from, to);
@@ -449,6 +415,20 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
   select(select?: string, options?: { count?: boolean }): RepositoryQuery<T> {
     this.args.push({ select, options });
     this.query.select(select, options);
+    return this;
+  }
+  
+  // These methods were missing in the original implementation, causing TypeScript errors
+  
+  or(filters: string): RepositoryQuery<T> {
+    this.args.push({ or: filters });
+    this.query.or(filters);
+    return this;
+  }
+  
+  offset(count: number): RepositoryQuery<T> {
+    this.args.push({ offset: count });
+    this.query.offset(count);
     return this;
   }
 }

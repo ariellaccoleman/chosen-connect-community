@@ -59,6 +59,11 @@ export interface CacheOptions {
    * By default uses operation + args as key
    */
   keyGenerator?: (operation: string, args: any[]) => string;
+  
+  /**
+   * Whether to log debug information
+   */
+  enableLogging?: boolean;
 }
 
 /**
@@ -68,6 +73,6 @@ export const DEFAULT_CACHE_OPTIONS: CacheOptions = {
   strategy: CacheStrategy.NONE,
   ttl: 300, // 5 minutes
   clearOnMutation: true,
-  persistent: false
+  persistent: false,
+  enableLogging: false
 };
-
