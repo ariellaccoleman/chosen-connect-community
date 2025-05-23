@@ -1,3 +1,4 @@
+
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { createSuccessResponse, createErrorResponse } from './repositoryUtils';
 import { BaseRepository } from './BaseRepository';
@@ -182,6 +183,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
   private offsetValue: number | null = null;
   private rangeValues: [number, number] | null = null;
   private selectFields: string = '*';
+  private preserveOrder: boolean = true;
 
   constructor(
     tableName: string,
@@ -418,6 +420,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
       column, 
       ascending: options.ascending ?? true 
     };
+    this.preserveOrder = false; // When explicit ordering is requested, don't preserve original order
     return this;
   }
 
@@ -526,7 +529,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
     // Otherwise, process based on operation
     if (this.operation === 'delete') {
       const items = this.mockData[this.tableName] || [];
-      const filtered = this.applyFilters(items);
+      const filtered = this.applyFilters(items, true);
       
       // Use 'in' condition for batch delete if present
       let itemsToDelete = filtered;
@@ -569,7 +572,9 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
     // For select operation
     const items = this.mockData[this.tableName] || [];
-    let result = this.applyFilters(items);
+    
+    // Apply filters while preserving original order
+    let result = this.applyFilters(items, this.preserveOrder);
     
     // Apply sorting if configured
     if (this.sortConfig) {
@@ -582,9 +587,19 @@ class MockQuery<T> implements RepositoryQuery<T> {
     return createSuccessResponse<T[]>(result as unknown as T[]);
   }
 
-  private applyFilters(items: any[]): any[] {
+  private applyFilters(items: any[], preserveOrder: boolean = true): any[] {
     if (this.filters.length === 0 && this.inConditions.length === 0) {
       return [...items];
+    }
+    
+    // Create a map to track the original indices for order preservation
+    const originalOrder: Record<string, number> = {};
+    if (preserveOrder) {
+      items.forEach((item, index) => {
+        // Use a combination of ID and index to ensure uniqueness
+        const key = item.id ? `${item.id}-${index}` : `item-${index}`;
+        originalOrder[key] = index;
+      });
     }
     
     let result = [...items];
@@ -603,6 +618,15 @@ class MockQuery<T> implements RepositoryQuery<T> {
           condition.values.includes(item[condition.column])
         );
       }
+    }
+    
+    // Restore original order if needed
+    if (preserveOrder && result.length > 0) {
+      result.sort((a, b) => {
+        const keyA = a.id ? `${a.id}-${items.findIndex(item => item.id === a.id)}` : '';
+        const keyB = b.id ? `${b.id}-${items.findIndex(item => item.id === b.id)}` : '';
+        return (originalOrder[keyA] || 0) - (originalOrder[keyB] || 0);
+      });
     }
     
     return result;

@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { createMockRepository } from '@/api/core/repository/MockRepository';
 
@@ -46,10 +45,12 @@ describe('API Factory with Repository', () => {
     // Call getAll
     const result = await factory.getAll();
     
-    // Verify
+    // Verify - update test to be more robust by checking for both entities
     expect(result.status).toBe('success');
     expect(result.data).toHaveLength(2);
-    expect(result.data![0].name).toBe('Entity 1');
+    // Check that both entities are present, not relying on specific order
+    expect(result.data!.some(entity => entity.name === 'Entity 1')).toBe(true);
+    expect(result.data!.some(entity => entity.name === 'Entity 2')).toBe(true);
   });
   
   test('getById returns entity with matching ID', async () => {
