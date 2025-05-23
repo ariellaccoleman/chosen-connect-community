@@ -1,83 +1,95 @@
 
-import { SupabaseClient } from '@supabase/supabase-js';
 import { BaseRepository } from './BaseRepository';
-import { DataRepository } from './DataRepository';
+import { RepositoryResponse } from './DataRepository';
 
 /**
- * Schema-aware repository that can direct queries to different schemas
- * based on configuration
+ * Schema-aware repository wrapper that applies the specified schema
+ * to all database operations.
  */
-export class SchemaAwareRepository<T> implements DataRepository<T> {
-  private repository: BaseRepository<T>;
+export class SchemaAwareRepository<T> {
+  private baseRepository: BaseRepository<T>;
   private schema: string;
-  
-  constructor(repository: BaseRepository<T>, schema: string = 'public') {
-    this.repository = repository;
+
+  constructor(baseRepository: BaseRepository<T>, schema: string) {
+    this.baseRepository = baseRepository;
     this.schema = schema;
+    
+    // Set the schema on the base repository if it supports it
+    if ((this.baseRepository as any).setSchema) {
+      (this.baseRepository as any).setSchema(schema);
+    }
   }
-  
+
   /**
-   * Get the table name with schema prefix
+   * Delegates to all the base repository methods while ensuring schema is used
    */
   get tableName(): string {
-    return this.repository.tableName;
+    return this.baseRepository.tableName;
   }
-  
-  /**
-   * Get the ID field
+
+  /** 
+   * Select operation with schema awareness
+   * @param columns Columns to select
    */
-  get idField(): string {
-    // Access the options object which contains the idField instead of trying to access idField directly
-    return (this.repository as any).options?.idField || 'id';
+  select(columns?: string) {
+    // Pass schema to select builder
+    const selectBuilder = this.baseRepository.select(columns);
+    if (selectBuilder.schema) {
+      selectBuilder.schema(this.schema);
+    }
+    return selectBuilder;
   }
-  
+
   /**
-   * Insert operation - passes through to underlying repository
-   * with schema context
+   * Insert operation with schema awareness
+   * @param data Data to insert
    */
   insert(data: Partial<T> | Partial<T>[]) {
-    // Set the search_path for the query
-    return this.repository.insert(data);
+    // Pass schema to insert builder
+    const insertBuilder = this.baseRepository.insert(data);
+    if (insertBuilder.schema) {
+      insertBuilder.schema(this.schema);
+    }
+    return insertBuilder;
   }
-  
+
   /**
-   * Select operation - passes through to underlying repository
-   * with schema context
+   * Update operation with schema awareness
+   * @param data Data to update
    */
-  select() {
-    // Schema handling happens in the client configuration
-    return this.repository.select();
+  update(data: Partial<T>) {
+    // Pass schema to update builder
+    const updateBuilder = this.baseRepository.update(data);
+    if (updateBuilder.schema) {
+      updateBuilder.schema(this.schema);
+    }
+    return updateBuilder;
   }
-  
+
   /**
-   * Update operation - passes through to underlying repository
-   * with schema context
-   */
-  update(updateData: Partial<T>) {
-    return this.repository.update(updateData);
-  }
-  
-  /**
-   * Delete operation - passes through to underlying repository
-   * with schema context
+   * Delete operation with schema awareness
    */
   delete() {
-    return this.repository.delete();
+    // Pass schema to delete builder
+    const deleteBuilder = this.baseRepository.delete();
+    if (deleteBuilder.schema) {
+      deleteBuilder.schema(this.schema);
+    }
+    return deleteBuilder;
   }
-  
+
   /**
-   * Get entity by ID - passes through to underlying repository
-   * with schema context
+   * Get an entity by ID with schema awareness
+   * @param id The ID to lookup
    */
-  async getById(id: string) {
-    return this.repository.getById(id);
+  async getById(id: string): Promise<RepositoryResponse<T>> {
+    return this.select().eq('id', id).maybeSingle();
   }
-  
+
   /**
-   * Get all entities - passes through to underlying repository
-   * with schema context
+   * Get all entities with schema awareness
    */
-  async getAll() {
-    return this.repository.getAll();
+  async getAll(): Promise<RepositoryResponse<T[]>> {
+    return this.select().execute();
   }
 }

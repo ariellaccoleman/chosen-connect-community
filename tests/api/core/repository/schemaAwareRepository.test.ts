@@ -1,6 +1,7 @@
 
 import { createSchemaAwareRepository } from '@/api/core/repository/schemaAwareRepositoryFactory';
 import { supabase } from '@/integrations/supabase/client';
+import { setupTestingSchema, cleanTestData, createTestTable } from '../../setup/setupTestSchema';
 
 // Define a test entity type
 interface TestEntity {
@@ -22,37 +23,26 @@ describe('SchemaAwareRepository', () => {
   const repository = createSchemaAwareRepository<TestEntity>('test_entities');
   
   beforeAll(async () => {
-    // Create a test table in the testing schema
-    const { error } = await supabase.functions.invoke('test-setup', {
-      body: { 
-        action: 'create_test_table',
-        tableName: 'test_entities',
-        columns: [
-          { name: 'id', type: 'uuid', isPrimary: true },
-          { name: 'name', type: 'text', isRequired: true },
-          { name: 'description', type: 'text' },
-          { name: 'created_at', type: 'timestamp with time zone', defaultValue: 'now()' }
-        ]
-      }
-    });
+    // Set up testing schema
+    await setupTestingSchema();
     
-    if (error) {
-      console.error('Failed to create test table:', error);
-    }
+    // Create a test table in the testing schema
+    await createTestTable('test_entities', [
+      { name: 'id', type: 'uuid', isPrimary: true, defaultValue: 'gen_random_uuid()' },
+      { name: 'name', type: 'text', isRequired: true },
+      { name: 'description', type: 'text' },
+      { name: 'created_at', type: 'timestamp with time zone', defaultValue: 'now()' }
+    ]);
   });
   
   beforeEach(async () => {
     // Clean test data before each test
-    await supabase.functions.invoke('test-setup', {
-      body: { action: 'clean_test_data' }
-    });
+    await cleanTestData();
   });
   
   afterAll(async () => {
     // Clean up all test data
-    await supabase.functions.invoke('test-setup', {
-      body: { action: 'clean_test_data' }
-    });
+    await cleanTestData();
   });
   
   test('inserts and retrieves an entity from the testing schema', async () => {

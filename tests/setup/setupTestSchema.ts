@@ -44,3 +44,38 @@ export async function cleanTestData(): Promise<void> {
     throw err;
   }
 }
+
+/**
+ * Create a test table in the testing schema
+ */
+export async function createTestTable(
+  tableName: string,
+  columns?: Array<{ 
+    name: string; 
+    type: string; 
+    isPrimary?: boolean; 
+    isRequired?: boolean;
+    defaultValue?: string;
+  }>
+): Promise<void> {
+  console.log(`Creating test table: ${tableName}`);
+  try {
+    const { error } = await supabase.functions.invoke('test-setup', {
+      body: { 
+        action: 'create_test_table',
+        tableName,
+        columns
+      }
+    });
+    
+    if (error) {
+      console.error(`Failed to create test table ${tableName}:`, error);
+      throw error;
+    }
+    
+    console.log(`Test table ${tableName} created successfully`);
+  } catch (err) {
+    console.error(`Error creating test table ${tableName}:`, err);
+    throw err;
+  }
+}
