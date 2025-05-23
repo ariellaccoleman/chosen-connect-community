@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { createTestingRepository } from '../repository/repositoryFactory';
 import { BaseRepository } from '../repository/BaseRepository';
+import { createMockRepository } from '../repository/MockRepository';
 
 /**
  * Set up the testing schema by cloning the structure from public schema
@@ -66,20 +67,39 @@ export async function seedTestData<T>(
  * Create a test context that provides repositories and utilities for testing
  */
 export function createTestContext<T>(tableName: string) {
-  const repository = createTestingRepository<T>(tableName);
+  // Use mock repository for tests to avoid actual DB calls
+  const repository = process.env.NODE_ENV === 'test'
+    ? createMockRepository<T>(tableName, [])
+    : createTestingRepository<T>(tableName);
   
   const setup = async (initialData?: T[]): Promise<void> => {
     // Clear existing data first
-    await clearTestTable(tableName);
+    if (process.env.NODE_ENV !== 'test') {
+      await clearTestTable(tableName);
+    }
     
     // Seed initial data if provided
     if (initialData && initialData.length > 0) {
-      await seedTestData(tableName, initialData);
+      if (process.env.NODE_ENV === 'test') {
+        // For test environment, directly update the mock data
+        if ('mockData' in repository) {
+          (repository as any).mockData[tableName] = [...initialData];
+        }
+      } else {
+        await seedTestData(tableName, initialData);
+      }
     }
   };
   
   const cleanup = async (): Promise<void> => {
-    await clearTestTable(tableName);
+    if (process.env.NODE_ENV === 'test') {
+      // Clear mock data
+      if ('mockData' in repository) {
+        (repository as any).mockData[tableName] = [];
+      }
+    } else {
+      await clearTestTable(tableName);
+    }
   };
   
   return {
@@ -94,7 +114,9 @@ export function createTestContext<T>(tableName: string) {
  */
 export function setupTestingEnvironment() {
   return async (): Promise<void> => {
-    await setupTestSchema();
+    if (process.env.NODE_ENV !== 'test') {
+      await setupTestSchema();
+    }
   };
 }
 
@@ -103,8 +125,10 @@ export function setupTestingEnvironment() {
  */
 export function teardownTestingEnvironment(tableNames: string[]) {
   return async (): Promise<void> => {
-    for (const tableName of tableNames) {
-      await clearTestTable(tableName);
+    if (process.env.NODE_ENV !== 'test') {
+      for (const tableName of tableNames) {
+        await clearTestTable(tableName);
+      }
     }
   };
 }

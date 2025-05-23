@@ -1,4 +1,3 @@
-
 import { BaseRepository } from './BaseRepository';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -31,6 +30,14 @@ export class EntityRepository<T extends Entity> {
     this.tableName = tableName;
     this.entityType = entityType;
     this.baseRepository = baseRepository;
+  }
+
+  /**
+   * Get the base repository used for direct database operations
+   * @returns BaseRepository instance
+   */
+  getBaseRepository(): BaseRepository<T> {
+    return this.baseRepository;
   }
 
   /**

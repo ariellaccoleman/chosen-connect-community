@@ -2,6 +2,33 @@
 import { createTestContext, setupTestingEnvironment, teardownTestingEnvironment } from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
+import { jest } from '@jest/globals';
+
+// Mock the supabase client to avoid actual API calls during tests
+jest.mock('@/integrations/supabase/client', () => {
+  return {
+    supabase: {
+      from: () => ({
+        select: () => ({
+          execute: jest.fn().mockReturnValue({ data: [], error: null }),
+          eq: () => ({
+            single: jest.fn().mockReturnValue({ data: {}, error: null }),
+            maybeSingle: jest.fn().mockReturnValue({ data: null, error: null }),
+          }),
+        }),
+        insert: () => ({
+          execute: jest.fn().mockReturnValue({ data: [], error: null }),
+        }),
+        delete: () => ({
+          eq: () => ({
+            execute: jest.fn().mockReturnValue({ data: null, error: null }),
+          }),
+        }),
+      }),
+      rpc: jest.fn().mockReturnValue({ data: null, error: null }),
+    },
+  };
+});
 
 // Example mock data generator for profiles
 const createMockProfile = (): Profile => ({
