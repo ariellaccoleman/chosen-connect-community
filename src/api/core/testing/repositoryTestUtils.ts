@@ -1,3 +1,4 @@
+
 import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -134,11 +135,11 @@ export function createTestRepository<T>(
   const getAllSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getAll') : null;
   
   // Create an enhanced repository with test utilities
-  const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
+  const enhancedRepo = mockRepo as unknown as EnhancedMockRepository<T>;
   
   // Get the actual mockData reference directly from the repository to ensure we're
   // using the same reference throughout the code, avoiding any data synchronization issues
-  enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
+  enhancedRepo.mockData = (mockRepo as any).mockDataStore[tableName];
   
   if (debug) {
     console.log(`[createTestRepository] Setting up enhanced repo with mockData (length: ${enhancedRepo.mockData.length})`);
@@ -368,3 +369,44 @@ export function resetRepositoryFactoryMock() {
   jest.resetModules();
   jest.dontMock('../repository/repositoryFactory');
 }
+
+/**
+ * Create a test context for easy setup and cleanup of repository tests
+ */
+export function createRepositoryTestContext<T>(
+  options: TestRepositoryOptions<T>
+) {
+  let repository: EnhancedMockRepository<T>;
+  
+  const setup = () => {
+    repository = createTestRepository<T>(options);
+    return repository;
+  };
+  
+  const cleanup = () => {
+    if (repository) {
+      repository.resetSpies();
+      repository.clearItems();
+    }
+  };
+  
+  const generateData = (count: number, overrides?: Partial<T>) => {
+    if (!options.dataGenerator && !options.entityType) {
+      throw new Error('Cannot generate data without dataGenerator or entityType');
+    }
+    
+    const generator = options.dataGenerator || createMockDataGenerator<T>(options.entityType!);
+    return generator.generateMany(count, overrides);
+  };
+  
+  return {
+    setup,
+    cleanup,
+    generateData,
+    get repository() {
+      if (!repository) setup();
+      return repository;
+    }
+  };
+}
+
