@@ -25,7 +25,7 @@ export class EntityRepositoryFactory {
    * @param options Repository creation options
    * @returns Entity repository
    */
-  static createRepository<T>(
+  static createRepository<T extends Entity>(
     entityType: EntityType,
     options: {
       schema?: string;
@@ -66,7 +66,7 @@ export class EntityRepositoryFactory {
    * @param initialData Initial data to populate the repository
    * @returns Entity repository configured for testing
    */
-  static createTestingRepository<T>(
+  static createTestingRepository<T extends Entity>(
     entityType: EntityType,
     initialData?: any[]
   ): EntityRepository<T> {
@@ -85,7 +85,7 @@ export class EntityRepositoryFactory {
  * @param options Repository creation options
  * @returns Entity repository
  */
-export function createEntityRepository<T>(
+export function createEntityRepository<T extends Entity>(
   entityType: EntityType,
   options: {
     schema?: string;
@@ -103,7 +103,7 @@ export function createEntityRepository<T>(
  * @param initialData Initial data to populate the repository
  * @returns Entity repository configured for testing
  */
-export function createTestingEntityRepository<T>(
+export function createTestingEntityRepository<T extends Entity>(
   entityType: EntityType,
   initialData?: any[]
 ): EntityRepository<T> {

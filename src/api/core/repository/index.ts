@@ -44,9 +44,15 @@ export {
   createTestingHubRepository
 } from './entities/factories/hubRepositoryFactory';
 
-// Export entity repository factory
-export * from './entities/factories/entityRepositoryFactory';
-export * from './entities/factories/EntityRepositoryFactoryBase';
+// Export entity repository factory base class
+export type { EntityRepositoryFactoryBase } from './entities/factories/EntityRepositoryFactoryBase';
+
+// Export entity repository factory with explicit renaming to avoid conflicts
+export { 
+  EntityRepositoryFactory as GenericEntityRepositoryFactory,
+  createEntityRepository as createGenericEntityRepository,
+  createTestingEntityRepository as createGenericTestingEntityRepository
+} from './entities/factories/entityRepositoryFactory';
 
 // Export from repositoryFactory directly
 export {
