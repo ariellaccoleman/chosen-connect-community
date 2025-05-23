@@ -62,8 +62,10 @@ jest.mock('@/integrations/supabase/client', () => {
           }),
         }),
         insert: jest.fn().mockImplementation((data) => {
+          // Handle array or single item
           const newItems = Array.isArray(data) ? data : [data];
           
+          // Add items to mock data with defaults
           newItems.forEach(item => {
             const newItem = {
               ...item,
