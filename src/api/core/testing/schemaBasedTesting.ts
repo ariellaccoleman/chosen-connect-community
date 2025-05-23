@@ -8,8 +8,7 @@ import {
   createTestSchema, 
   validateTestSchema,
   schemaExists, 
-  dropSchema, 
-  releaseTestSchema as releaseSchema,
+  releaseSchema,
   SchemaInfo 
 } from './testSchemaManager';
 
@@ -244,14 +243,14 @@ export async function releaseTestSchema(schema: string): Promise<void> {
   }
   
   if (!RETAIN_TEST_SCHEMAS) {
-    await dropSchema(schema);
+    await dropTestSchema(schema);
   }
 }
 
 /**
  * Drop a test schema and all its objects
  */
-export async function dropSchema(schema: string): Promise<void> {
+export async function dropTestSchema(schema: string): Promise<void> {
   try {
     if (process.env.NODE_ENV === 'test' || !schema) {
       return; // Skip in test environment
@@ -286,7 +285,7 @@ export async function cleanupOldTestSchemas(): Promise<void> {
       .map(([schemaId]) => schemaId);
     
     for (const schema of schemasToClean) {
-      await dropSchema(schema);
+      await dropTestSchema(schema);
     }
     
     console.log(`Cleaned up ${schemasToClean.length} old test schemas`);
@@ -370,7 +369,7 @@ export async function setupTestSchema(options: {
     
     if (!isValid) {
       logger.error(`Schema ${schemaName} setup verification failed`);
-      await dropSchema(schemaName);
+      await dropTestSchema(schemaName);
       return null;
     }
     
@@ -549,12 +548,33 @@ export function createTestContext<T>(tableName: string, options: {
   return {
     repository,
     setup,
-    cleanup,
-    release,
+    cleanup: async (): Promise<void> => {
+      if (process.env.NODE_ENV === 'test') {
+        // Clear mock data
+        if (options.mockDataInTestEnv !== false) {
+          const mockRepo = repository as any;
+          if (mockRepo.mockData) {
+            mockRepo.mockData[tableName] = [];
+          }
+        }
+      } else {
+        // Clear data but don't drop schema - that's handled by releaseTestSchema
+        await clearTestTable(tableName, testSchema);
+      }
+    },
     getCurrentSchema,
     getRepository,
-    validateSchema, // Add the new method
+    validateSchema,
+    release
   };
+  
+  function getCurrentSchema(): string {
+    return testSchema;
+  }
+  
+  function getRepository(): BaseRepository<T> {
+    return repository;
+  }
 }
 
 /**
