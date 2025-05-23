@@ -1,100 +1,376 @@
-
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
+import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
-import { DataRepository, RepositoryResponse } from './DataRepository';
+import { logger } from '@/utils/logger';
+import { createSuccessResponse, createErrorResponse, handleRepositoryError } from './repositoryUtils';
 
 /**
- * Implementation of DataRepository using Supabase as the data store.
+ * Supabase implementation of the BaseRepository abstract class
  */
-export class SupabaseRepository<T> implements BaseRepository<T> {
-  tableName: string;
-  private schema: string;
+export class SupabaseRepository<T = any> extends BaseRepository<T> {
+  private supabaseClient: any;
 
-  constructor(tableName: string, schema: string = 'public') {
-    this.tableName = tableName;
-    this.schema = schema;
+  constructor(tableName: string, client?: any) {
+    super(tableName);
+    this.supabaseClient = client || supabase;
   }
 
   /**
-   * Set the schema to use for all operations
+   * Create a select query
    */
-  setSchema(schema: string) {
-    this.schema = schema;
+  select(selectQuery = '*'): RepositoryQuery<T> {
+    try {
+      const query = this.supabaseClient
+        .from(this.tableName as any)
+        .select(selectQuery);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating select query for ${this.tableName}:`, error);
+      // Return a query that will return an error when executed
+      return new ErrorQuery<T>(error, `select from ${this.tableName}`);
+    }
   }
 
   /**
-   * Get the current schema
+   * Create an insert query
    */
-  getSchema(): string {
-    return this.schema;
+  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
+    try {
+      const query = this.supabaseClient
+        .from(this.tableName as any)
+        .insert(data);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating insert query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `insert into ${this.tableName}`);
+    }
   }
 
   /**
-   * Select query builder
+   * Create an update query
    */
-  select(columns = '*') {
-    // Use options object to set schema instead of method chaining
-    return supabase
-      .from(this.tableName)
-      .select(columns, { schema: this.schema });
+  update(data: Record<string, any>): RepositoryQuery<T> {
+    try {
+      const query = this.supabaseClient
+        .from(this.tableName as any)
+        .update(data);
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating update query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `update ${this.tableName}`);
+    }
   }
 
   /**
-   * Insert query builder
+   * Create a delete query
    */
-  insert(data: Partial<T> | Partial<T>[]) {
-    // Use options object to set schema instead of method chaining
-    return supabase
-      .from(this.tableName)
-      .insert(data as any, { schema: this.schema });
-  }
-
-  /**
-   * Update query builder
-   */
-  update(data: Partial<T>) {
-    // Use options object to set schema instead of method chaining
-    return supabase
-      .from(this.tableName)
-      .update(data as any, { schema: this.schema });
-  }
-
-  /**
-   * Delete query builder
-   */
-  delete() {
-    // Use options object to set schema instead of method chaining
-    return supabase
-      .from(this.tableName)
-      .delete({ schema: this.schema });
-  }
-
-  /**
-   * Get entity by ID
-   */
-  async getById(id: string | number): Promise<T> {
-    const response = await this.select().eq('id', id).maybeSingle();
-    if (response.error) throw response.error;
-    return response.data as T;
-  }
-
-  /**
-   * Get all entities
-   */
-  async getAll(): Promise<T[]> {
-    const response = await this.select().execute();
-    if (response.error) throw response.error;
-    return response.data as T[];
+  delete(): RepositoryQuery<T> {
+    try {
+      const query = this.supabaseClient
+        .from(this.tableName as any)
+        .delete();
+      
+      return new SupabaseQuery<T>(query, this.tableName);
+    } catch (error) {
+      logger.error(`Error creating delete query for ${this.tableName}:`, error);
+      return new ErrorQuery<T>(error, `delete from ${this.tableName}`);
+    }
   }
 }
 
 /**
- * Factory function to create a Supabase repository
+ * Supabase implementation of the RepositoryQuery interface
  */
-export function createSupabaseRepository<T>(
-  tableName: string, 
-  schema: string = 'public'
-): BaseRepository<T> {
-  return new SupabaseRepository<T>(tableName, schema);
+class SupabaseQuery<T> implements RepositoryQuery<T> {
+  private query: any;
+  private context: string;
+  private showToasts: boolean;
+
+  constructor(query: any, tableName: string, showToasts = false) {
+    this.query = query;
+    this.context = tableName;
+    this.showToasts = showToasts;
+  }
+
+  eq(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.eq(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in eq operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.eq(${column})`);
+    }
+  }
+
+  neq(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.neq(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in neq operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.neq(${column})`);
+    }
+  }
+
+  in(column: string, values: any[]): RepositoryQuery<T> {
+    try {
+      this.query = this.query.in(column, values);
+      return this;
+    } catch (error) {
+      logger.error(`Error in in operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.in(${column})`);
+    }
+  }
+
+  ilike(column: string, pattern: string): RepositoryQuery<T> {
+    try {
+      this.query = this.query.ilike(column, pattern);
+      return this;
+    } catch (error) {
+      logger.error(`Error in ilike operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.ilike(${column})`);
+    }
+  }
+
+  is(column: string, isNull: null | boolean): RepositoryQuery<T> {
+    try {
+      this.query = this.query.is(column, isNull);
+      return this;
+    } catch (error) {
+      logger.error(`Error in is operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.is(${column})`);
+    }
+  }
+
+  /**
+   * Filter by greater than
+   */
+  gt(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.gt(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in gt operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.gt(${column})`);
+    }
+  }
+
+  /**
+   * Filter by greater than or equal to
+   */
+  gte(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.gte(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in gte operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.gte(${column})`);
+    }
+  }
+
+  /**
+   * Filter by less than
+   */
+  lt(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.lt(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in lt operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.lt(${column})`);
+    }
+  }
+  
+  /**
+   * Filter by less than or equal to
+   */
+  lte(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.lte(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in lte operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.lte(${column})`);
+    }
+  }
+  
+  /**
+   * Filter with OR conditions
+   */
+  or(filter: string): RepositoryQuery<T> {
+    try {
+      this.query = this.query.or(filter);
+      return this;
+    } catch (error) {
+      logger.error(`Error in or operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.or(${filter})`);
+    }
+  }
+
+  order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
+    try {
+      this.query = this.query.order(column, options);
+      return this;
+    } catch (error) {
+      logger.error(`Error in order operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.order(${column})`);
+    }
+  }
+
+  limit(count: number): RepositoryQuery<T> {
+    try {
+      this.query = this.query.limit(count);
+      return this;
+    } catch (error) {
+      logger.error(`Error in limit operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.limit(${count})`);
+    }
+  }
+
+  /**
+   * Skip a number of results
+   */
+  offset(count: number): RepositoryQuery<T> {
+    try {
+      this.query = this.query.offset(count);
+      return this;
+    } catch (error) {
+      logger.error(`Error in offset operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.offset(${count})`);
+    }
+  }
+
+  range(from: number, to: number): RepositoryQuery<T> {
+    try {
+      this.query = this.query.range(from, to);
+      return this;
+    } catch (error) {
+      logger.error(`Error in range operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.range(${from}, ${to})`);
+    }
+  }
+
+  select(select = '*'): RepositoryQuery<T> {
+    try {
+      this.query = this.query.select(select);
+      return this;
+    } catch (error) {
+      logger.error(`Error in select operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.select(${select})`);
+    }
+  }
+
+  async single(): Promise<RepositoryResponse<T>> {
+    try {
+      const { data, error } = await this.query.single();
+      
+      if (error) {
+        return createErrorResponse<T>(handleRepositoryError(
+          error, 
+          `${this.context}.single()`
+        ));
+      }
+      
+      return createSuccessResponse<T>(data as T);
+    } catch (error) {
+      return createErrorResponse<T>(handleRepositoryError(
+        error, 
+        `${this.context}.single()`
+      ));
+    }
+  }
+
+  async maybeSingle(): Promise<RepositoryResponse<T | null>> {
+    try {
+      const { data, error } = await this.query.maybeSingle();
+      
+      if (error) {
+        return createErrorResponse<T | null>(handleRepositoryError(
+          error, 
+          `${this.context}.maybeSingle()`
+        ));
+      }
+      
+      return createSuccessResponse<T | null>(data as T | null);
+    } catch (error) {
+      return createErrorResponse<T | null>(handleRepositoryError(
+        error, 
+        `${this.context}.maybeSingle()`
+      ));
+    }
+  }
+
+  async execute(): Promise<RepositoryResponse<T[]>> {
+    try {
+      const { data, error } = await this.query;
+      
+      if (error) {
+        return createErrorResponse<T[]>(handleRepositoryError(
+          error, 
+          `${this.context}.execute()`
+        ));
+      }
+      
+      return createSuccessResponse<T[]>(data as T[] || []);
+    } catch (error) {
+      return createErrorResponse<T[]>(handleRepositoryError(
+        error, 
+        `${this.context}.execute()`
+      ));
+    }
+  }
+}
+
+/**
+ * Error Query class that always returns an error response
+ * Used when an error occurs during query creation
+ */
+class ErrorQuery<T> implements RepositoryQuery<T> {
+  private error: any;
+  private context: string;
+
+  constructor(error: any, context: string) {
+    this.error = error;
+    this.context = context;
+  }
+
+  // All chain methods just return this same error query
+  eq(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  neq(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  in(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
+  ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
+  is(_column: string, _isNull: null | boolean): RepositoryQuery<T> { return this; }
+  gt(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  gte(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  lt(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  lte(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  or(_filter: string): RepositoryQuery<T> { return this; }
+  order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
+  limit(_count: number): RepositoryQuery<T> { return this; }
+  offset(_count: number): RepositoryQuery<T> { return this; }
+  range(_from: number, _to: number): RepositoryQuery<T> { return this; }
+  select(_select?: string): RepositoryQuery<T> { return this; }
+
+  // All execute methods return the error
+  async single(): Promise<RepositoryResponse<T>> {
+    return createErrorResponse<T>(handleRepositoryError(this.error, this.context));
+  }
+
+  async maybeSingle(): Promise<RepositoryResponse<T | null>> {
+    return createErrorResponse<T | null>(handleRepositoryError(this.error, this.context));
+  }
+
+  async execute(): Promise<RepositoryResponse<T[]>> {
+    return createErrorResponse<T[]>(handleRepositoryError(this.error, this.context));
+  }
+}
+
+/**
+ * Create a Supabase repository for a specific table
+ */
+export function createSupabaseRepository<T>(tableName: string, client?: any): SupabaseRepository<T> {
+  return new SupabaseRepository<T>(tableName, client);
 }
