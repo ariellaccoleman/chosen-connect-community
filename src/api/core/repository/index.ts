@@ -14,23 +14,45 @@ export * from './SupabaseRepository';
 export * from './MockRepository';
 
 // Export entity-specific repositories from entities folder
-// But exclude the factory exports that would conflict
 export * from './entities/ProfileRepository';
 export * from './entities/OrganizationRepository'; 
 export * from './entities/EventRepository';
 export * from './entities/HubRepository';
 
-// Export the factories folder separately to avoid conflicts
-export * from './entities/factories/profileRepositoryFactory';
-export * from './entities/factories/organizationRepositoryFactory';
-export * from './entities/factories/eventRepositoryFactory'; 
-export * from './entities/factories/hubRepositoryFactory';
+// Export the factory functions with explicit naming
+export {
+  createProfileRepositoryFactory,
+  createProfileRepository,
+  createTestingProfileRepository
+} from './entities/factories/profileRepositoryFactory';
+
+export {
+  createOrganizationRepositoryFactory,
+  createOrganizationRepository,
+  createTestingOrganizationRepository
+} from './entities/factories/organizationRepositoryFactory';
+
+export {
+  createEventRepositoryFactory,
+  createEventRepository,
+  createTestingEventRepository
+} from './entities/factories/eventRepositoryFactory';
+
+export {
+  createHubRepositoryFactory, 
+  createHubRepository,
+  createTestingHubRepository
+} from './entities/factories/hubRepositoryFactory';
+
+// Export entity repository factory
+export * from './entities/factories/entityRepositoryFactory';
+export * from './entities/factories/EntityRepositoryFactoryBase';
 
 // Export from repositoryFactory directly
 export {
   createRepository,
   createTestingRepository,
-  // Remove the type export that doesn't exist
+  RepositoryOptions
 } from './repositoryFactory';
 
 export * from './enhancedRepositoryFactory';

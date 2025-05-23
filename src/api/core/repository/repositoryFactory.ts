@@ -7,6 +7,7 @@ import { createSupabaseRepository } from './SupabaseRepository';
  */
 export interface RepositoryOptions {
   schema?: string;
+  enableLogging?: boolean;
 }
 
 /**

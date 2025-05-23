@@ -4,6 +4,7 @@ import { EntityRepository } from '../../EntityRepository';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
 import { createRepository } from '../../repositoryFactory';
+import { RepositoryOptions } from '../../repositoryFactory';
 
 /**
  * Base class for entity repository factories

@@ -5,10 +5,14 @@ import { EntityRepository } from '../../EntityRepository';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
 
-import { createProfileRepository } from './profileRepositoryFactory';
-import { createOrganizationRepository } from './organizationRepositoryFactory';
-import { createEventRepository } from './eventRepositoryFactory';
-import { createHubRepository } from './hubRepositoryFactory';
+import { createProfileRepository, ProfileRepositoryFactory } from './profileRepositoryFactory';
+import { createOrganizationRepository, OrganizationRepositoryFactory } from './organizationRepositoryFactory';
+import { createEventRepository, EventRepositoryFactory } from './eventRepositoryFactory';
+import { createHubRepository, HubRepositoryFactory } from './hubRepositoryFactory';
+import { Profile } from '@/types/profile';
+import { Organization } from '@/types/organization';
+import { Event } from '@/types/event';
+import { Hub } from '@/types/hub';
 
 /**
  * Factory for creating entity repositories
@@ -21,26 +25,34 @@ export class EntityRepositoryFactory {
    * @param options Repository creation options
    * @returns Entity repository
    */
-  static createRepository<T extends Entity>(
+  static createRepository<T>(
     entityType: EntityType,
     options: {
       schema?: string;
-      initialData?: T[];
+      initialData?: any[];
       enableLogging?: boolean;
     } = {}
   ): EntityRepository<T> {
     switch (entityType) {
-      case EntityType.PERSON:
-        return createProfileRepository(options) as unknown as EntityRepository<T>;
+      case EntityType.PERSON: {
+        const factory = new ProfileRepositoryFactory();
+        return factory.createRepository(options) as unknown as EntityRepository<T>;
+      }
       
-      case EntityType.ORGANIZATION:
-        return createOrganizationRepository(options) as unknown as EntityRepository<T>;
+      case EntityType.ORGANIZATION: {
+        const factory = new OrganizationRepositoryFactory();
+        return factory.createRepository(options) as unknown as EntityRepository<T>;
+      }
       
-      case EntityType.EVENT:
-        return createEventRepository(options) as unknown as EntityRepository<T>;
+      case EntityType.EVENT: {
+        const factory = new EventRepositoryFactory();
+        return factory.createRepository(options) as unknown as EntityRepository<T>;
+      }
       
-      case EntityType.HUB:
-        return createHubRepository(options) as unknown as EntityRepository<T>;
+      case EntityType.HUB: {
+        const factory = new HubRepositoryFactory();
+        return factory.createRepository(options) as unknown as EntityRepository<T>;
+      }
       
       default:
         throw new Error(`No repository factory available for entity type: ${entityType}`);
@@ -54,9 +66,9 @@ export class EntityRepositoryFactory {
    * @param initialData Initial data to populate the repository
    * @returns Entity repository configured for testing
    */
-  static createTestingRepository<T extends Entity>(
+  static createTestingRepository<T>(
     entityType: EntityType,
-    initialData?: T[]
+    initialData?: any[]
   ): EntityRepository<T> {
     return EntityRepositoryFactory.createRepository<T>(entityType, {
       schema: 'testing',
@@ -73,11 +85,11 @@ export class EntityRepositoryFactory {
  * @param options Repository creation options
  * @returns Entity repository
  */
-export function createEntityRepository<T extends Entity>(
+export function createEntityRepository<T>(
   entityType: EntityType,
   options: {
     schema?: string;
-    initialData?: T[];
+    initialData?: any[];
     enableLogging?: boolean;
   } = {}
 ): EntityRepository<T> {
@@ -91,9 +103,9 @@ export function createEntityRepository<T extends Entity>(
  * @param initialData Initial data to populate the repository
  * @returns Entity repository configured for testing
  */
-export function createTestingEntityRepository<T extends Entity>(
+export function createTestingEntityRepository<T>(
   entityType: EntityType,
-  initialData?: T[]
+  initialData?: any[]
 ): EntityRepository<T> {
   return EntityRepositoryFactory.createTestingRepository<T>(entityType, initialData);
 }
