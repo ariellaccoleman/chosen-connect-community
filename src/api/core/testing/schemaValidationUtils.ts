@@ -380,11 +380,11 @@ export async function compareSchemasDDL(
         // Handle array result
         if (sourceDDL.length > 0 && typeof sourceDDL[0] === 'object') {
           const firstRow = sourceDDL[0] as Record<string, any>;
-          sourceSchemaString = firstRow.schema_ddl?.toString() || '';
+          sourceSchemaString = (firstRow.schema_ddl || "").toString();
         }
       } else if (typeof sourceDDL === 'object' && sourceDDL !== null) {
         // Handle object result
-        sourceSchemaString = (sourceDDL as Record<string, any>).schema_ddl?.toString() || '';
+        sourceSchemaString = ((sourceDDL as Record<string, any>).schema_ddl || "").toString();
       }
     }
     
@@ -394,11 +394,11 @@ export async function compareSchemasDDL(
       if (Array.isArray(targetDDL)) {
         if (targetDDL.length > 0 && typeof targetDDL[0] === 'object') {
           const firstRow = targetDDL[0] as Record<string, any>;
-          targetSchemaString = firstRow.schema_ddl?.toString() || '';
+          targetSchemaString = (firstRow.schema_ddl || "").toString();
         }
       } else if (typeof targetDDL === 'object' && targetDDL !== null) {
         // Handle object result
-        targetSchemaString = (targetDDL as Record<string, any>).schema_ddl?.toString() || '';
+        targetSchemaString = ((targetDDL as Record<string, any>).schema_ddl || "").toString();
       }
     }
     
