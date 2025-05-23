@@ -1,168 +1,148 @@
 
-import { createApiFactory } from '@/api/core/factory/apiFactory';
-import { apiClient } from '@/api/core/apiClient';
-import { ProfileOrganizationRelationship, ProfileOrganizationRelationshipWithDetails } from '@/types/profile';
+import { 
+  ProfileOrganizationRelationship, 
+  ProfileOrganizationRelationshipWithDetails 
+} from "@/types";
+import { apiClient } from "../core/apiClient";
+import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { formatOrganizationRelationships } from "@/utils/organizationFormatters";
+import { logger } from "@/utils/logger";
 
 /**
- * Factory for organization relationships API operations
- */
-const organizationRelationshipsApiFactory = createApiFactory<
-  ProfileOrganizationRelationshipWithDetails,
-  string,
-  Partial<ProfileOrganizationRelationship>,
-  Partial<ProfileOrganizationRelationship>
->({
-  tableName: 'org_relationships',
-  entityName: 'OrganizationRelationship',
-  idField: 'id',
-  defaultSelect: `*, 
-    organization:organizations(*,
-      location:locations(*)
-    )`,
-  useQueryOperations: true,
-  useMutationOperations: true,
-  useBatchOperations: false,
-  
-  transformResponse: (data) => {
-    // Convert snake_case to camelCase for the client
-    const transformed: ProfileOrganizationRelationshipWithDetails = {
-      id: data.id,
-      profileId: data.profile_id,
-      organizationId: data.organization_id,
-      connectionType: data.connection_type,
-      department: data.department || null,
-      notes: data.notes || null,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
-      organization: data.organization ? {
-        id: data.organization.id,
-        name: data.organization.name,
-        logoUrl: data.organization.logo_url
-      } : undefined
-    };
-    
-    return transformed;
-  },
-  
-  transformRequest: (data) => {
-    // Convert camelCase to snake_case for the database
-    const transformed: Record<string, any> = {};
-    
-    if (data.profileId !== undefined) transformed.profile_id = data.profileId;
-    if (data.organizationId !== undefined) transformed.organization_id = data.organizationId;
-    if (data.connectionType !== undefined) transformed.connection_type = data.connectionType;
-    if (data.department !== undefined) transformed.department = data.department;
-    if (data.notes !== undefined) transformed.notes = data.notes;
-    
-    return transformed;
-  }
-});
-
-/**
- * Get relationships for a profile
- */
-export async function getRelationshipsForProfile(profileId: string) {
-  return apiClient.query(async (client) => {
-    return client
-      .from('org_relationships')
-      .select(`*, 
-        organization:organizations(*,
-          location:locations(*)
-        )`)
-      .eq('profile_id', profileId);
-  });
-}
-
-/**
- * Get relationships for an organization
- */
-export async function getRelationshipsForOrganization(organizationId: string) {
-  return apiClient.query(async (client) => {
-    return client
-      .from('org_relationships')
-      .select(`*, 
-        profile:profiles(*)`)
-      .eq('organization_id', organizationId);
-  });
-}
-
-/**
- * Create a relationship between profile and organization
- */
-export async function createRelationship(relationship: Partial<ProfileOrganizationRelationship>) {
-  return organizationRelationshipsApi.create(relationship);
-}
-
-/**
- * Update a relationship
- */
-export async function updateRelationship(id: string, updates: Partial<ProfileOrganizationRelationship>) {
-  return organizationRelationshipsApi.update(id, updates);
-}
-
-/**
- * Delete a relationship
- */
-export async function deleteRelationship(id: string) {
-  return organizationRelationshipsApi.delete(id);
-}
-
-/**
- * Check if a relationship exists between profile and organization
- */
-export async function checkRelationshipExists(profileId: string, organizationId: string) {
-  const { data, error } = await apiClient.query(async (client) => {
-    return client
-      .from('org_relationships')
-      .select('id')
-      .eq('profile_id', profileId)
-      .eq('organization_id', organizationId)
-      .maybeSingle();
-  });
-  
-  return { exists: !!data, relationshipId: data?.id };
-}
-
-/**
- * API helpers for organizational relationships
+ * API module for organization relationship operations
  */
 export const organizationRelationshipsApi = {
-  ...organizationRelationshipsApiFactory,
-
   /**
-   * Get relationships for a user profile
+   * Get organization relationships for a user
    */
-  getUserOrganizationRelationships: async (profileId: string) => {
-    return getRelationshipsForProfile(profileId);
+  async getUserOrganizationRelationships(
+    profileId: string
+  ): Promise<ApiResponse<ProfileOrganizationRelationshipWithDetails[]>> {
+    logger.info(`API call: getUserOrganizationRelationships for profileId: ${profileId}`);
+    
+    return apiClient.query(async (client) => {
+      const { data, error } = await client
+        .from('org_relationships')
+        .select(`
+          *,
+          organization:organizations(
+            *,
+            location:locations(*)
+          )
+        `)
+        .eq('profile_id', profileId);
+      
+      if (error) {
+        logger.error(`Error fetching organization relationships for profile ${profileId}:`, error);
+        throw error;
+      }
+      
+      logger.info(`Successfully fetched ${data?.length || 0} organization relationships for profileId: ${profileId}`);
+      
+      const formattedRelationships = formatOrganizationRelationships(data || []);
+      return createSuccessResponse(formattedRelationships);
+    });
   },
   
   /**
-   * Add a relationship between profile and organization
+   * Add an organization relationship
    */
-  addOrganizationRelationship: async (data: Partial<ProfileOrganizationRelationship>) => {
-    return createRelationship(data);
+  async addOrganizationRelationship(
+    relationship: Partial<ProfileOrganizationRelationship>
+  ): Promise<ApiResponse<boolean>> {
+    logger.info(`API call: addOrganizationRelationship`, relationship);
+    
+    return apiClient.query(async (client) => {
+      if (!relationship.profile_id) {
+        throw new Error('Profile ID is required');
+      }
+      
+      // First check if profile exists
+      const { data: existingProfile, error: profileCheckError } = await client
+        .from('profiles')
+        .select('id')
+        .eq('id', relationship.profile_id)
+        .maybeSingle();
+      
+      if (profileCheckError) throw profileCheckError;
+      
+      // If profile doesn't exist, create a minimal one
+      if (!existingProfile) {
+        logger.info(`Profile ${relationship.profile_id} doesn't exist, creating new profile`);
+        const { error: profileCreateError } = await client
+          .from('profiles')
+          .insert({ id: relationship.profile_id });
+        
+        if (profileCreateError) throw profileCreateError;
+      }
+      
+      // Create relationship
+      logger.info(`Creating organization relationship`, relationship);
+      const { error } = await client
+        .from('org_relationships')
+        .insert({
+          profile_id: relationship.profile_id,
+          organization_id: relationship.organization_id,
+          connection_type: relationship.connection_type,
+          department: relationship.department,
+          notes: relationship.notes
+        });
+      
+      if (error) throw error;
+      
+      logger.info(`Successfully created organization relationship`);
+      return createSuccessResponse(true);
+    });
   },
   
   /**
    * Update an organization relationship
    */
-  updateOrganizationRelationship: async (id: string, data: Partial<ProfileOrganizationRelationship>) => {
-    return updateRelationship(id, data);
+  async updateOrganizationRelationship(
+    relationshipId: string,
+    relationshipData: Partial<ProfileOrganizationRelationship>
+  ): Promise<ApiResponse<boolean>> {
+    logger.info(`API call: updateOrganizationRelationship for ID: ${relationshipId}`, relationshipData);
+    
+    return apiClient.query(async (client) => {
+      const { error } = await client
+        .from('org_relationships')
+        .update({
+          connection_type: relationshipData.connection_type,
+          department: relationshipData.department,
+          notes: relationshipData.notes
+        })
+        .eq('id', relationshipId);
+      
+      if (error) {
+        logger.error(`Error updating organization relationship ${relationshipId}:`, error);
+        throw error;
+      }
+      
+      logger.info(`Successfully updated organization relationship ${relationshipId}`);
+      return createSuccessResponse(true);
+    });
   },
   
   /**
    * Delete an organization relationship
    */
-  deleteOrganizationRelationship: async (id: string) => {
-    return deleteRelationship(id);
+  async deleteOrganizationRelationship(relationshipId: string): Promise<ApiResponse<boolean>> {
+    logger.info(`API call: deleteOrganizationRelationship for ID: ${relationshipId}`);
+    
+    return apiClient.query(async (client) => {
+      const { error } = await client
+        .from('org_relationships')
+        .delete()
+        .eq('id', relationshipId);
+      
+      if (error) {
+        logger.error(`Error deleting organization relationship ${relationshipId}:`, error);
+        throw error;
+      }
+      
+      logger.info(`Successfully deleted organization relationship ${relationshipId}`);
+      return createSuccessResponse(true);
+    });
   }
 };
-
-// Export the API operations
-export const {
-  getAll: getAllRelationships,
-  getById: getRelationshipById,
-  create: createOrganizationRelationship,
-  update: updateOrganizationRelationship,
-  delete: deleteOrganizationRelationship
-} = organizationRelationshipsApi;

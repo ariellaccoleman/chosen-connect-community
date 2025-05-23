@@ -24,7 +24,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   useEffect(() => {
     // Only log detailed information for the specific profile we're interested in
     if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
-      logger.debug(`ProfileCard: Target profile - ${profile.firstName} ${profile.lastName} (${profile.id})`, {
+      logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
         tags: profile.tags?.map(t => ({
           id: t.id,
           tag_id: t.tag_id,

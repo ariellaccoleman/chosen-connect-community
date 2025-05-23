@@ -3,23 +3,11 @@ import { EntityRepository } from '../EntityRepository';
 import { Hub } from '@/types/hub';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
-import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Hub entities
  */
 export class HubRepository extends EntityRepository<Hub> {
-  /**
-   * Create a new HubRepository
-   * 
-   * @param tableName The table name
-   * @param entityType The entity type
-   * @param baseRepository The base repository to delegate to
-   */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
-    super(tableName, entityType, baseRepository);
-  }
-
   /**
    * Convert database record to Hub entity
    */
@@ -27,7 +15,6 @@ export class HubRepository extends EntityRepository<Hub> {
     return {
       id: record.id,
       name: record.name,
-      entityType: EntityType.HUB, // Add entityType to satisfy Entity interface
       description: record.description || null,
       tag_id: record.tag_id || null,
       is_featured: record.is_featured || false,
@@ -39,18 +26,16 @@ export class HubRepository extends EntityRepository<Hub> {
   /**
    * Convert Hub entity to database record
    */
-  convertFromEntity(entity: Partial<Hub>): Record<string, any> {
-    const record: Record<string, any> = {};
-    
-    if (entity.id !== undefined) record.id = entity.id;
-    if (entity.name !== undefined) record.name = entity.name;
-    if (entity.description !== undefined) record.description = entity.description;
-    if (entity.tag_id !== undefined) record.tag_id = entity.tag_id;
-    if (entity.is_featured !== undefined) record.is_featured = entity.is_featured;
-    if (entity.created_at !== undefined) record.created_at = entity.created_at;
-    if (entity.updated_at !== undefined) record.updated_at = entity.updated_at;
-    
-    return record;
+  convertFromEntity(entity: Hub): Record<string, any> {
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      tag_id: entity.tag_id,
+      is_featured: entity.is_featured,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at,
+    };
   }
 
   /**
@@ -73,7 +58,7 @@ export class HubRepository extends EntityRepository<Hub> {
         };
       }
       
-      return result as unknown as RepositoryResponse<Hub[]>;
+      return result as RepositoryResponse<Hub[]>;
     } catch (error) {
       this.handleError('getFeatured', error);
       return {
@@ -110,7 +95,7 @@ export class HubRepository extends EntityRepository<Hub> {
         };
       }
       
-      return result as unknown as RepositoryResponse<Hub | null>;
+      return result as RepositoryResponse<Hub | null>;
     } catch (error) {
       this.handleError('getByTagId', error, { tagId });
       return {

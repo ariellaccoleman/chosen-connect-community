@@ -3,23 +3,11 @@ import { EntityRepository } from '../EntityRepository';
 import { Event } from '@/types/event';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
-import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Event entities
  */
 export class EventRepository extends EntityRepository<Event> {
-  /**
-   * Create a new EventRepository
-   * 
-   * @param tableName The table name
-   * @param entityType The entity type
-   * @param baseRepository The base repository to delegate to
-   */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
-    super(tableName, entityType, baseRepository);
-  }
-
   /**
    * Convert database record to Event entity
    */
@@ -27,18 +15,17 @@ export class EventRepository extends EntityRepository<Event> {
     return {
       id: record.id,
       entityType: EntityType.EVENT,
-      name: record.title, // Map title to name for Entity interface
+      name: record.title,
       title: record.title,
       description: record.description || '',
-      // Map the database fields to the entity fields
       startTime: new Date(record.start_time),
       endTime: new Date(record.end_time),
       timezone: record.timezone || 'UTC',
       locationId: record.location_id,
       address: record.address || '',
-      isOnline: record.is_virtual || false,
+      isOnline: record.is_online || false,
       meetingLink: record.meeting_link || '',
-      creatorId: record.host_id,
+      creatorId: record.creator_id,
       isPaid: record.is_paid || false,
       price: record.price || 0,
       currency: record.currency || 'USD',
@@ -51,26 +38,26 @@ export class EventRepository extends EntityRepository<Event> {
   /**
    * Convert Event entity to database record
    */
-  convertFromEntity(entity: Partial<Event>): Record<string, any> {
-    const record: Record<string, any> = {};
-    
-    if (entity.id !== undefined) record.id = entity.id;
-    if (entity.title !== undefined) record.title = entity.title;
-    if (entity.description !== undefined) record.description = entity.description;
-    if (entity.startTime !== undefined) record.start_time = entity.startTime;
-    if (entity.endTime !== undefined) record.end_time = entity.endTime;
-    if (entity.timezone !== undefined) record.timezone = entity.timezone;
-    if (entity.locationId !== undefined) record.location_id = entity.locationId;
-    if (entity.address !== undefined) record.address = entity.address;
-    if (entity.isOnline !== undefined) record.is_virtual = entity.isOnline;
-    if (entity.meetingLink !== undefined) record.meeting_link = entity.meetingLink;
-    if (entity.creatorId !== undefined) record.host_id = entity.creatorId;
-    if (entity.isPaid !== undefined) record.is_paid = entity.isPaid;
-    if (entity.price !== undefined) record.price = entity.price;
-    if (entity.currency !== undefined) record.currency = entity.currency;
-    if (entity.capacity !== undefined) record.capacity = entity.capacity;
-    
-    return record;
+  convertFromEntity(entity: Event): Record<string, any> {
+    return {
+      id: entity.id,
+      title: entity.title,
+      description: entity.description,
+      start_time: entity.startTime,
+      end_time: entity.endTime,
+      timezone: entity.timezone,
+      location_id: entity.locationId,
+      address: entity.address,
+      is_online: entity.isOnline,
+      meeting_link: entity.meetingLink,
+      creator_id: entity.creatorId,
+      is_paid: entity.isPaid,
+      price: entity.price,
+      currency: entity.currency,
+      capacity: entity.capacity,
+      created_at: entity.createdAt,
+      updated_at: entity.updatedAt,
+    };
   }
 
   /**
@@ -80,7 +67,7 @@ export class EventRepository extends EntityRepository<Event> {
   async getByCreator(creatorId: string): Promise<RepositoryResponse<Event[]>> {
     try {
       const result = await this.baseRepository.select()
-        .eq('host_id', creatorId)
+        .eq('creator_id', creatorId)
         .execute();
       
       if (result.isSuccess() && result.data) {
@@ -93,7 +80,7 @@ export class EventRepository extends EntityRepository<Event> {
         };
       }
       
-      return result as unknown as RepositoryResponse<Event[]>;
+      return result as RepositoryResponse<Event[]>;
     } catch (error) {
       this.handleError('getByCreator', error, { creatorId });
       return {
@@ -116,11 +103,8 @@ export class EventRepository extends EntityRepository<Event> {
   async getUpcoming(): Promise<RepositoryResponse<Event[]>> {
     try {
       const now = new Date();
-      const nowIso = now.toISOString();
-      
-      // Use the correct method to filter by date
       const result = await this.baseRepository.select()
-        .gte('start_time', nowIso)
+        .gte('start_time', now.toISOString())
         .order('start_time', { ascending: true })
         .execute();
       
@@ -134,7 +118,7 @@ export class EventRepository extends EntityRepository<Event> {
         };
       }
       
-      return result as unknown as RepositoryResponse<Event[]>;
+      return result as RepositoryResponse<Event[]>;
     } catch (error) {
       this.handleError('getUpcoming', error);
       return {

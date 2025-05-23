@@ -2,7 +2,7 @@
 import { EntityRepositoryFactory } from '../../../repository/enhancedRepositoryFactory';
 import { EntityType } from '@/types/entityTypes';
 import { Event } from '@/types/event';
-import { EventRepository } from '../EventRepository';
+import { EntityRepository } from '../../../repository/EntityRepository';
 import { createEnhancedRepository, EnhancedRepositoryType } from '../../../repository/enhancedRepositoryFactory';
 
 /**
@@ -29,8 +29,8 @@ export class EventRepositoryFactory extends EntityRepositoryFactory<Event> {
   createRepository(
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Event[]
-  ): EventRepository {
-    const baseRepository = createEnhancedRepository<any>(
+  ): EntityRepository<Event> {
+    const baseRepository = createEnhancedRepository<Event>(
       this.getTableName(),
       type,
       initialData,
@@ -41,8 +41,8 @@ export class EventRepositoryFactory extends EntityRepositoryFactory<Event> {
       }
     );
     
-    // Create and return event repository with the entity-specific implementation
-    return new EventRepository(
+    // Create and return entity repository
+    return new EntityRepository<Event>(
       this.getTableName(),
       this.getEntityType(),
       baseRepository

@@ -60,25 +60,37 @@ const AdminRequestDetails = ({
           {/* User info */}
           <div className="flex items-center gap-4">
             <Avatar className="h-12 w-12">
-              <AvatarImage src={request.profile?.avatarUrl || ""} alt={request.profile?.fullName || ""} />
+              <AvatarImage src={request.profile?.avatar_url || ""} alt={request.profile?.full_name || ""} />
               <AvatarFallback>
-                {request.profile?.firstName?.[0] || ""}
-                {request.profile?.lastName?.[0] || ""}
+                {request.profile?.first_name?.[0] || ""}
+                {request.profile?.last_name?.[0] || ""}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-medium">{request.profile?.fullName}</h3>
+              <h3 className="font-medium">{request.profile?.full_name}</h3>
               <p className="text-sm text-muted-foreground">{request.profile?.email}</p>
             </div>
           </div>
           
           <Separator />
           
-          {/* Organization info placeholder (since we don't have organization data here) */}
+          {/* Organization info */}
           <div>
             <p className="text-sm font-medium mb-1">Organization</p>
             <div className="flex items-center justify-between">
-              <p className="text-base">Organization: {request.organizationId}</p>
+              <p className="text-base">{request.organization?.name}</p>
+              {request.organization?.website_url && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  asChild
+                  className="h-8 w-8"
+                >
+                  <a href={request.organization.website_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </Button>
+              )}
             </div>
           </div>
           
@@ -86,14 +98,14 @@ const AdminRequestDetails = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium mb-1">Status</p>
-              <Badge variant={request.isApproved ? "success" : "secondary"}>
-                {request.isApproved ? "Approved" : "Pending"}
+              <Badge variant={request.is_approved ? "success" : "secondary"}>
+                {request.is_approved ? "Approved" : "Pending"}
               </Badge>
             </div>
             <div>
               <p className="text-sm font-medium mb-1">Requested</p>
               <p className="text-sm">
-                {request.createdAt ? format(new Date(request.createdAt), 'MMM d, yyyy') : '-'}
+                {request.created_at ? format(new Date(request.created_at), 'MMM d, yyyy') : '-'}
               </p>
             </div>
           </div>
@@ -101,7 +113,7 @@ const AdminRequestDetails = ({
           <Separator />
           
           {/* Role selection */}
-          {!request.isApproved && (
+          {!request.is_approved && (
             <div>
               <p className="text-sm font-medium mb-3">Select role to assign</p>
               <RadioGroup
@@ -148,7 +160,7 @@ const AdminRequestDetails = ({
             className="flex items-center gap-1"
           >
             <Trash className="h-4 w-4" />
-            {request.isApproved ? "Remove Access" : "Reject"}
+            {request.is_approved ? "Remove Access" : "Reject"}
           </Button>
           <div className="flex gap-2">
             <Button
@@ -157,7 +169,7 @@ const AdminRequestDetails = ({
             >
               Close
             </Button>
-            {!request.isApproved && (
+            {!request.is_approved && (
               <Button
                 onClick={handleApproveWithRole}
                 className="flex items-center gap-1"

@@ -4,7 +4,6 @@ import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { formatDateForDb } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 import { apiClient } from '@/api/core/apiClient';
-import { EntityType } from '@/types/entityTypes'; // Import moved to the top
 
 /**
  * Factory for event API operations using the standardized factory pattern
@@ -26,51 +25,14 @@ export const eventApi = createApiFactory<
   transformResponse: (data) => {
     logger.debug('Transforming event response', data);
     
-    // Transform snake_case to camelCase
-    const event: EventWithDetails = {
-      id: data.id,
-      entityType: EntityType.EVENT,
-      name: data.title,
-      title: data.title,
-      description: data.description || '',
-      startTime: new Date(data.start_time),
-      endTime: new Date(data.end_time),
-      timezone: data.timezone || 'UTC',
-      locationId: data.location_id,
-      address: data.address || '',
-      isOnline: data.is_virtual || false,
-      meetingLink: data.meeting_link || '',
-      creatorId: data.host_id,
-      isPaid: data.is_paid || false,
-      price: data.price || 0,
-      currency: data.currency || 'USD',
-      capacity: data.capacity,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at),
-      location: data.location,
-      host: data.host ? {
-        id: data.host.id,
-        entityType: EntityType.PERSON,
-        name: `${data.host.first_name} ${data.host.last_name}`,
-        firstName: data.host.first_name,
-        lastName: data.host.last_name,
-        email: data.host.email,
-        bio: data.host.bio || '',
-        headline: data.host.headline || '',
-        avatarUrl: data.host.avatar_url || '',
-        company: data.host.company || '',
-        websiteUrl: data.host.website_url || '',
-        twitterUrl: data.host.twitter_url || '',
-        linkedinUrl: data.host.linkedin_url || '',
-        timezone: data.host.timezone || 'UTC',
-        isApproved: data.host.is_approved || false,
-        createdAt: new Date(data.host.created_at),
-        updatedAt: new Date(data.host.updated_at),
-      } : null,
+    // The response already includes location and host from the join
+    return {
+      ...data,
+      // Set default values for nullable fields
+      is_virtual: data.is_virtual || false,
+      is_paid: data.is_paid || false,
       tags: data.tags || []
-    };
-    
-    return event;
+    } as EventWithDetails;
   },
   
   transformRequest: (data) => {
@@ -82,31 +44,31 @@ export const eventApi = createApiFactory<
     if (data.description !== undefined) transformed.description = data.description;
     
     // Format dates for the database - ensure we handle string dates correctly
-    if (data.startTime !== undefined) {
-      transformed.start_time = formatDateForDb(data.startTime);
+    if (data.start_time !== undefined) {
+      transformed.start_time = formatDateForDb(data.start_time);
     }
-    if (data.endTime !== undefined) {
-      transformed.end_time = formatDateForDb(data.endTime);
+    if (data.end_time !== undefined) {
+      transformed.end_time = formatDateForDb(data.end_time);
     }
     
     // Handle location based on virtual status
-    if (data.isOnline !== undefined) {
-      transformed.is_virtual = data.isOnline;
-      if (data.isOnline) {
+    if (data.is_virtual !== undefined) {
+      transformed.is_virtual = data.is_virtual;
+      if (data.is_virtual) {
         transformed.location_id = null;
-      } else if (data.locationId !== undefined) {
-        transformed.location_id = data.locationId;
+      } else if (data.location_id !== undefined) {
+        transformed.location_id = data.location_id;
       }
-    } else if (data.locationId !== undefined) {
-      transformed.location_id = data.locationId;
+    } else if (data.location_id !== undefined) {
+      transformed.location_id = data.location_id;
     }
     
     // Handle price based on paid status
-    if (data.isPaid !== undefined) {
-      transformed.is_paid = data.isPaid;
-      if (data.isPaid && data.price !== undefined) {
+    if (data.is_paid !== undefined) {
+      transformed.is_paid = data.is_paid;
+      if (data.is_paid && data.price !== undefined) {
         transformed.price = data.price;
-      } else if (!data.isPaid) {
+      } else if (!data.is_paid) {
         transformed.price = null;
       }
     } else if (data.price !== undefined) {
@@ -114,8 +76,8 @@ export const eventApi = createApiFactory<
     }
     
     // Handle host_id assignment
-    if (data.hostId !== undefined) {
-      transformed.host_id = data.hostId;
+    if (data.host_id !== undefined) {
+      transformed.host_id = data.host_id;
     }
     
     return transformed;
@@ -137,7 +99,7 @@ export const extendedEventApi = {
     // First create the event
     const eventResult = await eventApi.create({
       ...eventData,
-      hostId
+      host_id: hostId
     } as any);
     
     if (eventResult.error || !eventResult.data) {

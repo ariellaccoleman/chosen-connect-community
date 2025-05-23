@@ -3,61 +3,37 @@ import { Database } from "@/integrations/supabase/types";
 import { LocationWithDetails } from "./location";
 import { Profile } from "./profile";
 import { TagAssignment } from "@/utils/tags/types";
-import { Entity } from "./entity";
-import { EntityType } from "./entityTypes";
 
-// Updated Event type to match Entity interface
-export interface Event extends Entity {
-  id: string;
-  entityType: EntityType.EVENT;
-  name: string; // Using title as name to satisfy the Entity interface
-  title: string;
-  description: string;
-  startTime: string; // Changed from Date to string to match how it's used
-  endTime: string;   // Changed from Date to string to match how it's used
-  timezone: string;
-  locationId: string | null;
-  address: string;
-  isOnline: boolean;
-  meetingLink: string;
-  creatorId: string;
-  isPaid: boolean;
-  price: number;
-  currency: string;
-  capacity?: number;
-  createdAt: string; // Changed from Date to string to match how it's used
-  updatedAt: string; // Changed from Date to string to match how it's used
-}
-
-// Original Event type from DB
-export type EventDb = Database["public"]["Tables"]["events"]["Row"];
+// Type from DB
+export type Event = Database["public"]["Tables"]["events"]["Row"];
 
 // Event with extra information
 export interface EventWithDetails extends Event {
   location?: LocationWithDetails | null;
   host?: Profile | null;
-  tags?: TagAssignment[];
+  tags?: TagAssignment[]; // Add tags property
 }
 
 // Type for creating a new event
 export interface CreateEventInput {
   title: string;
   description: string;
-  startTime: string;
-  endTime: string;
-  isOnline: boolean;
-  locationId: string | null;
-  isPaid: boolean;
+  start_time: string;
+  end_time: string;
+  is_virtual: boolean;
+  location_id: string | null;
+  is_paid: boolean;
   price: number | null;
+  // Remove tag_id as we'll use tag assignments directly
 }
 
 // Event registration type
 export type EventRegistration = {
   id: string;
-  eventId: string;
-  profileId: string;
-  createdAt: string;
-  profile?: Profile;
+  event_id: string;
+  profile_id: string;
+  created_at: string;
+  profile?: Profile; // Add optional profile field for joined data
 };
 
 // Registration status for the current user

@@ -8,37 +8,10 @@ import { User } from "@supabase/supabase-js";
 export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
   if (!data) return null;
   
-  // Convert snake_case to camelCase for client
-  const profile: ProfileWithDetails = {
-    id: data.id,
-    entityType: data.entity_type || EntityType.PERSON,
-    firstName: data.first_name || '',
-    lastName: data.last_name || '',
-    name: `${data.first_name || ''} ${data.last_name || ''}`.trim(), // For Entity interface
-    email: data.email || '',
-    bio: data.bio || '',
-    headline: data.headline || '',
-    avatarUrl: data.avatar_url || '',
-    company: data.company || '',
-    websiteUrl: data.website_url || '',
-    twitterUrl: data.twitter_url || '',
-    linkedinUrl: data.linkedin_url || '',
-    timezone: data.timezone || 'UTC',
-    isApproved: data.is_approved !== false, // Default to true if not specified
-    createdAt: data.created_at ? new Date(data.created_at) : new Date(),
-    updatedAt: data.updated_at ? new Date(data.updated_at) : new Date(),
-    location: data.location ? {
-      id: data.location.id,
-      city: data.location.city || '',
-      region: data.location.region || '',
-      country: data.location.country || '',
-      latitude: data.location.latitude,
-      longitude: data.location.longitude,
-    } : undefined,
-  };
+  const profile = data as ProfileWithDetails;
   
   // Format full name
-  profile.fullName = [profile.firstName, profile.lastName]
+  profile.full_name = [profile.first_name, profile.last_name]
     .filter(Boolean)
     .join(' ');
   
@@ -54,9 +27,12 @@ export function formatProfileWithDetails(data: any): ProfileWithDetails | null {
       const country = location.country || '';
       
       // Create a formatted location string
-      profile.formattedLocation = [city, region, country]
+      const formatted = [city, region, country]
         .filter(Boolean)
         .join(', ');
+      
+      // Add formatted_location to the location object
+      (profile.location as any).formatted_location = formatted;
     }
   }
   
@@ -81,6 +57,3 @@ export function enhanceProfileWithAuthData(
   
   return enhancedProfile;
 }
-
-// Import needed for the EntityType enum
-import { EntityType } from '@/types/entityTypes';

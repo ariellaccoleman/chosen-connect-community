@@ -2,7 +2,7 @@
 import { EntityRepositoryFactory } from '../../../repository/enhancedRepositoryFactory';
 import { EntityType } from '@/types/entityTypes';
 import { Profile } from '@/types/profile';
-import { ProfileRepository } from '../ProfileRepository';
+import { EntityRepository } from '../../../repository/EntityRepository';
 import { createEnhancedRepository, EnhancedRepositoryType } from '../../../repository/enhancedRepositoryFactory';
 
 /**
@@ -29,8 +29,8 @@ export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
   createRepository(
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Profile[]
-  ): ProfileRepository {
-    const baseRepository = createEnhancedRepository<any>(
+  ): EntityRepository<Profile> {
+    const baseRepository = createEnhancedRepository<Profile>(
       this.getTableName(),
       type,
       initialData,
@@ -41,8 +41,8 @@ export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
       }
     );
     
-    // Create and return profile repository with the entity-specific implementation
-    return new ProfileRepository(
+    // Create and return entity repository
+    return new EntityRepository<Profile>(
       this.getTableName(),
       this.getEntityType(),
       baseRepository

@@ -10,33 +10,15 @@ import { createSuccessResponse } from './repositoryUtils';
  * Abstract Entity Repository Class
  * Extends BaseRepository with entity-specific functionality
  */
-export abstract class EntityRepository<T extends Entity> {
+export abstract class EntityRepository<T extends Entity> extends BaseRepository<T> {
   /**
    * Type of entity this repository handles
    */
   readonly entityType: EntityType;
-  
-  /**
-   * Table name in the database
-   */
-  readonly tableName: string;
 
-  /**
-   * The base repository to delegate database operations to
-   */
-  protected baseRepository: BaseRepository<any>;
-
-  /**
-   * Create a new EntityRepository
-   * 
-   * @param tableName Table name in the database
-   * @param entityType Type of entity this repository handles
-   * @param baseRepository Base repository for delegation
-   */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
-    this.tableName = tableName;
+  constructor(tableName: string, entityType: EntityType) {
+    super(tableName);
     this.entityType = entityType;
-    this.baseRepository = baseRepository;
   }
 
   /**
@@ -51,102 +33,7 @@ export abstract class EntityRepository<T extends Entity> {
    * @param entity Entity object
    * @returns Database record
    */
-  abstract convertFromEntity(entity: Partial<T>): Record<string, any>;
-
-  /**
-   * The select method used to start a query
-   * @param columns Columns to select
-   * @returns A query builder
-   */
-  select(columns?: string) {
-    return this.baseRepository.select(columns);
-  }
-
-  /**
-   * The insert method used to insert data
-   * @param values Values to insert
-   * @returns A query builder
-   */
-  insert(values: Partial<T> | Partial<T>[]) {
-    const convertedValues = Array.isArray(values)
-      ? values.map(value => this.convertFromEntity(value as T)) 
-      : this.convertFromEntity(values as T);
-    
-    return this.baseRepository.insert(convertedValues);
-  }
-  
-  /**
-   * The update method used to update data
-   * @param values Values to update
-   * @returns A query builder
-   */
-  update(values: Partial<T>) {
-    return this.baseRepository.update(this.convertFromEntity(values as T));
-  }
-  
-  /**
-   * The delete method used to delete data
-   * @returns A query builder
-   */
-  delete() {
-    return this.baseRepository.delete();
-  }
-
-  /**
-   * Handle errors in repository operations
-   * @param operation Operation name
-   * @param error Error object
-   * @param context Additional context
-   */
-  protected handleError(operation: string, error: any, context?: Record<string, any>): void {
-    logger.error(`Error in ${this.constructor.name}.${operation}:`, {
-      error,
-      context,
-      entityType: this.entityType,
-      tableName: this.tableName
-    });
-  }
-  
-  /**
-   * Get entity by ID
-   * @param id ID to lookup
-   * @returns Entity or null
-   */
-  async getById(id: string): Promise<T | null> {
-    try {
-      const result = await this.baseRepository.select()
-        .eq('id', id)
-        .maybeSingle();
-        
-      if (result.isSuccess() && result.data) {
-        return this.convertToEntity(result.data);
-      }
-      
-      return null;
-    } catch (error) {
-      this.handleError('getById', error, { id });
-      return null;
-    }
-  }
-  
-  /**
-   * Get all entities
-   * @returns Array of entities
-   */
-  async getAll(): Promise<T[]> {
-    try {
-      const result = await this.baseRepository.select().execute();
-      
-      if (result.isSuccess() && result.data) {
-        return result.data.map(record => this.convertToEntity(record));
-      }
-      
-      return [];
-    } catch (error) {
-      this.handleError('getAll', error);
-      return [];
-    }
-  }
+  abstract convertFromEntity(entity: T): Record<string, any>;
 
   /**
    * Validate an entity
@@ -208,17 +95,17 @@ export abstract class EntityRepository<T extends Entity> {
       }
       
       // Convert to database record
-      const dbRecord = this.convertFromEntity(entityWithType as T);
+      const record = this.convertFromEntity(entityWithType as T);
       
       // Insert into database
-      const result = await this.baseRepository.insert(dbRecord).execute();
+      const result = await this.insert(record).single();
       
       // If successful, convert back to entity
-      if (result.isSuccess() && result.data && Array.isArray(result.data) && result.data.length > 0) {
-        return createSuccessResponse<T>(this.convertToEntity(result.data[0]));
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse<T>(this.convertToEntity(result.data));
       }
       
-      return result as unknown as RepositoryResponse<T>;
+      return result as RepositoryResponse<T>;
     } catch (error) {
       this.handleError('createEntity', error, { entity });
       return {
@@ -288,17 +175,17 @@ export abstract class EntityRepository<T extends Entity> {
       }
       
       // Convert to database record
-      const dbRecord = this.convertFromEntity(updatedEntity);
+      const record = this.convertFromEntity(updatedEntity);
       
       // Update in database
-      const result = await this.baseRepository.update(dbRecord).eq('id', id).execute();
+      const result = await this.update(record).eq('id', id).single();
       
       // If successful, convert back to entity
-      if (result.isSuccess() && result.data && Array.isArray(result.data) && result.data.length > 0) {
-        return createSuccessResponse<T>(this.convertToEntity(result.data[0]));
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse<T>(this.convertToEntity(result.data));
       }
       
-      return result as unknown as RepositoryResponse<T>;
+      return result as RepositoryResponse<T>;
     } catch (error) {
       this.handleError('updateEntity', error, { id, updates });
       return {
@@ -312,6 +199,102 @@ export abstract class EntityRepository<T extends Entity> {
         isError: () => true,
         getErrorMessage: () => 'Failed to update entity'
       };
+    }
+  }
+
+  /**
+   * Get entities by their type
+   * @returns List of entities
+   */
+  async getByEntityType(): Promise<T[]> {
+    try {
+      const result = await this.select().execute();
+      
+      if (result.isSuccess() && result.data) {
+        // Convert all records to entities
+        return result.data.map(record => this.convertToEntity(record));
+      }
+      
+      return [];
+    } catch (error) {
+      this.handleError('getByEntityType', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get an entity with its tags
+   * @param id ID of the entity to retrieve
+   * @returns Entity with tags
+   */
+  async getWithTags(id: string): Promise<T | null> {
+    try {
+      // Get the entity
+      const entity = await this.getById(id);
+      if (!entity) {
+        return null;
+      }
+      
+      // Get entity tags (implementation depends on how tags are stored)
+      // This is a placeholder - actual implementation will vary based on your data model
+      const tags = await this.getEntityTags(id);
+      
+      // Return entity with tags
+      return {
+        ...entity,
+        tags: tags
+      };
+    } catch (error) {
+      this.handleError('getWithTags', error, { id });
+      return null;
+    }
+  }
+
+  /**
+   * Get tags for an entity
+   * This is a placeholder method - the actual implementation will depend on your tagging system
+   * @param entityId ID of the entity
+   * @returns Array of tags
+   */
+  protected async getEntityTags(entityId: string): Promise<any[]> {
+    // Placeholder implementation - to be overridden in concrete classes
+    // This would typically query a tag-entity relationship table
+    return [];
+  }
+
+  /**
+   * Assign a tag to an entity
+   * @param entityId ID of the entity
+   * @param tagId ID of the tag
+   * @returns Success flag
+   */
+  async assignTag(entityId: string, tagId: string): Promise<boolean> {
+    try {
+      // Placeholder implementation - to be overridden in concrete classes
+      // This would typically insert into a tag-entity relationship table
+      logger.info(`Assigning tag ${tagId} to entity ${entityId}`);
+      return true;
+    } catch (error) {
+      this.handleError('assignTag', error, { entityId, tagId });
+      return false;
+    }
+  }
+
+  /**
+   * Remove a tag from an entity
+   * @param entityId ID of the entity
+   * @param tagId ID of the tag
+   * @returns Success flag
+   */
+  async removeTag(entityId: string, tagId: string): Promise<boolean> {
+    try {
+      // Placeholder implementation - to be overridden in concrete classes
+      // This would typically delete from a tag-entity relationship table
+      logger.info(`Removing tag ${tagId} from entity ${entityId}`);
+      return true;
+    } catch (error) {
+      this.handleError('removeTag', error, { entityId, tagId });
+      return false;
     }
   }
 }

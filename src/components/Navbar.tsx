@@ -55,7 +55,7 @@ const Navbar = () => {
             <DropdownMenuContent align="end">
               <div className="flex items-center justify-start p-2">
                 <div className="flex flex-col space-y-0.5">
-                  <p className="text-sm font-medium">{profile?.fullName || user.email}</p>
+                  <p className="text-sm font-medium">{profile?.full_name || user.email}</p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user.email}</p>
                 </div>
               </div>

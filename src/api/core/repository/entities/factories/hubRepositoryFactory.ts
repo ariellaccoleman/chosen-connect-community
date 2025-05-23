@@ -2,7 +2,7 @@
 import { EntityRepositoryFactory } from '../../../repository/enhancedRepositoryFactory';
 import { EntityType } from '@/types/entityTypes';
 import { Hub } from '@/types/hub';
-import { HubRepository } from '../HubRepository';
+import { EntityRepository } from '../../../repository/EntityRepository';
 import { createEnhancedRepository, EnhancedRepositoryType } from '../../../repository/enhancedRepositoryFactory';
 
 /**
@@ -29,8 +29,8 @@ export class HubRepositoryFactory extends EntityRepositoryFactory<Hub> {
   createRepository(
     type: EnhancedRepositoryType = 'supabase',
     initialData?: Hub[]
-  ): HubRepository {
-    const baseRepository = createEnhancedRepository<any>(
+  ): EntityRepository<Hub> {
+    const baseRepository = createEnhancedRepository<Hub>(
       this.getTableName(),
       type,
       initialData,
@@ -41,8 +41,8 @@ export class HubRepositoryFactory extends EntityRepositoryFactory<Hub> {
       }
     );
     
-    // Create and return hub repository with the entity-specific implementation
-    return new HubRepository(
+    // Create and return entity repository
+    return new EntityRepository<Hub>(
       this.getTableName(),
       this.getEntityType(),
       baseRepository

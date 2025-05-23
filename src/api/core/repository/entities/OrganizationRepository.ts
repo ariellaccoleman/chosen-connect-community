@@ -3,30 +3,18 @@ import { EntityRepository } from '../EntityRepository';
 import { Organization } from '@/types/organization';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
-import { BaseRepository } from '../BaseRepository';
 
 /**
  * Repository for managing Organization entities
  */
 export class OrganizationRepository extends EntityRepository<Organization> {
   /**
-   * Create a new OrganizationRepository
-   * 
-   * @param tableName The table name
-   * @param entityType The entity type
-   * @param baseRepository The base repository to delegate to
-   */
-  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<any>) {
-    super(tableName, entityType, baseRepository);
-  }
-
-  /**
    * Convert database record to Organization entity
    */
   convertToEntity(record: any): Organization {
     return {
       id: record.id,
-      entityType: EntityType.ORGANIZATION, 
+      entityType: EntityType.ORGANIZATION,
       name: record.name,
       description: record.description || '',
       websiteUrl: record.website_url || '',
@@ -34,29 +22,27 @@ export class OrganizationRepository extends EntityRepository<Organization> {
       logoApiUrl: record.logo_api_url || '',
       isVerified: record.is_verified || false,
       locationId: record.location_id,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at,
+      createdAt: new Date(record.created_at),
+      updatedAt: new Date(record.updated_at),
     };
   }
 
   /**
    * Convert Organization entity to database record
    */
-  convertFromEntity(entity: Partial<Organization>): Record<string, any> {
-    const record: Record<string, any> = {};
-    
-    if (entity.id !== undefined) record.id = entity.id;
-    if (entity.name !== undefined) record.name = entity.name;
-    if (entity.description !== undefined) record.description = entity.description;
-    if (entity.websiteUrl !== undefined) record.website_url = entity.websiteUrl;
-    if (entity.logoUrl !== undefined) record.logo_url = entity.logoUrl;
-    if (entity.logoApiUrl !== undefined) record.logo_api_url = entity.logoApiUrl;
-    if (entity.isVerified !== undefined) record.is_verified = entity.isVerified;
-    if (entity.locationId !== undefined) record.location_id = entity.locationId;
-    if (entity.createdAt !== undefined) record.created_at = entity.createdAt;
-    if (entity.updatedAt !== undefined) record.updated_at = entity.updatedAt;
-    
-    return record;
+  convertFromEntity(entity: Organization): Record<string, any> {
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      website_url: entity.websiteUrl,
+      logo_url: entity.logoUrl,
+      logo_api_url: entity.logoApiUrl,
+      is_verified: entity.isVerified,
+      location_id: entity.locationId,
+      created_at: entity.createdAt,
+      updated_at: entity.updatedAt,
+    };
   }
 
   /**
@@ -79,7 +65,7 @@ export class OrganizationRepository extends EntityRepository<Organization> {
         };
       }
       
-      return result as unknown as RepositoryResponse<Organization[]>;
+      return result as RepositoryResponse<Organization[]>;
     } catch (error) {
       this.handleError('findByName', error, { name });
       return {

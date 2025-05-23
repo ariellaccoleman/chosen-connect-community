@@ -1,288 +1,187 @@
-import { SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/integrations/supabase/types';
-import { createSuccessResponse, createErrorResponse, ApiResponse, ApiError } from '../errorHandler';
-import { logger } from '@/utils/logger';
 
 /**
  * Data Repository Interface
+ * Abstracts database operations to make testing easier and improve code organization
  */
-export interface DataRepository<T> {
-  from(table: string): RepositoryQuery<T>;
-  select(columns?: string): RepositoryQuery<T>;
-  insert(values: Partial<T> | Partial<T>[]): RepositoryQuery<T>;
-  update(values: Partial<T>): RepositoryQuery<T>;
+export interface DataRepository<T = any> {
+  /**
+   * Get table name this repository is working with
+   */
+  tableName: string;
+
+  /**
+   * Get a record by ID
+   * @param id ID of the record to retrieve
+   * @returns Promise with the record or null if not found
+   */
+  getById(id: string | number): Promise<T | null>;
+
+  /**
+   * Get all records
+   * @returns Promise with an array of records
+   */
+  getAll(): Promise<T[]>;
+
+  /**
+   * Select records from the database
+   * @param select Fields to select
+   * @returns Query builder that can be further chained
+   */
+  select(select?: string): RepositoryQuery<T>;
+
+  /**
+   * Insert data into the database
+   * @param data Data to insert
+   * @returns Query builder for insert operation
+   */
+  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T>;
+
+  /**
+   * Update data in the database
+   * @param data Data to update
+   * @returns Query builder for update operation
+   */
+  update(data: Record<string, any>): RepositoryQuery<T>;
+
+  /**
+   * Delete records from the database
+   * @returns Query builder for delete operation
+   */
   delete(): RepositoryQuery<T>;
+
+  /**
+   * Set repository options
+   * @param options Repository configuration options
+   */
+  setOptions?(options: Record<string, any>): void;
 }
 
 /**
- * Query interface for repository operations
+ * Repository Query Interface
+ * Represents a chainable query builder for repository operations
  */
-export interface RepositoryQuery<T> {
-  select(columns?: string): RepositoryQuery<T>;
-  from(table: string): RepositoryQuery<T>;
+export interface RepositoryQuery<T = any> {
+  /**
+   * Filter by equality condition
+   * @param column Column name
+   * @param value Value to match
+   * @returns The query builder for chaining
+   */
   eq(column: string, value: any): RepositoryQuery<T>;
+
+  /**
+   * Filter by inequality condition
+   * @param column Column name
+   * @param value Value to not match
+   * @returns The query builder for chaining
+   */
   neq(column: string, value: any): RepositoryQuery<T>;
-  gt(column: string, value: any): RepositoryQuery<T>;
-  gte(column: string, value: any): RepositoryQuery<T>; // Add the missing gte method
-  lt(column: string, value: any): RepositoryQuery<T>;
-  lte(column: string, value: any): RepositoryQuery<T>;
-  like(column: string, pattern: string): RepositoryQuery<T>;
-  ilike(column: string, pattern: string): RepositoryQuery<T>;
+  
+  /**
+   * Filter by values in an array
+   * @param column Column name
+   * @param values Array of values to match
+   * @returns The query builder for chaining
+   */
   in(column: string, values: any[]): RepositoryQuery<T>;
-  is(column: string, value: any): RepositoryQuery<T>;
-  or(filters: string, options?: Record<string, any>): RepositoryQuery<T>;
-  and(filters: string, options?: Record<string, any>): RepositoryQuery<T>;
+  
+  /**
+   * Filter using case-insensitive pattern matching
+   * @param column Column name
+   * @param pattern Pattern to match
+   * @returns The query builder for chaining
+   */
+  ilike(column: string, pattern: string): RepositoryQuery<T>;
+  
+  /**
+   * Filter for NULL values
+   * @param column Column name
+   * @param isNull Whether the value should be NULL (true) or NOT NULL (false)
+   * @returns The query builder for chaining
+   */
+  is(column: string, isNull: null | boolean): RepositoryQuery<T>;
+  
+  /**
+   * Order results by a column
+   * @param column Column to order by
+   * @param options Options for ordering
+   * @returns The query builder for chaining
+   */
   order(column: string, options?: { ascending?: boolean }): RepositoryQuery<T>;
+  
+  /**
+   * Limit the number of results
+   * @param count Maximum number of results
+   * @returns The query builder for chaining
+   */
   limit(count: number): RepositoryQuery<T>;
-  offset(count: number): RepositoryQuery<T>;
+  
+  /**
+   * Get a range of results
+   * @param from Starting index
+   * @param to Ending index
+   * @returns The query builder for chaining
+   */
   range(from: number, to: number): RepositoryQuery<T>;
+  
+  /**
+   * Select specific fields
+   * @param select Fields to select
+   * @param options Additional options like count
+   * @returns The query builder for chaining
+   */
+  select(select?: string, options?: { count?: boolean }): RepositoryQuery<T>;
+  
+  /**
+   * Get a single result
+   * @returns Promise with the repository response
+   */
   single(): Promise<RepositoryResponse<T>>;
+  
+  /**
+   * Get a single result or null if not found
+   * @returns Promise with the repository response
+   */
   maybeSingle(): Promise<RepositoryResponse<T | null>>;
+  
+  /**
+   * Execute the query and get results
+   * @returns Promise with the repository response
+   */
   execute(): Promise<RepositoryResponse<T[]>>;
 }
 
 /**
- * Response format for repository operations
+ * Repository Response Interface
+ * Standardized response format for repository operations
  */
 export interface RepositoryResponse<T> {
   data: T | null;
-  error: any | null;
+  error: RepositoryError | null;
+  
+  /**
+   * Helper method to check if the response was successful
+   */
   isSuccess(): boolean;
+  
+  /**
+   * Helper method to check if the response had an error
+   */
   isError(): boolean;
-  getErrorMessage(): string | undefined;
+  
+  /**
+   * Get a formatted error message if there was an error
+   */
+  getErrorMessage(): string;
 }
 
 /**
- * Supabase Data Repository Implementation
+ * Repository Error Interface
+ * Aligned with ApiError for consistency
  */
-export class SupabaseRepository<T> implements DataRepository<T> {
-  private client: SupabaseClient<Database>;
-  private tableName: string;
-
-  constructor(client: SupabaseClient<Database>, tableName: string) {
-    this.client = client;
-    this.tableName = tableName;
-  }
-
-  from(tableName: string): SupabaseQuery<T> {
-    return new SupabaseQuery<T>(this.client, tableName);
-  }
-
-  select(columns?: string): SupabaseQuery<T> {
-    return new SupabaseQuery<T>(this.client, this.tableName).select(columns);
-  }
-
-  insert(values: Partial<T> | Partial<T>[]): SupabaseQuery<T> {
-    return new SupabaseQuery<T>(this.client, this.tableName).insert(values);
-  }
-
-  update(values: Partial<T>): SupabaseQuery<T> {
-    return new SupabaseQuery<T>(this.client, this.tableName).update(values);
-  }
-
-  delete(): SupabaseQuery<T> {
-    return new SupabaseQuery<T>(this.client, this.tableName).delete();
-  }
-}
-
-/**
- * Supabase Query Implementation
- */
-class SupabaseQuery<T> implements RepositoryQuery<T> {
-  private client: SupabaseClient<Database>;
-  private queryBuilder: any; // Use 'any' to avoid complex type definitions
-
-  constructor(client: SupabaseClient<Database>, tableName: string) {
-    this.client = client;
-    this.queryBuilder = client.from(tableName);
-  }
-
-  select(columns: string = '*'): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.select(columns);
-    return this;
-  }
-
-  from(table: string): SupabaseQuery<T> {
-    this.queryBuilder = this.client.from(table);
-    return this;
-  }
-
-  eq(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.eq(column, value);
-    return this;
-  }
-
-  neq(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.neq(column, value);
-    return this;
-  }
-
-  gt(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.gt(column, value);
-    return this;
-  }
-
-  gte(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.gte(column, value);
-    return this;
-  }
-
-  lt(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.lt(column, value);
-    return this;
-  }
-
-  lte(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.lte(column, value);
-    return this;
-  }
-
-  like(column: string, pattern: string): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.like(column, pattern);
-    return this;
-  }
-
-  ilike(column: string, pattern: string): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.ilike(column, pattern);
-    return this;
-  }
-
-  in(column: string, values: any[]): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.in(column, values);
-    return this;
-  }
-
-  is(column: string, value: any): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.is(column, value);
-    return this;
-  }
-
-  or(filters: string, options?: Record<string, any>): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.or(filters, options);
-    return this;
-  }
-
-  and(filters: string, options?: Record<string, any>): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.and(filters, options);
-    return this;
-  }
-
-  order(column: string, options?: { ascending?: boolean }): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.order(column, options);
-    return this;
-  }
-
-  limit(count: number): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.limit(count);
-    return this;
-  }
-
-  offset(count: number): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.offset(count);
-    return this;
-  }
-
-  range(from: number, to: number): SupabaseQuery<T> {
-    this.queryBuilder = this.queryBuilder.range(from, to);
-    return this;
-  }
-
-  async single(): Promise<RepositoryResponse<T>> {
-    try {
-      const { data, error } = await this.queryBuilder.single();
-
-      if (error) {
-        logger.error('SupabaseQuery: single() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      return createSuccessResponse(data);
-    } catch (error) {
-      logger.error('SupabaseQuery: single() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute single query' } as ApiError);
-    }
-  }
-
-  async maybeSingle(): Promise<RepositoryResponse<T | null>> {
-    try {
-      const { data, error } = await this.queryBuilder.maybeSingle();
-
-      if (error) {
-        logger.error('SupabaseQuery: maybeSingle() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      return createSuccessResponse(data);
-    } catch (error) {
-      logger.error('SupabaseQuery: maybeSingle() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute maybeSingle query' } as ApiError);
-    }
-  }
-
-  async execute(): Promise<RepositoryResponse<T[]>> {
-    try {
-      const { data, error, count } = await this.queryBuilder;
-
-      if (error) {
-        logger.error('SupabaseQuery: execute() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      // If count is available, add it to the data object
-      const responseData = count !== null ? { data, count } : data;
-
-      return createSuccessResponse(responseData);
-    } catch (error) {
-      logger.error('SupabaseQuery: execute() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute query' } as ApiError);
-    }
-  }
-
-  async insert(values: Partial<T> | Partial<T>[]): Promise<RepositoryResponse<T[]>> {
-    try {
-      const { data, error } = await this.queryBuilder.insert(values).select();
-
-      if (error) {
-        logger.error('SupabaseQuery: insert() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      return createSuccessResponse(data);
-    } catch (error) {
-      logger.error('SupabaseQuery: insert() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute insert query' } as ApiError);
-    }
-  }
-
-  async update(values: Partial<T>): Promise<RepositoryResponse<T[]>> {
-    try {
-      const { data, error } = await this.queryBuilder.update(values).select();
-
-      if (error) {
-        logger.error('SupabaseQuery: update() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      return createSuccessResponse(data);
-    } catch (error) {
-      logger.error('SupabaseQuery: update() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute update query' } as ApiError);
-    }
-  }
-
-  async delete(): Promise<RepositoryResponse<T[]>> {
-    try {
-      const { data, error } = await this.queryBuilder.delete().select();
-
-      if (error) {
-        logger.error('SupabaseQuery: delete() failed', { error });
-        return createErrorResponse(error);
-      }
-
-      return createSuccessResponse(data);
-    } catch (error) {
-      logger.error('SupabaseQuery: delete() exception', { error });
-      return createErrorResponse({ message: 'Failed to execute delete query' } as ApiError);
-    }
-  }
+export interface RepositoryError {
+  code: string;
+  message: string;
+  details?: any;
+  original?: any;
 }

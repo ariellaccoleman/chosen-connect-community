@@ -5,6 +5,7 @@ import AdminListItem from "./AdminListItem";
 import { usePendingOrganizationAdmins, useUpdateAdminRequest, useDeleteAdminRequest } from "@/hooks/organizations";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Check, X, Eye } from "lucide-react";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -71,19 +72,19 @@ const AdminsCardContent = ({ admins, organizationId, isOrgOwner }: AdminsCardCon
                   <TableRow key={request.id}>
                     <TableCell className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={request.profile?.avatarUrl || ""} alt={request.profile?.fullName || ""} />
+                        <AvatarImage src={request.profile?.avatar_url || ""} alt={request.profile?.full_name || ""} />
                         <AvatarFallback>
-                          {request.profile?.firstName?.[0] || ""}
-                          {request.profile?.lastName?.[0] || ""}
+                          {request.profile?.first_name?.[0] || ""}
+                          {request.profile?.last_name?.[0] || ""}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{request.profile?.fullName}</p>
+                        <p className="font-medium">{request.profile?.full_name}</p>
                         <p className="text-xs text-muted-foreground">{request.profile?.email}</p>
                       </div>
                     </TableCell>
                     <TableCell>
-                      {request.createdAt ? format(new Date(request.createdAt), "PPP") : "-"}
+                      {request.created_at ? format(new Date(request.created_at), "PPP") : "-"}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
