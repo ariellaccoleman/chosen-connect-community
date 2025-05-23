@@ -146,6 +146,19 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     }
   }
 
+  /**
+   * Filter by greater than or equal to
+   */
+  gte(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.gte(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in gte operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.gte(${column})`);
+    }
+  }
+
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
     try {
       this.query = this.query.order(column, options);
@@ -266,6 +279,7 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   in(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
   ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
   is(_column: string, _isNull: null | boolean): RepositoryQuery<T> { return this; }
+  gte(_column: string, _value: any): RepositoryQuery<T> { return this; }
   order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
   limit(_count: number): RepositoryQuery<T> { return this; }
   range(_from: number, _to: number): RepositoryQuery<T> { return this; }
