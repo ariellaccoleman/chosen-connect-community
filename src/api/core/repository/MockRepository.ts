@@ -2,7 +2,7 @@ import { DataRepository, RepositoryResponse, RepositoryQuery } from './DataRepos
 import { BaseRepository } from './BaseRepository';
 import { logger } from '@/utils/logger';
 
-// Define the QueryFilter interface that was missing
+// Define the QueryFilter interface
 interface QueryFilter {
   field: string;
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'in';
@@ -12,7 +12,7 @@ interface QueryFilter {
 /**
  * Repository implementation that uses in-memory data for testing
  */
-export class MockRepository<T = any> implements BaseRepository<T> {
+export class MockRepository<T = any> extends BaseRepository<T> {
   /**
    * In-memory data store mapped by table name
    */
@@ -57,22 +57,13 @@ export class MockRepository<T = any> implements BaseRepository<T> {
   private maybeSingleResult: boolean = false;
   
   /**
-   * Table name for this repository
-   */
-  tableName: string;
-  
-  /**
    * Creates a new mock repository with initial data
    */
   constructor(
     tableName: string,
     initialData: any[] = []
   ) {
-    if (!tableName) {
-      throw new Error('A table name must be provided to create a mock repository');
-    }
-    
-    this.tableName = tableName;
+    super(tableName);
     
     // Initialize data for the specified table
     this.mockDataStore[tableName] = [...initialData];
@@ -422,7 +413,7 @@ export class MockRepository<T = any> implements BaseRepository<T> {
    * Filter for NULL values
    */
   is(column: string, isNull: null | boolean): RepositoryQuery<T> {
-    // Implement is filter (not used in current tests but needed for interface compliance)
+    // Implement is filter
     if (isNull === null || isNull === true) {
       this.filters.push({
         field: column,
@@ -443,8 +434,7 @@ export class MockRepository<T = any> implements BaseRepository<T> {
    * Filter with OR conditions
    */
   or(filter: string): RepositoryQuery<T> {
-    // Implement or filter (not used in current tests but needed for interface compliance)
-    // This is a simplified implementation that doesn't actually perform OR filtering
+    // Simplified implementation
     logger.warn('MockRepository.or() is not fully implemented and will not affect query results');
     return this as unknown as RepositoryQuery<T>;
   }
@@ -529,7 +519,7 @@ export class MockRepository<T = any> implements BaseRepository<T> {
     this.mockDataStore[this.tableName].push(...processedData);
     
     // Set mock response for execute
-    this.mockResponses['insert'] = this.createResponse(
+    this.mockResponses['execute'] = this.createResponse(
       processedData.length === 1 ? processedData[0] : processedData
     );
     
@@ -551,7 +541,7 @@ export class MockRepository<T = any> implements BaseRepository<T> {
     const currentFilters = [...this.filters];
     
     // Set mock response for execute to handle update logic
-    this.mockResponses['update'] = (() => {
+    this.mockResponses['execute'] = (() => {
       // Apply filters to find items to update
       const tableData = this.mockDataStore[this.tableName] || [];
       
@@ -643,11 +633,11 @@ export class MockRepository<T = any> implements BaseRepository<T> {
     
     return this as unknown as RepositoryQuery<T>;
   }
-  
+
   /**
-   * Retrieve entity by ID
+   * Override BaseRepository.getById to use our implementation
    */
-  async getById(id: string | number): Promise<T | null> {
+  override async getById(id: string | number): Promise<T | null> {
     // Check for mock response
     if (this.mockResponses['getById']) {
       return this.mockResponses['getById'];
@@ -655,38 +645,31 @@ export class MockRepository<T = any> implements BaseRepository<T> {
     
     const result = await this.select()
       .eq('id', id)
-      .maybeSingle<T>();
+      .maybeSingle();
       
     return result.data;
   }
   
   /**
-   * Retrieve all entities
+   * Override BaseRepository.getAll to use our implementation
    */
-  async getAll(): Promise<T[]> {
+  override async getAll(): Promise<T[]> {
     // Check for mock response
     if (this.mockResponses['getAll']) {
       return this.mockResponses['getAll'];
     }
     
-    const result = await this.select().execute<T[]>();
+    const result = await this.select().execute();
     return result.data || [];
-  }
-  
-  /**
-   * Set repository options
-   */
-  setOptions(options: Record<string, any>): void {
-    // Implement for BaseRepository compatibility
   }
 }
 
 /**
  * Creates a mock repository for the given table name with optional initial data
  */
-export function createMockRepository<T = any>(
+export function createMockRepository<T>(
   tableName: string, 
   initialData: T[] = []
-): DataRepository<T> & BaseRepository<T> {
-  return new MockRepository<T>(tableName, initialData) as unknown as DataRepository<T> & BaseRepository<T>;
+): BaseRepository<T> {
+  return new MockRepository(tableName, initialData);
 }
