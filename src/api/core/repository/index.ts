@@ -16,11 +16,15 @@ export * from './MockRepository';
 // Export entity-specific repositories
 export * from './entities';
 
-// Export the repository factories
-export * from './repositoryFactory';
+// Export the repository factories without duplicate exports
+// We need to avoid re-exporting the EntityRepositoryFactory and createEntityRepository 
+// that are already exported from './entities'
+export {
+  createRepository,
+  RepositoryType
+} from './repositoryFactory';
+
 export * from './enhancedRepositoryFactory';
-// Don't re-export these to avoid duplicate export errors
-// export * from './entities/factories/entityRepositoryFactory';
 
 // Export utility functions
 export * from './repositoryUtils';
