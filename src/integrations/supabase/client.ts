@@ -6,19 +6,36 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 
+// Detect if we're in a Node.js environment (including tests)
+const isNodeEnvironment = typeof window === "undefined";
+
+// Create appropriate storage for the environment
+const createStorage = () => {
+  if (isNodeEnvironment) {
+    // For Node.js/test environment, use a simple in-memory storage
+    const memoryStorage = new Map<string, string>();
+    return {
+      getItem: (key: string) => memoryStorage.get(key) || null,
+      setItem: (key: string, value: string) => memoryStorage.set(key, value),
+      removeItem: (key: string) => memoryStorage.delete(key),
+    };
+  }
+  return localStorage;
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+    storage: createStorage(),
+    persistSession: !isNodeEnvironment, // Don't persist sessions in test environment
+    autoRefreshToken: !isNodeEnvironment, // Don't auto-refresh in test environment
   }
 });
 
-// Add diagnostic logging for session state
-if (typeof window !== "undefined") {
+// Add diagnostic logging for session state (only in browser)
+if (!isNodeEnvironment) {
   // Log session info on load
   supabase.auth.getSession().then(({ data }) => {
     console.log("📊 Initial Supabase session check:", {
@@ -36,4 +53,6 @@ if (typeof window !== "undefined") {
       email: session?.user?.email || "none"
     });
   });
+} else {
+  console.log("🔧 Supabase client initialized for Node.js environment");
 }

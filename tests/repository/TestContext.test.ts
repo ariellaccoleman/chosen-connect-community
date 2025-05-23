@@ -33,10 +33,13 @@ describe('Test Context Helper', () => {
   // Set up and clean up for each test
   beforeEach(async () => {
     console.log('Setting up test context with profiles:', mockProfiles.length);
+    console.log('First profile:', JSON.stringify(mockProfiles[0], null, 2));
+    
     await profileContext.setup({ 
       initialData: mockProfiles,
       validateSchema: true
     });
+    
     console.log('Test context setup complete. Current schema:', profileContext.getCurrentSchema());
   });
   
@@ -51,9 +54,20 @@ describe('Test Context Helper', () => {
     // Use the repository from the test context
     const repository = profileContext.getRepository();
     console.log('Got repository, executing select query');
+    console.log('Repository type:', typeof repository);
+    console.log('Repository methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(repository)));
     
     const result = await repository.select().execute();
-    console.log('Query result:', { error: result.error, dataLength: result.data?.length });
+    console.log('Query result:', { 
+      error: result.error, 
+      dataLength: result.data?.length,
+      hasData: !!result.data,
+      isError: result.isError?.()
+    });
+    
+    if (result.error) {
+      console.error('Query error details:', result.error);
+    }
     
     // Verify profiles were retrieved
     expect(result.error).toBeNull();
@@ -79,15 +93,33 @@ describe('Test Context Helper', () => {
     const repository = profileContext.getRepository();
     
     console.log('Inserting new profile:', newProfile.id);
+    console.log('Profile data:', JSON.stringify(newProfile, null, 2));
     
     // Insert the profile
     const insertResult = await repository.insert(newProfile).execute();
-    console.log('Insert result:', { error: insertResult.error, data: !!insertResult.data });
+    console.log('Insert result:', { 
+      error: insertResult.error, 
+      hasData: !!insertResult.data,
+      isError: insertResult.isError?.()
+    });
+    
+    if (insertResult.error) {
+      console.error('Insert error details:', insertResult.error);
+    }
+    
     expect(insertResult.error).toBeNull();
     
     // Retrieve all profiles
     const result = await repository.select().execute();
-    console.log('Select all result:', { error: result.error, dataLength: result.data?.length });
+    console.log('Select all result:', { 
+      error: result.error, 
+      dataLength: result.data?.length,
+      hasData: !!result.data
+    });
+    
+    if (result.error) {
+      console.error('Select error details:', result.error);
+    }
     
     // Verify the new profile was added
     expect(result.error).toBeNull();

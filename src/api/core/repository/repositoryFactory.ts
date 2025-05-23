@@ -2,6 +2,7 @@
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
 import { createMockRepository } from './MockRepository';
+import { supabase } from '@/integrations/supabase/client';
 
 /**
  * Repository options interface
@@ -21,7 +22,19 @@ export function createRepository<T>(
 ): BaseRepository<T> {
   const schema = options.schema || 'public';
   console.log(`Creating repository for table: ${tableName}, schema: ${schema}`);
-  return createSupabaseRepository<T>(tableName, undefined, schema);
+  
+  // Verify Supabase client is available
+  if (!supabase) {
+    throw new Error(`Supabase client is not available for table ${tableName}`);
+  }
+  
+  console.log('Supabase client verification:', {
+    hasClient: !!supabase,
+    hasFrom: !!(supabase && supabase.from),
+    clientType: typeof supabase
+  });
+  
+  return createSupabaseRepository<T>(tableName, supabase, schema);
 }
 
 /**
@@ -37,6 +50,18 @@ export function createTestingRepository<T>(
 ): BaseRepository<T> {
   const schema = options.schema || 'testing';
   console.log(`Creating testing repository for table: ${tableName}, schema: ${schema}`);
+  
+  // Verify Supabase client is available
+  if (!supabase) {
+    throw new Error(`Supabase client is not available for testing table ${tableName}`);
+  }
+  
+  console.log('Testing repository Supabase client verification:', {
+    hasClient: !!supabase,
+    hasFrom: !!(supabase && supabase.from),
+    clientType: typeof supabase,
+    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
+  });
   
   // Always use a real Supabase repository with the specified schema
   // Never use mock repositories, even in test environments

@@ -17,10 +17,20 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
     this.schema = schema;
     
     console.log(`SupabaseRepository created for table: ${tableName}, schema: ${schema}`);
+    console.log('Client verification:', {
+      hasClient: !!this.supabaseClient,
+      hasFrom: !!(this.supabaseClient && this.supabaseClient.from),
+      clientType: typeof this.supabaseClient,
+      environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
+    });
     
     // Verify the client is properly initialized
     if (!this.supabaseClient) {
       throw new Error(`Supabase client is not initialized for table ${tableName}`);
+    }
+    
+    if (!this.supabaseClient.from) {
+      throw new Error(`Supabase client is missing 'from' method for table ${tableName}`);
     }
   }
 
@@ -59,6 +69,7 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
         .from(this.tableName as any)
         .select(selectQuery, { schema: this.schema });
       
+      console.log(`Successfully created select query for ${this.tableName}`);
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating select query for ${this.tableName}:`, error);
