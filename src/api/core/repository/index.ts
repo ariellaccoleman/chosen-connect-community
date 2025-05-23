@@ -21,7 +21,8 @@ export * from './entities';
 // that are already exported from './entities'
 export {
   createRepository,
-  RepositoryType
+  // Use 'export type' for type re-exports when using isolatedModules
+  type RepositoryType
 } from './repositoryFactory';
 
 export * from './enhancedRepositoryFactory';
