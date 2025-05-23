@@ -5,20 +5,32 @@ import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from './DataRepository';
 import { logger } from '@/utils/logger';
 import { createSuccessResponse } from './repositoryUtils';
+import { TagAssignment } from '@/utils/tags/types';
 
 /**
  * Abstract Entity Repository Class
  * Extends BaseRepository with entity-specific functionality
  */
-export abstract class EntityRepository<T extends Entity> extends BaseRepository<T> {
+export class EntityRepository<T extends Entity> {
   /**
    * Type of entity this repository handles
    */
   readonly entityType: EntityType;
+  
+  /**
+   * Base repository for database operations
+   */
+  protected baseRepository: BaseRepository<T>;
+  
+  /**
+   * Table name in the database
+   */
+  readonly tableName: string;
 
-  constructor(tableName: string, entityType: EntityType) {
-    super(tableName);
+  constructor(tableName: string, entityType: EntityType, baseRepository: BaseRepository<T>) {
+    this.tableName = tableName;
     this.entityType = entityType;
+    this.baseRepository = baseRepository;
   }
 
   /**
@@ -26,14 +38,35 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
    * @param record Database record
    * @returns Entity object
    */
-  abstract convertToEntity(record: any): T;
+  convertToEntity(record: any): T {
+    // Basic implementation - should be overridden in entity-specific repositories
+    return {
+      id: record.id,
+      entityType: this.entityType,
+      name: record.name || '',
+      description: record.description || '',
+      imageUrl: record.image_url || record.avatar_url || '',
+      created_at: record.created_at,
+      updated_at: record.updated_at,
+    } as T;
+  }
 
   /**
    * Convert an entity to a database record
    * @param entity Entity object
    * @returns Database record
    */
-  abstract convertFromEntity(entity: T): Record<string, any>;
+  convertFromEntity(entity: T): Record<string, any> {
+    // Basic implementation - should be overridden in entity-specific repositories
+    return {
+      id: entity.id,
+      name: entity.name,
+      description: entity.description,
+      image_url: entity.imageUrl,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at,
+    };
+  }
 
   /**
    * Validate an entity
@@ -98,7 +131,7 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
       const record = this.convertFromEntity(entityWithType as T);
       
       // Insert into database
-      const result = await this.insert(record).single();
+      const result = await this.baseRepository.insert(record).single();
       
       // If successful, convert back to entity
       if (result.isSuccess() && result.data) {
@@ -131,8 +164,9 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
   async updateEntity(id: string, updates: Partial<T>): Promise<RepositoryResponse<T>> {
     try {
       // Get current entity
-      const currentEntity = await this.getById(id);
-      if (!currentEntity) {
+      const currentEntityResult = await this.baseRepository.select().eq('id', id).single();
+      
+      if (currentEntityResult.isError() || !currentEntityResult.data) {
         return {
           data: null,
           error: {
@@ -144,6 +178,8 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
           getErrorMessage: () => `Entity with ID ${id} not found`
         };
       }
+      
+      const currentEntity = this.convertToEntity(currentEntityResult.data);
       
       // Merge updates with current entity
       const updatedEntity = {
@@ -178,7 +214,7 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
       const record = this.convertFromEntity(updatedEntity);
       
       // Update in database
-      const result = await this.update(record).eq('id', id).single();
+      const result = await this.baseRepository.update(record).eq('id', id).single();
       
       // If successful, convert back to entity
       if (result.isSuccess() && result.data) {
@@ -203,22 +239,87 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
   }
 
   /**
-   * Get entities by their type
-   * @returns List of entities
+   * Get an entity by ID
+   * @param id ID of the entity
+   * @returns Entity or null if not found
    */
-  async getByEntityType(): Promise<T[]> {
+  async getById(id: string): Promise<RepositoryResponse<T>> {
     try {
-      const result = await this.select().execute();
+      const result = await this.baseRepository.select().eq('id', id).maybeSingle();
       
       if (result.isSuccess() && result.data) {
-        // Convert all records to entities
-        return result.data.map(record => this.convertToEntity(record));
+        return createSuccessResponse<T>(this.convertToEntity(result.data));
       }
       
-      return [];
+      return result as RepositoryResponse<T>;
     } catch (error) {
-      this.handleError('getByEntityType', error);
-      return [];
+      this.handleError('getById', error, { id });
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: `Failed to get entity with ID ${id}`,
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => `Failed to get entity with ID ${id}`
+      };
+    }
+  }
+
+  /**
+   * Get all entities of this type
+   * @returns List of entities
+   */
+  async getAll(): Promise<RepositoryResponse<T[]>> {
+    try {
+      const result = await this.baseRepository.select().execute();
+      
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse<T[]>(result.data.map(record => this.convertToEntity(record)));
+      }
+      
+      return result as RepositoryResponse<T[]>;
+    } catch (error) {
+      this.handleError('getAll', error);
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: 'Failed to get all entities',
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => 'Failed to get all entities'
+      };
+    }
+  }
+
+  /**
+   * Delete an entity
+   * @param id ID of the entity to delete
+   * @returns Success flag
+   */
+  async deleteEntity(id: string): Promise<RepositoryResponse<boolean>> {
+    try {
+      const result = await this.baseRepository.delete().eq('id', id).execute();
+      
+      return createSuccessResponse<boolean>(true);
+    } catch (error) {
+      this.handleError('deleteEntity', error, { id });
+      return {
+        data: null,
+        error: {
+          code: 'delete_error',
+          message: `Failed to delete entity with ID ${id}`,
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => `Failed to delete entity with ID ${id}`
+      };
     }
   }
 
@@ -227,74 +328,66 @@ export abstract class EntityRepository<T extends Entity> extends BaseRepository<
    * @param id ID of the entity to retrieve
    * @returns Entity with tags
    */
-  async getWithTags(id: string): Promise<T | null> {
+  async getWithTags(id: string): Promise<RepositoryResponse<T>> {
     try {
       // Get the entity
-      const entity = await this.getById(id);
-      if (!entity) {
-        return null;
+      const entityResult = await this.getById(id);
+      
+      if (entityResult.isError() || !entityResult.data) {
+        return entityResult;
       }
       
-      // Get entity tags (implementation depends on how tags are stored)
-      // This is a placeholder - actual implementation will vary based on your data model
+      // Get entity tags
       const tags = await this.getEntityTags(id);
       
       // Return entity with tags
-      return {
-        ...entity,
-        tags: tags
-      };
+      const entityWithTags = {
+        ...entityResult.data,
+        tags
+      } as T;
+      
+      return createSuccessResponse<T>(entityWithTags);
     } catch (error) {
       this.handleError('getWithTags', error, { id });
-      return null;
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: `Failed to get entity with tags for ID ${id}`,
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => `Failed to get entity with tags for ID ${id}`
+      };
     }
   }
 
   /**
    * Get tags for an entity
-   * This is a placeholder method - the actual implementation will depend on your tagging system
    * @param entityId ID of the entity
    * @returns Array of tags
    */
-  protected async getEntityTags(entityId: string): Promise<any[]> {
-    // Placeholder implementation - to be overridden in concrete classes
-    // This would typically query a tag-entity relationship table
-    return [];
-  }
-
-  /**
-   * Assign a tag to an entity
-   * @param entityId ID of the entity
-   * @param tagId ID of the tag
-   * @returns Success flag
-   */
-  async assignTag(entityId: string, tagId: string): Promise<boolean> {
+  protected async getEntityTags(entityId: string): Promise<TagAssignment[]> {
     try {
-      // Placeholder implementation - to be overridden in concrete classes
-      // This would typically insert into a tag-entity relationship table
-      logger.info(`Assigning tag ${tagId} to entity ${entityId}`);
-      return true;
+      // This is a placeholder implementation
+      // It would typically use the TagAssignmentRepository to fetch tags
+      return [];
     } catch (error) {
-      this.handleError('assignTag', error, { entityId, tagId });
-      return false;
+      this.handleError('getEntityTags', error, { entityId });
+      return [];
     }
   }
 
   /**
-   * Remove a tag from an entity
-   * @param entityId ID of the entity
-   * @param tagId ID of the tag
-   * @returns Success flag
+   * Standard error handling for repository operations
    */
-  async removeTag(entityId: string, tagId: string): Promise<boolean> {
-    try {
-      // Placeholder implementation - to be overridden in concrete classes
-      // This would typically delete from a tag-entity relationship table
-      logger.info(`Removing tag ${tagId} from entity ${entityId}`);
-      return true;
-    } catch (error) {
-      this.handleError('removeTag', error, { entityId, tagId });
-      return false;
-    }
+  protected handleError(operation: string, error: any, context: Record<string, any> = {}): void {
+    logger.error(`${this.constructor.name}.${operation} error on table ${this.tableName}`, {
+      error: error?.message || error,
+      context,
+      tableName: this.tableName,
+      entityType: this.entityType
+    });
   }
 }

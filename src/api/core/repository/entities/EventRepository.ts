@@ -1,62 +1,76 @@
 
 import { EntityRepository } from '../EntityRepository';
-import { Event } from '@/types/event';
+import { Event, EventWithDetails } from '@/types/event';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
+import { BaseRepository } from '../BaseRepository';
+import { createSuccessResponse } from '../repositoryUtils';
+import { logger } from '@/utils/logger';
 
 /**
  * Repository for managing Event entities
  */
-export class EventRepository extends EntityRepository<Event> {
+export class EventRepository extends EntityRepository<EventWithDetails> {
+  /**
+   * Creates a new EventRepository
+   * @param baseRepository The base repository to use for database operations
+   */
+  constructor(baseRepository: BaseRepository<EventWithDetails>) {
+    super('events', EntityType.EVENT, baseRepository);
+  }
+
   /**
    * Convert database record to Event entity
    */
-  convertToEntity(record: any): Event {
+  convertToEntity(record: any): EventWithDetails {
+    // Convert timestamps to standard format
+    const createdAt = record.created_at ? new Date(record.created_at).toISOString() : undefined;
+    const updatedAt = record.updated_at ? new Date(record.updated_at).toISOString() : undefined;
+    const startTime = record.start_time ? new Date(record.start_time).toISOString() : undefined;
+    const endTime = record.end_time ? new Date(record.end_time).toISOString() : undefined;
+
     return {
       id: record.id,
-      entityType: EntityType.EVENT,
-      name: record.title,
-      title: record.title,
+      title: record.title || '',
       description: record.description || '',
-      startTime: new Date(record.start_time),
-      endTime: new Date(record.end_time),
-      timezone: record.timezone || 'UTC',
-      locationId: record.location_id,
-      address: record.address || '',
-      isOnline: record.is_online || false,
-      meetingLink: record.meeting_link || '',
-      creatorId: record.creator_id,
-      isPaid: record.is_paid || false,
-      price: record.price || 0,
-      currency: record.currency || 'USD',
-      capacity: record.capacity,
-      createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at),
+      start_time: startTime,
+      end_time: endTime,
+      is_virtual: record.is_virtual || false,
+      location_id: record.location_id,
+      is_paid: record.is_paid || false,
+      price: record.price || null,
+      host_id: record.host_id,
+      created_at: createdAt,
+      updated_at: updatedAt,
+      
+      // Include location if available
+      location: record.location,
+      
+      // Include host if available
+      host: record.host,
+      
+      // Include tags if available
+      tags: record.tags || [],
     };
   }
 
   /**
    * Convert Event entity to database record
    */
-  convertFromEntity(entity: Event): Record<string, any> {
+  convertFromEntity(entity: EventWithDetails): Record<string, any> {
     return {
       id: entity.id,
       title: entity.title,
       description: entity.description,
-      start_time: entity.startTime,
-      end_time: entity.endTime,
-      timezone: entity.timezone,
-      location_id: entity.locationId,
-      address: entity.address,
-      is_online: entity.isOnline,
-      meeting_link: entity.meetingLink,
-      creator_id: entity.creatorId,
-      is_paid: entity.isPaid,
+      start_time: entity.start_time,
+      end_time: entity.end_time,
+      is_virtual: entity.is_virtual,
+      location_id: entity.location_id,
+      is_paid: entity.is_paid,
       price: entity.price,
-      currency: entity.currency,
-      capacity: entity.capacity,
-      created_at: entity.createdAt,
-      updated_at: entity.updatedAt,
+      host_id: entity.host_id,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at,
     };
   }
 
@@ -64,23 +78,19 @@ export class EventRepository extends EntityRepository<Event> {
    * Get events by creator
    * @param creatorId Creator ID to filter by
    */
-  async getByCreator(creatorId: string): Promise<RepositoryResponse<Event[]>> {
+  async getByCreator(creatorId: string): Promise<RepositoryResponse<EventWithDetails[]>> {
     try {
       const result = await this.baseRepository.select()
-        .eq('creator_id', creatorId)
+        .eq('host_id', creatorId)
         .execute();
       
       if (result.isSuccess() && result.data) {
-        return {
-          data: result.data.map(record => this.convertToEntity(record)),
-          error: null,
-          isSuccess: () => true,
-          isError: () => false,
-          getErrorMessage: () => null
-        };
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
       }
       
-      return result as RepositoryResponse<Event[]>;
+      return result as RepositoryResponse<EventWithDetails[]>;
     } catch (error) {
       this.handleError('getByCreator', error, { creatorId });
       return {
@@ -100,7 +110,7 @@ export class EventRepository extends EntityRepository<Event> {
   /**
    * Get upcoming events
    */
-  async getUpcoming(): Promise<RepositoryResponse<Event[]>> {
+  async getUpcoming(): Promise<RepositoryResponse<EventWithDetails[]>> {
     try {
       const now = new Date();
       const result = await this.baseRepository.select()
@@ -109,16 +119,12 @@ export class EventRepository extends EntityRepository<Event> {
         .execute();
       
       if (result.isSuccess() && result.data) {
-        return {
-          data: result.data.map(record => this.convertToEntity(record)),
-          error: null,
-          isSuccess: () => true,
-          isError: () => false,
-          getErrorMessage: () => null
-        };
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
       }
       
-      return result as RepositoryResponse<Event[]>;
+      return result as RepositoryResponse<EventWithDetails[]>;
     } catch (error) {
       this.handleError('getUpcoming', error);
       return {
@@ -133,5 +139,55 @@ export class EventRepository extends EntityRepository<Event> {
         getErrorMessage: () => 'Failed to get upcoming events'
       };
     }
+  }
+
+  /**
+   * Get past events
+   */
+  async getPastEvents(): Promise<RepositoryResponse<EventWithDetails[]>> {
+    try {
+      const now = new Date();
+      const result = await this.baseRepository.select()
+        .lt('end_time', now.toISOString())
+        .order('start_time', { ascending: false })
+        .execute();
+      
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
+      }
+      
+      return result as RepositoryResponse<EventWithDetails[]>;
+    } catch (error) {
+      this.handleError('getPastEvents', error);
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: 'Failed to get past events',
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => 'Failed to get past events'
+      };
+    }
+  }
+}
+
+/**
+ * Create an event repository instance
+ * @param baseRepository Base repository to use for database operations
+ * @returns Event repository instance
+ */
+export function createEventRepository(
+  baseRepository: BaseRepository<EventWithDetails>
+): EventRepository {
+  try {
+    return new EventRepository(baseRepository);
+  } catch (error) {
+    logger.error('Failed to create event repository', error);
+    throw error;
   }
 }

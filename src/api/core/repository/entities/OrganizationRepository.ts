@@ -3,27 +3,48 @@ import { EntityRepository } from '../EntityRepository';
 import { Organization } from '@/types/organization';
 import { EntityType } from '@/types/entityTypes';
 import { RepositoryResponse } from '../DataRepository';
+import { BaseRepository } from '../BaseRepository';
+import { createSuccessResponse } from '../repositoryUtils';
+import { logger } from '@/utils/logger';
 
 /**
  * Repository for managing Organization entities
  */
 export class OrganizationRepository extends EntityRepository<Organization> {
   /**
+   * Creates a new OrganizationRepository
+   * @param baseRepository The base repository to use for database operations
+   */
+  constructor(baseRepository: BaseRepository<Organization>) {
+    super('organizations', EntityType.ORGANIZATION, baseRepository);
+  }
+
+  /**
    * Convert database record to Organization entity
    */
   convertToEntity(record: any): Organization {
+    // Convert timestamps to standard format
+    const createdAt = record.created_at ? new Date(record.created_at).toISOString() : undefined;
+    const updatedAt = record.updated_at ? new Date(record.updated_at).toISOString() : undefined;
+    
     return {
       id: record.id,
       entityType: EntityType.ORGANIZATION,
-      name: record.name,
+      name: record.name || '',
       description: record.description || '',
       websiteUrl: record.website_url || '',
       logoUrl: record.logo_url || '',
       logoApiUrl: record.logo_api_url || '',
       isVerified: record.is_verified || false,
       locationId: record.location_id,
-      createdAt: new Date(record.created_at),
-      updatedAt: new Date(record.updated_at),
+      created_at: createdAt,
+      updated_at: updatedAt,
+      
+      // Include location if available
+      location: record.location,
+      
+      // Include tags if available
+      tags: record.tags || [],
     };
   }
 
@@ -40,8 +61,8 @@ export class OrganizationRepository extends EntityRepository<Organization> {
       logo_api_url: entity.logoApiUrl,
       is_verified: entity.isVerified,
       location_id: entity.locationId,
-      created_at: entity.createdAt,
-      updated_at: entity.updatedAt,
+      created_at: entity.created_at,
+      updated_at: entity.updated_at,
     };
   }
 
@@ -56,13 +77,9 @@ export class OrganizationRepository extends EntityRepository<Organization> {
         .execute();
       
       if (result.isSuccess() && result.data) {
-        return {
-          data: result.data.map(record => this.convertToEntity(record)),
-          error: null,
-          isSuccess: () => true,
-          isError: () => false,
-          getErrorMessage: () => null
-        };
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
       }
       
       return result as RepositoryResponse<Organization[]>;
@@ -80,5 +97,53 @@ export class OrganizationRepository extends EntityRepository<Organization> {
         getErrorMessage: () => `Failed to find organizations by name: ${name}`
       };
     }
+  }
+
+  /**
+   * Get verified organizations
+   */
+  async getVerifiedOrganizations(): Promise<RepositoryResponse<Organization[]>> {
+    try {
+      const result = await this.baseRepository.select()
+        .eq('is_verified', true)
+        .execute();
+      
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
+      }
+      
+      return result as RepositoryResponse<Organization[]>;
+    } catch (error) {
+      this.handleError('getVerifiedOrganizations', error);
+      return {
+        data: null,
+        error: {
+          code: 'query_error',
+          message: 'Failed to get verified organizations',
+          original: error
+        },
+        isSuccess: () => false,
+        isError: () => true,
+        getErrorMessage: () => 'Failed to get verified organizations'
+      };
+    }
+  }
+}
+
+/**
+ * Create an organization repository instance
+ * @param baseRepository Base repository to use for database operations
+ * @returns Organization repository instance
+ */
+export function createOrganizationRepository(
+  baseRepository: BaseRepository<Organization>
+): OrganizationRepository {
+  try {
+    return new OrganizationRepository(baseRepository);
+  } catch (error) {
+    logger.error('Failed to create organization repository', error);
+    throw error;
   }
 }

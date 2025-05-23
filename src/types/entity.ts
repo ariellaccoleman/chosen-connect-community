@@ -58,3 +58,25 @@ export interface Entity {
    */
   tags?: TagAssignment[];
 }
+
+/**
+ * Base interface for entity creation data
+ */
+export interface EntityCreateInput {
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  location_id?: string | null;
+  url?: string;
+}
+
+/**
+ * Base interface for entity update data
+ */
+export interface EntityUpdateInput {
+  name?: string;
+  description?: string;
+  imageUrl?: string;
+  location_id?: string | null;
+  url?: string;
+}

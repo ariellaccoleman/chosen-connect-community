@@ -11,8 +11,8 @@ export * from './OrganizationRepository';
 export * from './EventRepository';
 export * from './HubRepository';
 
-// Note: Tag repositories are not entity repositories and are exported from
-// src/api/tags/repository/index.ts instead
-
 // Export factory functions
 export * from './factories';
+
+// Export entity repository base class
+export * from '../EntityRepository';

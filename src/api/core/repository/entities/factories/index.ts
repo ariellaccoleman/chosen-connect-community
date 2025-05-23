@@ -10,3 +10,6 @@ export * from './profileRepositoryFactory';
 export * from './organizationRepositoryFactory';
 export * from './eventRepositoryFactory'; 
 export * from './hubRepositoryFactory';
+
+// Export unified factory
+export * from './entityRepositoryFactory';

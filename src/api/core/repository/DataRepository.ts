@@ -102,6 +102,14 @@ export interface RepositoryQuery<T = any> {
   is(column: string, isNull: null | boolean): RepositoryQuery<T>;
   
   /**
+   * Filter by greater than or equal to
+   * @param column Column name
+   * @param value Value to compare
+   * @returns The query builder for chaining
+   */
+  gte(column: string, value: any): RepositoryQuery<T>;
+  
+  /**
    * Order results by a column
    * @param column Column to order by
    * @param options Options for ordering
