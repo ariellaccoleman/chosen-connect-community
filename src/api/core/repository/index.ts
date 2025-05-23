@@ -55,12 +55,10 @@ export {
 } from './entities/factories/entityRepositoryFactory';
 
 // Export from repositoryFactory directly
-export {
-  createRepository,
-  createTestingRepository,
-  RepositoryOptions
-} from './repositoryFactory';
+export { createRepository, createTestingRepository } from './repositoryFactory';
+export type { RepositoryOptions } from './repositoryFactory';
 
+// Export from enhancedRepositoryFactory
 export * from './enhancedRepositoryFactory';
 
 // Export utility functions
