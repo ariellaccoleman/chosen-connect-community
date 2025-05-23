@@ -233,10 +233,15 @@ describe('API Factory with Repository', () => {
     // Log the result for debugging
     console.log(`delete result: ${JSON.stringify(result)}`);
     
+    // Check repository state directly
+    console.log(`Repository data after delete: ${JSON.stringify(mockRepo.mockData)}`);
+    expect(mockRepo.mockData.length).toBe(1);
+    expect(mockRepo.mockData[0].id).toBe('2');
+    
     // Verify result
     expect(result.status).toBe('success');
     
-    // Check it was removed from repository
+    // Check it was removed from repository via API call
     const allEntities = await mockRepo.select().execute();
     console.log(`Remaining entities after delete: ${JSON.stringify(allEntities.data)}`);
     

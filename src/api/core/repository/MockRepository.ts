@@ -7,7 +7,7 @@ import { logger } from '@/utils/logger';
  * Mock implementation of the DataRepository interface for testing
  */
 export class MockRepository<T = any> extends BaseRepository<T> {
-  private mockData: Record<string, any[]> = {};
+  mockData: Record<string, any[]> = {};
   private mockResponses: Record<string, any> = {};
   private lastOperation: string | null = null;
   private lastData: any = null;
@@ -16,7 +16,8 @@ export class MockRepository<T = any> extends BaseRepository<T> {
   
   constructor(tableName: string, initialData: T[] = []) {
     super(tableName);
-    this.mockData[tableName] = [...initialData];
+    // Create a deep clone of initialData to avoid reference issues
+    this.mockData[tableName] = JSON.parse(JSON.stringify(initialData));
   }
 
   /**
@@ -547,6 +548,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
   async execute(): Promise<RepositoryResponse<T[]>> {
     console.log(`[MockQuery] Executing execute() for operation ${this.operation}`);
     console.log(`[MockQuery] Current table: ${this.tableName}, filters count: ${this.filters.length}`);
+    console.log(`[MockQuery] Mock data before operation:`, this.mockData[this.tableName]);
     
     // Check if there's a mock response for this operation
     if (this.mockResponses[this.operation]) {
@@ -559,32 +561,27 @@ class MockQuery<T> implements RepositoryQuery<T> {
       const items = this.mockData[this.tableName] || [];
       console.log(`[MockQuery] Delete operation, total items before: ${items.length}`);
       
-      const filtered = this.applyFilters(items);
-      console.log(`[MockQuery] Delete filtered items to remove: ${filtered.length}`);
+      // Find items to delete based on filters
+      const itemsToDelete = this.applyFilters(items);
+      console.log(`[MockQuery] Items to delete: ${itemsToDelete.length}`);
       
-      // Use 'in' condition for batch delete if present
-      let itemsToDelete = filtered;
-      if (this.inConditions.length > 0) {
-        const inCondition = this.inConditions[0]; // Use first in condition
-        itemsToDelete = items.filter(item => 
-          inCondition.values.includes(item[inCondition.column])
-        );
-        console.log(`[MockQuery] Delete with 'in' condition, items to delete: ${itemsToDelete.length}`);
+      if (itemsToDelete.length === 0) {
+        console.log(`[MockQuery] No items matched filters for deletion`);
+        return createSuccessResponse<T[]>([] as unknown as T[]);
       }
       
-      // Remove the deleted items from the mock data
-      const itemIds = itemsToDelete.map(item => item.id);
+      // Extract IDs of items to delete
+      const idsToDelete = itemsToDelete.map(item => item.id);
+      console.log(`[MockQuery] IDs to delete: ${JSON.stringify(idsToDelete)}`);
       
-      console.log(`[MockQuery] Items to delete IDs: ${JSON.stringify(itemIds)}`);
+      // Remove items from mockData
+      this.mockData[this.tableName] = items.filter(item => !idsToDelete.includes(item.id));
       
-      const remaining = items.filter(item => !itemIds.includes(item.id));
+      console.log(`[MockQuery] Items after delete: ${this.mockData[this.tableName].length}`);
+      console.log(`[MockQuery] Remaining IDs: ${JSON.stringify(this.mockData[this.tableName].map(item => item.id))}`);
       
-      console.log(`[MockQuery] Remaining item IDs after delete: ${JSON.stringify(remaining.map(item => item.id))}`);
-      
-      this.mockData[this.tableName] = remaining;
-      console.log(`[MockQuery] Delete operation complete, remaining items: ${remaining.length}`);
-      
-      return createSuccessResponse<T[]>([] as unknown as T[]);
+      // Return deleted items
+      return createSuccessResponse<T[]>(itemsToDelete as unknown as T[]);
     }
     
     if (this.operation === 'update' && this.inConditions.length > 0) {
@@ -634,6 +631,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
     // Apply pagination
     result = this.applyPagination(result);
     console.log(`[MockQuery] Final result after pagination: ${result.length}`);
+    console.log(`[MockQuery] Result IDs: ${JSON.stringify(result.map(item => item.id))}`);
     
     return createSuccessResponse<T[]>(result as unknown as T[]);
   }

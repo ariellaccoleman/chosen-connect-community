@@ -1,4 +1,3 @@
-
 import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -138,7 +137,9 @@ export function createTestRepository<T>(
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
   
   // Store original data reference for test manipulations
-  enhancedRepo.mockData = clonedData;
+  // This is now directly accessing mockRepo.mockData[tableName], not a copy, 
+  // so they share reference
+  enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
   
   // Setup spies for monitoring method calls
   enhancedRepo.spies = {
