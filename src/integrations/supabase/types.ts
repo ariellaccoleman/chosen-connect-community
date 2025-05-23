@@ -1734,6 +1734,10 @@ export type Database = {
           updated_at: string | null
         }[]
       }
+      setup_testing_schema: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       update_tag_cache: {
         Args: { cache_key: string; cache_data: Json }
         Returns: boolean

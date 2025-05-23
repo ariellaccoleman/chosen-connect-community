@@ -36,8 +36,8 @@ serve(async (req) => {
     // Execute the requested action
     switch (action) {
       case 'setup_schema':
-        // First ensure testing schema exists
-        await supabaseClient.rpc('testing.replicate_all_tables')
+        // Call the public wrapper function instead of directly accessing the testing schema function
+        await supabaseClient.rpc('setup_testing_schema')
         result = { message: 'Schema setup complete' }
         break
       
