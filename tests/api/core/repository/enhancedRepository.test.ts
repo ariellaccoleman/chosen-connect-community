@@ -89,15 +89,30 @@ describe('Enhanced Repository', () => {
   });
 
   describe('Basic Operations', () => {
-    let repository: BaseRepository<TestEntity>;
+    let repository: any; // Changed to 'any' to access mockData directly
     
-    // IMPORTANT CHANGE: Use createTestRepository instead of createEnhancedRepository
-    // This ensures we're using the same repository implementation as in the API tests
+    // Use createTestRepository for consistency with API tests
     beforeEach(() => {
       repository = createTestRepository<TestEntity>({
         tableName: 'test_table',
-        initialData: []
+        initialData: [],
+        debug: true // Enable debug logging to see what's happening
       });
+      
+      // Log the repository object to debug
+      console.log('Repository created with structure:', 
+        JSON.stringify({
+          type: typeof repository,
+          hasData: Array.isArray(repository.mockData),
+          dataLength: repository.mockData ? repository.mockData.length : 'N/A',
+          hasMethods: {
+            insert: typeof repository.insert === 'function',
+            select: typeof repository.select === 'function',
+            update: typeof repository.update === 'function',
+            delete: typeof repository.delete === 'function',
+          }
+        })
+      );
     });
     
     test('inserts and retrieves entities', async () => {
@@ -108,6 +123,9 @@ describe('Enhanced Repository', () => {
       };
       
       const insertResult = await repository.insert(testEntity).execute();
+      console.log('Insert result:', JSON.stringify(insertResult));
+      console.log('Repository after insert:', JSON.stringify(repository.mockData));
+      
       expect(insertResult.isSuccess()).toBe(true);
       expect(insertResult.data?.name).toBe('New Entity');
       
@@ -117,6 +135,8 @@ describe('Enhanced Repository', () => {
       
       // Retrieve by ID
       const getResult = await repository.select().eq('id', id).maybeSingle();
+      console.log('Get result:', JSON.stringify(getResult));
+      
       expect(getResult.isSuccess()).toBe(true);
       expect(getResult.data?.name).toBe('New Entity');
     });
@@ -129,17 +149,26 @@ describe('Enhanced Repository', () => {
         created_at: new Date().toISOString()
       }).execute();
       
+      console.log('Insert result for update test:', JSON.stringify(insertResult));
+      console.log('Repository after insert for update test:', JSON.stringify(repository.mockData));
+      
       const id = insertResult.data?.id;
+      expect(id).toBeDefined();
       
       // Update entity
       const updateResult = await repository.update({
         description: 'Updated Description'
       }).eq('id', id).execute();
       
+      console.log('Update result:', JSON.stringify(updateResult));
+      console.log('Repository after update:', JSON.stringify(repository.mockData));
+      
       expect(updateResult.isSuccess()).toBe(true);
       
       // Verify update
       const getResult = await repository.select().eq('id', id).maybeSingle();
+      console.log('Get result after update:', JSON.stringify(getResult));
+      
       expect(getResult.data?.description).toBe('Updated Description');
       expect(getResult.data?.name).toBe('Original Name'); // Unchanged
     });
@@ -153,22 +182,28 @@ describe('Enhanced Repository', () => {
       }).execute();
       
       const id = insertResult.data?.id;
+      expect(id).toBeDefined();
+      
+      // Verify entity exists before delete
+      expect(repository.mockData.length).toBe(1);
+      console.log(`Repository data before delete:`, JSON.stringify(repository.mockData));
       
       // Get all before delete
       const beforeDelete = await repository.select().execute();
       const countBefore = beforeDelete.data?.length || 0;
-      
-      // Log the state before delete for debugging
-      console.log(`Repository data before delete: ${JSON.stringify((repository as any).mockData)}`);
+      expect(countBefore).toBe(1);
       
       // Delete entity
       const deleteResult = await repository.delete().eq('id', id).execute();
+      console.log('Delete result:', JSON.stringify(deleteResult));
+      console.log(`Repository data after delete:`, JSON.stringify(repository.mockData));
+      
       expect(deleteResult.isSuccess()).toBe(true);
       
-      // Log the state after delete for debugging
-      console.log(`Repository data after delete: ${JSON.stringify((repository as any).mockData)}`);
+      // Direct check on mockData
+      expect(repository.mockData.length).toBe(0);
       
-      // Verify deletion
+      // Verify deletion through repository
       const afterDelete = await repository.select().execute();
       expect(afterDelete.data?.length).toBe(countBefore - 1);
       
@@ -179,13 +214,14 @@ describe('Enhanced Repository', () => {
   });
 
   describe('Query Operations', () => {
-    let repository: BaseRepository<TestEntity>;
+    let repository: any; // Changed to 'any' to access mockData directly
     
-    // IMPORTANT CHANGE: Use createTestRepository for consistency
+    // Use createTestRepository for consistency
     beforeEach(async () => {
       repository = createTestRepository<TestEntity>({
         tableName: 'test_table',
-        initialData: []
+        initialData: [],
+        debug: true
       });
       
       // Add test data
@@ -211,12 +247,15 @@ describe('Enhanced Repository', () => {
       ];
       
       await repository.insert(testData).execute();
+      console.log('Query test data after insert:', JSON.stringify(repository.mockData));
     });
     
     test('filters with eq operator', async () => {
       const result = await repository.select()
         .eq('name', 'Apple Product')
         .execute();
+      
+      console.log('Eq filter result:', JSON.stringify(result));
       
       expect(result.data).toHaveLength(1);
       expect(result.data![0].id).toBe('1');
@@ -227,6 +266,8 @@ describe('Enhanced Repository', () => {
         .ilike('name', '%Apple%')
         .execute();
       
+      console.log('Ilike filter result:', JSON.stringify(result));
+      
       expect(result.data).toHaveLength(2);
       expect(result.data!.map(i => i.id).sort()).toEqual(['1', '3']);
     });
@@ -235,6 +276,8 @@ describe('Enhanced Repository', () => {
       const result = await repository.select()
         .in('id', ['1', '3'])
         .execute();
+      
+      console.log('In filter result:', JSON.stringify(result));
       
       expect(result.data).toHaveLength(2);
       expect(result.data!.map(i => i.id).sort()).toEqual(['1', '3']);
@@ -245,6 +288,8 @@ describe('Enhanced Repository', () => {
         .order('created_at', { ascending: false })
         .execute();
       
+      console.log('Order result:', JSON.stringify(result));
+      
       expect(result.data).toHaveLength(3);
       expect(result.data![0].id).toBe('3'); // Most recent first
     });
@@ -254,19 +299,22 @@ describe('Enhanced Repository', () => {
         .limit(2)
         .execute();
       
+      console.log('Limit result:', JSON.stringify(result));
+      
       expect(result.data).toHaveLength(2);
     });
   });
 
   describe('Integration with API Factory', () => {
-    let repository: BaseRepository<TestEntity>;
+    let repository: any; // Changed to 'any' to access mockData directly
     let api: any;
     
     beforeEach(async () => {
       // Create a test repository using repositoryTestUtils to ensure consistency
       repository = createTestRepository<TestEntity>({
         tableName: 'test_table',
-        initialData: []
+        initialData: [],
+        debug: true
       });
       
       // Create API factory using the repository
@@ -284,10 +332,13 @@ describe('Enhanced Repository', () => {
       };
       
       await repository.insert(testEntity).execute();
+      console.log('API test data after insert:', JSON.stringify(repository.mockData));
     });
     
     test('getById returns correct entity', async () => {
       const result = await api.getById('1');
+      
+      console.log('API getById result:', JSON.stringify(result));
       
       expect(result.status).toBe('success');
       expect(result.data?.id).toBe('1');
@@ -296,6 +347,8 @@ describe('Enhanced Repository', () => {
     
     test('getAll returns all entities', async () => {
       const result = await api.getAll();
+      
+      console.log('API getAll result:', JSON.stringify(result));
       
       expect(result.status).toBe('success');
       expect(result.data).toHaveLength(1);
@@ -308,6 +361,9 @@ describe('Enhanced Repository', () => {
       };
       
       const result = await api.create(newEntity);
+      
+      console.log('API create result:', JSON.stringify(result));
+      console.log('Repository after API create:', JSON.stringify(repository.mockData));
       
       expect(result.status).toBe('success');
       expect(result.data?.name).toBe('New API Entity');
@@ -324,6 +380,9 @@ describe('Enhanced Repository', () => {
       
       const result = await api.update('1', updateData);
       
+      console.log('API update result:', JSON.stringify(result));
+      console.log('Repository after API update:', JSON.stringify(repository.mockData));
+      
       expect(result.status).toBe('success');
       expect(result.data?.description).toBe('Updated through API');
       
@@ -334,18 +393,22 @@ describe('Enhanced Repository', () => {
     
     test('delete removes entity', async () => {
       // Verify entity exists before delete
-      const beforeDelete = await repository.select().execute();
-      console.log(`Before delete: ${JSON.stringify(beforeDelete.data)}`);
-      expect(beforeDelete.data?.length).toBe(1);
+      expect(repository.mockData.length).toBe(1);
+      console.log('Repository before API delete:', JSON.stringify(repository.mockData));
       
       // Delete through API
       const result = await api.delete('1');
       
+      console.log('API delete result:', JSON.stringify(result));
+      console.log('Repository after API delete:', JSON.stringify(repository.mockData));
+      
       expect(result.status).toBe('success');
       
-      // Verify it's deleted from repository
+      // Verify direct access to mockData
+      expect(repository.mockData.length).toBe(0);
+      
+      // Verify it's deleted from repository through query
       const afterDelete = await repository.select().execute();
-      console.log(`After delete: ${JSON.stringify(afterDelete.data)}`);
       expect(afterDelete.data?.length).toBe(0);
     });
   });
