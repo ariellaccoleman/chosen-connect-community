@@ -41,3 +41,9 @@ export * from './repositoryUtils';
 // Export standard operations
 export * from './standardOperations';
 export * from './integrationExamples';
+
+// Export caching functionality
+export * from './cache';
+
+// Export all operations
+export * from './operations';

@@ -9,6 +9,8 @@
 export * from './coreOperations';
 export * from './crudOperations';
 export * from './queryOperations';
+export * from './batchOperations';
 
 // Export helper functions
 export * from '../standardOperations';
+
