@@ -23,9 +23,9 @@ export const organizationUpdateApi = {
         .update({
           name: data.name,
           description: data.description,
-          website_url: data.website_url,
-          logo_url: data.logo_url,
-          updated_at: data.updated_at || new Date().toISOString(),
+          website_url: data.websiteUrl,
+          logo_url: data.logoUrl,
+          updated_at: data.updatedAt || new Date().toISOString(),
         })
         .eq('id', orgId);
       

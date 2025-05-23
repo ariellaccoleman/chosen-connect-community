@@ -62,18 +62,28 @@ export const organizationRelationshipsApi = createApiFactory<
  * Get relationships for a profile
  */
 export async function getRelationshipsForProfile(profileId: string) {
-  return organizationRelationshipsApi.query()
-    .eq('profile_id', profileId)
-    .execute();
+  return apiClient.query(async (client) => {
+    return client
+      .from('org_relationships')
+      .select(`*, 
+        organization:organizations(*,
+          location:locations(*)
+        )`)
+      .eq('profile_id', profileId);
+  });
 }
 
 /**
  * Get relationships for an organization
  */
 export async function getRelationshipsForOrganization(organizationId: string) {
-  return organizationRelationshipsApi.query()
-    .eq('organization_id', organizationId)
-    .execute();
+  return apiClient.query(async (client) => {
+    return client
+      .from('org_relationships')
+      .select(`*, 
+        profile:profiles(*)`)
+      .eq('organization_id', organizationId);
+  });
 }
 
 /**
@@ -112,6 +122,41 @@ export async function checkRelationshipExists(profileId: string, organizationId:
   
   return { exists: !!data, relationshipId: data?.id };
 }
+
+/**
+ * API helpers for organizational relationships
+ */
+export const organizationRelationshipsApi = {
+  ...organizationRelationshipsApi,
+
+  /**
+   * Get relationships for a user profile
+   */
+  getUserOrganizationRelationships: async (profileId: string) => {
+    return getRelationshipsForProfile(profileId);
+  },
+  
+  /**
+   * Add a relationship between profile and organization
+   */
+  addOrganizationRelationship: async (data: Partial<ProfileOrganizationRelationship>) => {
+    return createRelationship(data);
+  },
+  
+  /**
+   * Update an organization relationship
+   */
+  updateOrganizationRelationship: async (id: string, data: Partial<ProfileOrganizationRelationship>) => {
+    return updateRelationship(id, data);
+  },
+  
+  /**
+   * Delete an organization relationship
+   */
+  deleteOrganizationRelationship: async (id: string) => {
+    return deleteRelationship(id);
+  }
+};
 
 // Export the API operations
 export const {

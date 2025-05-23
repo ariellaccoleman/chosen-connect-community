@@ -4,6 +4,7 @@ import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { formatDateForDb } from '@/utils/formatters';
 import { logger } from '@/utils/logger';
 import { apiClient } from '@/api/core/apiClient';
+import { EntityType } from '@/types/entityTypes'; // Import moved to the top
 
 /**
  * Factory for event API operations using the standardized factory pattern
@@ -176,6 +177,3 @@ export const {
   update: updateEvent,
   delete: deleteEvent
 } = eventApi;
-
-// Import for type reference
-import { EntityType } from '@/types/entityTypes';

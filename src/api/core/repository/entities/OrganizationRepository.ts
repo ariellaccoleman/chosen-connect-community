@@ -26,16 +26,16 @@ export class OrganizationRepository extends EntityRepository<Organization> {
   convertToEntity(record: any): Organization {
     return {
       id: record.id,
-      entityType: EntityType.ORGANIZATION, // Add entityType to satisfy Entity interface
+      entityType: EntityType.ORGANIZATION, 
       name: record.name,
       description: record.description || '',
-      website_url: record.website_url || '',
-      logo_url: record.logo_url || '',
-      logo_api_url: record.logo_api_url || '',
-      is_verified: record.is_verified || false,
-      location_id: record.location_id,
-      created_at: record.created_at,
-      updated_at: record.updated_at,
+      websiteUrl: record.website_url || '',
+      logoUrl: record.logo_url || '',
+      logoApiUrl: record.logo_api_url || '',
+      isVerified: record.is_verified || false,
+      locationId: record.location_id,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
     };
   }
 
@@ -48,13 +48,13 @@ export class OrganizationRepository extends EntityRepository<Organization> {
     if (entity.id !== undefined) record.id = entity.id;
     if (entity.name !== undefined) record.name = entity.name;
     if (entity.description !== undefined) record.description = entity.description;
-    if (entity.website_url !== undefined) record.website_url = entity.website_url;
-    if (entity.logo_url !== undefined) record.logo_url = entity.logo_url;
-    if (entity.logo_api_url !== undefined) record.logo_api_url = entity.logo_api_url;
-    if (entity.is_verified !== undefined) record.is_verified = entity.is_verified;
-    if (entity.location_id !== undefined) record.location_id = entity.location_id;
-    if (entity.created_at !== undefined) record.created_at = entity.created_at;
-    if (entity.updated_at !== undefined) record.updated_at = entity.updated_at;
+    if (entity.websiteUrl !== undefined) record.website_url = entity.websiteUrl;
+    if (entity.logoUrl !== undefined) record.logo_url = entity.logoUrl;
+    if (entity.logoApiUrl !== undefined) record.logo_api_url = entity.logoApiUrl;
+    if (entity.isVerified !== undefined) record.is_verified = entity.isVerified;
+    if (entity.locationId !== undefined) record.location_id = entity.locationId;
+    if (entity.createdAt !== undefined) record.created_at = entity.createdAt;
+    if (entity.updatedAt !== undefined) record.updated_at = entity.updatedAt;
     
     return record;
   }

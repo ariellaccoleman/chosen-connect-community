@@ -11,14 +11,14 @@ const AdminListItem = ({ admin }: AdminListItemProps) => {
   return (
     <div className="flex items-center gap-3">
       <Avatar className="h-10 w-10">
-        <AvatarImage src={admin.profile?.avatar_url || ""} alt={admin.profile?.full_name || ""} />
+        <AvatarImage src={admin.profile?.avatarUrl || ""} alt={admin.profile?.fullName || ""} />
         <AvatarFallback>
-          {admin.profile?.first_name?.[0] || ""}
-          {admin.profile?.last_name?.[0] || ""}
+          {admin.profile?.firstName?.[0] || ""}
+          {admin.profile?.lastName?.[0] || ""}
         </AvatarFallback>
       </Avatar>
       <div className="flex-1">
-        <p className="text-sm font-medium">{admin.profile?.full_name}</p>
+        <p className="text-sm font-medium">{admin.profile?.fullName}</p>
         <p className="text-xs text-muted-foreground">{admin.profile?.headline || "Member"}</p>
       </div>
       <Badge variant="outline" className="capitalize">

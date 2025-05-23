@@ -118,9 +118,9 @@ export class EventRepository extends EntityRepository<Event> {
       const now = new Date();
       const nowIso = now.toISOString();
       
-      // Use the baseRepository method correctly
+      // Use the correct method to filter by date
       const result = await this.baseRepository.select()
-        .filter('start_time', 'gte', nowIso)
+        .gte('start_time', nowIso)
         .order('start_time', { ascending: true })
         .execute();
       
