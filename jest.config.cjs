@@ -26,7 +26,9 @@ const config = {
   clearMocks: true,
   resetMocks: false, // We want to control mocks explicitly
   restoreMocks: false, // We'll restore mocks in afterEach/afterAll hooks
-  testTimeout: 30000
+  testTimeout: 30000,
+  // Ensure environment variables are available in test environment
+  setupFiles: ['<rootDir>/tests/setup/env.js']
 };
 
 module.exports = config;

@@ -9,10 +9,32 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined";
 
+// Detect test environment
+const isTestEnvironment = 
+  process.env.NODE_ENV === 'test' || 
+  process.env.JEST_WORKER_ID !== undefined ||
+  typeof global !== 'undefined' && global.process?.env?.NODE_ENV === 'test';
+
+// Choose the appropriate key based on environment
+const getSupabaseKey = () => {
+  if (isTestEnvironment) {
+    // Use service role key in test environment for schema operations
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (serviceRoleKey) {
+      console.log('🔧 Using Supabase service role key for test environment');
+      return serviceRoleKey;
+    } else {
+      console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not found, falling back to anon key');
+      return SUPABASE_PUBLISHABLE_KEY;
+    }
+  }
+  return SUPABASE_PUBLISHABLE_KEY;
+};
+
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, getSupabaseKey(), {
   auth: {
     persistSession: !isNodeEnvironment, // Don't persist sessions in test environment
     autoRefreshToken: !isNodeEnvironment, // Don't auto-refresh in test environment
@@ -39,5 +61,9 @@ if (!isNodeEnvironment) {
     });
   });
 } else {
-  console.log("🔧 Supabase client initialized for Node.js environment");
+  if (isTestEnvironment) {
+    console.log("🔧 Supabase client initialized for test environment with elevated permissions");
+  } else {
+    console.log("🔧 Supabase client initialized for Node.js environment");
+  }
 }
