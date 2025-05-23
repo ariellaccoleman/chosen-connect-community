@@ -71,7 +71,10 @@ export async function createTestSchema(options: {
     }
     
     // Create tables in the new schema
-    for (const tableRow of tables || []) {
+    // Fix: Check if tables exists and is an array before iterating
+    const tableRows = tables && Array.isArray(tables) ? tables : [];
+    
+    for (const tableRow of tableRows) {
       const tableName = tableRow.table_name;
       
       // Get table definition
@@ -176,7 +179,8 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
       throw error;
     }
     
-    return (data && data.length > 0);
+    // Fix: ensure data is an array before checking its length
+    return Array.isArray(data) && data.length > 0;
   } catch (error) {
     console.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
