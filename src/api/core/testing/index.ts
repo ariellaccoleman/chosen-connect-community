@@ -24,9 +24,11 @@ export {
   dropSchema,
   cleanupReleasedSchemas,
   getActiveSchemas,
-  resetSchemaTracking,
-  SchemaInfo
+  resetSchemaTracking
 } from './testSchemaManager';
+
+// Export the SchemaInfo type properly
+export type { SchemaInfo } from './testSchemaManager';
 
 // Snapshot testing
 export * from './snapshotTesting';
