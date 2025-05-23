@@ -21,4 +21,4 @@ export * from './validationUtils';
 export * from './relationshipTesting';
 
 // Re-export from the existing utils for convenience
-export * from '../../../tests/utils/repositoryTestUtils';
+export * from '../../tests/utils/repositoryTestUtils';

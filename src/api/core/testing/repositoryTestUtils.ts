@@ -3,7 +3,6 @@ import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
 import { createMockDataGenerator, MockDataGenerator } from './mockDataGenerator';
-import type { SpyInstance } from 'jest';
 
 /**
  * Enhanced mock repository with testing utilities
@@ -17,7 +16,7 @@ export interface EnhancedMockRepository<T> extends BaseRepository<T> {
   /**
    * Spies for repository methods
    */
-  spies: Record<string, SpyInstance>;
+  spies: Record<string, jest.SpyInstance>;
   
   /**
    * Reset all spies on the mock repository
@@ -111,12 +110,12 @@ export function createTestRepository<T>(
     (entityType ? createMockDataGenerator<T>(entityType) : undefined);
   
   // Create spies for repository methods
-  const selectSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'select') : undefined;
-  const insertSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'insert') : undefined;
-  const updateSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'update') : undefined;
-  const deleteSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'delete') : undefined;
-  const getByIdSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'getById') : undefined;
-  const getAllSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'getAll') : undefined;
+  const selectSpy = jest.spyOn(mockRepo, 'select');
+  const insertSpy = jest.spyOn(mockRepo, 'insert');
+  const updateSpy = jest.spyOn(mockRepo, 'update');
+  const deleteSpy = jest.spyOn(mockRepo, 'delete');
+  const getByIdSpy = jest.spyOn(mockRepo, 'getById');
+  const getAllSpy = jest.spyOn(mockRepo, 'getAll');
   
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
@@ -132,11 +131,11 @@ export function createTestRepository<T>(
     delete: deleteSpy,
     getById: getByIdSpy,
     getAll: getAllSpy
-  } as Record<string, SpyInstance>;
+  };
   
   // Add test utility methods
   enhancedRepo.resetSpies = () => {
-    Object.values(enhancedRepo.spies).forEach(spy => spy?.mockClear?.());
+    Object.values(enhancedRepo.spies).forEach(spy => spy.mockClear());
   };
   
   // Method to add items to the mock data
@@ -264,15 +263,9 @@ export function createRepositoryTestContext<T>(
  * Mock the repository factory to return test repositories
  */
 export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
-  // Handle case where jest might not be available
-  if (!global.jest) {
-    console.warn('Jest not available, mockRepositoryFactory will not work correctly');
-    return;
-  }
-
   // Mock the createSupabaseRepository function
-  global.jest.mock('../repository/repositoryFactory', () => ({
-    createSupabaseRepository: global.jest.fn((tableName: string) => {
+  jest.mock('../repository/repositoryFactory', () => ({
+    createSupabaseRepository: jest.fn((tableName: string) => {
       return createTestRepository({
         tableName,
         initialData: mockData[tableName] || [],
@@ -280,7 +273,7 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
       });
     }),
     // Maintain other exports
-    createRepository: global.jest.fn((tableName: string, type: string) => {
+    createRepository: jest.fn((tableName: string, type: string) => {
       if (type === 'mock') {
         return createTestRepository({
           tableName,
@@ -302,11 +295,6 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
  * Reset repository factory mocks
  */
 export function resetRepositoryFactoryMock() {
-  if (!global.jest) {
-    console.warn('Jest not available, resetRepositoryFactoryMock will not work correctly');
-    return;
-  }
-
-  global.jest.resetModules();
-  global.jest.dontMock('../repository/repositoryFactory');
+  jest.resetModules();
+  jest.dontMock('../repository/repositoryFactory');
 }
