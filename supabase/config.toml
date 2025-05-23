@@ -39,3 +39,6 @@ enabled = true
 
 [functions.test-setup]
 verify_jwt = true
+
+[functions.exec-sql]
+verify_jwt = true
