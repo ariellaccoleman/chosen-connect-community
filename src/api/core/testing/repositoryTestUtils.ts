@@ -1,3 +1,4 @@
+
 import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -110,12 +111,12 @@ export function createTestRepository<T>(
     (entityType ? createMockDataGenerator<T>(entityType) : undefined);
   
   // Create spies for repository methods
-  const selectSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'select') : undefined;
-  const insertSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'insert') : undefined;
-  const updateSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'update') : undefined;
-  const deleteSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'delete') : undefined;
-  const getByIdSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getById') : undefined;
-  const getAllSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getAll') : undefined;
+  const selectSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'select') : undefined;
+  const insertSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'insert') : undefined;
+  const updateSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'update') : undefined;
+  const deleteSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'delete') : undefined;
+  const getByIdSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'getById') : undefined;
+  const getAllSpy = global.jest?.spyOn ? global.jest.spyOn(mockRepo, 'getAll') : undefined;
   
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
@@ -270,8 +271,8 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   }
 
   // Mock the createSupabaseRepository function
-  jest?.mock('../repository/repositoryFactory', () => ({
-    createSupabaseRepository: jest.fn((tableName: string) => {
+  global.jest.mock('../repository/repositoryFactory', () => ({
+    createSupabaseRepository: global.jest.fn((tableName: string) => {
       return createTestRepository({
         tableName,
         initialData: mockData[tableName] || [],
@@ -279,7 +280,7 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
       });
     }),
     // Maintain other exports
-    createRepository: jest.fn((tableName: string, type: string) => {
+    createRepository: global.jest.fn((tableName: string, type: string) => {
       if (type === 'mock') {
         return createTestRepository({
           tableName,
@@ -306,6 +307,6 @@ export function resetRepositoryFactoryMock() {
     return;
   }
 
-  jest?.resetModules();
-  jest?.dontMock('../repository/repositoryFactory');
+  global.jest.resetModules();
+  global.jest.dontMock('../repository/repositoryFactory');
 }
