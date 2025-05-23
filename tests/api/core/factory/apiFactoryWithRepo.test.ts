@@ -325,7 +325,7 @@ describe('API Factory with Repository', () => {
     // Check repository state directly
     console.log(`Repository data after delete: ${JSON.stringify(mockRepo.mockData)}`);
     
-    // Verify remaining data in the repository
+    // This should now work with the fixed repository
     expect(mockRepo.mockData.length).toBe(1);
     expect(mockRepo.mockData[0].id).toBe('2');
     

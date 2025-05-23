@@ -135,11 +135,11 @@ export function createTestRepository<T>(
   const getAllSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getAll') : null;
   
   // Create an enhanced repository with test utilities
-  const enhancedRepo = mockRepo as unknown as EnhancedMockRepository<T>;
+  const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
   
   // Get the actual mockData reference directly from the repository to ensure we're
   // using the same reference throughout the code, avoiding any data synchronization issues
-  enhancedRepo.mockData = (mockRepo as any).mockDataStore[tableName];
+  enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
   
   if (debug) {
     console.log(`[createTestRepository] Setting up enhanced repo with mockData (length: ${enhancedRepo.mockData.length})`);
