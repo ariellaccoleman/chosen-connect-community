@@ -1711,6 +1711,10 @@ export type Database = {
       }
     }
     Functions: {
+      exec_sql: {
+        Args: { query: string }
+        Returns: undefined
+      }
       get_cached_tags: {
         Args: { cache_key: string }
         Returns: Json

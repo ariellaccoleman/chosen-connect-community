@@ -81,7 +81,7 @@ serve(async (req) => {
         
         createTableSql += ');'
         
-        // Execute the SQL
+        // Execute the SQL using the public.exec_sql function
         console.log('Creating test table with SQL:', createTableSql)
         
         const { error } = await supabaseClient.rpc('exec_sql', {
