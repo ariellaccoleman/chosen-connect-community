@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
@@ -372,34 +371,19 @@ export async function compareSchemasDDL(
       throw targetError;
     }
 
-    // Parse the result correctly by first determining the expected structure
+    // Parse the result correctly by ensuring arrays and accessing schema_ddl property
     let sourceSchemaString = '';
-    if (sourceDDL) {
-      // The result might be an array or object with schema_ddl property
-      if (Array.isArray(sourceDDL)) {
-        // Handle array result - this is the line we're fixing
-        if (sourceDDL.length > 0 && typeof sourceDDL[0] === 'object') {
-          const firstRow = sourceDDL[0] as Record<string, any>;
-          sourceSchemaString = (firstRow.schema_ddl || "").toString();
-        }
-      } else if (typeof sourceDDL === 'object' && sourceDDL !== null) {
-        // Handle object result
-        sourceSchemaString = ((sourceDDL as Record<string, any>).schema_ddl || "").toString();
-      }
+    const sourceArray = (sourceDDL || []) as any[];
+    if (sourceArray.length > 0 && typeof sourceArray[0] === 'object') {
+      const firstRow = sourceArray[0] as Record<string, any>;
+      sourceSchemaString = (firstRow.schema_ddl || "").toString();
     }
     
     let targetSchemaString = '';
-    if (targetDDL) {
-      // Apply the same parsing logic to target DDL
-      if (Array.isArray(targetDDL)) {
-        if (targetDDL.length > 0 && typeof targetDDL[0] === 'object') {
-          const firstRow = targetDDL[0] as Record<string, any>;
-          targetSchemaString = (firstRow.schema_ddl || "").toString();
-        }
-      } else if (typeof targetDDL === 'object' && targetDDL !== null) {
-        // Handle object result
-        targetSchemaString = ((targetDDL as Record<string, any>).schema_ddl || "").toString();
-      }
+    const targetArray = (targetDDL || []) as any[];
+    if (targetArray.length > 0 && typeof targetArray[0] === 'object') {
+      const firstRow = targetArray[0] as Record<string, any>;
+      targetSchemaString = (firstRow.schema_ddl || "").toString();
     }
     
     return {
