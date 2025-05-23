@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PostgrestFilterBuilder } from '@supabase/supabase-js';
+import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import { BaseRepository } from './BaseRepository';
 import { DataRepository, RepositoryResponse } from './DataRepository';
 
@@ -33,7 +33,7 @@ export class SupabaseRepository<T> implements BaseRepository<T> {
   /**
    * Select query builder
    */
-  select(columns = '*'): PostgrestFilterBuilder<T, any, any> {
+  select(columns = '*') {
     return supabase
       .from(this.tableName)
       .select(columns)
@@ -43,7 +43,7 @@ export class SupabaseRepository<T> implements BaseRepository<T> {
   /**
    * Insert query builder
    */
-  insert(data: Partial<T> | Partial<T>[]): PostgrestFilterBuilder<T, any, any> {
+  insert(data: Partial<T> | Partial<T>[]) {
     return supabase
       .from(this.tableName)
       .insert(data as any)
@@ -53,7 +53,7 @@ export class SupabaseRepository<T> implements BaseRepository<T> {
   /**
    * Update query builder
    */
-  update(data: Partial<T>): PostgrestFilterBuilder<T, any, any> {
+  update(data: Partial<T>) {
     return supabase
       .from(this.tableName)
       .update(data as any)
@@ -63,7 +63,7 @@ export class SupabaseRepository<T> implements BaseRepository<T> {
   /**
    * Delete query builder
    */
-  delete(): PostgrestFilterBuilder<T, any, any> {
+  delete() {
     return supabase
       .from(this.tableName)
       .delete()
