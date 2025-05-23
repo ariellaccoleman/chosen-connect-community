@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { createTestingRepository } from '../repository/repositoryFactory';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -48,11 +49,6 @@ export async function createUniqueTestSchema(options: {
   validateSchema?: boolean;
 } = {}): Promise<string | null> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      console.log('Running in test environment, skipping schema creation');
-      return null; // Return null in test environment
-    }
-    
     const schemaInfo = await createTestSchema({
       validateSchema: options.validateSchema
     });
@@ -75,10 +71,6 @@ export async function createUniqueTestSchema(options: {
  */
 export async function cloneSchemaStructure(targetSchema: string): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      return; // Skip in test environment
-    }
-    
     // Get list of tables from public schema
     const { data: tables, error: tablesError } = await supabase.rpc('exec_sql', {
       query: `
@@ -141,10 +133,6 @@ export async function verifySchemaSetup(
   } = {}
 ): Promise<boolean> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      return true; // Skip verification in test environment
-    }
-    
     // First, check if required tables exist
     const { data, error } = await supabase.rpc('exec_sql', {
       query: `
@@ -201,10 +189,6 @@ export async function verifySchemaSetup(
  */
 export async function createTestAuthUsersTable(schema: string): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      return; // Skip in test environment
-    }
-    
     await supabase.rpc('exec_sql', {
       query: `
         CREATE TABLE IF NOT EXISTS ${schema}.users (
@@ -233,8 +217,8 @@ export async function createTestAuthUsersTable(schema: string): Promise<void> {
  * Releases a schema after test completion
  */
 export async function releaseTestSchema(schema: string): Promise<void> {
-  if (process.env.NODE_ENV === 'test' || !schema) {
-    return; // Skip in test environment
+  if (!schema) {
+    return;
   }
   
   if (schemaRegistry[schema]) {
@@ -252,8 +236,8 @@ export async function releaseTestSchema(schema: string): Promise<void> {
  */
 export async function dropTestSchema(schema: string): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'test' || !schema) {
-      return; // Skip in test environment
+    if (!schema) {
+      return;
     }
     
     await supabase.rpc('exec_sql', {
@@ -272,10 +256,6 @@ export async function dropTestSchema(schema: string): Promise<void> {
  */
 export async function cleanupOldTestSchemas(): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      return; // Skip in test environment
-    }
-    
     const now = new Date();
     const schemasToClean = Object.entries(schemaRegistry)
       .filter(([_, info]) => {
@@ -302,10 +282,6 @@ export async function seedTestUser(
   userData: { id: string; email: string; rawUserMetaData?: any }
 ): Promise<void> {
   try {
-    if (process.env.NODE_ENV === 'test') {
-      return; // Skip in test environment
-    }
-    
     await supabase.rpc('exec_sql', {
       query: `
         INSERT INTO ${schema}.users (id, email, raw_user_meta_data)
@@ -333,12 +309,6 @@ export async function setupTestSchema(options: {
   validateSchema?: boolean;
 } = {}): Promise<string | null> {
   try {
-    // Check if we're in a test environment
-    if (process.env.NODE_ENV === 'test') {
-      logger.info('Running in test environment, skipping real database setup');
-      return null;
-    }
-    
     // Create a unique schema or use provided name
     const schemaName = options.schemaName || await createUniqueTestSchema({
       validateSchema: options.validateSchema
@@ -386,11 +356,6 @@ export async function setupTestSchema(options: {
  */
 export async function executeTestSQL(sql: string, schema: string = 'testing'): Promise<any> {
   try {
-    // Skip for test environment
-    if (process.env.NODE_ENV === 'test') {
-      return null;
-    }
-    
     // Execute SQL with schema prefix for table references
     const { data, error } = await supabase.rpc('exec_sql', { query: sql });
     
@@ -410,12 +375,6 @@ export async function executeTestSQL(sql: string, schema: string = 'testing'): P
  */
 export async function clearTestTable(tableName: string, schema: string = 'testing'): Promise<void> {
   try {
-    // For test environment, we'll use mock data clearing
-    if (process.env.NODE_ENV === 'test') {
-      console.log(`Mock clearing test data from ${tableName}`);
-      return;
-    }
-    
     await executeTestSQL(`DELETE FROM ${schema}.${tableName}`);
     console.log(`Cleared test data from ${schema}.${tableName}`);
   } catch (error) {
@@ -437,12 +396,6 @@ export async function seedTestData<T>(
   }
   
   try {
-    if (process.env.NODE_ENV === 'test') {
-      // For test environment, we're using the mocked client which already handles seeding
-      console.log(`Mock seeding ${data.length} records into ${tableName}`);
-      return;
-    }
-    
     const repository = createTestingRepository<T>(tableName, { schema });
     await repository.insert(data as any).execute();
     console.log(`Seeded ${data.length} records into ${schema}.${tableName}`);
@@ -494,18 +447,8 @@ export function createTestContext<T>(tableName: string, options: {
   };
   
   const cleanup = async (): Promise<void> => {
-    if (process.env.NODE_ENV === 'test') {
-      // Clear mock data
-      if (options.mockDataInTestEnv !== false) {
-        const mockRepo = repository as any;
-        if (mockRepo.mockData) {
-          mockRepo.mockData[tableName] = [];
-        }
-      }
-    } else {
-      // Clear data but don't drop schema - that's handled by releaseTestSchema
-      await clearTestTable(tableName, testSchema);
-    }
+    // Clear data but don't drop schema - that's handled by releaseTestSchema
+    await clearTestTable(tableName, testSchema);
   };
   
   const getCurrentSchema = (): string => {
@@ -525,10 +468,6 @@ export function createTestContext<T>(tableName: string, options: {
   
   // Add a method to validate the schema structure
   const validateSchema = async (): Promise<SchemaInfo | null> => {
-    if (process.env.NODE_ENV === 'test') {
-      return null;
-    }
-    
     return await validateTestSchema(testSchema);
   };
   
@@ -551,10 +490,7 @@ export function setupTestingEnvironment(options: {
   seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
 } = {}) {
   return async (): Promise<string | null> => {
-    if (process.env.NODE_ENV !== 'test') {
-      return await setupTestSchema(options);
-    }
-    return null;
+    return await setupTestSchema(options);
   };
 }
 
@@ -563,7 +499,7 @@ export function setupTestingEnvironment(options: {
  */
 export function teardownTestingEnvironment(schema: string | null = null, tableNames: string[] = []) {
   return async (): Promise<void> => {
-    if (process.env.NODE_ENV !== 'test' && schema) {
+    if (schema) {
       for (const tableName of tableNames) {
         await clearTestTable(tableName, schema);
       }

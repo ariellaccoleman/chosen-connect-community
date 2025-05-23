@@ -20,16 +20,6 @@ const createMockProfile = (): Profile => ({
 });
 
 describe('Test Context Helper', () => {
-  // Skip these tests in CI environment since they require real database
-  const shouldSkip = process.env.NODE_ENV === 'test' || process.env.CI === 'true';
-  
-  if (shouldSkip) {
-    test.skip('Skipping database tests in CI environment', () => {
-      console.log('Database tests skipped - CI environment detected');
-    });
-    return;
-  }
-
   // Create test data
   const mockProfiles = Array(3).fill(null).map(() => createMockProfile());
   
