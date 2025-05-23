@@ -1,5 +1,7 @@
+
 import { createApiFactory } from '@/api/core/factory/apiFactory';
-import { createMockRepository } from '@/api/core/repository/MockRepository';
+import { createTestRepository } from '@/api/core/testing/repositoryTestUtils';
+import { createMockDataGenerator } from '@/api/core/testing/mockDataGenerator';
 
 // Define a test entity type
 interface TestEntity {
@@ -10,8 +12,18 @@ interface TestEntity {
 }
 
 describe('API Factory with Repository', () => {
+  // Create a data generator for TestEntity
+  const testEntityGenerator = createMockDataGenerator<TestEntity>('custom', {
+    name: () => `Test ${Math.floor(Math.random() * 1000)}`,
+    description: () => `Description for test entity ${Math.floor(Math.random() * 1000)}`,
+    created_at: () => new Date().toISOString(),
+  });
+
   test('creates operations with repository', () => {
-    const mockRepo = createMockRepository<TestEntity>('test_table');
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
     
     const factory = createApiFactory<TestEntity>({
       tableName: 'test_table' as any,
@@ -33,8 +45,11 @@ describe('API Factory with Repository', () => {
       { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
     ];
     
-    // Create mock repository with initial data
-    const mockRepo = createMockRepository<TestEntity>('test_table', testData);
+    // Create test repository with initial data
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: testData
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -60,8 +75,11 @@ describe('API Factory with Repository', () => {
       { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
     ];
     
-    // Create mock repository with initial data
-    const mockRepo = createMockRepository<TestEntity>('test_table', testData);
+    // Create test repository with initial data
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: testData
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -79,8 +97,11 @@ describe('API Factory with Repository', () => {
   });
   
   test('create adds new entity', async () => {
-    // Create mock repository
-    const mockRepo = createMockRepository<TestEntity>('test_table');
+    // Create test repository
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -113,8 +134,11 @@ describe('API Factory with Repository', () => {
       { id: '1', name: 'Entity 1', description: 'Original Description', created_at: new Date().toISOString() }
     ];
     
-    // Create mock repository with initial data
-    const mockRepo = createMockRepository<TestEntity>('test_table', testData);
+    // Create test repository with initial data
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: testData
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -147,8 +171,11 @@ describe('API Factory with Repository', () => {
       { id: '2', name: 'Entity 2', description: 'Description 2', created_at: new Date().toISOString() }
     ];
     
-    // Create mock repository with initial data
-    const mockRepo = createMockRepository<TestEntity>('test_table', testData);
+    // Create test repository with initial data
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: testData
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -177,8 +204,11 @@ describe('API Factory with Repository', () => {
       { id: '3', name: 'AppleComputer', description: 'Description 3', created_at: new Date().toISOString() }
     ];
     
-    // Create mock repository with initial data
-    const mockRepo = createMockRepository<TestEntity>('test_table', testData);
+    // Create test repository with initial data
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: testData
+    });
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
@@ -198,8 +228,11 @@ describe('API Factory with Repository', () => {
   });
   
   test('supports extended operations', async () => {
-    // Create mock repository
-    const mockRepo = createMockRepository<TestEntity>('test_table');
+    // Create test repository
+    const mockRepo = createTestRepository<TestEntity>({
+      tableName: 'test_table',
+      initialData: []
+    });
     
     // Create API factory with extended operations
     const factory = createApiFactory<TestEntity>({
