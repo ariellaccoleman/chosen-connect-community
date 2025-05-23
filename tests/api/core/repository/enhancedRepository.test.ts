@@ -91,11 +91,13 @@ describe('Enhanced Repository', () => {
   describe('Basic Operations', () => {
     let repository: BaseRepository<TestEntity>;
     
+    // IMPORTANT CHANGE: Use createTestRepository instead of createEnhancedRepository
+    // This ensures we're using the same repository implementation as in the API tests
     beforeEach(() => {
-      repository = createEnhancedRepository<TestEntity>(
-        'test_table',
-        'mock'
-      );
+      repository = createTestRepository<TestEntity>({
+        tableName: 'test_table',
+        initialData: []
+      });
     });
     
     test('inserts and retrieves entities', async () => {
@@ -156,9 +158,15 @@ describe('Enhanced Repository', () => {
       const beforeDelete = await repository.select().execute();
       const countBefore = beforeDelete.data?.length || 0;
       
+      // Log the state before delete for debugging
+      console.log(`Repository data before delete: ${JSON.stringify((repository as any).mockData)}`);
+      
       // Delete entity
       const deleteResult = await repository.delete().eq('id', id).execute();
       expect(deleteResult.isSuccess()).toBe(true);
+      
+      // Log the state after delete for debugging
+      console.log(`Repository data after delete: ${JSON.stringify((repository as any).mockData)}`);
       
       // Verify deletion
       const afterDelete = await repository.select().execute();
@@ -173,11 +181,12 @@ describe('Enhanced Repository', () => {
   describe('Query Operations', () => {
     let repository: BaseRepository<TestEntity>;
     
+    // IMPORTANT CHANGE: Use createTestRepository for consistency
     beforeEach(async () => {
-      repository = createEnhancedRepository<TestEntity>(
-        'test_table',
-        'mock'
-      );
+      repository = createTestRepository<TestEntity>({
+        tableName: 'test_table',
+        initialData: []
+      });
       
       // Add test data
       const testData = [
@@ -341,4 +350,3 @@ describe('Enhanced Repository', () => {
     });
   });
 });
-
