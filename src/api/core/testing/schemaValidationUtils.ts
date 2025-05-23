@@ -384,7 +384,7 @@ export async function compareSchemasDDL(
         }
       } else if (typeof sourceDDL === 'object' && sourceDDL !== null) {
         // Handle object result
-        sourceSchemaString = (sourceDDL as any).schema_ddl?.toString() || '';
+        sourceSchemaString = (sourceDDL as Record<string, any>).schema_ddl?.toString() || '';
       }
     }
     
@@ -397,7 +397,8 @@ export async function compareSchemasDDL(
           targetSchemaString = firstRow.schema_ddl?.toString() || '';
         }
       } else if (typeof targetDDL === 'object' && targetDDL !== null) {
-        targetSchemaString = (targetDDL as any).schema_ddl?.toString() || '';
+        // Handle object result
+        targetSchemaString = (targetDDL as Record<string, any>).schema_ddl?.toString() || '';
       }
     }
     
