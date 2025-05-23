@@ -7,30 +7,104 @@ import { jest } from '@jest/globals';
 
 // Mock the supabase client to avoid actual API calls during tests
 jest.mock('@/integrations/supabase/client', () => {
+  const mockData = {
+    profiles: []
+  };
+  
   return {
     supabase: {
-      from: () => ({
-        select: () => ({
-          execute: jest.fn().mockReturnValue({ data: [], error: null }),
-          eq: () => ({
-            single: jest.fn().mockReturnValue({ data: {}, error: null }),
-            maybeSingle: jest.fn().mockReturnValue({ data: null, error: null }),
+      from: (table) => {
+        return {
+          select: jest.fn().mockReturnValue({
+            execute: jest.fn().mockImplementation(() => {
+              return Promise.resolve({ 
+                data: mockData[table] || [], 
+                error: null 
+              });
+            }),
+            eq: jest.fn().mockReturnValue({
+              single: jest.fn().mockImplementation(() => {
+                if (table === 'profiles' && mockData[table] && mockData[table].length > 0) {
+                  return Promise.resolve({ 
+                    data: mockData[table][0], 
+                    error: null 
+                  });
+                }
+                return Promise.resolve({ data: {}, error: null });
+              }),
+              maybeSingle: jest.fn().mockReturnValue({ data: null, error: null }),
+            }),
           }),
-        }),
-        insert: () => ({
-          execute: jest.fn().mockReturnValue({ data: [], error: null }),
-        }),
-        update: () => ({
-          eq: () => ({
-            execute: jest.fn().mockReturnValue({ data: {}, error: null }),
+          insert: jest.fn().mockImplementation((data) => {
+            const newItem = Array.isArray(data) ? data[0] : data;
+            const itemWithDefaults = {
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              ...newItem
+            };
+            
+            if (!mockData[table]) {
+              mockData[table] = [];
+            }
+            mockData[table].push(itemWithDefaults);
+            
+            return {
+              execute: jest.fn().mockReturnValue({ 
+                data: itemWithDefaults, 
+                error: null 
+              }),
+              single: jest.fn().mockReturnValue({ 
+                data: itemWithDefaults, 
+                error: null 
+              }),
+            };
           }),
-        }),
-        delete: () => ({
-          eq: () => ({
-            execute: jest.fn().mockReturnValue({ data: null, error: null }),
+          update: jest.fn().mockImplementation((updates) => {
+            return {
+              eq: jest.fn().mockImplementation((field, value) => {
+                if (mockData[table] && mockData[table].length > 0) {
+                  const index = mockData[table].findIndex(item => item[field] === value);
+                  if (index !== -1) {
+                    mockData[table][index] = {
+                      ...mockData[table][index],
+                      ...updates,
+                      updated_at: new Date().toISOString()
+                    };
+                  }
+                  
+                  return {
+                    execute: jest.fn().mockReturnValue({ 
+                      data: index !== -1 ? mockData[table][index] : {}, 
+                      error: null 
+                    }),
+                    single: jest.fn().mockReturnValue({ 
+                      data: index !== -1 ? mockData[table][index] : {}, 
+                      error: null 
+                    }),
+                  };
+                }
+                return {
+                  execute: jest.fn().mockReturnValue({ data: {}, error: null }),
+                  single: jest.fn().mockReturnValue({ data: {}, error: null }),
+                };
+              }),
+            };
           }),
-        }),
-      }),
+          delete: jest.fn().mockReturnValue({
+            eq: jest.fn().mockImplementation((field, value) => {
+              if (mockData[table]) {
+                const index = mockData[table].findIndex(item => item[field] === value);
+                if (index !== -1) {
+                  mockData[table].splice(index, 1);
+                }
+              }
+              return {
+                execute: jest.fn().mockReturnValue({ data: null, error: null }),
+              };
+            }),
+          }),
+        };
+      },
       rpc: jest.fn().mockReturnValue({ data: null, error: null }),
     },
   };
