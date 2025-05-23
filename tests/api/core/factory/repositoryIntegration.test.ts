@@ -2,29 +2,42 @@
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { createRepository } from '@/api/core/repository/repositoryFactory';
 import { DataRepository } from '@/api/core/repository/DataRepository';
+import { RepositoryResponse } from '@/api/core/repository/DataRepository';
 
 // Mock the repository factory
 jest.mock('@/api/core/repository/repositoryFactory', () => {
   const mockRepository = {
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    execute: jest.fn().mockResolvedValue({ data: [], error: null }),
+    select: jest.fn(() => mockRepository),
+    insert: jest.fn(() => mockRepository),
+    update: jest.fn(() => mockRepository),
+    delete: jest.fn(() => mockRepository),
+    eq: jest.fn(() => mockRepository),
+    execute: jest.fn().mockResolvedValue({ 
+      data: [], 
+      error: null,
+      isSuccess: () => true,
+      isError: () => false,
+      getErrorMessage: () => ''
+    }),
     single: jest.fn().mockResolvedValue({ 
       data: { id: 'test-id', name: 'Test Entity' }, 
-      error: null 
+      error: null,
+      isSuccess: () => true,
+      isError: () => false,
+      getErrorMessage: () => ''
     }),
     maybeSingle: jest.fn().mockResolvedValue({ 
       data: { id: 'test-id', name: 'Test Entity' }, 
-      error: null 
+      error: null,
+      isSuccess: () => true,
+      isError: () => false,
+      getErrorMessage: () => ''
     })
   };
   
   return {
     createRepository: jest.fn().mockReturnValue(mockRepository),
-    DataRepository: jest.requireActual('@/api/core/repository/DataRepository').DataRepository
+    createSupabaseRepository: jest.fn().mockReturnValue(mockRepository)
   };
 });
 
@@ -47,14 +60,32 @@ describe('API Factory with Repository Integration', () => {
   test('should use provided repository instance', () => {
     // Create mock repository
     const mockRepository = {
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue({ data: [], error: null }),
-      single: jest.fn().mockResolvedValue({ data: {}, error: null }),
-      maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
+      select: jest.fn(() => mockRepository),
+      insert: jest.fn(() => mockRepository),
+      update: jest.fn(() => mockRepository),
+      delete: jest.fn(() => mockRepository),
+      eq: jest.fn(() => mockRepository),
+      execute: jest.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      single: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      })
     } as unknown as DataRepository<any>;
     
     // Create factory with repository instance
@@ -74,14 +105,32 @@ describe('API Factory with Repository Integration', () => {
   test('should use repository factory function when provided', () => {
     // Create mock repository
     const mockRepository = {
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue({ data: [], error: null }),
-      single: jest.fn().mockResolvedValue({ data: {}, error: null }),
-      maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
+      select: jest.fn(() => mockRepository),
+      insert: jest.fn(() => mockRepository),
+      update: jest.fn(() => mockRepository),
+      delete: jest.fn(() => mockRepository),
+      eq: jest.fn(() => mockRepository),
+      execute: jest.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      single: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      })
     } as unknown as DataRepository<any>;
     
     const repositoryFactory = jest.fn().mockReturnValue(mockRepository);
@@ -147,14 +196,32 @@ describe('API Factory with Repository Integration', () => {
   test('should use custom defaultSelect option with repository', async () => {
     // Create mock repository
     const mockRepository = {
-      select: jest.fn().mockReturnThis(),
-      insert: jest.fn().mockReturnThis(),
-      update: jest.fn().mockReturnThis(),
-      delete: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue({ data: [], error: null }),
-      single: jest.fn().mockResolvedValue({ data: {}, error: null }),
-      maybeSingle: jest.fn().mockResolvedValue({ data: {}, error: null })
+      select: jest.fn(() => mockRepository),
+      insert: jest.fn(() => mockRepository),
+      update: jest.fn(() => mockRepository),
+      delete: jest.fn(() => mockRepository),
+      eq: jest.fn(() => mockRepository),
+      execute: jest.fn().mockResolvedValue({
+        data: [],
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      single: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      }),
+      maybeSingle: jest.fn().mockResolvedValue({
+        data: {},
+        error: null,
+        isSuccess: () => true,
+        isError: () => false,
+        getErrorMessage: () => ''
+      })
     } as unknown as DataRepository<any>;
     
     // Create factory with custom select and repository

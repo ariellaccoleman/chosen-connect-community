@@ -3,7 +3,6 @@ import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
 import { createMockDataGenerator, MockDataGenerator } from './mockDataGenerator';
-import '../../../types/jest.d.ts';
 
 /**
  * Enhanced mock repository with testing utilities
@@ -17,7 +16,7 @@ export interface EnhancedMockRepository<T> extends BaseRepository<T> {
   /**
    * Spies for repository methods
    */
-  spies: Record<string, jest.SpyInstance<any>>;
+  spies: Record<string, jest.SpyInstance<any> | null>;
   
   /**
    * Reset all spies on the mock repository
@@ -110,13 +109,16 @@ export function createTestRepository<T>(
   const dataGenerator = options.dataGenerator || 
     (entityType ? createMockDataGenerator<T>(entityType) : undefined);
   
-  // Create spies for repository methods
-  const selectSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'select') : null;
-  const insertSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'insert') : null;
-  const updateSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'update') : null;
-  const deleteSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'delete') : null;
-  const getByIdSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getById') : null;
-  const getAllSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getAll') : null;
+  // Check if Jest is available and create spies if it is
+  const hasJest = typeof jest !== 'undefined' && jest !== null;
+  
+  // Create spies for repository methods if jest is available
+  const selectSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'select') : null;
+  const insertSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'insert') : null;
+  const updateSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'update') : null;
+  const deleteSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'delete') : null;
+  const getByIdSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getById') : null;
+  const getAllSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getAll') : null;
   
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
@@ -271,7 +273,8 @@ export function createRepositoryTestContext<T>(
  */
 export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   // Check if jest is available in the environment
-  if (typeof jest === 'undefined') {
+  const hasJest = typeof jest !== 'undefined' && jest !== null;
+  if (!hasJest) {
     console.warn('Jest is not available in the current environment. mockRepositoryFactory requires Jest.');
     return;
   }
@@ -309,7 +312,8 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
  */
 export function resetRepositoryFactoryMock() {
   // Check if jest is available in the environment
-  if (typeof jest === 'undefined') {
+  const hasJest = typeof jest !== 'undefined' && jest !== null;
+  if (!hasJest) {
     console.warn('Jest is not available in the current environment. resetRepositoryFactoryMock requires Jest.');
     return;
   }

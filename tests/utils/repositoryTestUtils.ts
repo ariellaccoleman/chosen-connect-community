@@ -52,6 +52,9 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   jest.mock('@/api/core/repository/repositoryFactory', () => ({
     createSupabaseRepository: jest.fn((tableName: string) => {
       return createMockRepository(tableName, mockData[tableName] || []);
+    }),
+    createRepository: jest.fn((tableName: string, type?: string) => {
+      return createMockRepository(tableName, mockData[tableName] || []);
     })
   }));
 }

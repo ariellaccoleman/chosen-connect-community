@@ -26,7 +26,7 @@ describe('API Factory with Repository', () => {
     });
     
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -53,19 +53,19 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
     // Call getAll
     const result = await factory.getAll();
     
-    // Verify - update test to be more robust by checking for both entities
+    // Verify results without depending on order
     expect(result.status).toBe('success');
     expect(result.data).toHaveLength(2);
-    // Check that both entities are present, not relying on specific order
-    expect(result.data!.some(entity => entity.name === 'Entity 1')).toBe(true);
-    expect(result.data!.some(entity => entity.name === 'Entity 2')).toBe(true);
+    // Check that both entities are present by ID, not relying on specific order
+    const resultIds = result.data!.map(entity => entity.id).sort();
+    expect(resultIds).toEqual(['1', '2']);
   });
   
   test('getById returns entity with matching ID', async () => {
@@ -83,7 +83,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -105,7 +105,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -142,7 +142,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -179,7 +179,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -190,7 +190,7 @@ describe('API Factory with Repository', () => {
     expect(result.status).toBe('success');
     expect(result.data).toBe(true);
     
-    // Check it was removed from repository
+    // Check it was removed from repository - using length check instead of order-dependent checks
     const allEntities = await mockRepo.select().execute();
     expect(allEntities.data).toHaveLength(1);
     expect(allEntities.data![0].id).toBe('2');
@@ -212,7 +212,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with mock repository
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo
     });
     
@@ -236,7 +236,7 @@ describe('API Factory with Repository', () => {
     
     // Create API factory with extended operations
     const factory = createApiFactory<TestEntity>({
-      tableName: 'test_table' as any,
+      tableName: 'test_table',
       repository: mockRepo,
       useQueryOperations: true,
       useMutationOperations: true,

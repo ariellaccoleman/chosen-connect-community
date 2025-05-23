@@ -22,5 +22,4 @@ export * from './relationshipTesting';
 
 // Legacy re-export for backward compatibility (will be removed in future)
 // Use direct imports from api/core/testing/* instead
-export * from '../../../utils/testData';
-
+export * from '../../../tests/utils/testData';
