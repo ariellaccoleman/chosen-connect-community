@@ -1719,6 +1719,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: boolean
       }
+      pg_get_tabledef: {
+        Args: { p_schema: string; p_table: string }
+        Returns: string
+      }
       query_tags: {
         Args: { query_text: string }
         Returns: {
