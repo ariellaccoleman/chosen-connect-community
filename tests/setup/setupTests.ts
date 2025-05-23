@@ -1,5 +1,6 @@
 
 import '@testing-library/jest-dom';
+import { globalTestCleanup } from '@/api/core/testing/schemaBasedTesting';
 
 // Ensure service role key is available for schema operations in tests
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -24,4 +25,10 @@ afterEach(() => {
 // Global error handler for unhandled promise rejections in tests
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+// Global teardown - this will run after all tests complete
+afterAll(async () => {
+  console.log('Running global test cleanup...');
+  await globalTestCleanup();
 });

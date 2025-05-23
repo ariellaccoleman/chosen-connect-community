@@ -276,12 +276,14 @@ export async function validateTestSchema(schemaName: string): Promise<SchemaInfo
 }
 
 /**
- * Release a schema (mark it as no longer needed)
+ * Release a schema (mark it as no longer needed and immediately drop it)
  */
-export function releaseSchema(schemaId: string): void {
+export async function releaseSchema(schemaId: string): Promise<void> {
   const schema = activeSchemas.get(schemaId);
   if (schema) {
     schema.status = 'released';
+    // Immediately drop the schema instead of waiting for cleanup
+    await dropSchema(schema.name);
   }
 }
 
@@ -298,6 +300,8 @@ export async function dropSchema(schemaName: string): Promise<void> {
       throw error;
     }
     
+    logger.info(`Successfully dropped schema: ${schemaName}`);
+    
     // Remove from active schemas if it exists
     for (const [id, schema] of activeSchemas.entries()) {
       if (schema.name === schemaName) {
@@ -312,23 +316,47 @@ export async function dropSchema(schemaName: string): Promise<void> {
 }
 
 /**
- * Clean up old released schemas
+ * Clean up old released schemas and any orphaned schemas
  */
 export async function cleanupReleasedSchemas(maxAgeMs: number = 3600000): Promise<void> {
   const now = new Date();
   
+  // Clean up tracked schemas that are old
   for (const [id, schema] of activeSchemas.entries()) {
-    if (schema.status === 'released') {
-      const ageMs = now.getTime() - schema.createdAt.getTime();
-      if (ageMs > maxAgeMs) {
-        try {
-          await dropSchema(schema.name);
-          activeSchemas.delete(id);
-        } catch (error) {
-          logger.error(`Error cleaning up schema ${schema.name}:`, error);
-        }
+    const ageMs = now.getTime() - schema.createdAt.getTime();
+    if (ageMs > maxAgeMs || schema.status === 'released') {
+      try {
+        await dropSchema(schema.name);
+        activeSchemas.delete(id);
+      } catch (error) {
+        logger.error(`Error cleaning up schema ${schema.name}:`, error);
       }
     }
+  }
+  
+  // Also clean up any orphaned test schemas in the database
+  try {
+    const { data: schemas, error } = await supabase.rpc('exec_sql', {
+      query: `
+        SELECT schema_name 
+        FROM information_schema.schemata 
+        WHERE schema_name LIKE 'test_%' 
+        OR schema_name LIKE 'validation_test_%'
+        OR schema_name LIKE 'existing_test_%'
+        OR schema_name LIKE 'difference_test_%'
+        OR schema_name LIKE 'ddl_test_%'
+      `
+    });
+    
+    if (!error && schemas) {
+      for (const schemaRow of schemas) {
+        const schemaName = schemaRow.schema_name;
+        logger.info(`Cleaning up orphaned test schema: ${schemaName}`);
+        await dropSchema(schemaName);
+      }
+    }
+  } catch (error) {
+    logger.error('Error cleaning up orphaned schemas:', error);
   }
 }
 
@@ -344,4 +372,35 @@ export function getActiveSchemas(): SchemaInfo[] {
  */
 export function resetSchemaTracking(): void {
   activeSchemas.clear();
+}
+
+/**
+ * Force cleanup of all test schemas - use with caution
+ */
+export async function forceCleanupAllTestSchemas(): Promise<void> {
+  logger.info('Force cleaning up all test schemas...');
+  
+  try {
+    // Get all test schemas from the database
+    const { data: schemas, error } = await supabase.rpc('exec_sql', {
+      query: `
+        SELECT schema_name 
+        FROM information_schema.schemata 
+        WHERE schema_name LIKE 'test_%'
+      `
+    });
+    
+    if (!error && schemas) {
+      for (const schemaRow of schemas) {
+        const schemaName = schemaRow.schema_name;
+        await dropSchema(schemaName);
+      }
+      logger.info(`Force cleaned ${schemas.length} test schemas`);
+    }
+    
+    // Clear all tracking
+    activeSchemas.clear();
+  } catch (error) {
+    logger.error('Error during force cleanup:', error);
+  }
 }

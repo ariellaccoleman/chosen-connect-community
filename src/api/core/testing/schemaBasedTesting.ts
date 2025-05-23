@@ -10,6 +10,8 @@ import {
   validateTestSchema,
   schemaExists, 
   releaseSchema,
+  dropSchema,
+  forceCleanupAllTestSchemas,
   SchemaInfo 
 } from './testSchemaManager';
 
@@ -226,9 +228,9 @@ export async function releaseTestSchema(schema: string): Promise<void> {
     console.log(`Released schema ${schema}`);
   }
   
-  if (!RETAIN_TEST_SCHEMAS) {
-    await dropTestSchema(schema);
-  }
+  // Always drop the schema immediately, regardless of RETAIN_TEST_SCHEMAS
+  // This ensures cleanup happens consistently
+  await dropTestSchema(schema);
 }
 
 /**
@@ -240,9 +242,8 @@ export async function dropTestSchema(schema: string): Promise<void> {
       return;
     }
     
-    await supabase.rpc('exec_sql', {
-      query: `DROP SCHEMA IF EXISTS ${schema} CASCADE`
-    });
+    // Use the centralized dropSchema function
+    await dropSchema(schema);
     
     delete schemaRegistry[schema];
     console.log(`Dropped schema ${schema}`);
@@ -511,4 +512,19 @@ export function teardownTestingEnvironment(schema: string | null = null, tableNa
     // Run cleanup of old schemas periodically
     await cleanupOldTestSchemas();
   };
+}
+
+/**
+ * Global cleanup function to be called in Jest global teardown
+ */
+export async function globalTestCleanup(): Promise<void> {
+  logger.info('Running global test cleanup...');
+  
+  // Force cleanup all test schemas
+  await forceCleanupAllTestSchemas();
+  
+  // Also clean up any registered schemas
+  await cleanupOldTestSchemas();
+  
+  logger.info('Global test cleanup complete');
 }
