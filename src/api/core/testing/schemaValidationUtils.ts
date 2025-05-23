@@ -372,22 +372,32 @@ export async function compareSchemasDDL(
       throw targetError;
     }
 
-    // Fix the type issues with explicit type assertions
+    // Parse the result correctly by first determining the expected structure
     let sourceSchemaString = '';
     if (sourceDDL) {
-      // Using type assertion to handle the database result
-      const data = sourceDDL as unknown as Array<{schema_ddl?: string}>;
-      if (Array.isArray(data) && data.length > 0) {
-        sourceSchemaString = data[0]?.schema_ddl || '';
+      // The result might be an array or object with schema_ddl property
+      if (Array.isArray(sourceDDL)) {
+        // Handle array result
+        if (sourceDDL.length > 0 && typeof sourceDDL[0] === 'object') {
+          const firstRow = sourceDDL[0] as Record<string, any>;
+          sourceSchemaString = firstRow.schema_ddl?.toString() || '';
+        }
+      } else if (typeof sourceDDL === 'object' && sourceDDL !== null) {
+        // Handle object result
+        sourceSchemaString = (sourceDDL as any).schema_ddl?.toString() || '';
       }
     }
     
     let targetSchemaString = '';
     if (targetDDL) {
-      // Using type assertion to handle the database result
-      const data = targetDDL as unknown as Array<{schema_ddl?: string}>;
-      if (Array.isArray(data) && data.length > 0) {
-        targetSchemaString = data[0]?.schema_ddl || '';
+      // Apply the same parsing logic to target DDL
+      if (Array.isArray(targetDDL)) {
+        if (targetDDL.length > 0 && typeof targetDDL[0] === 'object') {
+          const firstRow = targetDDL[0] as Record<string, any>;
+          targetSchemaString = firstRow.schema_ddl?.toString() || '';
+        }
+      } else if (typeof targetDDL === 'object' && targetDDL !== null) {
+        targetSchemaString = (targetDDL as any).schema_ddl?.toString() || '';
       }
     }
     
