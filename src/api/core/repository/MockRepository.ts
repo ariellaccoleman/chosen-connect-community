@@ -182,7 +182,6 @@ class MockQuery<T> implements RepositoryQuery<T> {
   private offsetValue: number | null = null;
   private rangeValues: [number, number] | null = null;
   private selectFields: string = '*';
-  private preserveOrder: boolean = false; // Changed to false as default
 
   constructor(
     tableName: string,
@@ -426,7 +425,6 @@ class MockQuery<T> implements RepositoryQuery<T> {
       column, 
       ascending: options.ascending ?? true 
     };
-    this.preserveOrder = false; // When explicit ordering is requested, don't preserve original order
     return this;
   }
 
@@ -561,7 +559,7 @@ class MockQuery<T> implements RepositoryQuery<T> {
       const items = this.mockData[this.tableName] || [];
       console.log(`[MockQuery] Delete operation, total items before: ${items.length}`);
       
-      const filtered = this.applyFilters(items, true);
+      const filtered = this.applyFilters(items);
       console.log(`[MockQuery] Delete filtered items to remove: ${filtered.length}`);
       
       // Use 'in' condition for batch delete if present
@@ -575,9 +573,13 @@ class MockQuery<T> implements RepositoryQuery<T> {
       }
       
       // Remove the deleted items from the mock data
-      const remaining = items.filter(item => 
-        !itemsToDelete.some(f => f.id === item.id)
-      );
+      const itemIds = itemsToDelete.map(item => item.id);
+      
+      console.log(`[MockQuery] Items to delete IDs: ${JSON.stringify(itemIds)}`);
+      
+      const remaining = items.filter(item => !itemIds.includes(item.id));
+      
+      console.log(`[MockQuery] Remaining item IDs after delete: ${JSON.stringify(remaining.map(item => item.id))}`);
       
       this.mockData[this.tableName] = remaining;
       console.log(`[MockQuery] Delete operation complete, remaining items: ${remaining.length}`);
@@ -619,8 +621,8 @@ class MockQuery<T> implements RepositoryQuery<T> {
     const items = this.mockData[this.tableName] || [];
     console.log(`[MockQuery] Select operation, total items: ${items.length}`);
     
-    // Apply filters - default to always true (don't preserve order)
-    let result = this.applyFilters(items, false);
+    // Apply filters
+    let result = this.applyFilters(items);
     console.log(`[MockQuery] Select filtered items: ${result.length}`);
     
     // Apply sorting if configured
@@ -636,25 +638,14 @@ class MockQuery<T> implements RepositoryQuery<T> {
     return createSuccessResponse<T[]>(result as unknown as T[]);
   }
 
-  private applyFilters(items: any[], preserveOrder: boolean = false): any[] {
-    console.log(`[applyFilters] Starting with ${items.length} items, preserveOrder=${preserveOrder}`);
+  private applyFilters(items: any[]): any[] {
+    console.log(`[applyFilters] Starting with ${items.length} items`);
     console.log(`[applyFilters] Number of filters: ${this.filters.length}`);
     console.log(`[applyFilters] Number of inConditions: ${this.inConditions.length}`);
     
     if (this.filters.length === 0 && this.inConditions.length === 0) {
       console.log(`[applyFilters] No filters, returning all items`);
       return [...items];
-    }
-    
-    // Create a map to track the original indices for order preservation
-    const originalOrder: Record<string, number> = {};
-    if (preserveOrder) {
-      items.forEach((item, index) => {
-        // Use a combination of ID and index to ensure uniqueness
-        const key = item.id ? `${item.id}-${index}` : `item-${index}`;
-        originalOrder[key] = index;
-      });
-      console.log(`[applyFilters] Created original order map`);
     }
     
     let result = [...items];
@@ -688,16 +679,6 @@ class MockQuery<T> implements RepositoryQuery<T> {
         );
       }
       console.log(`[applyFilters] After applying 'in' conditions: ${result.length} items`);
-    }
-    
-    // Restore original order if needed
-    if (preserveOrder && result.length > 0) {
-      console.log(`[applyFilters] Restoring original order`);
-      result.sort((a, b) => {
-        const keyA = a.id ? `${a.id}-${items.findIndex(item => item.id === a.id)}` : '';
-        const keyB = b.id ? `${b.id}-${items.findIndex(item => item.id === b.id)}` : '';
-        return (originalOrder[keyA] || 0) - (originalOrder[keyB] || 0);
-      });
     }
     
     if (result.length > 0) {
