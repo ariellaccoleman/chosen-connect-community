@@ -94,11 +94,12 @@ describe('API Factory with Repository', () => {
     });
 
     // Create and add an entity using the repository
-    const testEntity = testEntityGenerator.generateOne({
+    const testEntity = {
       id: '1',
       name: 'Entity 1',
-      description: 'Description 1'
-    });
+      description: 'Description 1',
+      created_at: new Date().toISOString()
+    };
     await mockRepo.insert(testEntity).execute();
     
     // Log to verify the data is in the repository
@@ -131,11 +132,12 @@ describe('API Factory with Repository', () => {
     });
     
     // Create and add an entity using the repository
-    const testEntity = testEntityGenerator.generateOne({
+    const testEntity = {
       id: '1',
       name: 'Entity 1',
-      description: 'Original Description'
-    });
+      description: 'Original Description',
+      created_at: new Date().toISOString()
+    };
     await mockRepo.insert(testEntity).execute();
     
     // Log to verify the entity was added
@@ -176,18 +178,20 @@ describe('API Factory with Repository', () => {
       initialData: []
     });
     
-    // Create multiple entities using the repository
-    const entity1 = testEntityGenerator.generateOne({
+    // Create multiple entities
+    const entity1 = {
       id: '1',
       name: 'Entity 1',
-      description: 'Description 1'
-    });
+      description: 'Description 1',
+      created_at: new Date().toISOString()
+    };
     
-    const entity2 = testEntityGenerator.generateOne({
+    const entity2 = {
       id: '2',
       name: 'Entity 2',
-      description: 'Description 2'
-    });
+      description: 'Description 2',
+      created_at: new Date().toISOString()
+    };
     
     // Add entities to repository
     await mockRepo.insert([entity1, entity2]).execute();
@@ -223,24 +227,27 @@ describe('API Factory with Repository', () => {
       initialData: []
     });
     
-    // Create multiple entities with varied names using the repository
-    const entity1 = testEntityGenerator.generateOne({
+    // Create multiple entities with varied names
+    const entity1 = {
       id: '1',
       name: 'AppleDevice',
-      description: 'Description 1'
-    });
+      description: 'Description 1',
+      created_at: new Date().toISOString()
+    };
     
-    const entity2 = testEntityGenerator.generateOne({
+    const entity2 = {
       id: '2',
       name: 'SamsungDevice',
-      description: 'Description 2'
-    });
+      description: 'Description 2',
+      created_at: new Date().toISOString()
+    };
     
-    const entity3 = testEntityGenerator.generateOne({
+    const entity3 = {
       id: '3',
       name: 'AppleComputer',
-      description: 'Description 3'
-    });
+      description: 'Description 3',
+      created_at: new Date().toISOString()
+    };
     
     // Add entities to repository
     await mockRepo.insert([entity1, entity2, entity3]).execute();
@@ -276,18 +283,20 @@ describe('API Factory with Repository', () => {
       initialData: []
     });
     
-    // Create multiple entities using the repository
-    const entity1 = testEntityGenerator.generateOne({
+    // Create multiple entities
+    const entity1 = {
       id: '1',
       name: 'Entity 1',
-      description: 'Description 1'
-    });
+      description: 'Description 1',
+      created_at: new Date().toISOString()
+    };
     
-    const entity2 = testEntityGenerator.generateOne({
+    const entity2 = {
       id: '2',
       name: 'Entity 2',
-      description: 'Description 2'
-    });
+      description: 'Description 2',
+      created_at: new Date().toISOString()
+    };
     
     // Add entities to repository
     await mockRepo.insert([entity1, entity2]).execute();
