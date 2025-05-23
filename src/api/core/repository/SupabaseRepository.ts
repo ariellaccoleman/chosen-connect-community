@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
