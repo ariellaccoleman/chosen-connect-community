@@ -1,13 +1,14 @@
 
+import { EntityRepositoryFactoryBase } from './EntityRepositoryFactoryBase';
 import { BaseRepository } from '../../BaseRepository';
 import { EntityRepository } from '../../EntityRepository';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
 
-import { createProfileRepository } from '../ProfileRepository';
-import { createOrganizationRepository } from '../OrganizationRepository';
-import { createEventRepository } from '../EventRepository';
-import { createHubRepository } from '../HubRepository';
+import { createProfileRepository } from './profileRepositoryFactory';
+import { createOrganizationRepository } from './organizationRepositoryFactory';
+import { createEventRepository } from './eventRepositoryFactory';
+import { createHubRepository } from './hubRepositoryFactory';
 
 /**
  * Factory for creating entity repositories
@@ -17,42 +18,51 @@ export class EntityRepositoryFactory {
    * Create an entity repository for the specified type
    * 
    * @param entityType Type of entity to create repository for
-   * @param baseRepository Base repository to use for database operations
+   * @param options Repository creation options
    * @returns Entity repository
    */
   static createRepository<T extends Entity>(
     entityType: EntityType,
-    baseRepository: BaseRepository<T>
+    options: {
+      schema?: string;
+      initialData?: T[];
+      enableLogging?: boolean;
+    } = {}
   ): EntityRepository<T> {
     switch (entityType) {
       case EntityType.PERSON:
-        return createProfileRepository(
-          baseRepository as any
-        ) as unknown as EntityRepository<T>;
+        return createProfileRepository(options) as unknown as EntityRepository<T>;
       
       case EntityType.ORGANIZATION:
-        return createOrganizationRepository(
-          baseRepository as any
-        ) as unknown as EntityRepository<T>;
+        return createOrganizationRepository(options) as unknown as EntityRepository<T>;
       
       case EntityType.EVENT:
-        return createEventRepository(
-          baseRepository as any
-        ) as unknown as EntityRepository<T>;
+        return createEventRepository(options) as unknown as EntityRepository<T>;
       
       case EntityType.HUB:
-        return createHubRepository(
-          baseRepository as any
-        ) as unknown as EntityRepository<T>;
+        return createHubRepository(options) as unknown as EntityRepository<T>;
       
       default:
-        // For entity types without specific repositories, use a generic EntityRepository
-        return new EntityRepository<T>(
-          baseRepository.tableName,
-          entityType,
-          baseRepository
-        );
+        throw new Error(`No repository factory available for entity type: ${entityType}`);
     }
+  }
+
+  /**
+   * Create an entity repository for testing
+   * 
+   * @param entityType Type of entity to create repository for
+   * @param initialData Initial data to populate the repository
+   * @returns Entity repository configured for testing
+   */
+  static createTestingRepository<T extends Entity>(
+    entityType: EntityType,
+    initialData?: T[]
+  ): EntityRepository<T> {
+    return EntityRepositoryFactory.createRepository<T>(entityType, {
+      schema: 'testing',
+      initialData,
+      enableLogging: true
+    });
   }
 }
 
@@ -60,12 +70,30 @@ export class EntityRepositoryFactory {
  * Create an entity repository
  * 
  * @param entityType Type of entity
- * @param baseRepository Base repository to use for database operations
+ * @param options Repository creation options
  * @returns Entity repository
  */
 export function createEntityRepository<T extends Entity>(
   entityType: EntityType,
-  baseRepository: BaseRepository<T>
+  options: {
+    schema?: string;
+    initialData?: T[];
+    enableLogging?: boolean;
+  } = {}
 ): EntityRepository<T> {
-  return EntityRepositoryFactory.createRepository<T>(entityType, baseRepository);
+  return EntityRepositoryFactory.createRepository<T>(entityType, options);
+}
+
+/**
+ * Create an entity repository for testing
+ * 
+ * @param entityType Type of entity to create repository for
+ * @param initialData Initial data to populate the repository
+ * @returns Entity repository configured for testing
+ */
+export function createTestingEntityRepository<T extends Entity>(
+  entityType: EntityType,
+  initialData?: T[]
+): EntityRepository<T> {
+  return EntityRepositoryFactory.createTestingRepository<T>(entityType, initialData);
 }

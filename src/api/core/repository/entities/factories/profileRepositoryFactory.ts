@@ -1,14 +1,13 @@
 
-import { EntityRepositoryFactory } from '../../../repository/enhancedRepositoryFactory';
+import { EntityRepositoryFactoryBase } from './EntityRepositoryFactoryBase';
 import { EntityType } from '@/types/entityTypes';
 import { Profile } from '@/types/profile';
-import { EntityRepository } from '../../../repository/EntityRepository';
-import { createEnhancedRepository, EnhancedRepositoryType } from '../../../repository/enhancedRepositoryFactory';
+import { EntityRepository } from '../../EntityRepository';
 
 /**
  * Factory for creating profile repositories
  */
-export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
+export class ProfileRepositoryFactory extends EntityRepositoryFactoryBase<Profile> {
   /**
    * Get the table name for this entity type
    */
@@ -22,32 +21,6 @@ export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
   getEntityType(): EntityType {
     return EntityType.PERSON;
   }
-
-  /**
-   * Create a repository instance
-   */
-  createRepository(
-    type: EnhancedRepositoryType = 'supabase',
-    initialData?: Profile[]
-  ): EntityRepository<Profile> {
-    const baseRepository = createEnhancedRepository<Profile>(
-      this.getTableName(),
-      type,
-      initialData,
-      {
-        idField: 'id',
-        defaultSelect: '*',
-        enableLogging: process.env.NODE_ENV === 'development'
-      }
-    );
-    
-    // Create and return entity repository
-    return new EntityRepository<Profile>(
-      this.getTableName(),
-      this.getEntityType(),
-      baseRepository
-    );
-  }
 }
 
 /**
@@ -55,4 +28,27 @@ export class ProfileRepositoryFactory extends EntityRepositoryFactory<Profile> {
  */
 export function createProfileRepositoryFactory(): ProfileRepositoryFactory {
   return new ProfileRepositoryFactory();
+}
+
+/**
+ * Create a profile repository
+ * 
+ * @param options Repository creation options
+ * @returns Profile repository instance
+ */
+export function createProfileRepository(options: {
+  schema?: string;
+  initialData?: Profile[];
+} = {}): EntityRepository<Profile> {
+  return new ProfileRepositoryFactory().createRepository(options);
+}
+
+/**
+ * Create a profile repository for testing
+ * 
+ * @param initialData Optional initial data
+ * @returns Profile repository instance configured for testing
+ */
+export function createTestingProfileRepository(initialData?: Profile[]): EntityRepository<Profile> {
+  return new ProfileRepositoryFactory().createTestingRepository(initialData);
 }
