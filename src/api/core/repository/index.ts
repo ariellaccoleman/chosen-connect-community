@@ -14,11 +14,19 @@ export * from './SupabaseRepository';
 export * from './MockRepository';
 
 // Export entity-specific repositories from entities folder
-// This will include the EntityRepositoryFactory and createEntityRepository
-export * from './entities';
+// But exclude the factory exports that would conflict
+export * from './entities/ProfileRepository';
+export * from './entities/OrganizationRepository'; 
+export * from './entities/EventRepository';
+export * from './entities/HubRepository';
 
-// Export only specific items from repositoryFactory to avoid conflicts
-// with the exports from './entities'
+// Export the factories folder separately to avoid conflicts
+export * from './entities/factories/profileRepositoryFactory';
+export * from './entities/factories/organizationRepositoryFactory';
+export * from './entities/factories/eventRepositoryFactory'; 
+export * from './entities/factories/hubRepositoryFactory';
+
+// Export from repositoryFactory directly
 export {
   createRepository,
   // Use 'export type' for type re-exports when using isolatedModules
