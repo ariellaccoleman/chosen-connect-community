@@ -116,14 +116,36 @@ describe('Schema Validation', () => {
     
     expect(result.isValid).toBe(false);
     expect(result.tablesDifferingInStructure.length).toBeGreaterThan(0);
-    expect(result.tablesDifferingInStructure[0].issues).toContain(expect.stringMatching(/data type/));
-    expect(result.tablesDifferingInStructure[0].issues).toContain(expect.stringMatching(/Missing column/));
+    expect(result.tablesDifferingInStructure[0].issues).toContainEqual(expect.stringMatching(/data type/));
+    expect(result.tablesDifferingInStructure[0].issues).toContainEqual(expect.stringMatching(/Missing column/));
   });
 
   test('Compare schemas DDL', async () => {
+    // Override the mock to return proper DDL structure
+    const supabaseMock = require('@/integrations/supabase/client').supabase;
+    
+    const originalMock = supabaseMock.rpc;
+    supabaseMock.rpc = jest.fn().mockImplementation((func, args) => {
+      if (func === 'exec_sql' && args.query.includes('array_to_string')) {
+        // Mock the DDL query that returns schema_ddl in the expected format
+        return Promise.resolve({ 
+          data: [
+            { 
+              schema_ddl: 'CREATE TABLE public.profiles (id UUID PRIMARY KEY, name TEXT);\n\nCREATE TABLE public.organizations (id UUID PRIMARY KEY, name TEXT);'
+            }
+          ], 
+          error: null 
+        });
+      } else {
+        return originalMock(func, args);
+      }
+    });
+    
     const ddl = await compareSchemasDDL('public', 'test_schema');
     
     expect(ddl.source).toBeTruthy();
     expect(ddl.target).toBeTruthy();
+    expect(ddl.source).toContain('CREATE TABLE');
+    expect(ddl.target).toContain('CREATE TABLE');
   });
 });
