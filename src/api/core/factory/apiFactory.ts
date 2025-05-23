@@ -123,10 +123,10 @@ export function createApiFactory<
           }
         );
       } else {
+        // Fix: Pass only two arguments instead of three
         dataRepository = createRepository<T>(
           tableName as string, 
-          repoConfig.type,
-          repoConfig.initialData
+          { schema: 'public' }
         );
       }
     }
@@ -215,4 +215,3 @@ export function createApiFactory<
 export const createApiOperations = createApiFactory;
 
 export * from "./types";
-

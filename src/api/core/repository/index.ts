@@ -29,8 +29,8 @@ export * from './entities/factories/hubRepositoryFactory';
 // Export from repositoryFactory directly
 export {
   createRepository,
-  // Use 'export type' for type re-exports when using isolatedModules
-  type RepositoryType
+  createTestingRepository,
+  // Remove the type export that doesn't exist
 } from './repositoryFactory';
 
 export * from './enhancedRepositoryFactory';

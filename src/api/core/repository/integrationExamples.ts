@@ -12,9 +12,10 @@ export function createEntityRepository<T>(
   tableName: string,
   mockData?: T[]
 ): DataRepository<T> {
-  // Use mock repository in test environments
+  // Use testing schema in test environments
   if (process.env.NODE_ENV === 'test') {
-    return createRepository<T>(tableName, 'mock', mockData);
+    // Fix: Pass options object as the second parameter instead of separate arguments
+    return createRepository<T>(tableName, { schema: 'testing' });
   }
   
   // Use Supabase repository in other environments
