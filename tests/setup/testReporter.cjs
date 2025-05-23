@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 
 class TestReporter {
@@ -11,13 +12,10 @@ class TestReporter {
       skipped: 0,
       total: 0,
       duration: 0,
-      testResults: [],
-      // Track which tests we've already reported to prevent double counting
-      reportedTests: new Set(),
-      // Track test suites by normalized path
+      // Track all test suites by their unique file path
       suites: new Map(),
-      // Track current suite being processed
-      currentSuite: null
+      // Track which tests have been reported to prevent duplicates
+      reportedTests: new Set()
     };
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
@@ -25,39 +23,53 @@ class TestReporter {
     console.log(`TEST_REPORTING_API_KEY: ${process.env.TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
   }
 
-  // Normalize file paths to be consistent across different methods
-  normalizePath(filePath) {
-    if (!filePath) return '';
+  /**
+   * Get a simplified test file path that removes project-specific prefixes
+   * and has consistent format across environments
+   */
+  getSimplifiedPath(filePath) {
+    if (!filePath) return 'unknown-path';
     
-    // Ensure consistent path format regardless of OS
-    const normalized = filePath.replace(/\\/g, '/').trim();
-    console.log(`Normalized path: ${normalized} from original: ${filePath}`);
-    return normalized;
+    // Convert backslashes to forward slashes for consistency
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    
+    // Extract just the relevant part of the path (after tests/)
+    const testsMatch = normalizedPath.match(/\/tests\/(.+)$/);
+    if (testsMatch && testsMatch[1]) {
+      return `tests/${testsMatch[1]}`;
+    }
+    
+    return normalizedPath;
   }
 
-  // Extract suite name from file path with improved reliability
-  extractSuiteName(filePath) {
+  /**
+   * Extract the base suite name from a file path
+   */
+  getSuiteName(filePath) {
     if (!filePath) return 'unknown-suite';
     
-    const normalizedPath = this.normalizePath(filePath);
+    // Get just the filename without extension or path
+    const filename = filePath.split('/').pop() || '';
+    const suiteName = filename.replace(/\.test\.(ts|tsx|js|jsx)$/, '');
     
-    // Extract filename without extension
-    const pathParts = normalizedPath.split('/');
-    let filename = pathParts[pathParts.length - 1];
-    
-    // Remove .test.ts or .test.tsx extension
-    const suiteName = filename
-      .replace(/\.test\.(ts|tsx)$/, '')
-      .replace(/\.(ts|tsx)$/, '');
-    
-    console.log(`Extracted suite name: ${suiteName} from path: ${normalizedPath}`);
     return suiteName;
   }
 
+  /**
+   * Create a unique ID for this test suite that will remain consistent
+   * throughout the test run
+   */
+  getSuiteId(filePath) {
+    return this.getSimplifiedPath(filePath);
+  }
+
+  /**
+   * Called when Jest starts the test run
+   */
   async onRunStart() {
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     
-    // Validation of required environment variables
+    // Validate required environment variables
     if (!process.env.SUPABASE_URL) {
       console.error('SUPABASE_URL is not set. Cannot create test run.');
       return;
@@ -112,114 +124,44 @@ class TestReporter {
     }
   }
 
+  /**
+   * Called when a test file starts execution
+   */
   async onTestFileStart(test) {
-    if (!this.testRunId) {
-      console.error('No testRunId available. Cannot record test suite.');
+    if (!test || !test.path) {
+      console.error('Test object or test path is undefined in onTestFileStart');
       return;
     }
 
-    // Add defensive check for test
-    if (!test) {
-      console.error('Test object is undefined in onTestFileStart');
-      return;
-    }
-
-    const testFilePath = this.normalizePath(test.path);
+    const suiteId = this.getSuiteId(test.path);
+    const suiteName = this.getSuiteName(test.path);
+    const simplifiedPath = this.getSimplifiedPath(test.path);
     
-    // Extract suite name using the improved method
-    const suiteName = this.extractSuiteName(test.path);
+    console.log(`Starting test suite: "${suiteName}" (${simplifiedPath})`);
     
-    console.log(`Starting test suite: ${suiteName} (${testFilePath})`);
-
-    this.results.currentSuite = {
-      path: testFilePath,
-      name: suiteName,
-      startTime: Date.now(),
-      testCount: 0,
-      passed: 0,
-      failed: 0,
-      skipped: 0,
-      id: null
-    };
-    
-    try {
-      // Record that the suite is starting - use 'in_progress' as initial status
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': process.env.TEST_REPORTING_API_KEY
-        },
-        body: JSON.stringify({
-          test_run_id: this.testRunId,
-          suite_name: suiteName,
-          file_path: testFilePath,
-          status: 'in_progress',
-          test_count: 0,
-          duration_ms: 0
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        this.results.currentSuite.id = data.test_suite_id;
-        console.log(`Recorded start of test suite ${suiteName} with ID ${data.test_suite_id}`);
-      } else {
-        const errorText = await response.text();
-        console.error(`Failed to record test suite start: ${errorText}`);
-      }
-    } catch (error) {
-      console.error(`Error recording test suite start for ${suiteName}:`, error);
-    }
-
-    // Store the suite in our map using normalized path
-    this.results.suites.set(testFilePath, this.results.currentSuite);
-  }
-
-  async onTestFileResult(test, testResult) {
-    // Add detailed logging to debug the issue
-    console.log(`onTestFileResult called with test path: ${test ? test.path : 'undefined'}`);
-    
-    if (!test) {
-      console.error('Test object is undefined in onTestFileResult');
-      return;
-    }
-
-    if (!testResult) {
-      console.error('TestResult object is undefined in onTestFileResult');
-      return;
-    }
-
-    const testFilePath = this.normalizePath(test.path);
-    console.log(`Looking for suite with normalized testFilePath: ${testFilePath}`);
-    
-    // Extract the suite name consistently
-    const testSuiteName = this.extractSuiteName(test.path);
-    console.log(`Extracted suite name: ${testSuiteName}`);
-    
-    // Check if we have the suite in our map
-    let suite = this.results.suites.get(testFilePath);
-    
-    // If suite not found, create it on the fly as fallback
-    if (!suite) {
-      console.warn(`No suite found for ${testFilePath}, creating one now as fallback`);
-      
-      suite = {
-        path: testFilePath,
-        name: testSuiteName,
-        startTime: Date.now() - 1000, // Assume it started 1 second ago as fallback
-        testCount: 0,
+    // Create suite object if it doesn't exist
+    if (!this.results.suites.has(suiteId)) {
+      const suiteInfo = {
+        id: null,          // Database ID, set when recorded
+        path: test.path,
+        simplifiedPath,
+        name: suiteName,
+        startTime: Date.now(),
+        tests: [],
         passed: 0,
         failed: 0,
-        skipped: 0,
-        id: null
+        skipped: 0
       };
       
-      // Store the suite in our map
-      this.results.suites.set(testFilePath, suite);
+      this.results.suites.set(suiteId, suiteInfo);
       
-      // Try to register this suite in the database
+      // Try to record the suite start in the database
       try {
+        if (!this.testRunId) {
+          console.error('No testRunId available. Cannot record test suite.');
+          return;
+        }
+        
         const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
           method: 'POST',
           headers: {
@@ -228,8 +170,8 @@ class TestReporter {
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
-            suite_name: testSuiteName,
-            file_path: testFilePath,
+            suite_name: suiteName,
+            file_path: simplifiedPath,
             status: 'in_progress',
             test_count: 0,
             duration_ms: 0
@@ -238,15 +180,176 @@ class TestReporter {
         
         if (response.ok) {
           const data = await response.json();
-          suite.id = data.test_suite_id;
-          console.log(`Created fallback suite ${testSuiteName} with ID ${data.test_suite_id}`);
+          suiteInfo.id = data.test_suite_id;
+          console.log(`Recorded start of test suite "${suiteName}" with ID ${data.test_suite_id}`);
         } else {
           const errorText = await response.text();
-          console.error(`Failed to create fallback suite: ${errorText}`);
+          console.error(`Failed to record test suite start: ${errorText}`);
         }
       } catch (error) {
-        console.error(`Error creating fallback suite for ${testSuiteName}:`, error);
+        console.error(`Error recording test suite start for ${suiteName}:`, error);
       }
+    }
+  }
+
+  /**
+   * Process individual test results and send them to the API
+   */
+  async processTestResults(testResult, suite) {
+    if (!testResult || !suite) {
+      console.error('testResult or suite is undefined in processTestResults');
+      return;
+    }
+    
+    if (!testResult.testResults) {
+      console.error('No testResults array found in testResult object');
+      return;
+    }
+    
+    if (!this.testRunId || !suite.id) {
+      console.error(`Cannot report test results - testRunId: ${this.testRunId}, suiteId: ${suite.id}`);
+      return;
+    }
+    
+    console.log(`Processing ${testResult.testResults.length} test results for "${suite.name}" (Suite ID: ${suite.id})`);
+    
+    // Add special handling for suites that failed to run
+    if (testResult.testExecError) {
+      try {
+        // Submit a synthetic test result for the entire suite failure
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.TEST_REPORTING_API_KEY
+          },
+          body: JSON.stringify({
+            test_run_id: this.testRunId,
+            test_suite_id: suite.id,
+            test_suite: suite.name,
+            test_name: 'Suite Failed To Run',
+            status: 'failed',
+            duration_ms: 0,
+            error_message: testResult.testExecError.message,
+            stack_trace: testResult.testExecError.stack || null,
+            console_output: null
+          })
+        });
+
+        if (!response.ok) {
+          const responseText = await response.text();
+          console.error(`Failed to save suite failure test result: ${responseText}`);
+        } else {
+          console.log(`Successfully reported suite failure for: ${suite.name}`);
+        }
+      } catch (error) {
+        console.error(`Error saving suite failure result for ${suite.name}:`, error);
+      }
+      
+      // Add synthetic test to our totals
+      this.results.total++;
+      this.results.failed++;
+    }
+    
+    // Process each test and send individually
+    for (const result of testResult.testResults || []) {
+      if (!result) {
+        console.warn('Skipping undefined test result');
+        continue;
+      }
+      
+      // Get proper test status
+      const testStatus = result.status === 'passed' ? 'passed' : 
+                        result.status === 'failed' ? 'failed' : 'skipped';
+      
+      // Properly format the test name
+      let testName = '';
+      if (Array.isArray(result.ancestorTitles) && result.title) {
+        // Include ancestor titles for nested describes
+        const ancestors = result.ancestorTitles.filter(Boolean);
+        testName = [...ancestors, result.title].join(' > ');
+      } else if (typeof result.title === 'string') {
+        testName = result.title;
+      } else if (result.fullName) {
+        testName = result.fullName;
+      } else {
+        testName = `Test #${this.results.total}`;
+      }
+      
+      // Create a unique identifier for this test
+      const testId = `${suite.id}:${testName}`;
+      
+      // Skip if we've already reported this test
+      if (this.results.reportedTests.has(testId)) {
+        console.log(`Skipping duplicate test: ${testName}`);
+        continue;
+      }
+      
+      // Mark this test as reported
+      this.results.reportedTests.add(testId);
+      
+      // Update summary counts
+      this.results.total++;
+      if (testStatus === 'passed') this.results.passed++;
+      else if (testStatus === 'failed') this.results.failed++;
+      else this.results.skipped++;
+      
+      console.log(`- Test: "${testName}", Status: ${testStatus}, Suite: ${suite.name} (ID: ${suite.id})`);
+      
+      // Safely handle possibly undefined properties
+      const failureMessages = result.failureMessages || [];
+      const consoleOutput = result.console && result.console.length > 0 
+        ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
+        : null;
+      
+      try {
+        // Submit individual test result
+        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': process.env.TEST_REPORTING_API_KEY
+          },
+          body: JSON.stringify({
+            test_run_id: this.testRunId,
+            test_suite_id: suite.id,
+            test_suite: suite.name,
+            test_name: testName,
+            status: testStatus,
+            duration_ms: result.duration || 0,
+            error_message: failureMessages.length > 0 ? failureMessages[0] : null,
+            stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
+            console_output: consoleOutput
+          })
+        });
+
+        if (!response.ok) {
+          const responseText = await response.text();
+          console.error(`Failed to save test result: ${responseText}`);
+        } else {
+          console.log(`Successfully reported test result: "${testName}"`);
+        }
+      } catch (error) {
+        console.error(`Error saving test result for ${testName}:`, error);
+      }
+    }
+  }
+
+  /**
+   * Called when a test file completes execution
+   */
+  async onTestFileResult(test, testResult) {
+    if (!test || !test.path || !testResult) {
+      console.error('Missing test or testResult object in onTestFileResult');
+      return;
+    }
+
+    const suiteId = this.getSuiteId(test.path);
+    const suite = this.results.suites.get(suiteId);
+    
+    if (!suite) {
+      console.error(`Suite not found for ${test.path} in onTestFileResult`);
+      return;
     }
     
     // Calculate test duration
@@ -262,13 +365,7 @@ class TestReporter {
     // Determine status from actual test results
     const status = testResult.testExecError || testResult.numFailingTests > 0 ? 'failure' : 'success';
     
-    // Add extra logging to debug test errors
-    if (testResult.testExecError) {
-      console.log(`Test suite execution error detected for ${suite.name}:`, testResult.testExecError.message);
-    }
-    
-    console.log(`Completed test suite: ${suite.name} - ${status} (${testCount} tests, ${duration}ms)`);
-    console.log(`Suite ID for updating results: ${suite.id}`);
+    console.log(`Completed test suite: "${suite.name}" - ${status} (${testCount} tests, ${duration}ms)`);
     
     if (!this.testRunId) {
       console.error('No testRunId available. Cannot update test suite.');
@@ -276,10 +373,10 @@ class TestReporter {
     }
     
     try {
-      // Now process the individual tests in this suite - do this BEFORE updating suite status
+      // First process the individual tests in this suite
       await this.processTestResults(testResult, suite);
       
-      // Update the suite record with final results
+      // Then update the suite record with final results
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
         headers: {
@@ -289,7 +386,7 @@ class TestReporter {
         body: JSON.stringify({
           test_run_id: this.testRunId,
           suite_name: suite.name,
-          file_path: testFilePath,
+          file_path: suite.simplifiedPath,
           status: status,
           test_count: testCount,
           duration_ms: duration,
@@ -303,195 +400,27 @@ class TestReporter {
         console.error(`Failed to update test suite: ${errorText}`);
       } else {
         const data = await response.json();
-        console.log(`Updated test suite ${suite.name} with ID ${data.test_suite_id}`);
+        console.log(`Updated test suite "${suite.name}" with ID ${data.test_suite_id}`);
       }
     } catch (error) {
       console.error(`Error updating test suite ${suite.name}:`, error);
     }
-
-    // Clear current suite if it matches the one we just processed
-    if (this.results.currentSuite && this.results.currentSuite.path === testFilePath) {
-      this.results.currentSuite = null;
-    }
   }
 
-  async processTestResults(testResult, suite) {
-    // Add more logging to debug the issue
-    if (!testResult) {
-      console.error('testResult is undefined in processTestResults');
-      return;
-    }
-    
-    if (!suite) {
-      console.error('suite is undefined in processTestResults');
-      return;
-    }
-    
-    const { testResults, testFilePath } = testResult;
-    
-    if (!this.testRunId) {
-      console.error('No testRunId available. Cannot report test results.');
-      return;
-    }
-    
-    if (!process.env.SUPABASE_URL) {
-      console.error('SUPABASE_URL is not set. Cannot report test results.');
-      return;
-    }
-    
-    if (!process.env.TEST_REPORTING_API_KEY) {
-      console.error('TEST_REPORTING_API_KEY is not set. Cannot report test results.');
-      return;
-    }
-    
-    console.log(`Reporting ${testResults?.length || 0} test results for ${testFilePath} to test run ${this.testRunId}`);
-    console.log(`Test suite ID for test results: ${suite.id || 'not set yet'}`);
-    
-    // Extract test suite name from file path or use suite name
-    const testSuiteName = suite.name || 'Unknown Suite';
-    
-    // Add special handling for suites that failed to run
-    if (testResult.testExecError) {
-      // Create a synthetic test result for suites that failed to run
-      try {
-        // Submit a synthetic test result for the entire suite failure
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
-          },
-          body: JSON.stringify({
-            test_run_id: this.testRunId,
-            test_suite_id: suite.id,
-            test_suite: testSuiteName,
-            test_name: 'Suite Failed To Run',
-            status: 'failed',
-            duration_ms: 0,
-            error_message: testResult.testExecError.message,
-            stack_trace: testResult.testExecError.stack || null,
-            console_output: null
-          })
-        });
-
-        if (!response.ok) {
-          const responseText = await response.text();
-          console.error(`Failed to save suite failure test result: ${responseText}`);
-        } else {
-          console.log(`Successfully reported suite failure for: ${testSuiteName}`);
-        }
-      } catch (error) {
-        console.error(`Error saving suite failure result for ${testSuiteName}:`, error);
-      }
-      
-      // Add synthetic test to our totals
-      this.results.total++;
-      this.results.failed++;
-    }
-    
-    // Process each test and send individually
-    for (const result of testResults || []) {
-      // Skip if result is undefined
-      if (!result) {
-        console.warn('Skipping undefined test result');
-        continue;
-      }
-      
-      const testStatus = result.status === 'passed' ? 'passed' : 
-                        result.status === 'failed' ? 'failed' : 'skipped';
-      
-      // Handle different test result formats for the title
-      let testName = '';
-      if (Array.isArray(result.title)) {
-        testName = result.title.join(' > ');
-      } else if (typeof result.title === 'string') {
-        testName = result.title;
-      } else if (result.fullName) {
-        testName = result.fullName;
-      } else {
-        testName = `Test #${this.results.total}`;
-      }
-      
-      // Create a unique identifier for this test
-      const testId = `${testSuiteName}:${testName}`;
-      
-      // Skip if we've already reported this test
-      if (this.results.reportedTests.has(testId)) {
-        console.log(`Skipping duplicate test: ${testName}`);
-        continue;
-      }
-      
-      // Mark this test as reported
-      this.results.reportedTests.add(testId);
-      
-      // Update summary counts - these will be reported in onRunComplete
-      this.results.total++;
-      if (testStatus === 'passed') this.results.passed++;
-      else if (testStatus === 'failed') this.results.failed++;
-      else this.results.skipped++;
-      
-      console.log(`- Test: ${testName}, Status: ${testStatus}, Suite ID: ${suite.id || 'not set'}`);
-      
-      // Only send results if we have a valid suite ID
-      if (!suite.id) {
-        console.warn(`Cannot record test result for ${testName} because suite ID is not set. Will skip this result.`);
-        continue;
-      }
-      
-      // Safely handle possibly undefined properties
-      const failureMessages = result.failureMessages || [];
-      const consoleOutput = result.console && result.console.length > 0 
-        ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
-        : null;
-      
-      try {
-        // Submit individual test result via the record-result endpoint
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
-          },
-          body: JSON.stringify({
-            test_run_id: this.testRunId,
-            test_suite_id: suite.id,
-            test_suite: testSuiteName,
-            test_name: testName,
-            status: testStatus,
-            duration_ms: result.duration || 0,
-            error_message: failureMessages.length > 0 ? failureMessages[0] : null,
-            stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
-            console_output: consoleOutput
-          })
-        });
-
-        if (!response.ok) {
-          const responseText = await response.text();
-          console.error(`Failed to save test result: ${responseText}`);
-        } else {
-          console.log(`Successfully reported test result: ${testName}`);
-        }
-      } catch (error) {
-        console.error(`Error saving test result for ${testName}:`, error);
-      }
-    }
-    
-    // Update total duration
-    this.results.duration += testResult.perfStats.end - testResult.perfStats.start;
-  }
-
+  /**
+   * Called for each test result - we'll mostly rely on onTestFileResult
+   * but keep this for compatibility
+   */
   async onTestResult(test, testResult) {
-    if (!test || !testResult) {
-      console.warn('Received undefined test or testResult in onTestResult - skipping');
-      return;
-    }
-    
-    // Most work is done in onTestFileResult - this is mostly kept for compatibility
+    // Most work is done in onTestFileResult
     if (test && test.path) {
-      console.log(`onTestResult for test path: ${test.path}`);
+      console.log(`onTestResult triggered for test path: ${test.path}`);
     }
   }
 
+  /**
+   * Called when the entire test run completes
+   */
   async onRunComplete(contexts, results) {
     if (!this.testRunId) {
       console.error('No testRunId available. Cannot update test run summary.');
@@ -505,7 +434,7 @@ class TestReporter {
     const status = this.results.failed > 0 ? 'failure' : 'success';
     
     try {
-      // Update test run with final results via the update-run endpoint
+      // Update test run with final results
       console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`);
       const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`, {
         method: 'POST',
