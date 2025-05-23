@@ -20,6 +20,5 @@ export * from './validationUtils';
 // Relationship testing
 export * from './relationshipTesting';
 
-// Legacy re-export for backward compatibility (will be removed in future)
-// Use direct imports from api/core/testing/* instead
-export * from '../../../tests/utils/testData';
+// Legacy re-export has been removed as it was pointing to an invalid path
+// If you need test data utilities, use the direct import from src/utils/testData instead
