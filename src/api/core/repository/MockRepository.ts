@@ -1,4 +1,3 @@
-
 import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { createSuccessResponse, createErrorResponse } from './repositoryUtils';
 import { BaseRepository } from './BaseRepository';
@@ -246,9 +245,6 @@ class MockQuery<T> implements RepositoryQuery<T> {
 
   /**
    * Filter by greater than or equal to
-   * @param column Column name
-   * @param value Value to compare
-   * @returns The query builder for chaining
    */
   gte(column: string, value: any): RepositoryQuery<T> {
     this.filters.push(item => {
@@ -277,6 +273,78 @@ class MockQuery<T> implements RepositoryQuery<T> {
       // Default comparison
       return itemValue >= compareValue;
     });
+    return this;
+  }
+  
+  /**
+   * Filter by less than
+   */
+  lt(column: string, value: any): RepositoryQuery<T> {
+    this.filters.push(item => {
+      const itemValue = item[column];
+      const compareValue = value;
+      
+      if (itemValue === null || itemValue === undefined) {
+        return false;
+      }
+      
+      // Handle date comparison
+      if (itemValue instanceof Date && compareValue instanceof Date) {
+        return itemValue < compareValue;
+      }
+      
+      // Handle string dates
+      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
+        const itemDate = new Date(itemValue);
+        const compareDate = new Date(compareValue);
+        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
+          return itemDate < compareDate;
+        }
+      }
+      
+      // Default comparison
+      return itemValue < compareValue;
+    });
+    return this;
+  }
+  
+  /**
+   * Filter with OR conditions
+   */
+  or(filter: string): RepositoryQuery<T> {
+    // Parse the filter string, which is in format "column.operator.value,column.operator.value"
+    const conditions = filter.split(',');
+    
+    this.filters.push(item => {
+      return conditions.some(condition => {
+        const parts = condition.split('.');
+        if (parts.length < 3) return false;
+        
+        const column = parts[0];
+        const operator = parts[1];
+        const value = parts.slice(2).join('.'); // Rejoin in case the value contains dots
+        
+        switch (operator) {
+          case 'eq':
+            return item[column] === value;
+          case 'neq':
+            return item[column] !== value;
+          case 'ilike':
+            const pattern = value.replace(/%/g, '.*');
+            const regex = new RegExp(pattern, 'i');
+            return regex.test(String(item[column] || ''));
+          case 'is':
+            if (value === 'null') {
+              return item[column] === null || item[column] === undefined;
+            } else {
+              return item[column] !== null && item[column] !== undefined;
+            }
+          default:
+            return false;
+        }
+      });
+    });
+    
     return this;
   }
 

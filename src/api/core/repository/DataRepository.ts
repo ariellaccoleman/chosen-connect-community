@@ -110,6 +110,21 @@ export interface RepositoryQuery<T = any> {
   gte(column: string, value: any): RepositoryQuery<T>;
   
   /**
+   * Filter by less than
+   * @param column Column name
+   * @param value Value to compare
+   * @returns The query builder for chaining
+   */
+  lt(column: string, value: any): RepositoryQuery<T>;
+  
+  /**
+   * Filter with OR conditions
+   * @param filter A string representing OR conditions in the format "column.operator.value,column.operator.value"
+   * @returns The query builder for chaining
+   */
+  or(filter: string): RepositoryQuery<T>;
+  
+  /**
    * Order results by a column
    * @param column Column to order by
    * @param options Options for ordering

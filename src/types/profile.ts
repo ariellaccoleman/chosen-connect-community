@@ -1,10 +1,12 @@
 
 import { LocationWithDetails } from "./location";
 import { TagAssignment } from "@/utils/tags/types";
+import { Entity } from "./entity";
+import { EntityType } from "./entityTypes";
 
 export type MembershipTier = "free" | "community" | "pro" | "partner";
 
-export interface Profile {
+export interface Profile extends Entity {
   id: string;
   email: string;
   first_name: string;
@@ -21,6 +23,8 @@ export interface Profile {
   updated_at?: string;
   is_approved?: boolean;
   membership_tier?: MembershipTier;
+  entityType: EntityType.PERSON;
+  name: string; // Will be derived from first_name + last_name
 }
 
 export interface ProfileWithDetails extends Profile {

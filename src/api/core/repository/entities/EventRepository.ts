@@ -40,6 +40,7 @@ export class EventRepository extends EntityRepository<EventWithDetails> {
       is_paid: record.is_paid || false,
       price: record.price || null,
       host_id: record.host_id,
+      tag_id: record.tag_id || null, // Added this line to include tag_id
       created_at: createdAt,
       updated_at: updatedAt,
       
@@ -51,6 +52,10 @@ export class EventRepository extends EntityRepository<EventWithDetails> {
       
       // Include tags if available
       tags: record.tags || [],
+      
+      // Add Entity required fields
+      entityType: EntityType.EVENT,
+      name: record.title || '', // Map title to name for Entity compatibility
     };
   }
 
@@ -69,6 +74,7 @@ export class EventRepository extends EntityRepository<EventWithDetails> {
       is_paid: entity.is_paid,
       price: entity.price,
       host_id: entity.host_id,
+      tag_id: entity.tag_id,
       created_at: entity.created_at,
       updated_at: entity.updated_at,
     };

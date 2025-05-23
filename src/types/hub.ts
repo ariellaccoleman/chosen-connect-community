@@ -1,10 +1,12 @@
 
 import { Tag } from './index';
+import { EntityType } from './entityTypes';
+import { Entity } from './entity';
 
 /**
  * Hub type definition
  */
-export interface Hub {
+export interface Hub extends Entity {
   id: string;
   name: string;
   description: string | null;
@@ -12,6 +14,7 @@ export interface Hub {
   is_featured: boolean;
   created_at: string;
   updated_at: string;
+  entityType: EntityType.HUB;
 }
 
 /**

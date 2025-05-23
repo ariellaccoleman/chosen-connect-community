@@ -1,4 +1,3 @@
-
 import { EntityRepository } from '../EntityRepository';
 import { Hub, HubWithDetails } from '@/types/hub';
 import { EntityType } from '@/types/entityTypes';
@@ -35,6 +34,7 @@ export class HubRepository extends EntityRepository<Hub> {
       is_featured: record.is_featured || false,
       created_at: createdAt,
       updated_at: updatedAt,
+      entityType: EntityType.HUB, // Add required Entity property
     };
   }
 

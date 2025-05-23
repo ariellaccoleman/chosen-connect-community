@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
@@ -159,6 +158,32 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     }
   }
 
+  /**
+   * Filter by less than
+   */
+  lt(column: string, value: any): RepositoryQuery<T> {
+    try {
+      this.query = this.query.lt(column, value);
+      return this;
+    } catch (error) {
+      logger.error(`Error in lt operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.lt(${column})`);
+    }
+  }
+  
+  /**
+   * Filter with OR conditions
+   */
+  or(filter: string): RepositoryQuery<T> {
+    try {
+      this.query = this.query.or(filter);
+      return this;
+    } catch (error) {
+      logger.error(`Error in or operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.or(${filter})`);
+    }
+  }
+
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
     try {
       this.query = this.query.order(column, options);
@@ -280,6 +305,8 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   ilike(_column: string, _pattern: string): RepositoryQuery<T> { return this; }
   is(_column: string, _isNull: null | boolean): RepositoryQuery<T> { return this; }
   gte(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  lt(_column: string, _value: any): RepositoryQuery<T> { return this; }
+  or(_filter: string): RepositoryQuery<T> { return this; }
   order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
   limit(_count: number): RepositoryQuery<T> { return this; }
   range(_from: number, _to: number): RepositoryQuery<T> { return this; }

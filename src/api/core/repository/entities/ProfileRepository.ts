@@ -28,13 +28,17 @@ export class ProfileRepository extends EntityRepository<ProfileWithDetails> {
     const createdAt = record.created_at ? new Date(record.created_at).toISOString() : undefined;
     const updatedAt = record.updated_at ? new Date(record.updated_at).toISOString() : undefined;
     
+    const firstName = record.first_name || '';
+    const lastName = record.last_name || '';
+    const fullName = `${firstName} ${lastName}`.trim();
+    
     return {
       id: record.id,
       entityType: EntityType.PERSON,
-      name: `${record.first_name || ''} ${record.last_name || ''}`.trim(),
-      full_name: `${record.first_name || ''} ${record.last_name || ''}`.trim(),
-      first_name: record.first_name || '',
-      last_name: record.last_name || '',
+      name: fullName,
+      full_name: fullName,
+      first_name: firstName,
+      last_name: lastName,
       email: record.email || '',
       bio: record.bio || '',
       headline: record.headline || '',
