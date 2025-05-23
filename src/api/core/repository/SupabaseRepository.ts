@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
@@ -9,10 +10,28 @@ import { createSuccessResponse, createErrorResponse, handleRepositoryError } fro
  */
 export class SupabaseRepository<T = any> extends BaseRepository<T> {
   private supabaseClient: any;
+  private schema: string;
 
-  constructor(tableName: string, client?: any) {
+  constructor(tableName: string, client?: any, schema: string = 'public') {
     super(tableName);
     this.supabaseClient = client || supabase;
+    this.schema = schema;
+  }
+
+  /**
+   * Set the schema to use for database operations
+   * @param schema The schema name
+   */
+  setSchema(schema: string): void {
+    this.schema = schema;
+  }
+
+  /**
+   * Get the current schema name
+   * @returns The current schema name
+   */
+  getSchema(): string {
+    return this.schema;
   }
 
   /**
@@ -20,9 +39,11 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
     try {
+      // Cast the tableName to any to bypass the type checking,
+      // as we're allowing dynamic table names that might not be in the type system
       const query = this.supabaseClient
         .from(this.tableName as any)
-        .select(selectQuery);
+        .select(selectQuery, { schema: this.schema });
       
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
@@ -37,9 +58,10 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     try {
+      // Cast the tableName to any to bypass the type checking
       const query = this.supabaseClient
         .from(this.tableName as any)
-        .insert(data);
+        .insert(data, { schema: this.schema });
       
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
@@ -53,9 +75,10 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   update(data: Record<string, any>): RepositoryQuery<T> {
     try {
+      // Cast the tableName to any to bypass the type checking
       const query = this.supabaseClient
         .from(this.tableName as any)
-        .update(data);
+        .update(data, { schema: this.schema });
       
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
@@ -69,14 +92,60 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   delete(): RepositoryQuery<T> {
     try {
+      // Cast the tableName to any to bypass the type checking
       const query = this.supabaseClient
         .from(this.tableName as any)
-        .delete();
+        .delete({ schema: this.schema });
       
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating delete query for ${this.tableName}:`, error);
       return new ErrorQuery<T>(error, `delete from ${this.tableName}`);
+    }
+  }
+
+  /**
+   * Get a record by ID
+   * 
+   * @param id ID of the record to get
+   * @returns Promise with the record
+   */
+  async getById(id: string | number): Promise<T | null> {
+    try {
+      const result = await this.select()
+        .eq('id', id)
+        .single();
+      
+      if (result.isError()) {
+        logger.error(`Error getting ${this.tableName} by ID ${id}:`, result.error);
+        return null;
+      }
+      
+      return result.data as T;
+    } catch (error) {
+      logger.error(`Error in getById for ${this.tableName}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Get all records
+   * 
+   * @returns Promise with all records
+   */
+  async getAll(): Promise<T[]> {
+    try {
+      const result = await this.select().execute();
+      
+      if (result.isError()) {
+        logger.error(`Error getting all ${this.tableName}:`, result.error);
+        return [];
+      }
+      
+      return result.data as T[];
+    } catch (error) {
+      logger.error(`Error in getAll for ${this.tableName}:`, error);
+      return [];
     }
   }
 }
@@ -371,6 +440,6 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
 /**
  * Create a Supabase repository for a specific table
  */
-export function createSupabaseRepository<T>(tableName: string, client?: any): SupabaseRepository<T> {
-  return new SupabaseRepository<T>(tableName, client);
+export function createSupabaseRepository<T>(tableName: string, client?: any, schema: string = 'public'): SupabaseRepository<T> {
+  return new SupabaseRepository<T>(tableName, client, schema);
 }

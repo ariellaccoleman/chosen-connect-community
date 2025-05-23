@@ -52,6 +52,11 @@ export interface EnhancedRepositoryOptions<T> {
    * Set to 0 to disable caching
    */
   cacheDuration?: number;
+  
+  /**
+   * Database schema to use (defaults to 'public')
+   */
+  schema?: string;
 }
 
 /**
@@ -71,17 +76,20 @@ export function createEnhancedRepository<T>(
   // Create base repository
   let repository: BaseRepository<T>;
   
+  const schema = options.schema || 'public';
+  
   // Initialize the repository based on type
   if (type === "mock") {
     repository = new MockRepository<T>(tableName, initialData || []);
   } else {
-    repository = new SupabaseRepository<T>(tableName, supabase);
+    repository = new SupabaseRepository<T>(tableName, supabase, schema);
   }
   
   // Log repository creation in development
   if (process.env.NODE_ENV === "development" && options.enableLogging) {
     logger.info(`Creating repository for table ${tableName}`, {
       repositoryType: type,
+      schema,
       options
     });
   }
@@ -92,7 +100,8 @@ export function createEnhancedRepository<T>(
       idField: options.idField || "id",
       defaultSelect: options.defaultSelect,
       softDelete: options.softDelete || false,
-      deletedAtColumn: options.deletedAtColumn || "deleted_at"
+      deletedAtColumn: options.deletedAtColumn || "deleted_at",
+      schema
     });
   }
   

@@ -1,4 +1,3 @@
-
 import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
@@ -92,6 +91,11 @@ export interface TestRepositoryOptions<T> {
    * Enable debug logging
    */
   debug?: boolean;
+  
+  /**
+   * Schema name for database operations (defaults to 'testing')
+   */
+  schema?: string;
 }
 
 /**
@@ -105,7 +109,8 @@ export function createTestRepository<T>(
     initialData = [], 
     entityType,
     idField = 'id',
-    debug = true
+    debug = true,
+    schema = 'testing'
   } = options;
   
   if (debug) {
@@ -329,26 +334,31 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   
   // Mock the createSupabaseRepository function
   jest.mock('../repository/repositoryFactory', () => ({
-    createSupabaseRepository: jest.fn((tableName: string) => {
+    createSupabaseRepository: jest.fn((tableName: string, client: any, schema: string = 'testing') => {
       return createTestRepository({
         tableName,
         initialData: mockData[tableName] || [],
-        idField: 'id'
+        idField: 'id',
+        schema
       });
     }),
     // Maintain other exports
-    createRepository: jest.fn((tableName: string, type: string) => {
+    createRepository: jest.fn((tableName: string, type: string, initialData: any[] = [], options = {}) => {
+      const schema = options.schema || 'testing';
+      
       if (type === 'mock') {
         return createTestRepository({
           tableName,
-          initialData: mockData[tableName] || [],
-          idField: 'id'
+          initialData: initialData || mockData[tableName] || [],
+          idField: 'id',
+          schema
         });
       } else {
         return createTestRepository({
           tableName,
-          initialData: mockData[tableName] || [],
-          idField: 'id'
+          initialData: initialData || mockData[tableName] || [],
+          idField: 'id',
+          schema
         });
       }
     }),

@@ -64,8 +64,8 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
   // Mock the createSupabaseRepository function
   jest.mock('@/api/core/repository/repositoryFactory', () => {
     const factories = {
-      createSupabaseRepository: jest.fn((tableName: string) => {
-        console.log(`[Mock Factory] Creating repository for ${tableName}`);
+      createSupabaseRepository: jest.fn((tableName: string, client?: any, schema: string = 'testing') => {
+        console.log(`[Mock Factory] Creating repository for ${tableName} with schema ${schema}`);
         const repo = createMockRepository(tableName, mockData[tableName] || []);
         // Log the mock data for debugging
         if (mockData[tableName]?.length > 0) {
@@ -73,13 +73,20 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
         }
         return repo;
       }),
-      createRepository: jest.fn((tableName: string, type?: string, initialData?: any[]) => {
-        console.log(`[Mock Factory] Creating ${type || 'default'} repository for ${tableName}`);
+      createRepository: jest.fn((tableName: string, type?: string, initialData?: any[], options = {}) => {
+        const schema = options.schema || 'testing';
+        console.log(`[Mock Factory] Creating ${type || 'default'} repository for ${tableName} with schema ${schema}`);
         const data = initialData || mockData[tableName] || [];
         const repo = createMockRepository(tableName, data);
         if (data.length > 0) {
           console.log(`[Mock Factory] First item in ${tableName}: ${JSON.stringify(data[0])}`);
         }
+        return repo;
+      }),
+      createTestingRepository: jest.fn((tableName: string, type?: string, initialData?: any[]) => {
+        console.log(`[Mock Factory] Creating testing repository for ${tableName}`);
+        const data = initialData || mockData[tableName] || [];
+        const repo = createMockRepository(tableName, data);
         return repo;
       })
     };

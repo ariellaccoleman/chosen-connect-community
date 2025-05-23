@@ -1711,6 +1711,10 @@ export type Database = {
       }
     }
     Functions: {
+      exec_sql: {
+        Args: { query: string }
+        Returns: undefined
+      }
       get_cached_tags: {
         Args: { cache_key: string }
         Returns: Json
@@ -1718,6 +1722,10 @@ export type Database = {
       is_site_admin: {
         Args: Record<PropertyKey, never>
         Returns: boolean
+      }
+      pg_get_tabledef: {
+        Args: { p_schema: string; p_table: string }
+        Returns: string
       }
       query_tags: {
         Args: { query_text: string }
@@ -1729,6 +1737,10 @@ export type Database = {
           name: string
           updated_at: string | null
         }[]
+      }
+      setup_testing_schema: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       update_tag_cache: {
         Args: { cache_key: string; cache_data: Json }
