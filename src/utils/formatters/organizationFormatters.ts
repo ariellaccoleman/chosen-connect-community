@@ -94,3 +94,39 @@ export function formatAdminWithDetails(data: any): any {
   
   return admin;
 }
+
+/**
+ * Format organization relationships for display
+ */
+export function formatOrganizationRelationships(data: any[]): any[] {
+  if (!data || !Array.isArray(data)) return [];
+  
+  return data.map(item => ({
+    id: item.id,
+    profileId: item.profile_id,
+    organizationId: item.organization_id,
+    connectionType: item.connection_type,
+    department: item.department,
+    notes: item.notes,
+    createdAt: item.created_at,
+    updatedAt: item.updated_at,
+    organization: item.organization ? {
+      id: item.organization.id,
+      name: item.organization.name,
+      description: item.organization.description,
+      logoUrl: item.organization.logo_url,
+      websiteUrl: item.organization.website_url,
+      location: item.organization.location ? {
+        id: item.organization.location.id,
+        city: item.organization.location.city,
+        region: item.organization.location.region,
+        country: item.organization.location.country,
+        formatted_location: [
+          item.organization.location.city,
+          item.organization.location.region,
+          item.organization.location.country
+        ].filter(Boolean).join(', ')
+      } : null
+    } : null
+  }));
+}

@@ -22,8 +22,8 @@ const EventSection: React.FC = () => {
   
   // Get the 3 most recent upcoming events
   const upcomingEvents = events
-    .filter(event => new Date(event.start_time) >= new Date())
-    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+    .filter(event => new Date(event.startTime) >= new Date())
+    .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
     .slice(0, 3);
 
   const formatEventDate = (dateString: string) => {
@@ -87,7 +87,7 @@ const EventSection: React.FC = () => {
                 <div className="font-medium">{event.title}</div>
                 <div className="text-xs text-gray-500 flex items-center mt-1">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {formatEventDate(event.start_time)}
+                  {formatEventDate(event.startTime)}
                 </div>
                 {event.tags && event.tags.length > 0 && (
                   <div className="mt-2">

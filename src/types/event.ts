@@ -13,8 +13,8 @@ export interface Event extends Entity {
   name: string; // Using title as name to satisfy the Entity interface
   title: string;
   description: string;
-  startTime: Date;
-  endTime: Date;
+  startTime: string; // Changed from Date to string to match how it's used
+  endTime: string;   // Changed from Date to string to match how it's used
   timezone: string;
   locationId: string | null;
   address: string;
@@ -25,8 +25,8 @@ export interface Event extends Entity {
   price: number;
   currency: string;
   capacity?: number;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string; // Changed from Date to string to match how it's used
+  updatedAt: string; // Changed from Date to string to match how it's used
 }
 
 // Original Event type from DB

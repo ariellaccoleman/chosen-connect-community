@@ -11,9 +11,9 @@ interface ProfileAvatarProps {
 
 export const ProfileAvatar = ({ profile, showAdminBadge = false }: ProfileAvatarProps) => {
   const getInitials = () => {
-    if (!profile || !profile.first_name) return "U";
+    if (!profile || !profile.firstName) return "U";
 
-    return [profile.first_name?.[0], profile.last_name?.[0]]
+    return [profile.firstName?.[0], profile.lastName?.[0]]
       .filter(Boolean)
       .join("")
       .toUpperCase();
@@ -23,11 +23,11 @@ export const ProfileAvatar = ({ profile, showAdminBadge = false }: ProfileAvatar
 
   return (
     <div className="flex-shrink-0 w-16 h-16 relative rounded-full overflow-hidden">
-      {profile.avatar_url ? (
+      {profile.avatarUrl ? (
         <div className="h-full w-full flex items-center justify-center">
           <img 
-            src={profile.avatar_url} 
-            alt={`${profile.full_name || 'User'} avatar`}
+            src={profile.avatarUrl} 
+            alt={`${profile.fullName || 'User'} avatar`}
             className="object-cover w-full h-full rounded-full"
           />
         </div>

@@ -14,7 +14,7 @@ export const ProfileInfo = ({ profile }: ProfileInfoProps) => {
     <div className="flex-1 min-w-0">
       <div className="flex items-center gap-2">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          {profile.full_name || "Anonymous User"}
+          {profile.fullName || "Anonymous User"}
         </h3>
         {isAdmin && (
           <Badge variant="success" className="flex items-center gap-1">

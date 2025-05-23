@@ -6,7 +6,7 @@ import { ProfileOrganizationRelationship, ProfileOrganizationRelationshipWithDet
 /**
  * Factory for organization relationships API operations
  */
-export const organizationRelationshipsApi = createApiFactory<
+const organizationRelationshipsApiFactory = createApiFactory<
   ProfileOrganizationRelationshipWithDetails,
   string,
   Partial<ProfileOrganizationRelationship>,
@@ -127,7 +127,7 @@ export async function checkRelationshipExists(profileId: string, organizationId:
  * API helpers for organizational relationships
  */
 export const organizationRelationshipsApi = {
-  ...organizationRelationshipsApi,
+  ...organizationRelationshipsApiFactory,
 
   /**
    * Get relationships for a user profile

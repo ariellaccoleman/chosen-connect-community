@@ -6,15 +6,15 @@ interface ProfileSocialLinksProps {
 }
 
 export const ProfileSocialLinks = ({ profile }: ProfileSocialLinksProps) => {
-  if (!profile.linkedin_url && !profile.twitter_url && !profile.website_url) {
+  if (!profile.linkedinUrl && !profile.twitterUrl && !profile.websiteUrl) {
     return null;
   }
   
   return (
     <div className="mt-4 flex flex-wrap gap-2">
-      {profile.linkedin_url && (
+      {profile.linkedinUrl && (
         <a
-          href={profile.linkedin_url}
+          href={profile.linkedinUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-blue-600 hover:underline"
@@ -22,9 +22,9 @@ export const ProfileSocialLinks = ({ profile }: ProfileSocialLinksProps) => {
           LinkedIn
         </a>
       )}
-      {profile.twitter_url && (
+      {profile.twitterUrl && (
         <a
-          href={profile.twitter_url}
+          href={profile.twitterUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-blue-600 hover:underline"
@@ -32,9 +32,9 @@ export const ProfileSocialLinks = ({ profile }: ProfileSocialLinksProps) => {
           Twitter
         </a>
       )}
-      {profile.website_url && (
+      {profile.websiteUrl && (
         <a
-          href={profile.website_url}
+          href={profile.websiteUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-blue-600 hover:underline"

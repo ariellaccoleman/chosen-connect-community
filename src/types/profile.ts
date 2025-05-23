@@ -1,44 +1,17 @@
 
 import { Entity } from './entity';
 import { EntityType } from './entityTypes';
-import { LocationWithDetails } from './location';
 import { TagAssignment } from '@/utils/tags/types';
+import { Location } from './location';
 
-// User profile data from database
-export interface Profile extends Entity {
+/**
+ * Profile type definition that matches the database structure
+ */
+export interface Profile {
   id: string;
-  firstName: string;
-  lastName: string;
-  entityType: EntityType.PERSON;
-  name: string; // Concatenated firstName + lastName to satisfy Entity interface
-  email: string;
-  bio: string;
-  headline: string;
-  avatarUrl: string;
-  company: string;
-  websiteUrl: string;
-  twitterUrl: string;
-  linkedinUrl: string;
-  timezone: string;
-  isApproved: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// Profile with additional details like location and relationships
-export interface ProfileWithDetails extends Profile {
-  location?: LocationWithDetails;
-  tags?: TagAssignment[];
-  // Format the name for display
-  fullName?: string;
-  formattedLocation?: string;
-}
-
-// Organization form data
-export interface ProfileFormValues {
-  firstName: string;
-  lastName: string;
-  email: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
   bio?: string;
   headline?: string;
   avatarUrl?: string;
@@ -47,66 +20,86 @@ export interface ProfileFormValues {
   twitterUrl?: string;
   linkedinUrl?: string;
   timezone?: string;
+  isApproved?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  locationId?: string;
+  role?: 'admin' | 'member';  // Add role field
 }
 
-// Public profile display data
-export interface PublicProfile {
-  id: string;
-  fullName: string;
-  avatarUrl?: string;
+/**
+ * Profile with additional details like location and tags
+ */
+export interface ProfileWithDetails extends Profile, Entity {
+  entityType: EntityType.PERSON;
+  fullName?: string;
+  formattedLocation?: string;
+  location?: Location;
+  tags?: TagAssignment[];
+  // Include role from auth metadata
+  role?: 'admin' | 'member';
+}
+
+/**
+ * Profile form values used in forms
+ */
+export interface ProfileFormValues {
+  firstName: string;
+  lastName: string;
+  email: string;
   headline?: string;
   bio?: string;
   company?: string;
   websiteUrl?: string;
   twitterUrl?: string;
   linkedinUrl?: string;
+  avatarUrl?: string;
+  timezone?: string;
+  locationId?: string;
 }
 
-// Membership tier for user profiles
-export enum MembershipTier {
-  FREE = 'free',
-  BASIC = 'basic',
-  PREMIUM = 'premium',
-  ENTERPRISE = 'enterprise'
-}
+/**
+ * Organization relationship types
+ */
+export type ConnectionType = 'current' | 'former' | 'connected_insider';
 
-// Organization relationship types 
+/**
+ * Profile-Organization relationship
+ */
 export interface ProfileOrganizationRelationship {
   id: string;
   profileId: string;
   organizationId: string;
-  connectionType: string;
-  department?: string;
-  notes?: string;
+  connectionType: ConnectionType;
+  department?: string | null;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
 }
 
-// Organization relationship with details
+/**
+ * Profile-Organization relationship with organization details
+ */
 export interface ProfileOrganizationRelationshipWithDetails extends ProfileOrganizationRelationship {
   organization?: {
     id: string;
     name: string;
     logoUrl?: string;
-  }
+    location?: {
+      id: string;
+      city: string;
+      region: string;
+      country: string;
+      formatted_location?: string;
+    };
+  };
 }
 
-// Organization admin with details
-export interface OrganizationAdminWithDetails {
-  id: string;
-  profileId: string;
-  organizationId: string;
-  role: string;
-  isApproved: boolean;
-  canEditProfile: boolean;
-  createdAt: string;
-  updatedAt: string;
-  profile?: {
-    id: string;
-    firstName: string;
-    lastName: string;
-    fullName?: string;
-    email: string;
-    avatarUrl?: string;
-  }
+/**
+ * Configuration for profile filtering
+ */
+export interface ProfileFilters {
+  search?: string;
+  tags?: string[];
+  showWithAvatar?: boolean;
 }
