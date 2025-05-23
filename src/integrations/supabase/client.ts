@@ -9,17 +9,21 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined";
 
-// Detect test environment
+// Detect test environment (safely check without relying on process directly)
 const isTestEnvironment = 
-  process.env.NODE_ENV === 'test' || 
-  process.env.JEST_WORKER_ID !== undefined ||
-  typeof global !== 'undefined' && global.process?.env?.NODE_ENV === 'test';
+  // Only access process if we're in a Node environment
+  isNodeEnvironment && 
+  (
+    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') ||
+    (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID !== undefined) ||
+    (typeof global !== 'undefined' && global.process?.env?.NODE_ENV === 'test')
+  );
 
 // Choose the appropriate key based on environment
 const getSupabaseKey = () => {
   if (isTestEnvironment) {
     // Use service role key in test environment for schema operations
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceRoleKey = typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
     if (serviceRoleKey) {
       console.log('🔧 Using Supabase service role key for test environment');
       return serviceRoleKey;
