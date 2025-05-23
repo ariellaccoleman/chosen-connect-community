@@ -372,17 +372,23 @@ export async function compareSchemasDDL(
       throw targetError;
     }
 
-    // Fix the type issues by using proper type assertions and null checks
+    // Fix the type issues with explicit type assertions
     let sourceSchemaString = '';
-    if (sourceDDL && Array.isArray(sourceDDL) && sourceDDL.length > 0) {
-      const firstRow = sourceDDL[0] as Record<string, any>;
-      sourceSchemaString = firstRow && firstRow.schema_ddl ? String(firstRow.schema_ddl) : '';
+    if (sourceDDL) {
+      // Using type assertion to handle the database result
+      const data = sourceDDL as unknown as Array<{schema_ddl?: string}>;
+      if (Array.isArray(data) && data.length > 0) {
+        sourceSchemaString = data[0]?.schema_ddl || '';
+      }
     }
     
     let targetSchemaString = '';
-    if (targetDDL && Array.isArray(targetDDL) && targetDDL.length > 0) {
-      const firstRow = targetDDL[0] as Record<string, any>;
-      targetSchemaString = firstRow && firstRow.schema_ddl ? String(firstRow.schema_ddl) : '';
+    if (targetDDL) {
+      // Using type assertion to handle the database result
+      const data = targetDDL as unknown as Array<{schema_ddl?: string}>;
+      if (Array.isArray(data) && data.length > 0) {
+        targetSchemaString = data[0]?.schema_ddl || '';
+      }
     }
     
     return {
