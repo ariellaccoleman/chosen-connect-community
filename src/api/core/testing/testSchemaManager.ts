@@ -1,5 +1,8 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
+import { validateSchemaReplication } from './schemaValidationUtils';
+import { logger } from '@/utils/logger';
 
 /**
  * Interface to track schema lifecycles
@@ -9,7 +12,11 @@ export interface SchemaInfo {
   name: string;
   createdAt: Date;
   tablesCreated: string[];
-  status: 'creating' | 'ready' | 'error' | 'released';
+  status: 'creating' | 'ready' | 'error' | 'released' | 'validated';
+  validationResult?: {
+    isValid: boolean;
+    summary: string;
+  };
 }
 
 /**
@@ -31,6 +38,7 @@ export function generateSchemaName(prefix: string = 'test'): string {
 export async function createTestSchema(options: {
   prefix?: string;
   createUserTable?: boolean;
+  validateSchema?: boolean;
 } = {}): Promise<SchemaInfo> {
   const schemaId = uuidv4();
   const schemaName = generateSchemaName(options.prefix || 'test');
@@ -83,7 +91,7 @@ export async function createTestSchema(options: {
       });
       
       if (defError) {
-        console.error(`Error getting definition for table ${tableName}:`, defError);
+        logger.error(`Error getting definition for table ${tableName}:`, defError);
         continue;
       }
       
@@ -117,11 +125,29 @@ export async function createTestSchema(options: {
       schemaInfo.tablesCreated.push('users');
     }
     
-    schemaInfo.status = 'ready';
+    // Validate schema if requested
+    if (options.validateSchema) {
+      const validationResult = await validateSchemaReplication('public', schemaName);
+      schemaInfo.validationResult = {
+        isValid: validationResult.isValid,
+        summary: validationResult.summary
+      };
+      
+      schemaInfo.status = validationResult.isValid ? 'validated' : 'error';
+      
+      if (!validationResult.isValid) {
+        logger.error(`Schema validation failed for ${schemaName}:`, validationResult.summary);
+      } else {
+        logger.info(`Schema validation passed for ${schemaName}`);
+      }
+    } else {
+      schemaInfo.status = 'ready';
+    }
+    
     return schemaInfo;
   } catch (error) {
     schemaInfo.status = 'error';
-    console.error(`Error creating test schema ${schemaName}:`, error);
+    logger.error(`Error creating test schema ${schemaName}:`, error);
     throw error;
   }
 }
@@ -156,7 +182,7 @@ export async function addTestUser(
       throw error;
     }
   } catch (error) {
-    console.error(`Error adding test user to schema ${schema}:`, error);
+    logger.error(`Error adding test user to schema ${schema}:`, error);
     throw error;
   }
 }
@@ -181,8 +207,71 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
     // Use the (data || []) pattern to handle null data gracefully
     return (data || []).length > 0;
   } catch (error) {
-    console.error(`Error checking if schema ${schemaName} exists:`, error);
+    logger.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
+  }
+}
+
+/**
+ * Validate an existing schema against the public schema
+ */
+export async function validateTestSchema(schemaName: string): Promise<SchemaInfo | null> {
+  // Find the schema info if it exists
+  let schemaInfo: SchemaInfo | undefined;
+  
+  for (const [id, info] of activeSchemas.entries()) {
+    if (info.name === schemaName) {
+      schemaInfo = info;
+      break;
+    }
+  }
+  
+  // If we don't have the schema info, create a placeholder
+  if (!schemaInfo) {
+    // Check if schema exists first
+    const exists = await schemaExists(schemaName);
+    if (!exists) {
+      logger.error(`Cannot validate non-existent schema: ${schemaName}`);
+      return null;
+    }
+    
+    const schemaId = uuidv4();
+    schemaInfo = {
+      id: schemaId,
+      name: schemaName,
+      createdAt: new Date(),
+      tablesCreated: [],
+      status: 'ready'
+    };
+    
+    activeSchemas.set(schemaId, schemaInfo);
+  }
+  
+  try {
+    // Run validation
+    const validationResult = await validateSchemaReplication('public', schemaName);
+    
+    // Update schema info
+    schemaInfo.validationResult = {
+      isValid: validationResult.isValid,
+      summary: validationResult.summary
+    };
+    
+    schemaInfo.status = validationResult.isValid ? 'validated' : 'error';
+    
+    if (!validationResult.isValid) {
+      logger.error(`Schema validation failed for ${schemaName}:`, validationResult.summary);
+    } else {
+      logger.info(`Schema validation passed for ${schemaName}`);
+    }
+    
+    return schemaInfo;
+  } catch (error) {
+    logger.error(`Error validating test schema ${schemaName}:`, error);
+    if (schemaInfo) {
+      schemaInfo.status = 'error';
+    }
+    return null;
   }
 }
 
@@ -217,7 +306,7 @@ export async function dropSchema(schemaName: string): Promise<void> {
       }
     }
   } catch (error) {
-    console.error(`Error dropping schema ${schemaName}:`, error);
+    logger.error(`Error dropping schema ${schemaName}:`, error);
     throw error;
   }
 }
@@ -236,7 +325,7 @@ export async function cleanupReleasedSchemas(maxAgeMs: number = 3600000): Promis
           await dropSchema(schema.name);
           activeSchemas.delete(id);
         } catch (error) {
-          console.error(`Error cleaning up schema ${schema.name}:`, error);
+          logger.error(`Error cleaning up schema ${schema.name}:`, error);
         }
       }
     }

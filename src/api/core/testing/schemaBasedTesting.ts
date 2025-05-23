@@ -1,10 +1,17 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { createTestingRepository } from '../repository/repositoryFactory';
 import { BaseRepository } from '../repository/BaseRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/utils/logger';
+import { 
+  createTestSchema, 
+  validateTestSchema,
+  schemaExists, 
+  dropSchema, 
+  releaseTestSchema as releaseSchema,
+  SchemaInfo 
+} from './testSchemaManager';
 
 /**
  * Schema registry to track created test schemas
@@ -38,31 +45,28 @@ export function generateSchemaName(): string {
 /**
  * Create a new test schema with a unique name
  */
-export async function createUniqueTestSchema(): Promise<string | null> {
+export async function createUniqueTestSchema(options: {
+  validateSchema?: boolean;
+} = {}): Promise<string | null> {
   try {
     if (process.env.NODE_ENV === 'test') {
       console.log('Running in test environment, skipping schema creation');
       return null; // Return null in test environment
     }
     
-    const schemaId = generateSchemaName();
-    
-    // Create schema
-    await supabase.rpc('exec_sql', { 
-      query: `CREATE SCHEMA IF NOT EXISTS ${schemaId};` 
+    const schemaInfo = await createTestSchema({
+      validateSchema: options.validateSchema
     });
     
-    // Register schema
-    schemaRegistry[schemaId] = {
-      createdAt: new Date(),
-      tables: [],
-      inUse: true
-    };
+    if (schemaInfo.validationResult && !schemaInfo.validationResult.isValid) {
+      logger.error(`Created schema but validation failed: ${schemaInfo.name}`);
+      logger.error(schemaInfo.validationResult.summary);
+    }
     
-    console.log(`Created test schema: ${schemaId}`);
-    return schemaId;
+    logger.info(`Created test schema: ${schemaInfo.name}`);
+    return schemaInfo.name;
   } catch (error) {
-    console.error('Error creating unique test schema:', error);
+    logger.error('Error creating unique test schema:', error);
     return null;
   }
 }
@@ -128,14 +132,21 @@ export async function cloneSchemaStructure(targetSchema: string): Promise<void> 
 
 /**
  * Verify that required tables exist in the test schema
+ * and optionally validate the schema structure
  */
-export async function verifySchemaSetup(schema: string, requiredTables: string[] = []): Promise<boolean> {
+export async function verifySchemaSetup(
+  schema: string, 
+  options: {
+    requiredTables?: string[];
+    validateStructure?: boolean;
+  } = {}
+): Promise<boolean> {
   try {
     if (process.env.NODE_ENV === 'test') {
       return true; // Skip verification in test environment
     }
     
-    // Query to check if tables exist in the schema
+    // First, check if required tables exist
     const { data, error } = await supabase.rpc('exec_sql', {
       query: `
         SELECT table_name 
@@ -145,7 +156,7 @@ export async function verifySchemaSetup(schema: string, requiredTables: string[]
     });
     
     if (error) {
-      console.error('Error verifying schema setup:', error);
+      logger.error('Error verifying schema setup:', error);
       return false;
     }
     
@@ -153,20 +164,35 @@ export async function verifySchemaSetup(schema: string, requiredTables: string[]
     const existingTables = (data || []).map((row: any) => row.table_name);
     
     // Check required tables
+    const requiredTables = options.requiredTables || [];
     if (requiredTables.length > 0) {
       const missingTables = requiredTables.filter(
         table => !existingTables.includes(table)
       );
       
       if (missingTables.length > 0) {
-        console.error(`Schema verification failed: Missing tables in ${schema}:`, missingTables);
+        logger.error(`Schema verification failed: Missing tables in ${schema}:`, missingTables);
         return false;
       }
     }
     
+    // Perform full schema validation if requested
+    if (options.validateStructure) {
+      const validationResult = await validateTestSchema(schema);
+      if (!validationResult || !validationResult.validationResult?.isValid) {
+        logger.error(`Schema validation failed for ${schema}`);
+        if (validationResult?.validationResult) {
+          logger.error(validationResult.validationResult.summary);
+        }
+        return false;
+      }
+      
+      logger.info(`Schema validation passed for ${schema}`);
+    }
+    
     return true;
   } catch (error) {
-    console.error('Error verifying schema:', error);
+    logger.error('Error verifying schema:', error);
     return false;
   }
 }
@@ -218,14 +244,14 @@ export async function releaseTestSchema(schema: string): Promise<void> {
   }
   
   if (!RETAIN_TEST_SCHEMAS) {
-    await dropTestSchema(schema);
+    await dropSchema(schema);
   }
 }
 
 /**
  * Drop a test schema and all its objects
  */
-export async function dropTestSchema(schema: string): Promise<void> {
+export async function dropSchema(schema: string): Promise<void> {
   try {
     if (process.env.NODE_ENV === 'test' || !schema) {
       return; // Skip in test environment
@@ -260,7 +286,7 @@ export async function cleanupOldTestSchemas(): Promise<void> {
       .map(([schemaId]) => schemaId);
     
     for (const schema of schemasToClean) {
-      await dropTestSchema(schema);
+      await dropSchema(schema);
     }
     
     console.log(`Cleaned up ${schemasToClean.length} old test schemas`);
@@ -305,20 +331,26 @@ export async function setupTestSchema(options: {
   schemaName?: string;
   requiredTables?: string[];
   seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
+  validateSchema?: boolean;
 } = {}): Promise<string | null> {
   try {
     // Check if we're in a test environment
     if (process.env.NODE_ENV === 'test') {
-      console.log('Running in test environment, skipping real database setup');
+      logger.info('Running in test environment, skipping real database setup');
       return null;
     }
     
     // Create a unique schema or use provided name
-    const schemaName = options.schemaName || await createUniqueTestSchema();
+    const schemaName = options.schemaName || await createUniqueTestSchema({
+      validateSchema: options.validateSchema
+    });
+    
     if (!schemaName) return null;
     
-    // Clone public schema structure
-    await cloneSchemaStructure(schemaName);
+    // Clone public schema structure if schema was not created with validation
+    if (!options.validateSchema) {
+      await cloneSchemaStructure(schemaName);
+    }
     
     // Create auth.users equivalent table
     await createTestAuthUsersTable(schemaName);
@@ -331,17 +363,21 @@ export async function setupTestSchema(options: {
     }
     
     // Verify schema setup
-    const isValid = await verifySchemaSetup(schemaName, options.requiredTables);
+    const isValid = await verifySchemaSetup(schemaName, {
+      requiredTables: options.requiredTables,
+      validateStructure: options.validateSchema
+    });
+    
     if (!isValid) {
-      console.error(`Schema ${schemaName} setup verification failed`);
-      await dropTestSchema(schemaName);
+      logger.error(`Schema ${schemaName} setup verification failed`);
+      await dropSchema(schemaName);
       return null;
     }
     
-    console.log(`Testing schema ${schemaName} setup complete`);
+    logger.info(`Testing schema ${schemaName} setup complete`);
     return schemaName;
   } catch (error) {
-    console.error('Error setting up testing schema:', error);
+    logger.error('Error setting up testing schema:', error);
     return null;
   }
 }
@@ -425,6 +461,7 @@ export function createTestContext<T>(tableName: string, options: {
   initialData?: T[];
   requiredTables?: string[];
   mockDataInTestEnv?: boolean;
+  validateSchema?: boolean;
 } = {}) {
   // The schema to use - will be determined during setup
   let testSchema = options.schema || 'testing';
@@ -437,6 +474,7 @@ export function createTestContext<T>(tableName: string, options: {
   const setup = async (setupOptions: {
     initialData?: T[];
     seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
+    validateSchema?: boolean;
   } = {}): Promise<void> => {
     // In test environment, use mock data
     if (process.env.NODE_ENV === 'test') {
@@ -454,7 +492,8 @@ export function createTestContext<T>(tableName: string, options: {
       // Create a unique schema for this test context
       testSchema = await setupTestSchema({
         requiredTables: options.requiredTables,
-        seedUsers: setupOptions.seedUsers
+        seedUsers: setupOptions.seedUsers,
+        validateSchema: setupOptions.validateSchema || options.validateSchema
       }) || 'testing';
     }
     
@@ -498,6 +537,15 @@ export function createTestContext<T>(tableName: string, options: {
     }
   };
   
+  // Add a method to validate the schema structure
+  const validateSchema = async (): Promise<SchemaInfo | null> => {
+    if (process.env.NODE_ENV === 'test') {
+      return null;
+    }
+    
+    return await validateTestSchema(testSchema);
+  };
+  
   return {
     repository,
     setup,
@@ -505,6 +553,7 @@ export function createTestContext<T>(tableName: string, options: {
     release,
     getCurrentSchema,
     getRepository,
+    validateSchema, // Add the new method
   };
 }
 
