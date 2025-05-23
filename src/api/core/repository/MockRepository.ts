@@ -1,739 +1,677 @@
-import { DataRepository, RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
-import { createSuccessResponse, createErrorResponse } from './repositoryUtils';
+import { DataRepository, QueryFilter, RepositoryResponse } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
 import { logger } from '@/utils/logger';
 
 /**
- * Mock implementation of the DataRepository interface for testing
+ * Repository implementation that uses in-memory data for testing
  */
-export class MockRepository<T = any> extends BaseRepository<T> {
-  mockData: Record<string, any[]> = {};
+export class MockRepository<T = any> implements DataRepository<T>, BaseRepository<T> {
+  /**
+   * In-memory data store mapped by table name
+   */
+  private mockData: Record<string, any[]> = {};
+  
+  /**
+   * Current query filters
+   */
+  private filters: QueryFilter[] = [];
+  
+  /**
+   * Mock responses for specific operations to override default behavior
+   */
   private mockResponses: Record<string, any> = {};
-  private lastOperation: string | null = null;
-  private lastData: any = null;
-  private filters: any[] = [];
-  private inConditions: { column: string; values: any[] }[] = [];
-  
-  constructor(tableName: string, initialData: T[] = []) {
-    super(tableName);
-    // Create a deep clone of initialData to avoid reference issues
-    this.mockData[tableName] = JSON.parse(JSON.stringify(initialData));
-    console.log(`[MockRepository] Created repository for ${tableName} with ${initialData.length} items`);
-  }
-
-  /**
-   * Set mock response for a specific operation
-   */
-  setMockResponse(operation: string, response: any): void {
-    this.mockResponses[operation] = response;
-  }
-
-  /**
-   * Get the last operation performed
-   */
-  getLastOperation(): string | null {
-    return this.lastOperation;
-  }
-
-  /**
-   * Get the last data used in an operation
-   */
-  getLastData(): any {
-    return this.lastData;
-  }
   
   /**
-   * Reset filters and conditions
+   * Current selection fields
    */
-  private resetFilters(): void {
-    this.filters = [];
-    this.inConditions = [];
-  }
-
+  private selectionFields: string = '*';
+  
   /**
-   * Get a record by ID - implementation from BaseRepository will be used
+   * Current ordering configuration
    */
-  async getById(id: string | number): Promise<T | null> {
-    const result = await this.select().eq(this.options.idField, id).maybeSingle();
-    return result.data as T | null;
-  }
-
+  private orderField: string | null = null;
+  private orderDirection: 'asc' | 'desc' = 'asc';
+  
   /**
-   * Get all records - implementation from BaseRepository will be used
+   * Current limit and offset values
    */
-  async getAll(): Promise<T[]> {
-    const result = await this.select().execute();
-    return result.data as T[];
-  }
-
-  /**
-   * Create a select query
-   */
-  select(selectQuery = '*'): RepositoryQuery<T> {
-    this.lastOperation = 'select';
-    this.resetFilters();
-    return new MockQuery<T>(
-      this.tableName,
-      this.mockData,
-      this.mockResponses,
-      this.lastOperation,
-      this.filters,
-      this.inConditions
-    );
-  }
-
-  /**
-   * Create an insert query
-   */
-  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
-    this.lastOperation = 'insert';
-    this.lastData = data;
-    this.resetFilters();
-    
-    // Auto-update mock data if no specific mock response is set
-    if (!this.mockResponses[this.lastOperation]) {
-      // Handle both single items and arrays
-      const dataArray = Array.isArray(data) ? data : [data];
-      
-      const newItems = dataArray.map(item => ({
-        [this.options.idField]: item[this.options.idField] || `mock-id-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        ...item
-      }));
-      
-      this.mockData[this.tableName] = [
-        ...(this.mockData[this.tableName] || []),
-        ...newItems
-      ];
-      
-      console.log(`[MockRepository] Inserted ${newItems.length} items. Repository now has ${this.mockData[this.tableName].length} items`);
-    }
-    
-    return new MockQuery<T>(
-      this.tableName,
-      this.mockData,
-      this.mockResponses,
-      this.lastOperation,
-      this.filters,
-      this.inConditions,
-      this.lastData
-    );
-  }
-
-  /**
-   * Create an update query
-   */
-  update(data: Record<string, any>): RepositoryQuery<T> {
-    this.lastOperation = 'update';
-    this.lastData = data;
-    this.resetFilters();
-    return new MockQuery<T>(
-      this.tableName,
-      this.mockData,
-      this.mockResponses,
-      this.lastOperation,
-      this.filters,
-      this.inConditions,
-      this.lastData
-    );
-  }
-
-  /**
-   * Create a delete query
-   */
-  delete(): RepositoryQuery<T> {
-    this.lastOperation = 'delete';
-    this.resetFilters();
-    return new MockQuery<T>(
-      this.tableName,
-      this.mockData,
-      this.mockResponses,
-      this.lastOperation,
-      this.filters,
-      this.inConditions
-    );
-  }
-
-  /**
-   * Standard error handling for repository operations - inherited from BaseRepository
-   * This implementation will be provided by the BaseRepository
-   */
-  protected handleError(operation: string, error: any, context: Record<string, any> = {}): void {
-    super.handleError(operation, error, context);
-  }
-
-  /**
-   * Monitor performance of repository operations - inherited from BaseRepository
-   * This implementation will be provided by the BaseRepository
-   */
-  protected monitorPerformance<R>(operation: string, callback: () => Promise<R>): Promise<R> {
-    return super.monitorPerformance(operation, callback);
-  }
-}
-
-/**
- * Mock implementation of the RepositoryQuery interface
- */
-class MockQuery<T> implements RepositoryQuery<T> {
-  private tableName: string;
-  private mockData: Record<string, any[]>;
-  private mockResponses: Record<string, any>;
-  private operation: string;
-  private operationData: any;
-  private filters: Array<(item: any) => boolean>;
-  private inConditions: { column: string; values: any[] }[];
-  private sortConfig: { column: string; ascending: boolean } | null = null;
   private limitValue: number | null = null;
   private offsetValue: number | null = null;
-  private rangeValues: [number, number] | null = null;
-  private selectFields: string = '*';
-
+  
+  /**
+   * Flag indicating if this is a count query
+   */
+  private isCountQuery: boolean = false;
+  
+  /**
+   * If set, the query will check for a single result
+   */
+  private singleResult: boolean = false;
+  private maybeSingleResult: boolean = false;
+  
+  /**
+   * Creates a new mock repository with initial data
+   */
   constructor(
-    tableName: string,
-    mockData: Record<string, any[]>,
-    mockResponses: Record<string, any>,
-    operation: string,
-    filters: Array<(item: any) => boolean> = [],
-    inConditions: { column: string; values: any[] }[] = [],
-    operationData?: any
+    private tableName: string,
+    initialData: any[] = []
   ) {
-    this.tableName = tableName;
-    this.mockData = mockData;
-    this.mockResponses = mockResponses;
-    this.operation = operation;
-    this.filters = [...filters]; // Create a copy to avoid modifying shared array
-    this.inConditions = [...inConditions]; // Create a copy to avoid modifying shared array
-    this.operationData = operationData;
-    
-    console.log(`[MockQuery] Created query for ${operation} operation on ${tableName}`);
-    console.log(`[MockQuery] Current table data has ${this.mockData[tableName]?.length || 0} items`);
-  }
-
-  eq(column: string, value: any): RepositoryQuery<T> {
-    // Log for debugging
-    console.log(`[MockQuery] Adding filter for ${column} === ${value}`);
-    
-    this.filters.push(item => {
-      const result = item[column] === value;
-      console.log(`[MockQuery] Filter ${column} === ${value} on item ${JSON.stringify(item)} result: ${result}`);
-      return result;
-    });
-    return this;
-  }
-
-  neq(column: string, value: any): RepositoryQuery<T> {
-    this.filters.push(item => item[column] !== value);
-    return this;
-  }
-
-  in(column: string, values: any[]): RepositoryQuery<T> {
-    this.inConditions.push({ column, values });
-    this.filters.push(item => values.includes(item[column]));
-    return this;
-  }
-
-  ilike(column: string, pattern: string): RepositoryQuery<T> {
-    const regex = new RegExp(pattern.replace(/%/g, '.*'), 'i');
-    this.filters.push(item => regex.test(String(item[column] || '')));
-    return this;
-  }
-  
-  /**
-   * Filter for NULL values
-   * @param column Column name
-   * @param isNull Whether the value should be NULL (true) or NOT NULL (false)
-   * @returns The query builder for chaining
-   */
-  is(column: string, isNull: null | boolean): RepositoryQuery<T> {
-    if (isNull === null || isNull === true) {
-      // Check for NULL values
-      this.filters.push(item => 
-        item[column] === null || item[column] === undefined
-      );
-    } else {
-      // Check for NOT NULL values
-      this.filters.push(item => 
-        item[column] !== null && item[column] !== undefined
-      );
+    if (!tableName) {
+      throw new Error('A table name must be provided to create a mock repository');
     }
-    return this;
-  }
-
-  /**
-   * Filter by greater than
-   */
-  gt(column: string, value: any): RepositoryQuery<T> {
-    this.filters.push(item => {
-      const itemValue = item[column];
-      const compareValue = value;
-      
-      if (itemValue === null || itemValue === undefined) {
-        return false;
-      }
-      
-      // Handle date comparison
-      if (itemValue instanceof Date && compareValue instanceof Date) {
-        return itemValue > compareValue;
-      }
-      
-      // Handle string dates
-      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
-        const itemDate = new Date(itemValue);
-        const compareDate = new Date(compareValue);
-        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
-          return itemDate > compareDate;
-        }
-      }
-      
-      // Default comparison
-      return itemValue > compareValue;
-    });
-    return this;
-  }
-
-  /**
-   * Filter by greater than or equal to
-   */
-  gte(column: string, value: any): RepositoryQuery<T> {
-    this.filters.push(item => {
-      // Handle numeric comparison properly
-      const itemValue = item[column];
-      const compareValue = value;
-      
-      if (itemValue === null || itemValue === undefined) {
-        return false;
-      }
-      
-      // Handle date comparison
-      if (itemValue instanceof Date && compareValue instanceof Date) {
-        return itemValue >= compareValue;
-      }
-      
-      // Handle string dates
-      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
-        const itemDate = new Date(itemValue);
-        const compareDate = new Date(compareValue);
-        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
-          return itemDate >= compareDate;
-        }
-      }
-      
-      // Default comparison
-      return itemValue >= compareValue;
-    });
-    return this;
-  }
-  
-  /**
-   * Filter by less than
-   */
-  lt(column: string, value: any): RepositoryQuery<T> {
-    this.filters.push(item => {
-      const itemValue = item[column];
-      const compareValue = value;
-      
-      if (itemValue === null || itemValue === undefined) {
-        return false;
-      }
-      
-      // Handle date comparison
-      if (itemValue instanceof Date && compareValue instanceof Date) {
-        return itemValue < compareValue;
-      }
-      
-      // Handle string dates
-      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
-        const itemDate = new Date(itemValue);
-        const compareDate = new Date(compareValue);
-        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
-          return itemDate < compareDate;
-        }
-      }
-      
-      // Default comparison
-      return itemValue < compareValue;
-    });
-    return this;
-  }
-  
-  /**
-   * Filter by less than or equal to
-   */
-  lte(column: string, value: any): RepositoryQuery<T> {
-    this.filters.push(item => {
-      const itemValue = item[column];
-      const compareValue = value;
-      
-      if (itemValue === null || itemValue === undefined) {
-        return false;
-      }
-      
-      // Handle date comparison
-      if (itemValue instanceof Date && compareValue instanceof Date) {
-        return itemValue <= compareValue;
-      }
-      
-      // Handle string dates
-      if (typeof itemValue === 'string' && /^\d{4}-\d{2}-\d{2}/.test(itemValue)) {
-        const itemDate = new Date(itemValue);
-        const compareDate = new Date(compareValue);
-        if (!isNaN(itemDate.getTime()) && !isNaN(compareDate.getTime())) {
-          return itemDate <= compareDate;
-        }
-      }
-      
-      // Default comparison
-      return itemValue <= compareValue;
-    });
-    return this;
-  }
-  
-  /**
-   * Filter with OR conditions
-   */
-  or(filter: string): RepositoryQuery<T> {
-    // Parse the filter string, which is in format "column.operator.value,column.operator.value"
-    const conditions = filter.split(',');
     
-    this.filters.push(item => {
-      return conditions.some(condition => {
-        const parts = condition.split('.');
-        if (parts.length < 3) return false;
-        
-        const column = parts[0];
-        const operator = parts[1];
-        const value = parts.slice(2).join('.'); // Rejoin in case the value contains dots
+    // Initialize data for the specified table
+    this.mockData[tableName] = [...initialData];
+    
+    logger.debug(`MockRepository for '${tableName}' created with ${initialData.length} items`);
+  }
+  
+  /**
+   * Set a mock response for a specific operation
+   */
+  setMockResponse(operation: string, response: any) {
+    this.mockResponses[operation] = response;
+  }
+  
+  /**
+   * Reset all mock responses
+   */
+  resetMockResponses() {
+    this.mockResponses = {};
+  }
+  
+  /**
+   * Create a valid repository response object
+   */
+  private createResponse<R>(data: R, error: any = null): RepositoryResponse<R> {
+    return {
+      data,
+      error,
+      isSuccess: () => !error,
+      isError: () => !!error,
+      getErrorMessage: () => error ? (error.message || String(error)) : null
+    };
+  }
+  
+  /**
+   * Reset query state
+   */
+  private resetQueryState() {
+    this.filters = [];
+    this.selectionFields = '*';
+    this.orderField = null;
+    this.orderDirection = 'asc';
+    this.limitValue = null;
+    this.offsetValue = null;
+    this.isCountQuery = false;
+    this.singleResult = false;
+    this.maybeSingleResult = false;
+  }
+  
+  /**
+   * Apply filters to data
+   */
+  private applyFilters(data: any[]): any[] {
+    // Return all data if no filters
+    if (!this.filters.length) return [...data];
+    
+    // Apply each filter
+    return data.filter(item => {
+      // Item must match all filters
+      return this.filters.every(filter => {
+        const { field, operator, value } = filter;
         
         switch (operator) {
           case 'eq':
-            return item[column] === value;
+            return item[field] === value;
           case 'neq':
-            return item[column] !== value;
+            return item[field] !== value;
+          case 'gt':
+            return item[field] > value;
+          case 'gte':
+            return item[field] >= value;
+          case 'lt':
+            return item[field] < value;
+          case 'lte':
+            return item[field] <= value;
+          case 'like':
+            return typeof item[field] === 'string' && 
+              item[field].toLowerCase().includes(String(value).toLowerCase());
           case 'ilike':
-            const pattern = value.replace(/%/g, '.*');
-            const regex = new RegExp(pattern, 'i');
-            return regex.test(String(item[column] || ''));
-          case 'is':
-            if (value === 'null') {
-              return item[column] === null || item[column] === undefined;
-            } else {
-              return item[column] !== null && item[column] !== undefined;
-            }
+            return typeof item[field] === 'string' && 
+              item[field].toLowerCase().includes(String(value).toLowerCase());
+          case 'in':
+            return Array.isArray(value) && value.includes(item[field]);
           default:
-            return false;
+            return true;
         }
       });
     });
-    
-    return this;
-  }
-
-  order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
-    this.sortConfig = { 
-      column, 
-      ascending: options.ascending ?? true 
-    };
-    return this;
-  }
-
-  limit(count: number): RepositoryQuery<T> {
-    this.limitValue = count;
-    return this;
   }
   
   /**
-   * Skip a number of results
+   * Apply ordering to data
    */
-  offset(count: number): RepositoryQuery<T> {
-    this.offsetValue = count;
-    return this;
-  }
-
-  range(from: number, to: number): RepositoryQuery<T> {
-    this.rangeValues = [from, to];
-    return this;
-  }
-  
-  select(fields: string = '*'): RepositoryQuery<T> {
-    this.selectFields = fields;
-    return this;
-  }
-
-  async single(): Promise<RepositoryResponse<T>> {
-    console.log(`[MockQuery] Executing single() for operation ${this.operation}`);
-    console.log(`[MockQuery] Current table: ${this.tableName}, filters count: ${this.filters.length}`);
+  private applyOrdering(data: any[]): any[] {
+    if (!this.orderField) return data;
     
-    // Check if there's a mock response for this specific operation
-    const mockResponseKey = `${this.operation}_single`;
-    if (this.mockResponses[mockResponseKey]) {
-      return this.mockResponses[mockResponseKey];
-    }
-
-    // Otherwise, process based on operation
-    if (this.operation === 'insert') {
-      const newItem = {
-        id: `mock-id-${Date.now()}`,
-        ...this.operationData 
-      };
-      console.log(`[MockQuery] Insert operation returning: ${JSON.stringify(newItem)}`);
-      return createSuccessResponse<T>(newItem as unknown as T);
-    }
-
-    if (this.operation === 'update') {
-      // Find the first item that matches all filters
-      const items = this.mockData[this.tableName] || [];
-      console.log(`[MockQuery] Update operation, total items: ${items.length}`);
-      const filtered = this.applyFilters(items);
-      console.log(`[MockQuery] Update filtered items: ${filtered.length}`);
+    return [...data].sort((a, b) => {
+      const valueA = a[this.orderField!];
+      const valueB = b[this.orderField!];
       
-      if (filtered.length === 0) {
-        console.log(`[MockQuery] Update operation - no items found matching filters`);
-        return createErrorResponse<T>({
-          code: 'not_found',
-          message: 'Item not found',
-          details: { tableName: this.tableName }
-        });
-      }
-
-      // Update the first matching item
-      const updatedItem = { ...filtered[0], ...this.operationData };
-      console.log(`[MockQuery] Updated item: ${JSON.stringify(updatedItem)}`);
+      // Handle null/undefined values
+      if (valueA == null && valueB == null) return 0;
+      if (valueA == null) return this.orderDirection === 'asc' ? -1 : 1;
+      if (valueB == null) return this.orderDirection === 'asc' ? 1 : -1;
       
-      // Replace the item in the mock data
-      const index = items.findIndex(item => item.id === filtered[0].id);
-      if (index !== -1) {
-        items[index] = updatedItem;
-      }
-
-      return createSuccessResponse<T>(updatedItem as unknown as T);
-    }
-
-    // For select operation
-    const items = this.mockData[this.tableName] || [];
-    console.log(`[MockQuery] Select single operation, total items: ${items.length}`);
-    const filtered = this.applyFilters(items);
-    console.log(`[MockQuery] Select single filtered items: ${filtered.length}`);
-    
-    if (filtered.length === 0) {
-      console.log(`[MockQuery] Select single - no items found matching filters`);
-      return createErrorResponse<T>({
-        code: 'not_found',
-        message: 'No data found',
-        details: { tableName: this.tableName }
-      });
-    }
-
-    console.log(`[MockQuery] Returning first filtered item: ${JSON.stringify(filtered[0])}`);
-    return createSuccessResponse<T>(filtered[0] as unknown as T);
-  }
-
-  async maybeSingle(): Promise<RepositoryResponse<T | null>> {
-    console.log(`[MockQuery] Executing maybeSingle() for operation ${this.operation}`);
-    console.log(`[MockQuery] Current table: ${this.tableName}, filters count: ${this.filters.length}`);
-    
-    // Check if there's a mock response for this specific operation
-    const mockResponseKey = `${this.operation}_maybeSingle`;
-    if (this.mockResponses[mockResponseKey]) {
-      return this.mockResponses[mockResponseKey];
-    }
-
-    // Otherwise, process based on filters
-    const items = this.mockData[this.tableName] || [];
-    console.log(`[MockQuery] maybeSingle total items: ${items.length}`);
-    const filtered = this.applyFilters(items);
-    console.log(`[MockQuery] maybeSingle filtered items: ${filtered.length}`);
-    
-    if (filtered.length === 0) {
-      console.log(`[MockQuery] maybeSingle - no items found matching filters`);
-      return createSuccessResponse<T | null>(null);
-    }
-
-    console.log(`[MockQuery] maybeSingle returning first filtered item: ${JSON.stringify(filtered[0])}`);
-    return createSuccessResponse<T | null>(filtered[0] as unknown as T);
-  }
-
-  async execute(): Promise<RepositoryResponse<T[]>> {
-    console.log(`[MockQuery] Executing execute() for operation ${this.operation}`);
-    console.log(`[MockQuery] Current table: ${this.tableName}, filters count: ${this.filters.length}`);
-    console.log(`[MockQuery] Mock data before operation:`, this.mockData[this.tableName]);
-    
-    // Check if there's a mock response for this operation
-    if (this.mockResponses[this.operation]) {
-      console.log(`[MockQuery] Using mock response for operation ${this.operation}`);
-      return this.mockResponses[this.operation];
-    }
-
-    // Otherwise, process based on operation
-    if (this.operation === 'delete') {
-      const items = this.mockData[this.tableName] || [];
-      console.log(`[MockQuery] Delete operation, total items before: ${items.length}`);
-      
-      // Find items to delete based on filters
-      const itemsToDelete = this.applyFilters(items);
-      console.log(`[MockQuery] Items to delete: ${itemsToDelete.length}`);
-      
-      if (itemsToDelete.length === 0) {
-        console.log(`[MockQuery] No items matched filters for deletion`);
-        return createSuccessResponse<T[]>([] as unknown as T[]);
+      // Compare based on types
+      if (typeof valueA === 'string' && typeof valueB === 'string') {
+        return this.orderDirection === 'asc' 
+          ? valueA.localeCompare(valueB) 
+          : valueB.localeCompare(valueA);
       }
       
-      // Extract IDs of items to delete
-      const idsToDelete = itemsToDelete.map(item => item.id);
-      console.log(`[MockQuery] IDs to delete: ${JSON.stringify(idsToDelete)}`);
-      
-      // Remove items from mockData - use direct array assignment to ensure reference is maintained
-      const remainingItems = items.filter(item => !idsToDelete.includes(item.id));
-      
-      // Important: We need to replace the entire array while maintaining the reference
-      this.mockData[this.tableName].length = 0; // Clear the array
-      this.mockData[this.tableName].push(...remainingItems); // Add filtered items back
-      
-      console.log(`[MockQuery] Items after delete: ${this.mockData[this.tableName].length}`);
-      console.log(`[MockQuery] Remaining IDs: ${JSON.stringify(this.mockData[this.tableName].map(item => item.id))}`);
-      
-      // Return deleted items
-      return createSuccessResponse<T[]>(itemsToDelete as unknown as T[]);
-    }
-    
-    if (this.operation === 'update' && this.inConditions.length > 0) {
-      // Handle batch update with 'in' condition
-      const items = this.mockData[this.tableName] || [];
-      console.log(`[MockQuery] Batch update operation, total items: ${items.length}`);
-      
-      const inCondition = this.inConditions[0]; // Use first in condition
-      
-      // Find items to update
-      const itemsToUpdate = items.filter(item => 
-        inCondition.values.includes(item[inCondition.column])
-      );
-      
-      console.log(`[MockQuery] Batch update items to update: ${itemsToUpdate.length}`);
-      
-      // Apply update to each item
-      const updatedItems = [];
-      for (const item of itemsToUpdate) {
-        const index = items.findIndex(i => i.id === item.id);
-        if (index !== -1) {
-          const updatedItem = { ...item, ...this.operationData };
-          items[index] = updatedItem;
-          updatedItems.push(updatedItem);
-        }
+      if (typeof valueA === 'number' && typeof valueB === 'number') {
+        return this.orderDirection === 'asc' 
+          ? valueA - valueB 
+          : valueB - valueA;
       }
       
-      console.log(`[MockQuery] Batch update completed, updated items: ${updatedItems.length}`);
-      
-      return createSuccessResponse<T[]>(updatedItems as unknown as T[]);
-    }
-
-    // For select operation
-    const items = this.mockData[this.tableName] || [];
-    console.log(`[MockQuery] Select operation, total items: ${items.length}`);
-    
-    // Apply filters
-    let result = this.applyFilters(items);
-    console.log(`[MockQuery] Select filtered items: ${result.length}`);
-    
-    // Apply sorting if configured
-    if (this.sortConfig) {
-      result = this.applySort(result);
-      console.log(`[MockQuery] Items after sorting: ${result.length}`);
-    }
-    
-    // Apply pagination
-    result = this.applyPagination(result);
-    console.log(`[MockQuery] Final result after pagination: ${result.length}`);
-    console.log(`[MockQuery] Result IDs: ${JSON.stringify(result.map(item => item.id))}`);
-    
-    return createSuccessResponse<T[]>(result as unknown as T[]);
-  }
-
-  private applyFilters(items: any[]): any[] {
-    console.log(`[applyFilters] Starting with ${items.length} items`);
-    console.log(`[applyFilters] Number of filters: ${this.filters.length}`);
-    console.log(`[applyFilters] Number of inConditions: ${this.inConditions.length}`);
-    
-    if (this.filters.length === 0 && this.inConditions.length === 0) {
-      console.log(`[applyFilters] No filters, returning all items`);
-      return [...items];
-    }
-    
-    let result = [...items];
-    
-    // Apply normal filters
-    if (this.filters.length > 0) {
-      console.log(`[applyFilters] Applying ${this.filters.length} filters`);
-      
-      // Debug each item against each filter for troubleshooting
-      if (this.filters.length > 0 && items.length > 0) {
-        console.log(`[applyFilters] First item before filtering: ${JSON.stringify(items[0])}`);
-        this.filters.forEach((filter, index) => {
-          console.log(`[applyFilters] Filter ${index} result on first item: ${filter(items[0])}`);
-        });
-      }
-      
-      result = result.filter(item => {
-        const passes = this.filters.every(filter => filter(item));
-        return passes;
-      });
-      
-      console.log(`[applyFilters] After applying filters: ${result.length} items`);
-    }
-    
-    // Apply 'in' conditions
-    if (this.inConditions.length > 0) {
-      for (const condition of this.inConditions) {
-        console.log(`[applyFilters] Applying 'in' condition for ${condition.column} with ${condition.values.length} values`);
-        result = result.filter(item => 
-          condition.values.includes(item[condition.column])
-        );
-      }
-      console.log(`[applyFilters] After applying 'in' conditions: ${result.length} items`);
-    }
-    
-    if (result.length > 0) {
-      console.log(`[applyFilters] First item in result: ${JSON.stringify(result[0])}`);
-    }
-    
-    return result;
-  }
-
-  private applySort(items: any[]): any[] {
-    if (!this.sortConfig) return items;
-    
-    const { column, ascending } = this.sortConfig;
-    return [...items].sort((a, b) => {
-      if (a[column] < b[column]) return ascending ? -1 : 1;
-      if (a[column] > b[column]) return ascending ? 1 : -1;
-      return 0;
+      // Default comparison for mixed types
+      const stringA = String(valueA);
+      const stringB = String(valueB);
+      return this.orderDirection === 'asc'
+        ? stringA.localeCompare(stringB)
+        : stringB.localeCompare(stringA);
     });
   }
-
-  private applyPagination(items: any[]): any[] {
-    if (this.rangeValues) {
-      const [from, to] = this.rangeValues;
-      return items.slice(from, to + 1);
-    }
+  
+  /**
+   * Apply pagination to data
+   */
+  private applyPagination(data: any[]): any[] {
+    let result = data;
     
-    // Apply offset if set
-    let result = items;
-    if (this.offsetValue) {
+    if (this.offsetValue !== null) {
       result = result.slice(this.offsetValue);
     }
     
-    // Then apply limit if set
-    if (this.limitValue) {
+    if (this.limitValue !== null) {
       result = result.slice(0, this.limitValue);
     }
     
     return result;
   }
+  
+  /**
+   * Apply field selection to data
+   */
+  private applySelection(data: any[]): any[] {
+    if (this.selectionFields === '*') return data;
+    
+    const fields = this.selectionFields.split(',').map(f => f.trim());
+    return data.map(item => {
+      const result: Record<string, any> = {};
+      fields.forEach(field => {
+        if (field in item) {
+          result[field] = item[field];
+        }
+      });
+      return result;
+    });
+  }
+  
+  /**
+   * Process the query and return results
+   */
+  private processQuery<R = any>(): RepositoryResponse<R> {
+    try {
+      // Get data for the table
+      const tableData = this.mockData[this.tableName] || [];
+      
+      // Apply filters
+      let result = this.applyFilters(tableData);
+      
+      // Apply ordering if not a count query
+      if (!this.isCountQuery) {
+        result = this.applyOrdering(result);
+      }
+      
+      // Apply pagination
+      result = this.applyPagination(result);
+      
+      // If this is a count query, return the count
+      if (this.isCountQuery) {
+        return this.createResponse<R>(result.length as any);
+      }
+      
+      // Apply field selection
+      result = this.applySelection(result);
+      
+      // Handle single result queries
+      if (this.singleResult) {
+        if (result.length === 0) {
+          return this.createResponse<R>(null as any, new Error('No rows found'));
+        }
+        if (result.length > 1) {
+          return this.createResponse<R>(null as any, new Error('Multiple rows returned'));
+        }
+        return this.createResponse<R>(result[0] as any);
+      }
+      
+      // Handle maybe single result queries
+      if (this.maybeSingleResult) {
+        if (result.length === 0) {
+          return this.createResponse<R>(null as any);
+        }
+        return this.createResponse<R>(result[0] as any);
+      }
+      
+      // Return all results
+      return this.createResponse<R>(result as any);
+    } catch (error) {
+      return this.createResponse<R>(null as any, error);
+    } finally {
+      this.resetQueryState();
+    }
+  }
+
+  /**
+   * Start a select query
+   */
+  select(columns: string = '*'): DataRepository<T> {
+    // Check for mock response
+    if (this.mockResponses['select']) {
+      return this;
+    }
+    
+    // Set selection fields
+    this.selectionFields = columns;
+    return this;
+  }
+  
+  /**
+   * Add an equality filter
+   */
+  eq(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'eq', value });
+    return this;
+  }
+  
+  /**
+   * Add a not-equal filter
+   */
+  neq(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'neq', value });
+    return this;
+  }
+  
+  /**
+   * Add a greater-than filter
+   */
+  gt(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'gt', value });
+    return this;
+  }
+  
+  /**
+   * Add a greater-than-or-equal filter
+   */
+  gte(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'gte', value });
+    return this;
+  }
+  
+  /**
+   * Add a less-than filter
+   */
+  lt(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'lt', value });
+    return this;
+  }
+  
+  /**
+   * Add a less-than-or-equal filter
+   */
+  lte(field: string, value: any): DataRepository<T> {
+    this.filters.push({ field, operator: 'lte', value });
+    return this;
+  }
+  
+  /**
+   * Add a like filter (case-insensitive)
+   */
+  like(field: string, value: string): DataRepository<T> {
+    this.filters.push({ field, operator: 'like', value });
+    return this;
+  }
+  
+  /**
+   * Add a case-insensitive like filter
+   */
+  ilike(field: string, value: string): DataRepository<T> {
+    this.filters.push({ field, operator: 'ilike', value });
+    return this;
+  }
+  
+  /**
+   * Add an in filter
+   */
+  in(field: string, values: any[]): DataRepository<T> {
+    this.filters.push({ field, operator: 'in', value: values });
+    return this;
+  }
+  
+  /**
+   * Set ordering
+   */
+  orderBy(field: string, direction: 'asc' | 'desc' = 'asc'): DataRepository<T> {
+    this.orderField = field;
+    this.orderDirection = direction;
+    return this;
+  }
+  
+  /**
+   * Set result limit
+   */
+  limit(count: number): DataRepository<T> {
+    this.limitValue = count;
+    return this;
+  }
+  
+  /**
+   * Set result offset
+   */
+  offset(count: number): DataRepository<T> {
+    this.offsetValue = count;
+    return this;
+  }
+  
+  /**
+   * Get a single result
+   */
+  single<R = T>(): RepositoryResponse<R> {
+    // Check for mock response
+    if (this.mockResponses['single']) {
+      return this.mockResponses['single'];
+    }
+    
+    this.singleResult = true;
+    return this.processQuery<R>();
+  }
+  
+  /**
+   * Get a single result or null
+   */
+  maybeSingle<R = T>(): RepositoryResponse<R | null> {
+    // Check for mock response
+    if (this.mockResponses['maybeSingle']) {
+      return this.mockResponses['maybeSingle'];
+    }
+    
+    this.maybeSingleResult = true;
+    return this.processQuery<R | null>();
+  }
+  
+  /**
+   * Count the number of results
+   */
+  count(): RepositoryResponse<number> {
+    // Check for mock response
+    if (this.mockResponses['count']) {
+      return this.mockResponses['count'];
+    }
+    
+    this.isCountQuery = true;
+    return this.processQuery<number>();
+  }
+  
+  /**
+   * Execute the query
+   */
+  execute<R = T[]>(): RepositoryResponse<R> {
+    // Check for mock response
+    if (this.mockResponses['execute']) {
+      return this.mockResponses['execute'];
+    }
+    
+    return this.processQuery<R>();
+  }
+  
+  /**
+   * Insert new data
+   */
+  insert(values: Record<string, any> | Record<string, any>[]): DataRepository<T> {
+    // Check for mock response
+    if (this.mockResponses['insert']) {
+      return this;
+    }
+    
+    // Ensure the table exists
+    if (!this.mockData[this.tableName]) {
+      this.mockData[this.tableName] = [];
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Update existing data
+   */
+  update(values: Record<string, any>): DataRepository<T> {
+    // Check for mock response
+    if (this.mockResponses['update']) {
+      return this;
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Delete data
+   */
+  delete(): DataRepository<T> {
+    // Check for mock response
+    if (this.mockResponses['delete']) {
+      return this;
+    }
+    
+    return this;
+  }
+  
+  /**
+   * Retrieve entity by ID
+   */
+  async getById(id: string | number): Promise<T | null> {
+    // Check for mock response
+    if (this.mockResponses['getById']) {
+      return this.mockResponses['getById'];
+    }
+    
+    const result = await this.select()
+      .eq('id', id)
+      .maybeSingle<T>();
+      
+    return result.data;
+  }
+  
+  /**
+   * Retrieve all entities
+   */
+  async getAll(): Promise<T[]> {
+    // Check for mock response
+    if (this.mockResponses['getAll']) {
+      return this.mockResponses['getAll'];
+    }
+    
+    const result = await this.select().execute<T[]>();
+    return result.data || [];
+  }
+  
+  /**
+   * Execute a method that returns a Promise
+   */
+  async exec<R = T[]>(): Promise<RepositoryResponse<R>> {
+    // Allow for mocking async operations
+    if (this.mockResponses['exec']) {
+      return this.mockResponses['exec'];
+    }
+    
+    return this.processQuery<R>();
+  }
 }
 
 /**
- * Create a mock repository for testing
+ * Creates a mock repository for the given table name with optional initial data
  */
-export function createMockRepository<T>(
+export function createMockRepository<T = any>(
   tableName: string, 
   initialData: T[] = []
-): BaseRepository<T> {
+): DataRepository<T> & BaseRepository<T> {
   return new MockRepository<T>(tableName, initialData);
 }
+
+// Fix the MockRepository implementation to correctly handle each operation
+// Adding proper fix for the delete operation
+
+// Patch the prototype to correctly implement required operations
+const originalInsertExecute = MockRepository.prototype.execute;
+
+MockRepository.prototype.execute = function<R = any>() {
+  // If this is an insert operation
+  if (this.filters.length === 0 && this.mockResponses['insert']) {
+    return this.mockResponses['insert'];
+  }
+  
+  // If this is a delete operation 
+  if (this.mockResponses['delete']) {
+    // Apply our filters to identify items to delete
+    const tableData = this.mockData[this.tableName] || [];
+    const filteredData = this.applyFilters(tableData);
+    
+    // Remove matching items from the original array
+    if (filteredData.length > 0) {
+      // Find indices of items to remove
+      const idsToRemove = filteredData.map(item => item.id);
+      
+      // Filter the array to keep only non-matching items
+      this.mockData[this.tableName] = tableData.filter(item => 
+        !idsToRemove.includes(item.id)
+      );
+      
+      console.log(`[MockRepository.delete] Removed ${filteredData.length} items, ${this.mockData[this.tableName].length} remaining`);
+      
+      return this.createResponse(filteredData);
+    }
+    
+    return this.createResponse([]);
+  }
+  
+  // If this is an update operation
+  if (this.mockResponses['update']) {
+    return this.mockResponses['update'];
+  }
+  
+  return originalInsertExecute.call(this);
+};
+
+// Implement the insert, update, and delete operations to modify the mockData
+
+const originalInsert = MockRepository.prototype.insert;
+
+MockRepository.prototype.insert = function(values) {
+  // Clone the base functionality
+  const result = originalInsert.call(this, values);
+  
+  // Add actual insert implementation
+  const dataToInsert = Array.isArray(values) ? values : [values];
+  
+  // Generate IDs if not provided
+  const processedData = dataToInsert.map(item => {
+    if (!item.id) {
+      return { ...item, id: `mock-${Math.random().toString(36).substring(2, 11)}` };
+    }
+    return { ...item };
+  });
+  
+  // Add to mock data
+  this.mockData[this.tableName].push(...processedData);
+  
+  // Set mock response for execute
+  this.mockResponses['insert'] = this.createResponse(
+    processedData.length === 1 ? processedData[0] : processedData
+  );
+  
+  console.log(`[MockRepository.insert] Added ${processedData.length} items, total now: ${this.mockData[this.tableName].length}`);
+  
+  return result;
+};
+
+const originalUpdate = MockRepository.prototype.update;
+
+MockRepository.prototype.update = function(values) {
+  // Clone the base functionality
+  const result = originalUpdate.call(this, values);
+  
+  // Store filters for use in execute
+  const currentFilters = [...this.filters];
+  
+  // Set mock response for execute to handle update logic
+  this.mockResponses['update'] = (() => {
+    // Apply filters to find items to update
+    const tableData = this.mockData[this.tableName] || [];
+    
+    // Save filters and reset them temporarily
+    const savedFilters = this.filters;
+    this.filters = currentFilters;
+    
+    // Apply filters to get items to update
+    const itemsToUpdate = this.applyFilters(tableData);
+    
+    // Restore filters
+    this.filters = savedFilters;
+    
+    if (itemsToUpdate.length === 0) {
+      return this.createResponse(null, new Error('No matching record found for update'));
+    }
+    
+    // Update the items and collect updated versions
+    const updatedItems = itemsToUpdate.map(item => {
+      // Find the item in the original array
+      const index = tableData.findIndex(i => i.id === item.id);
+      if (index >= 0) {
+        // Update the item in the original array
+        const updatedItem = { ...item, ...values };
+        this.mockData[this.tableName][index] = updatedItem;
+        return updatedItem;
+      }
+      return item;
+    });
+    
+    console.log(`[MockRepository.update] Updated ${updatedItems.length} items`);
+    
+    return this.createResponse(
+      updatedItems.length === 1 ? updatedItems[0] : updatedItems
+    );
+  })();
+  
+  return result;
+};
+
+const originalDelete = MockRepository.prototype.delete;
+
+MockRepository.prototype.delete = function() {
+  // Clone the base functionality
+  const result = originalDelete.call(this);
+  
+  // Store filters for use in execute
+  const currentFilters = [...this.filters];
+  
+  // Set mock response for delete
+  this.mockResponses['delete'] = true;
+  
+  // Store filters for deletion during execute
+  this.filters = currentFilters;
+  
+  return result;
+};
