@@ -1,113 +1,142 @@
 
 import { createTestingProfileRepository } from '@/api/core/repository/entities/factories/profileRepositoryFactory';
-import { setupTestSchema, clearTestTable, seedTestData } from '@/api/core/testing/schemaBasedTesting';
+import { 
+  setupTestSchema, 
+  clearTestTable, 
+  seedTestData,
+  setupTestingEnvironment, 
+  teardownTestingEnvironment,
+  createTestContext
+} from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
 import { jest } from '@jest/globals';
 
+// Generate a unique test ID for this test run
+const TEST_RUN_ID = uuidv4().substring(0, 8);
+
 // Mock the supabase client to avoid actual API calls during tests
 jest.mock('@/integrations/supabase/client', () => {
+  // Create a shared mock data store across mocked methods
   const mockData = {
     profiles: []
   };
   
-  return {
-    supabase: {
-      from: (table) => {
-        return {
-          select: jest.fn().mockReturnValue({
-            execute: jest.fn().mockImplementation(() => {
+  const mockSupabase = {
+    from: (table) => {
+      // Initialize table if it doesn't exist
+      if (!mockData[table]) {
+        mockData[table] = [];
+      }
+      
+      return {
+        select: jest.fn().mockReturnValue({
+          execute: jest.fn().mockImplementation(() => {
+            return Promise.resolve({ 
+              data: mockData[table], 
+              error: null 
+            });
+          }),
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockImplementation(() => {
+              if (table === 'profiles' && mockData[table]?.length > 0) {
+                return Promise.resolve({ 
+                  data: mockData[table][0], 
+                  error: null 
+                });
+              }
+              return Promise.resolve({ data: null, error: null });
+            }),
+            maybeSingle: jest.fn().mockImplementation(() => {
               return Promise.resolve({ 
-                data: mockData[table] || [], 
+                data: mockData[table]?.length > 0 ? mockData[table][0] : null, 
                 error: null 
               });
             }),
-            eq: jest.fn().mockReturnValue({
-              single: jest.fn().mockImplementation(() => {
-                if (table === 'profiles' && mockData[table] && mockData[table].length > 0) {
-                  return Promise.resolve({ 
-                    data: mockData[table][0], 
-                    error: null 
-                  });
-                }
-                return Promise.resolve({ data: {}, error: null });
-              }),
-              maybeSingle: jest.fn().mockReturnValue({ data: null, error: null }),
+            execute: jest.fn().mockImplementation(() => {
+              return Promise.resolve({ 
+                data: mockData[table], 
+                error: null 
+              });
             }),
           }),
-          insert: jest.fn().mockImplementation((data) => {
-            const newItem = Array.isArray(data) ? data[0] : data;
-            const itemWithDefaults = {
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-              ...newItem
+        }),
+        insert: jest.fn().mockImplementation((data) => {
+          const newItems = Array.isArray(data) ? data : [data];
+          
+          newItems.forEach(item => {
+            const newItem = {
+              ...item,
+              created_at: item.created_at || new Date().toISOString(),
+              updated_at: new Date().toISOString()
             };
-            
-            if (!mockData[table]) {
-              mockData[table] = [];
-            }
-            mockData[table].push(itemWithDefaults);
-            
-            return {
-              execute: jest.fn().mockReturnValue({ 
-                data: itemWithDefaults, 
-                error: null 
-              }),
-              single: jest.fn().mockReturnValue({ 
-                data: itemWithDefaults, 
-                error: null 
-              }),
-            };
-          }),
-          update: jest.fn().mockImplementation((updates) => {
-            return {
-              eq: jest.fn().mockImplementation((field, value) => {
-                if (mockData[table] && mockData[table].length > 0) {
-                  const index = mockData[table].findIndex(item => item[field] === value);
-                  if (index !== -1) {
-                    mockData[table][index] = {
-                      ...mockData[table][index],
-                      ...updates,
-                      updated_at: new Date().toISOString()
-                    };
-                  }
-                  
-                  return {
-                    execute: jest.fn().mockReturnValue({ 
-                      data: index !== -1 ? mockData[table][index] : {}, 
-                      error: null 
-                    }),
-                    single: jest.fn().mockReturnValue({ 
-                      data: index !== -1 ? mockData[table][index] : {}, 
-                      error: null 
-                    }),
-                  };
-                }
-                return {
-                  execute: jest.fn().mockReturnValue({ data: {}, error: null }),
-                  single: jest.fn().mockReturnValue({ data: {}, error: null }),
-                };
-              }),
-            };
-          }),
-          delete: jest.fn().mockReturnValue({
+            mockData[table].push(newItem);
+          });
+          
+          return {
+            execute: jest.fn().mockReturnValue({ 
+              data: newItems.length === 1 ? newItems[0] : newItems, 
+              error: null 
+            }),
+            single: jest.fn().mockReturnValue({ 
+              data: newItems.length === 1 ? newItems[0] : newItems[0], 
+              error: null 
+            }),
+          };
+        }),
+        update: jest.fn().mockImplementation((updates) => {
+          return {
             eq: jest.fn().mockImplementation((field, value) => {
               if (mockData[table]) {
                 const index = mockData[table].findIndex(item => item[field] === value);
                 if (index !== -1) {
-                  mockData[table].splice(index, 1);
+                  mockData[table][index] = {
+                    ...mockData[table][index],
+                    ...updates,
+                    updated_at: new Date().toISOString()
+                  };
+                  
+                  return {
+                    execute: jest.fn().mockReturnValue({ 
+                      data: mockData[table][index], 
+                      error: null 
+                    }),
+                    single: jest.fn().mockReturnValue({ 
+                      data: mockData[table][index], 
+                      error: null 
+                    }),
+                  };
                 }
               }
               return {
                 execute: jest.fn().mockReturnValue({ data: null, error: null }),
+                single: jest.fn().mockReturnValue({ data: null, error: null }),
               };
             }),
+          };
+        }),
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockImplementation((field, value) => {
+            if (mockData[table]) {
+              const index = mockData[table].findIndex(item => item[field] === value);
+              if (index !== -1) {
+                mockData[table].splice(index, 1);
+              }
+              return {
+                execute: jest.fn().mockReturnValue({ data: null, error: null }),
+              };
+            }
+            return {
+              execute: jest.fn().mockReturnValue({ data: null, error: null }),
+            };
           }),
-        };
-      },
-      rpc: jest.fn().mockReturnValue({ data: null, error: null }),
+        }),
+      };
     },
+    rpc: jest.fn().mockReturnValue({ data: null, error: null }),
   };
+  
+  return { supabase: mockSupabase };
 });
 
 // Example mock data generator for profiles
@@ -122,32 +151,39 @@ const createMockProfile = (): Profile => ({
 });
 
 describe('ProfileRepository with Schema-Based Testing', () => {
-  // Set up the testing schema before all tests
-  beforeAll(async () => {
-    await setupTestSchema();
+  // Use testContext to manage repository lifecycle, schema, and cleanup
+  const testContext = createTestContext<Profile>('profiles', {
+    requiredTables: ['profiles'],
+    mockDataInTestEnv: true
   });
-
-  // Clear the profiles table before each test
-  beforeEach(async () => {
-    await clearTestTable('profiles');
+  
+  // Generate test profiles before each test
+  let mockProfiles: Profile[];
+  
+  beforeEach(() => {
+    // Create fresh profiles for each test
+    mockProfiles = Array(3).fill(null).map(() => createMockProfile());
+    return testContext.setup({ initialData: mockProfiles });
   });
-
+  
+  afterEach(() => testContext.cleanup());
+  
   test('should create and retrieve a profile', async () => {
-    // Create a repository using the testing schema
-    const profileRepo = createTestingProfileRepository();
+    // Create a repository using the test context
+    const repository = testContext.getRepository();
     
     // Create a mock profile
     const mockProfile = createMockProfile();
     
     // Insert the profile
-    const insertResult = await profileRepo.getBaseRepository().insert(mockProfile).execute();
+    const insertResult = await repository.insert(mockProfile).execute();
     
     // Verify insertion was successful
     expect(insertResult.error).toBeNull();
     expect(insertResult.data).toBeTruthy();
     
     // Retrieve the profile
-    const retrieveResult = await profileRepo.getBaseRepository()
+    const retrieveResult = await repository
       .select()
       .eq('id', mockProfile.id)
       .single();
@@ -163,16 +199,15 @@ describe('ProfileRepository with Schema-Based Testing', () => {
   });
   
   test('should update a profile', async () => {
-    // Create a repository
-    const profileRepo = createTestingProfileRepository();
+    // Get repository from test context
+    const repository = testContext.getRepository();
     
-    // Create and seed a mock profile
-    const mockProfile = createMockProfile();
-    await seedTestData<Profile>('profiles', [mockProfile]);
+    // Use an existing profile from mockProfiles
+    const mockProfile = mockProfiles[0];
     
     // Update the profile
     const updatedName = 'Updated Name';
-    const updateResult = await profileRepo.getBaseRepository()
+    const updateResult = await repository
       .update({ first_name: updatedName })
       .eq('id', mockProfile.id)
       .execute();
@@ -181,7 +216,7 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     expect(updateResult.error).toBeNull();
     
     // Retrieve the updated profile
-    const retrieveResult = await profileRepo.getBaseRepository()
+    const retrieveResult = await repository
       .select()
       .eq('id', mockProfile.id)
       .single();
@@ -196,15 +231,14 @@ describe('ProfileRepository with Schema-Based Testing', () => {
   });
   
   test('should delete a profile', async () => {
-    // Create a repository
-    const profileRepo = createTestingProfileRepository();
+    // Get repository from test context
+    const repository = testContext.getRepository();
     
-    // Create and seed a mock profile
-    const mockProfile = createMockProfile();
-    await seedTestData<Profile>('profiles', [mockProfile]);
+    // Use an existing profile from mockProfiles
+    const mockProfile = mockProfiles[0];
     
     // Delete the profile
-    const deleteResult = await profileRepo.getBaseRepository()
+    const deleteResult = await repository
       .delete()
       .eq('id', mockProfile.id)
       .execute();
@@ -213,7 +247,7 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     expect(deleteResult.error).toBeNull();
     
     // Try to retrieve the deleted profile
-    const retrieveResult = await profileRepo.getBaseRepository()
+    const retrieveResult = await repository
       .select()
       .eq('id', mockProfile.id)
       .maybeSingle();
@@ -221,9 +255,7 @@ describe('ProfileRepository with Schema-Based Testing', () => {
     // Verify the profile no longer exists
     expect(retrieveResult.data).toBeNull();
   });
-
-  // Clean up after all tests
-  afterAll(async () => {
-    await clearTestTable('profiles');
-  });
+  
+  // Release the test schema after all tests
+  afterAll(() => testContext.release());
 });

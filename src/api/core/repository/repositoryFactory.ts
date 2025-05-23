@@ -1,6 +1,6 @@
-
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
+import { createMockRepository } from './MockRepository';
 
 /**
  * Repository options interface
@@ -8,6 +8,7 @@ import { createSupabaseRepository } from './SupabaseRepository';
 export interface RepositoryOptions {
   schema?: string;
   enableLogging?: boolean;
+  initialData?: any[];
 }
 
 /**
@@ -22,12 +23,26 @@ export function createRepository<T>(
 }
 
 /**
- * Create a repository for testing with the testing schema
+ * Create a repository for testing with the specified schema
  */
 export function createTestingRepository<T>(
-  tableName: string
+  tableName: string,
+  options: { 
+    schema?: string;
+    initialData?: any[];
+    enableLogging?: boolean;
+  } = {}
 ): BaseRepository<T> {
-  return createRepository<T>(tableName, { schema: 'testing' });
+  // If we're in a test environment, use a mock repository
+  if (process.env.NODE_ENV === 'test') {
+    return createMockRepository<T>(tableName, options.initialData || []);
+  }
+  
+  // Otherwise, use a real repository with the specified schema
+  return createRepository<T>(tableName, { 
+    schema: options.schema || 'testing',
+    enableLogging: options.enableLogging
+  });
 }
 
 /**

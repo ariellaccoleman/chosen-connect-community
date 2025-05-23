@@ -1,5 +1,9 @@
 
-import { createTestContext, setupTestingEnvironment, teardownTestingEnvironment } from '@/api/core/testing/schemaBasedTesting';
+import { 
+  createTestContext, 
+  setupTestingEnvironment, 
+  teardownTestingEnvironment 
+} from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
 import { jest } from '@jest/globals';
@@ -14,6 +18,11 @@ jest.mock('@/integrations/supabase/client', () => {
   return {
     supabase: {
       from: (table) => {
+        // Initialize table if not exists
+        if (!mockData[table]) {
+          mockData[table] = [];
+        }
+
         return {
           select: jest.fn().mockReturnValue({
             execute: jest.fn().mockImplementation(() => {
@@ -35,11 +44,6 @@ jest.mock('@/integrations/supabase/client', () => {
           insert: jest.fn().mockImplementation((data) => {
             // Handle array or single item
             const items = Array.isArray(data) ? data : [data];
-            
-            // Initialize table array if it doesn't exist
-            if (!mockData[table]) {
-              mockData[table] = [];
-            }
             
             // Add items to mock data with defaults
             items.forEach(item => {
@@ -90,23 +94,23 @@ const createMockProfile = (): Profile => ({
 });
 
 describe('Test Context Helper', () => {
-  // Set up the testing schema once before all tests
-  const setupFn = setupTestingEnvironment();
-  beforeAll(setupFn);
-  
   // Create test data
   const mockProfiles = Array(3).fill(null).map(() => createMockProfile());
   
   // Create a test context for profiles
-  const profileContext = createTestContext<Profile>('profiles');
+  const profileContext = createTestContext<Profile>('profiles', {
+    initialData: mockProfiles,
+    mockDataInTestEnv: true
+  });
 
   // Set up and clean up for each test
-  beforeEach(async () => await profileContext.setup(mockProfiles));
-  afterEach(async () => await profileContext.cleanup());
+  beforeEach(() => profileContext.setup({ initialData: mockProfiles }));
+  afterEach(() => profileContext.cleanup());
 
   test('should retrieve seeded profiles', async () => {
     // Use the repository from the test context
-    const result = await profileContext.repository.select().execute();
+    const repository = profileContext.getRepository();
+    const result = await repository.select().execute();
     
     // Verify profiles were retrieved
     expect(result.error).toBeNull();
@@ -127,12 +131,13 @@ describe('Test Context Helper', () => {
   test('should create isolated test data', async () => {
     // Create a new profile
     const newProfile = createMockProfile();
+    const repository = profileContext.getRepository();
     
     // Insert the profile
-    await profileContext.repository.insert(newProfile).execute();
+    await repository.insert(newProfile).execute();
     
     // Retrieve all profiles
-    const result = await profileContext.repository.select().execute();
+    const result = await repository.select().execute();
     
     // Verify the new profile was added
     expect(result.error).toBeNull();
@@ -148,7 +153,6 @@ describe('Test Context Helper', () => {
     });
   });
 
-  // Clean up after all tests
-  const teardownFn = teardownTestingEnvironment(['profiles']);
-  afterAll(teardownFn);
+  // Release the test schema after all tests
+  afterAll(() => profileContext.release());
 });
