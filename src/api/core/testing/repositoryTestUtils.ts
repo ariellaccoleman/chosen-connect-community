@@ -3,6 +3,7 @@ import { DataRepository } from '../repository/DataRepository';
 import { createMockRepository } from '../repository/MockRepository';
 import { BaseRepository } from '../repository/BaseRepository';
 import { createMockDataGenerator, MockDataGenerator } from './mockDataGenerator';
+import '../../../types/jest.d.ts';
 
 /**
  * Enhanced mock repository with testing utilities
@@ -16,7 +17,7 @@ export interface EnhancedMockRepository<T> extends BaseRepository<T> {
   /**
    * Spies for repository methods
    */
-  spies: Record<string, jest.SpyInstance>;
+  spies: Record<string, jest.SpyInstance<any>>;
   
   /**
    * Reset all spies on the mock repository
@@ -110,12 +111,12 @@ export function createTestRepository<T>(
     (entityType ? createMockDataGenerator<T>(entityType) : undefined);
   
   // Create spies for repository methods
-  const selectSpy = jest.spyOn(mockRepo, 'select');
-  const insertSpy = jest.spyOn(mockRepo, 'insert');
-  const updateSpy = jest.spyOn(mockRepo, 'update');
-  const deleteSpy = jest.spyOn(mockRepo, 'delete');
-  const getByIdSpy = jest.spyOn(mockRepo, 'getById');
-  const getAllSpy = jest.spyOn(mockRepo, 'getAll');
+  const selectSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'select') : null;
+  const insertSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'insert') : null;
+  const updateSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'update') : null;
+  const deleteSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'delete') : null;
+  const getByIdSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getById') : null;
+  const getAllSpy = jest?.spyOn ? jest.spyOn(mockRepo, 'getAll') : null;
   
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
@@ -135,7 +136,11 @@ export function createTestRepository<T>(
   
   // Add test utility methods
   enhancedRepo.resetSpies = () => {
-    Object.values(enhancedRepo.spies).forEach(spy => spy.mockClear());
+    Object.values(enhancedRepo.spies).forEach(spy => {
+      if (spy && typeof spy.mockClear === 'function') {
+        spy.mockClear();
+      }
+    });
   };
   
   // Method to add items to the mock data
@@ -235,8 +240,10 @@ export function createRepositoryTestContext<T>(
   };
   
   const cleanup = () => {
-    repository?.resetSpies();
-    repository?.clearItems();
+    if (repository) {
+      repository.resetSpies();
+      repository.clearItems();
+    }
   };
   
   const generateData = (count: number, overrides?: Partial<T>) => {
@@ -263,6 +270,12 @@ export function createRepositoryTestContext<T>(
  * Mock the repository factory to return test repositories
  */
 export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
+  // Check if jest is available in the environment
+  if (typeof jest === 'undefined') {
+    console.warn('Jest is not available in the current environment. mockRepositoryFactory requires Jest.');
+    return;
+  }
+  
   // Mock the createSupabaseRepository function
   jest.mock('../repository/repositoryFactory', () => ({
     createSupabaseRepository: jest.fn((tableName: string) => {
@@ -295,6 +308,12 @@ export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
  * Reset repository factory mocks
  */
 export function resetRepositoryFactoryMock() {
+  // Check if jest is available in the environment
+  if (typeof jest === 'undefined') {
+    console.warn('Jest is not available in the current environment. resetRepositoryFactoryMock requires Jest.');
+    return;
+  }
+  
   jest.resetModules();
   jest.dontMock('../repository/repositoryFactory');
 }

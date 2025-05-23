@@ -20,5 +20,7 @@ export * from './validationUtils';
 // Relationship testing
 export * from './relationshipTesting';
 
-// Re-export from the existing utils for convenience
-export * from '../../tests/utils/repositoryTestUtils';
+// Legacy re-export for backward compatibility (will be removed in future)
+// Use direct imports from api/core/testing/* instead
+export * from '../../../utils/testData';
+

@@ -1,3 +1,4 @@
+
 # API and Query Hook Factories
 
 This document explains how to use the factory patterns to create consistent API operations and React Query hooks.
@@ -126,6 +127,15 @@ export const usersApi = createApiFactory<User>({
   tableName: 'users',
   repository: userRepo
 });
+
+// Use enhanced repository
+export const enhancedUsersApi = createApiFactory<User>({
+  tableName: 'users',
+  repository: {
+    type: 'enhanced', 
+    defaultSelect: '*, profile:profiles(*)'
+  }
+});
 ```
 
 ### Custom Select Fields
@@ -157,6 +167,29 @@ await usersApi.batchUpdate([{ id: '1', name: 'Updated' }, { id: '2', role: 'admi
 await usersApi.batchDelete(['1', '2', '3']);
 ```
 
+## Testing API Factories
+
+```typescript
+import { mockRepositoryFactory } from '@/api/core/testing/repositoryTestUtils';
+import { usersApi } from '@/api/users';
+
+// Setup mocks
+beforeAll(() => {
+  mockRepositoryFactory({
+    users: mockUsers
+  });
+});
+
+test('should get user by ID', async () => {
+  const user = await usersApi.getById('123');
+  expect(user.data).toEqual(mockUsers[0]);
+});
+
+afterAll(() => {
+  resetRepositoryFactoryMock();
+});
+```
+
 ## Best Practices
 
 1. **Consistent Naming**: Use singular names for entities (`user` not `users`)
@@ -164,3 +197,29 @@ await usersApi.batchDelete(['1', '2', '3']);
 3. **Create Domain Types**: Define clear types for your domain entities
 4. **Use Transforms**: Handle data mapping through transform functions
 5. **Centralize Configuration**: Keep API config in a single module per entity
+6. **Test Factories**: Use the testing utilities to test API factories
+7. **Repository Integration**: Leverage the repository pattern for data access
+8. **Type Safety**: Ensure proper typing for all operations
+
+## Integration with Repository Pattern
+
+The API Factory pattern works seamlessly with the updated Repository Pattern:
+
+```typescript
+import { createApiFactory } from '@/api/core/factory';
+import { createProfileRepository } from '@/api/core/repository/entities/factories';
+
+// Create a profile repository with specialized methods
+const profileRepo = createProfileRepository();
+
+// Use the repository in the API factory
+export const profileApi = createApiFactory<Profile>({
+  tableName: 'profiles',
+  entityName: 'Profile',
+  repository: profileRepo,
+  useQueryOperations: true,
+  useMutationOperations: true
+});
+```
+
+See the [Repository Guide](./repository/REPOSITORY_GUIDE.md) for more information on the repository pattern.

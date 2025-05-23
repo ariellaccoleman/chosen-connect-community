@@ -12,6 +12,10 @@ api/
 │   ├── errorHandler.ts    # Error handling utilities
 │   ├── factory/           # API factory pattern implementation
 │   ├── repository/        # Repository pattern implementation
+│   │   ├── cache/         # Repository caching implementation
+│   │   ├── entities/      # Entity-specific repositories
+│   │   └── operations/    # Repository operations
+│   ├── testing/           # Repository testing utilities
 │   └── types.ts           # Common type definitions
 ├── auth/                  # Authentication related API
 ├── events/                # Events API
@@ -32,9 +36,7 @@ Always import from the specific module directly:
 // Preferred
 import { profileApi } from '@/api/profiles';
 import { organizationApi } from '@/api/organizations';
-
-// Avoid (legacy pattern)
-import { organizationsApi } from '@/api';
+import { createTestRepository } from '@/api/core/testing/repositoryTestUtils';
 ```
 
 ### Factory Pattern
@@ -66,12 +68,25 @@ const { data, error } = await repository
   .execute();
 ```
 
-## Migration Plan
+### Testing Utilities
 
-All files that re-export functionality from other modules (for backward compatibility) will be removed in future versions. Please update your imports to use the modular structure directly.
+The repository testing utilities provide robust tools for testing:
 
-### Timeline
+```typescript
+// Create a test repository
+const testRepo = createTestRepository<User>({
+  tableName: 'users',
+  initialData: mockUsers
+});
 
-- **Current version**: Deprecated modules are marked with JSDoc @deprecated tags
-- **Next major version**: Console warnings will be added for deprecated imports
-- **Following major version**: Deprecated modules will be removed completely
+// Mock the repository factory
+mockRepositoryFactory({
+  users: mockUsers
+});
+
+// Generate test data
+const mockData = createMockDataGenerator<User>('profile')
+  .generateMany(5);
+```
+
+For complete documentation on testing repositories, see [Repository Guide](./core/repository/REPOSITORY_GUIDE.md).

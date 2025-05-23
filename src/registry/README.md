@@ -93,19 +93,45 @@ entityRegistry.register({
 });
 ```
 
-## Extension Points
+## Integration with Repository Pattern
 
-The registry provides extension points for plugins or modules to register additional entity types:
+The entity registry works alongside the repository pattern:
 
 ```tsx
-import { extensionRegistry } from '@/registry/extensionPoints';
+import { useEntityRegistry } from '@/hooks/useEntityRegistry';
+import { useProfileById } from '@/hooks/profiles';
 import { EntityType } from '@/types/entityTypes';
 
-// Register an entity type extension
-extensionRegistry.registerEntityType({
-  type: EntityType.CUSTOM_TYPE,
-  definition: {
-    // Entity type definition
-  }
+function ProfileEntityCard({ profileId }) {
+  const { toEntity } = useEntityRegistry();
+  const { data: profile } = useProfileById(profileId);
+  
+  if (!profile) return <Skeleton />;
+  
+  // Convert domain object to entity
+  const entity = toEntity(profile, EntityType.PERSON);
+  
+  return <EntityCard entity={entity} />;
+}
+```
+
+## Testing with Mock Entities
+
+When testing components that use the entity registry:
+
+```tsx
+import { createMockDataGenerator } from '@/api/core/testing/mockDataGenerator';
+
+const mockProfileGenerator = createMockDataGenerator<Profile>('profile');
+const mockProfiles = mockProfileGenerator.generateMany(5);
+
+test('EntityCard should render a profile entity', () => {
+  const profile = mockProfiles[0];
+  const { toEntity } = entityRegistry;
+  
+  const entity = toEntity(profile, EntityType.PERSON);
+  
+  render(<EntityCard entity={entity} />);
+  // Assert component renders correctly
 });
 ```

@@ -13,9 +13,9 @@ hooks/
 ├── locations/               # Location-related hooks
 ├── organizations/           # Organization-related hooks
 ├── profiles/                # Profile-related hooks
-├── tag/                     # Tag mutation hooks
-├── tags/                    # Tag query hooks
-└── tests/                   # Test-related hooks
+├── tags/                    # Tag-related hooks
+├── tests/                   # Test-related hooks
+└── chat/                    # Chat-related hooks
 ```
 
 ## Usage Guidelines
@@ -29,9 +29,6 @@ Always import hooks from the specific module directly:
 import { useOrganizations } from '@/hooks/organizations';
 import { useCurrentProfile } from '@/hooks/profiles';
 import { useLocationSearch } from '@/hooks/locations';
-
-// Avoid (legacy pattern)
-import { useProfiles } from '@/hooks';
 ```
 
 ### Hook Factory Pattern
@@ -53,12 +50,51 @@ export const {
 } = entityHooks;
 ```
 
-## Migration Plan
+## Integration with Repository Pattern
 
-All files that re-export functionality from other modules (for backward compatibility) will be removed in future versions. Please update your imports to use the modular structure directly.
+Hooks use the repository pattern through the API factory:
 
-### Timeline
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { profileApi } from '@/api/profiles';
 
-- **Current version**: Deprecated hooks are marked with JSDoc @deprecated tags
-- **Next major version**: Console warnings will be added for deprecated imports
-- **Following major version**: Deprecated modules will be removed completely
+export function useProfileDetails(profileId: string) {
+  return useQuery({
+    queryKey: ['profile', profileId],
+    queryFn: () => profileApi.getById(profileId)
+  });
+}
+```
+
+For detailed examples of API and hook factories, see the [API Factory Documentation](../api/core/factories.md).
+
+## Testing Hooks
+
+When testing hooks that use repositories:
+
+```typescript
+import { mockRepositoryFactory } from '@/api/core/testing/repositoryTestUtils';
+
+// Setup
+beforeEach(() => {
+  mockRepositoryFactory({
+    profiles: mockProfiles
+  });
+});
+
+// Test the hook
+test('should fetch profile data', async () => {
+  const { result } = renderHook(() => useProfileDetails('123'));
+  
+  // Wait for query to complete
+  await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  
+  // Check result
+  expect(result.current.data).toEqual(mockProfiles[0]);
+});
+
+// Cleanup
+afterEach(() => {
+  resetRepositoryFactoryMock();
+});
+```
