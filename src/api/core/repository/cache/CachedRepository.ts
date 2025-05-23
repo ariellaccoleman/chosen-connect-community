@@ -8,16 +8,17 @@ import { logger } from '@/utils/logger';
 /**
  * Repository decorator that adds caching capability
  */
-export class CachedRepository<T> implements BaseRepository<T> {
+export class CachedRepository<T> extends BaseRepository<T> {
   private cacheStorage: CacheStorage;
   private options: CacheOptions;
-  readonly tableName: string;
+  private repository: DataRepository<T>;
   
   constructor(
-    private repository: DataRepository<T>,
+    repository: DataRepository<T>,
     options: Partial<CacheOptions> = {}
   ) {
-    this.tableName = repository.tableName;
+    super(repository.tableName);
+    this.repository = repository;
     this.options = { ...DEFAULT_CACHE_OPTIONS, ...options };
     
     this.cacheStorage = createCacheStorage({
@@ -121,8 +122,7 @@ export class CachedRepository<T> implements BaseRepository<T> {
     await this.cacheStorage.clearPattern(pattern);
   }
   
-  // BaseRepository implementation
-
+  // BaseRepository implementation methods
   async getById(id: string | number): Promise<T | null> {
     return this.withCaching('getById', () => this.repository.getById(id), [id]);
   }
@@ -137,7 +137,8 @@ export class CachedRepository<T> implements BaseRepository<T> {
       this.cacheStorage,
       this.options,
       'select',
-      [select]
+      [select],
+      this.tableName
     );
   }
   
@@ -178,19 +179,75 @@ export class CachedRepository<T> implements BaseRepository<T> {
       this.repository.setOptions(options);
     }
   }
+
+  /**
+   * Implementation of BaseRepository methods for error handling
+   */
+  protected handleError(operation: string, error: any, context: Record<string, any> = {}): void {
+    logger.error(`CachedRepository.${operation} error on table ${this.tableName}`, {
+      error: error?.message || error,
+      context,
+      tableName: this.tableName,
+      cacheStrategy: this.options.strategy
+    });
+  }
+
+  /**
+   * Implementation of BaseRepository methods for performance monitoring
+   */
+  protected async monitorPerformance<R>(operation: string, callback: () => Promise<R>): Promise<R> {
+    const start = performance.now();
+    try {
+      const result = await callback();
+      const duration = performance.now() - start;
+      
+      if (this.options.enableLogging) {
+        logger.debug(`CachedRepository.${operation} performance`, {
+          duration: `${duration.toFixed(2)}ms`,
+          table: this.tableName,
+          cacheStrategy: this.options.strategy
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      const duration = performance.now() - start;
+      logger.error(`CachedRepository.${operation} failed after ${duration.toFixed(2)}ms`, {
+        error: error?.message || error,
+        table: this.tableName,
+        cacheStrategy: this.options.strategy
+      });
+      throw error;
+    }
+  }
 }
 
 /**
  * Query decorator that adds caching to repository queries
  */
 class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
+  private query: RepositoryQuery<T>;
+  private cacheStorage: CacheStorage;
+  private options: CacheOptions;
+  private operation: string;
+  private args: any[] = [];
+  private tableName: string;
+
   constructor(
-    private query: RepositoryQuery<T>,
-    private cacheStorage: CacheStorage,
-    private options: CacheOptions,
-    private operation: string,
-    private args: any[] = []
-  ) {}
+    query: RepositoryQuery<T>,
+    cacheStorage: CacheStorage,
+    options: CacheOptions,
+    operation: string,
+    args: any[] = [],
+    tableName: string
+  ) {
+    this.query = query;
+    this.cacheStorage = cacheStorage;
+    this.options = options;
+    this.operation = operation;
+    this.args = args;
+    this.tableName = tableName;
+  }
   
   /**
    * Generate a cache key based on operation and arguments
@@ -205,7 +262,7 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
       ? JSON.stringify(this.args).replace(/[{}[\]"']/g, '')
       : '';
     
-    return `${this.operation}${argsString ? `:${argsString}` : ''}`;
+    return `${this.tableName}:${this.operation}${argsString ? `:${argsString}` : ''}`;
   }
   
   /**
@@ -268,7 +325,7 @@ class CachedRepositoryQuery<T> implements RepositoryQuery<T> {
   // Terminal operations with caching
   
   async execute<R = T[]>(): Promise<RepositoryResponse<R>> {
-    return this.withQueryCaching('execute', () => this.query.execute<R>());
+    return this.withQueryCaching('execute', () => this.query.execute()) as Promise<RepositoryResponse<R>>;
   }
   
   async single(): Promise<RepositoryResponse<T>> {

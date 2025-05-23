@@ -5,7 +5,12 @@
 
 // Factory pattern
 export * from './factory/apiFactory';
-export * from './factory/operations';
+// Export specific operations to avoid name conflicts
+export { 
+  createCoreOperations,
+  createQueryOperations,
+  createMutationOperations 
+} from './factory/operations';
 export * from './factory/types';
 
 // Repository pattern

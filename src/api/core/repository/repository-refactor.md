@@ -14,6 +14,7 @@ DataRepository (Interface)
     │       │
     │       ├── SupabaseRepository
     │       ├── MockRepository
+    │       ├── CachedRepository (Decorator)
     │       └── TagRepository (and other non-entity repositories)
     │
     └── EntityRepository (Abstract Class)
@@ -175,6 +176,31 @@ This refactoring provides:
 - Clearer, more intuitive API for data access
 - Performance improvements through strategic caching
 - Support for offline-first scenarios through persistent caching
+
+## Caching Implementation Details
+
+The caching implementation uses a decorator pattern to add caching capabilities to any repository:
+
+1. **Multiple Caching Strategies**:
+   - Cache First: Check cache first, only fetch from source if not in cache
+   - Stale-While-Revalidate: Return cached data immediately while updating cache in background
+   - Network First: Always fetch from network but update cache
+   - None: No caching (passthrough to original repository)
+
+2. **Storage Options**:
+   - In-memory: Fast but clears on page refresh
+   - Persistent: Uses localStorage for persistence across sessions
+
+3. **Advanced Features**:
+   - TTL (Time-To-Live): Configurable expiration times for cached items
+   - Pattern-based invalidation: Clear specific parts of the cache
+   - Custom key generation: Control how cache keys are created
+   - Automatic mutation invalidation: Clear cache on data changes
+
+4. **Performance Monitoring**:
+   - Track cache hit ratios
+   - Measure performance improvements
+   - Debug and logging capabilities
 
 ## Special Considerations for Tag Repository
 
