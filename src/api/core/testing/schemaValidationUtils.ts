@@ -377,7 +377,7 @@ export async function compareSchemasDDL(
     if (sourceDDL) {
       // The result might be an array or object with schema_ddl property
       if (Array.isArray(sourceDDL)) {
-        // Handle array result
+        // Handle array result - this is the line we're fixing
         if (sourceDDL.length > 0 && typeof sourceDDL[0] === 'object') {
           const firstRow = sourceDDL[0] as Record<string, any>;
           sourceSchemaString = (firstRow.schema_ddl || "").toString();
