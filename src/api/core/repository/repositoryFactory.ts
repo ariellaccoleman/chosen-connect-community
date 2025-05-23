@@ -20,6 +20,7 @@ export function createRepository<T>(
   options: RepositoryOptions = {}
 ): BaseRepository<T> {
   const schema = options.schema || 'public';
+  console.log(`Creating repository for table: ${tableName}, schema: ${schema}`);
   return createSupabaseRepository<T>(tableName, undefined, schema);
 }
 
@@ -34,11 +35,14 @@ export function createTestingRepository<T>(
     enableLogging?: boolean;
   } = {}
 ): BaseRepository<T> {
+  const schema = options.schema || 'testing';
+  console.log(`Creating testing repository for table: ${tableName}, schema: ${schema}`);
+  
   // Always use a real Supabase repository with the specified schema
   // Never use mock repositories, even in test environments
   return createRepository<T>(tableName, { 
-    schema: options.schema || 'testing',
-    enableLogging: options.enableLogging
+    schema: schema,
+    enableLogging: options.enableLogging || true
   });
 }
 

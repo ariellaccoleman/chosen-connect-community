@@ -15,6 +15,13 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
     super(tableName);
     this.supabaseClient = client || supabase;
     this.schema = schema;
+    
+    console.log(`SupabaseRepository created for table: ${tableName}, schema: ${schema}`);
+    
+    // Verify the client is properly initialized
+    if (!this.supabaseClient) {
+      throw new Error(`Supabase client is not initialized for table ${tableName}`);
+    }
   }
 
   /**
@@ -23,6 +30,7 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   setSchema(schema: string): void {
     this.schema = schema;
+    console.log(`Schema updated to: ${schema} for table: ${this.tableName}`);
   }
 
   /**
@@ -38,6 +46,13 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
     try {
+      console.log(`Creating select query for ${this.tableName} in schema ${this.schema}`);
+      
+      // Verify the supabase client has the required methods
+      if (!this.supabaseClient || !this.supabaseClient.from) {
+        throw new Error(`Supabase client is not properly initialized - missing 'from' method`);
+      }
+      
       // Cast the tableName to any to bypass the type checking,
       // as we're allowing dynamic table names that might not be in the type system
       const query = this.supabaseClient
@@ -47,6 +62,7 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating select query for ${this.tableName}:`, error);
+      console.error(`Error creating select query for ${this.tableName}:`, error);
       // Return a query that will return an error when executed
       return new ErrorQuery<T>(error, `select from ${this.tableName}`);
     }
@@ -57,6 +73,12 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     try {
+      console.log(`Creating insert query for ${this.tableName} in schema ${this.schema}`);
+      
+      if (!this.supabaseClient || !this.supabaseClient.from) {
+        throw new Error(`Supabase client is not properly initialized - missing 'from' method`);
+      }
+      
       // Cast the tableName to any to bypass the type checking
       const query = this.supabaseClient
         .from(this.tableName as any)
@@ -65,6 +87,7 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating insert query for ${this.tableName}:`, error);
+      console.error(`Error creating insert query for ${this.tableName}:`, error);
       return new ErrorQuery<T>(error, `insert into ${this.tableName}`);
     }
   }

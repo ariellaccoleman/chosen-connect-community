@@ -32,20 +32,28 @@ describe('Test Context Helper', () => {
 
   // Set up and clean up for each test
   beforeEach(async () => {
+    console.log('Setting up test context with profiles:', mockProfiles.length);
     await profileContext.setup({ 
       initialData: mockProfiles,
       validateSchema: true
     });
+    console.log('Test context setup complete. Current schema:', profileContext.getCurrentSchema());
   });
   
   afterEach(async () => {
+    console.log('Cleaning up test context');
     await profileContext.cleanup();
   });
 
   test('should retrieve seeded profiles', async () => {
+    console.log('Starting test: should retrieve seeded profiles');
+    
     // Use the repository from the test context
     const repository = profileContext.getRepository();
+    console.log('Got repository, executing select query');
+    
     const result = await repository.select().execute();
+    console.log('Query result:', { error: result.error, dataLength: result.data?.length });
     
     // Verify profiles were retrieved
     expect(result.error).toBeNull();
@@ -64,16 +72,22 @@ describe('Test Context Helper', () => {
   });
 
   test('should create isolated test data', async () => {
+    console.log('Starting test: should create isolated test data');
+    
     // Create a new profile
     const newProfile = createMockProfile();
     const repository = profileContext.getRepository();
     
+    console.log('Inserting new profile:', newProfile.id);
+    
     // Insert the profile
     const insertResult = await repository.insert(newProfile).execute();
+    console.log('Insert result:', { error: insertResult.error, data: !!insertResult.data });
     expect(insertResult.error).toBeNull();
     
     // Retrieve all profiles
     const result = await repository.select().execute();
+    console.log('Select all result:', { error: result.error, dataLength: result.data?.length });
     
     // Verify the new profile was added
     expect(result.error).toBeNull();
@@ -91,6 +105,7 @@ describe('Test Context Helper', () => {
 
   // Release the test schema after all tests
   afterAll(async () => {
+    console.log('Releasing test context schema');
     await profileContext.release();
   });
 });
