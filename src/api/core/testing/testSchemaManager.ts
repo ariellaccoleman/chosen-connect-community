@@ -179,9 +179,12 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
       throw error;
     }
     
-    // Fix: Use proper null checking before accessing array properties
-    // Make sure data is not null, is an array, and has items
-    return data !== null && Array.isArray(data) && data.length > 0;
+    // Fix: Be more explicit with null checking and use a type guard pattern
+    if (data === null) {
+      return false;
+    }
+    
+    return Array.isArray(data) && data.length > 0;
   } catch (error) {
     console.error(`Error checking if schema ${schemaName} exists:`, error);
     return false;
