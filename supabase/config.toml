@@ -1,9 +1,41 @@
 
+# This is your Supabase project configuration file
 project_id = "nvaqqkffmfuxdnwnqhxo"
 
-[functions.import-geonames]
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public", "testing"]
 
-[functions.import-local-geonames]
+[db]
+port = 54322
 
-[functions.report-test-results]
-verify_jwt = false
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+
+[storage]
+enabled = true
+
+[analytics]
+enabled = false
+
+[vector]
+enabled = false
+
+[edge_functions]
+enabled = true
+
+[functions.test-setup]
+verify_jwt = true
