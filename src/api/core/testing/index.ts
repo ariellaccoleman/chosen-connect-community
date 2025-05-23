@@ -15,7 +15,18 @@ export * from './mockDataGenerator';
 export * from './schemaValidationUtils';
 
 // Test schema management
-export * from './testSchemaManager';
+export {
+  createTestSchema, 
+  validateTestSchema,
+  schemaExists, 
+  releaseSchema,
+  addTestUser,
+  dropSchema,
+  cleanupReleasedSchemas,
+  getActiveSchemas,
+  resetSchemaTracking,
+  SchemaInfo
+} from './testSchemaManager';
 
 // Snapshot testing
 export * from './snapshotTesting';

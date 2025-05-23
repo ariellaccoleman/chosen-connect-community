@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
@@ -373,10 +374,10 @@ export async function compareSchemasDDL(
     
     // Safely extract the DDL strings from the results
     const sourceSchemaString = sourceDDL && Array.isArray(sourceDDL) && sourceDDL.length > 0 ? 
-      (sourceDDL[0].schema_ddl || '') : '';
+      (sourceDDL[0]?.schema_ddl || '') : '';
     
     const targetSchemaString = targetDDL && Array.isArray(targetDDL) && targetDDL.length > 0 ? 
-      (targetDDL[0].schema_ddl || '') : '';
+      (targetDDL[0]?.schema_ddl || '') : '';
     
     return {
       source: sourceSchemaString,

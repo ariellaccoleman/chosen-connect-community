@@ -548,33 +548,12 @@ export function createTestContext<T>(tableName: string, options: {
   return {
     repository,
     setup,
-    cleanup: async (): Promise<void> => {
-      if (process.env.NODE_ENV === 'test') {
-        // Clear mock data
-        if (options.mockDataInTestEnv !== false) {
-          const mockRepo = repository as any;
-          if (mockRepo.mockData) {
-            mockRepo.mockData[tableName] = [];
-          }
-        }
-      } else {
-        // Clear data but don't drop schema - that's handled by releaseTestSchema
-        await clearTestTable(tableName, testSchema);
-      }
-    },
+    cleanup,
     getCurrentSchema,
     getRepository,
     validateSchema,
     release
   };
-  
-  function getCurrentSchema(): string {
-    return testSchema;
-  }
-  
-  function getRepository(): BaseRepository<T> {
-    return repository;
-  }
 }
 
 /**
