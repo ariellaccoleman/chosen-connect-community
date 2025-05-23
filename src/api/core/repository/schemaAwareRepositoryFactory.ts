@@ -10,11 +10,11 @@ import { getCurrentSchema } from './schemaAwareClientFactory';
 export function createSchemaAwareRepository<T>(
   tableName: string,
   type: 'mock' | 'supabase' = 'supabase',
-  initialData: T[] = [],
-  options: any = {}
+  initialData: T[] = []
 ): SchemaAwareRepository<T> {
   // Create base repository
-  const baseRepo = createRepository<T>(tableName, type, initialData, options);
+  // Pass only the required arguments to createRepository (it expects 1-3 arguments)
+  const baseRepo = createRepository<T>(tableName, type, initialData);
   
   // Get current schema from environment
   const schema = getCurrentSchema();

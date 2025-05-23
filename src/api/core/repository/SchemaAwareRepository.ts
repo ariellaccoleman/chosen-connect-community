@@ -27,7 +27,8 @@ export class SchemaAwareRepository<T> implements DataRepository<T> {
    * Get the ID field
    */
   get idField(): string {
-    return this.repository.idField;
+    // Access the options object which contains the idField instead of trying to access idField directly
+    return (this.repository as any).options?.idField || 'id';
   }
   
   /**
