@@ -137,8 +137,9 @@ export function createTestRepository<T>(
   // Create an enhanced repository with test utilities
   const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
   
-  // Get the actual mockData reference directly from the repository to ensure we're
-  // using the same reference throughout the code, avoiding any data synchronization issues
+  // IMPORTANT FIX: Get the actual mockData reference directly from the repository 
+  // This ensures we're using the same reference that the repository operations will use
+  // which fixes issues with operations like delete not being visible in tests
   enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
   
   if (debug) {
