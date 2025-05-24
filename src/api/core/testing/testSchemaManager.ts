@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { v4 as uuidv4 } from 'uuid';
 import { validateSchemaReplication } from './schemaValidationUtils';
@@ -33,12 +32,13 @@ export function generateSchemaName(prefix: string = 'test'): string {
 }
 
 /**
- * Create a new schema for testing
+ * Create a new schema for testing with enhanced validation options
  */
 export async function createTestSchema(options: {
   prefix?: string;
   createUserTable?: boolean;
   validateSchema?: boolean;
+  useComprehensiveValidation?: boolean;
 } = {}): Promise<SchemaInfo> {
   const schemaId = uuidv4();
   const schemaName = generateSchemaName(options.prefix || 'test');
@@ -78,11 +78,9 @@ export async function createTestSchema(options: {
     }
     
     // Create tables in the new schema
-    // Fix: Ensure tables is treated as an array with proper type checking
     const tableRows = Array.isArray(tables) ? tables : [];
     
     for (const tableRow of tableRows) {
-      // Type check to ensure tableRow has the expected structure
       if (tableRow && typeof tableRow === 'object' && 'table_name' in tableRow) {
         const tableName = (tableRow as { table_name: string }).table_name;
         
@@ -130,7 +128,12 @@ export async function createTestSchema(options: {
     
     // Validate schema if requested
     if (options.validateSchema) {
-      const validationResult = await validateSchemaReplication('public', schemaName);
+      const validationResult = await validateSchemaReplication(
+        'public', 
+        schemaName, 
+        options.useComprehensiveValidation !== false
+      );
+      
       schemaInfo.validationResult = {
         isValid: validationResult.isValid,
         summary: validationResult.summary
@@ -140,6 +143,16 @@ export async function createTestSchema(options: {
       
       if (!validationResult.isValid) {
         logger.error(`Schema validation failed for ${schemaName}:`, validationResult.summary);
+        
+        // Log detailed differences if available
+        if (validationResult.detailedDifferences) {
+          logger.debug('Detailed validation differences:', validationResult.detailedDifferences);
+        }
+        
+        // Log comprehensive comparison if available
+        if (validationResult.comprehensive) {
+          logger.debug('Comprehensive validation differences:', validationResult.comprehensive.differences);
+        }
       } else {
         logger.info(`Schema validation passed for ${schemaName}`);
       }
@@ -217,9 +230,12 @@ export async function schemaExists(schemaName: string): Promise<boolean> {
 }
 
 /**
- * Validate an existing schema against the public schema
+ * Validate an existing schema against the public schema with enhanced options
  */
-export async function validateTestSchema(schemaName: string): Promise<SchemaInfo | null> {
+export async function validateTestSchema(
+  schemaName: string, 
+  useComprehensiveValidation: boolean = true
+): Promise<SchemaInfo | null> {
   // Find the schema info if it exists
   let schemaInfo: SchemaInfo | undefined;
   
@@ -252,8 +268,8 @@ export async function validateTestSchema(schemaName: string): Promise<SchemaInfo
   }
   
   try {
-    // Run validation
-    const validationResult = await validateSchemaReplication('public', schemaName);
+    // Run validation with enhanced options
+    const validationResult = await validateSchemaReplication('public', schemaName, useComprehensiveValidation);
     
     // Update schema info
     schemaInfo.validationResult = {
@@ -265,6 +281,11 @@ export async function validateTestSchema(schemaName: string): Promise<SchemaInfo
     
     if (!validationResult.isValid) {
       logger.error(`Schema validation failed for ${schemaName}:`, validationResult.summary);
+      
+      // Log enhanced details
+      if (validationResult.comprehensive?.differences) {
+        logger.debug(`Found ${validationResult.comprehensive.differences.length} comprehensive differences`);
+      }
     } else {
       logger.info(`Schema validation passed for ${schemaName}`);
     }

@@ -1,5 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import { 
+  validateSchemaReplicationComprehensive, 
+  ComprehensiveSchemaComparison,
+  extractSchemaStructure,
+  compareSchemaStructures
+} from './comprehensiveSchemaValidation';
 
 /**
  * Table structure information
@@ -48,6 +54,14 @@ export interface SchemaComparisonResult {
     issues: string[];
   }>;
   summary: string;
+}
+
+/**
+ * Enhanced schema comparison result that includes both legacy and comprehensive results
+ */
+export interface EnhancedSchemaComparisonResult extends SchemaComparisonResult {
+  comprehensive?: ComprehensiveSchemaComparison;
+  detailedDifferences?: string[];
 }
 
 /**
@@ -218,11 +232,34 @@ function compareTableStructures(
 
 /**
  * Validate that a test schema properly replicates the source schema structure
+ * Now uses comprehensive validation by default with fallback to legacy validation
  */
 export async function validateSchemaReplication(
   sourceSchema: string = 'public',
-  testSchema: string
-): Promise<SchemaComparisonResult> {
+  testSchema: string,
+  useComprehensive: boolean = true
+): Promise<EnhancedSchemaComparisonResult> {
+  if (useComprehensive) {
+    try {
+      const comprehensiveResult = await validateSchemaReplicationComprehensive(sourceSchema, testSchema);
+      
+      return {
+        isValid: comprehensiveResult.isEqual,
+        missingTables: [],
+        tablesDifferingInStructure: [],
+        summary: comprehensiveResult.summary,
+        comprehensive: comprehensiveResult,
+        detailedDifferences: comprehensiveResult.differences.map(diff => 
+          `${diff.path}: ${diff.description}`
+        )
+      };
+    } catch (error) {
+      logger.warn('Comprehensive validation failed, falling back to legacy validation:', error);
+      // Fall through to legacy validation
+    }
+  }
+
+  // Legacy validation as fallback
   const result: SchemaComparisonResult = {
     isValid: true,
     missingTables: [],
@@ -371,6 +408,38 @@ export async function compareSchemasDDL(
     };
   } catch (error) {
     logger.error(`Error comparing schema DDL:`, error);
+    return { source: '', target: '' };
+  }
+}
+
+/**
+ * Enhanced compare schemas DDL with comprehensive structure comparison
+ */
+export async function compareSchemasDDLEnhanced(
+  sourceSchema: string = 'public', 
+  targetSchema: string
+): Promise<{
+  source: string; 
+  target: string; 
+  comprehensive?: ComprehensiveSchemaComparison;
+}> {
+  try {
+    // Get traditional DDL comparison
+    const ddlResult = await compareSchemasDDL(sourceSchema, targetSchema);
+    
+    // Add comprehensive comparison
+    try {
+      const comprehensive = await validateSchemaReplicationComprehensive(sourceSchema, targetSchema);
+      return {
+        ...ddlResult,
+        comprehensive
+      };
+    } catch (error) {
+      logger.warn('Failed to add comprehensive comparison to DDL result:', error);
+      return ddlResult;
+    }
+  } catch (error) {
+    logger.error(`Error in enhanced DDL comparison:`, error);
     return { source: '', target: '' };
   }
 }

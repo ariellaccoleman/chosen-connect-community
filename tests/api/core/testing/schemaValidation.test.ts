@@ -1,4 +1,3 @@
-
 import { 
   createTestSchema, 
   dropSchema,
@@ -6,7 +5,16 @@ import {
   resetSchemaTracking,
   forceCleanupAllTestSchemas
 } from '@/api/core/testing/testSchemaManager';
-import { validateSchemaReplication, compareSchemasDDL } from '@/api/core/testing/schemaValidationUtils';
+import { 
+  validateSchemaReplication, 
+  compareSchemasDDL,
+  compareSchemasDDLEnhanced
+} from '@/api/core/testing/schemaValidationUtils';
+import { 
+  validateSchemaReplicationComprehensive,
+  extractSchemaStructure,
+  compareSchemaStructures
+} from '@/api/core/testing/comprehensiveSchemaValidation';
 
 describe('Schema Validation', () => {
   const createdSchemas: string[] = [];
@@ -32,18 +40,19 @@ describe('Schema Validation', () => {
     await forceCleanupAllTestSchemas();
   });
 
-  test('Create test schema with validation', async () => {
-    console.log('Creating test schema with validation...');
+  test('Create test schema with comprehensive validation', async () => {
+    console.log('Creating test schema with comprehensive validation...');
     
     const schema = await createTestSchema({ 
-      prefix: 'validation_test', 
-      validateSchema: true 
+      prefix: 'comprehensive_test', 
+      validateSchema: true,
+      useComprehensiveValidation: true
     });
     
     // Track this schema for cleanup
     createdSchemas.push(schema.name);
     
-    console.log('Schema creation result:', { 
+    console.log('Comprehensive schema creation result:', { 
       name: schema.name, 
       status: schema.status, 
       isValid: schema.validationResult?.isValid 
@@ -54,56 +63,136 @@ describe('Schema Validation', () => {
     expect(schema.validationResult?.isValid).toBe(true);
   });
 
-  test('Validate existing schema', async () => {
-    console.log('Creating schema for validation test...');
+  test('Comprehensive schema validation detects identical schemas', async () => {
+    console.log('Testing comprehensive validation on identical schemas...');
     
-    // First create a schema to validate
-    const createdSchema = await createTestSchema({ 
-      prefix: 'existing_test',
-      validateSchema: false // Create without validation first
-    });
-    
-    // Track this schema for cleanup
-    createdSchemas.push(createdSchema.name);
-    
-    console.log('Validating existing schema:', createdSchema.name);
-    
-    const validationResult = await validateTestSchema(createdSchema.name);
-    
-    console.log('Validation result:', {
-      name: validationResult?.name,
-      status: validationResult?.status,
-      isValid: validationResult?.validationResult?.isValid
-    });
-    
-    expect(validationResult).toBeTruthy();
-    expect(validationResult?.status).toBe('validated');
-    expect(validationResult?.validationResult?.isValid).toBe(true);
-  });
-
-  test('Schema validation should detect differences when they exist', async () => {
-    console.log('Testing schema difference detection...');
-    
-    // Create a test schema with standard structure
+    // Create a test schema
     const schema = await createTestSchema({ 
-      prefix: 'difference_test',
+      prefix: 'identical_test',
       validateSchema: false
     });
     
     // Track this schema for cleanup
     createdSchemas.push(schema.name);
     
-    console.log('Created schema for difference test:', schema.name);
+    console.log('Running comprehensive validation...');
     
-    // Validate against public schema - should pass initially
-    const initialResult = await validateSchemaReplication('public', schema.name);
-    console.log('Initial validation result:', {
-      isValid: initialResult.isValid,
-      missingTables: initialResult.missingTables.length,
-      structuralDiffs: initialResult.tablesDifferingInStructure.length
+    const result = await validateSchemaReplicationComprehensive('public', schema.name);
+    
+    console.log('Comprehensive validation result:', {
+      isEqual: result.isEqual,
+      differencesCount: result.differences.length,
+      summary: result.summary.substring(0, 100) + '...'
     });
     
-    expect(initialResult.isValid).toBe(true);
+    expect(result.isEqual).toBe(true);
+    expect(result.differences).toHaveLength(0);
+    expect(result.summary).toContain('identical');
+  });
+
+  test('Extract and compare schema structures', async () => {
+    console.log('Testing schema structure extraction and comparison...');
+    
+    // Create a test schema
+    const schema = await createTestSchema({ 
+      prefix: 'structure_test',
+      validateSchema: false
+    });
+    
+    // Track this schema for cleanup
+    createdSchemas.push(schema.name);
+    
+    console.log('Extracting schema structures...');
+    
+    const [sourceStructure, targetStructure] = await Promise.all([
+      extractSchemaStructure('public'),
+      extractSchemaStructure(schema.name)
+    ]);
+    
+    console.log('Schema extraction results:', {
+      sourceTableCount: sourceStructure.metadata.table_count,
+      targetTableCount: targetStructure.metadata.table_count,
+      sourceSchema: sourceStructure.metadata.schema_name,
+      targetSchema: targetStructure.metadata.schema_name
+    });
+    
+    expect(sourceStructure.tables).toBeTruthy();
+    expect(targetStructure.tables).toBeTruthy();
+    expect(sourceStructure.metadata.table_count).toBeGreaterThan(0);
+    expect(targetStructure.metadata.table_count).toBe(sourceStructure.metadata.table_count);
+    
+    // Compare structures
+    const comparison = compareSchemaStructures(sourceStructure, targetStructure);
+    
+    console.log('Structure comparison result:', {
+      isEqual: comparison.isEqual,
+      differencesCount: comparison.differences.length
+    });
+    
+    expect(comparison.isEqual).toBe(true);
+    expect(comparison.differences).toHaveLength(0);
+  });
+
+  test('Enhanced DDL comparison with comprehensive analysis', async () => {
+    console.log('Testing enhanced DDL comparison...');
+    
+    // Create a test schema
+    const schema = await createTestSchema({ 
+      prefix: 'enhanced_ddl_test',
+      validateSchema: false
+    });
+    
+    // Track this schema for cleanup
+    createdSchemas.push(schema.name);
+    
+    console.log('Running enhanced DDL comparison...');
+    
+    const result = await compareSchemasDDLEnhanced('public', schema.name);
+    
+    console.log('Enhanced DDL comparison result:', {
+      sourceLength: result.source.length,
+      targetLength: result.target.length,
+      hasComprehensive: !!result.comprehensive,
+      comprehensiveEqual: result.comprehensive?.isEqual,
+      comprehensiveDifferences: result.comprehensive?.differences.length || 0
+    });
+    
+    expect(result.source).toBeTruthy();
+    expect(result.target).toBeTruthy();
+    expect(result.source).toContain('CREATE TABLE');
+    expect(result.target).toContain('CREATE TABLE');
+    
+    if (result.comprehensive) {
+      expect(result.comprehensive.isEqual).toBe(true);
+      expect(result.comprehensive.differences).toHaveLength(0);
+    }
+  });
+
+  test('Legacy validation still works', async () => {
+    console.log('Testing legacy validation compatibility...');
+    
+    // Create a test schema
+    const schema = await createTestSchema({ 
+      prefix: 'legacy_test',
+      validateSchema: false
+    });
+    
+    // Track this schema for cleanup
+    createdSchemas.push(schema.name);
+    
+    console.log('Running legacy validation...');
+    
+    const result = await validateSchemaReplication('public', schema.name, false);
+    
+    console.log('Legacy validation result:', {
+      isValid: result.isValid,
+      missingTables: result.missingTables.length,
+      structuralDiffs: result.tablesDifferingInStructure.length
+    });
+    
+    expect(result.isValid).toBe(true);
+    expect(result.missingTables).toHaveLength(0);
+    expect(result.tablesDifferingInStructure).toHaveLength(0);
   });
 
   test('Compare schemas DDL', async () => {

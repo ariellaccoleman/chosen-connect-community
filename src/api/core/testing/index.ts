@@ -11,8 +11,11 @@ export * from './repositoryTestUtils';
 // Mock data generation
 export * from './mockDataGenerator';
 
-// Schema testing and validation
+// Schema testing and validation (legacy)
 export * from './schemaValidationUtils';
+
+// Comprehensive schema validation (new)
+export * from './comprehensiveSchemaValidation';
 
 // Test schema management
 export {
@@ -41,6 +44,3 @@ export * from './relationshipTesting';
 
 // Schema-based testing utilities
 export * from './schemaBasedTesting';
-
-// Legacy re-export has been removed as it was pointing to an invalid path
-// If you need test data utilities, use the direct import from src/utils/testData instead
