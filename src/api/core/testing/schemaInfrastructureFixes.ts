@@ -1,5 +1,11 @@
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
+import { 
+  EnhancedError, 
+  OperationStepTracker, 
+  ErrorCategory, 
+  ErrorSeverity 
+} from './errorTypes';
 
 /**
  * Types for RPC responses
@@ -30,73 +36,116 @@ export async function validateSchemaInfrastructure(): Promise<{
   pgGetTabledefWorking: boolean;
   publicSchemaHasTables: boolean;
   errors: string[];
+  enhancedErrors?: EnhancedError[];
 }> {
+  const tracker = new OperationStepTracker('validateSchemaInfrastructure');
   const errors: string[] = [];
+  const enhancedErrors: EnhancedError[] = [];
   let execSqlWorking = false;
   let pgGetTabledefWorking = false;
   let publicSchemaHasTables = false;
 
   try {
     // Test basic exec_sql function
+    tracker.startStep('testing_exec_sql_function');
     logger.info('Testing exec_sql function...');
-    const { data: testData, error: testError } = await supabase.rpc('exec_sql', {
-      query: 'SELECT 1 as test_value'
-    });
     
-    if (testError) {
-      errors.push(`exec_sql function error: ${testError.message}`);
-      logger.error('exec_sql test failed:', testError);
-    } else {
-      execSqlWorking = true;
-      logger.info('exec_sql function working correctly');
+    try {
+      const { data: testData, error: testError } = await supabase.rpc('exec_sql', {
+        query: 'SELECT 1 as test_value'
+      });
+      
+      if (testError) {
+        const enhancedError = tracker.createError(testError);
+        enhancedErrors.push(enhancedError);
+        errors.push(`exec_sql function error: ${testError.message}`);
+        logger.error('exec_sql test failed:', testError);
+      } else {
+        execSqlWorking = true;
+        tracker.completeStep();
+        logger.info('exec_sql function working correctly');
+      }
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`exec_sql function error: ${enhancedError.message}`);
     }
 
     // Test if public schema has tables
+    tracker.startStep('checking_public_schema_tables');
     logger.info('Checking public schema tables...');
-    const { data: tablesData, error: tablesError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_type = 'BASE TABLE'
-        LIMIT 5
-      `
-    }) as { data: TableRow[] | null; error: any };
+    
+    try {
+      const { data: tablesData, error: tablesError } = await supabase.rpc('exec_sql', {
+        query: `
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+          LIMIT 5
+        `
+      }) as { data: TableRow[] | null; error: any };
 
-    if (tablesError) {
-      errors.push(`Failed to query public schema tables: ${tablesError.message}`);
-    } else if (!tablesData || tablesData.length === 0) {
-      errors.push('No tables found in public schema');
-    } else {
-      publicSchemaHasTables = true;
-      logger.info(`Found ${tablesData.length} tables in public schema`);
-    }
-
-    // Test pg_get_tabledef function
-    if (publicSchemaHasTables && execSqlWorking && tablesData && tablesData.length > 0) {
-      logger.info('Testing pg_get_tabledef function...');
-      
-      const testTableName = tablesData[0].table_name;
-      
-      const { data: ddlData, error: ddlError } = await supabase.rpc('pg_get_tabledef', {
-        p_schema: 'public',
-        p_table: testTableName
-      });
-
-      if (ddlError) {
-        errors.push(`pg_get_tabledef function error: ${ddlError.message}`);
-        logger.error('pg_get_tabledef test failed:', ddlError);
-      } else if (!ddlData || ddlData.trim() === '') {
-        errors.push(`pg_get_tabledef returned empty DDL for table ${testTableName}`);
+      if (tablesError) {
+        const enhancedError = tracker.createError(tablesError);
+        enhancedErrors.push(enhancedError);
+        errors.push(`Failed to query public schema tables: ${tablesError.message}`);
+      } else if (!tablesData || tablesData.length === 0) {
+        const error = new Error('No tables found in public schema');
+        const enhancedError = tracker.createError(error);
+        enhancedErrors.push(enhancedError);
+        errors.push('No tables found in public schema');
       } else {
-        pgGetTabledefWorking = true;
-        logger.info('pg_get_tabledef function working correctly');
-        logger.debug('Sample DDL:', ddlData.substring(0, 100) + '...');
+        publicSchemaHasTables = true;
+        tracker.completeStep();
+        logger.info(`Found ${tablesData.length} tables in public schema`);
+        
+        // Test pg_get_tabledef function
+        tracker.startStep('testing_pg_get_tabledef_function', { 
+          testTable: tablesData[0].table_name 
+        });
+        logger.info('Testing pg_get_tabledef function...');
+        
+        try {
+          const testTableName = tablesData[0].table_name;
+          
+          const { data: ddlData, error: ddlError } = await supabase.rpc('pg_get_tabledef', {
+            p_schema: 'public',
+            p_table: testTableName
+          });
+
+          if (ddlError) {
+            const enhancedError = tracker.createError(ddlError);
+            enhancedErrors.push(enhancedError);
+            errors.push(`pg_get_tabledef function error: ${ddlError.message}`);
+            logger.error('pg_get_tabledef test failed:', ddlError);
+          } else if (!ddlData || ddlData.trim() === '') {
+            const error = new Error(`pg_get_tabledef returned empty DDL for table ${testTableName}`);
+            const enhancedError = tracker.createError(error);
+            enhancedErrors.push(enhancedError);
+            errors.push(`pg_get_tabledef returned empty DDL for table ${testTableName}`);
+          } else {
+            pgGetTabledefWorking = true;
+            tracker.completeStep();
+            logger.info('pg_get_tabledef function working correctly');
+            logger.debug('Sample DDL:', ddlData.substring(0, 100) + '...');
+          }
+        } catch (error) {
+          const enhancedError = tracker.createError(error);
+          enhancedErrors.push(enhancedError);
+          errors.push(`pg_get_tabledef function error: ${enhancedError.message}`);
+        }
       }
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Public schema check error: ${enhancedError.message}`);
     }
 
   } catch (error) {
-    errors.push(`Infrastructure validation error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const enhancedError = tracker.createError(error);
+    enhancedErrors.push(enhancedError);
+    errors.push(`Infrastructure validation error: ${enhancedError.message}`);
     logger.error('Schema infrastructure validation failed:', error);
   }
 
@@ -104,7 +153,8 @@ export async function validateSchemaInfrastructure(): Promise<{
     execSqlWorking,
     pgGetTabledefWorking,
     publicSchemaHasTables,
-    errors
+    errors,
+    enhancedErrors
   };
 }
 
@@ -197,56 +247,98 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
   schemaName: string;
   tablesCreated: string[];
   errors: string[];
+  enhancedErrors?: EnhancedError[];
   transaction?: SchemaTransaction;
 }> {
+  const tracker = new OperationStepTracker('createSchemaWithValidation', { schemaName });
   const errors: string[] = [];
+  const enhancedErrors: EnhancedError[] = [];
   let transaction: SchemaTransaction | null = null;
 
   try {
     logger.info(`Creating schema with transaction support: ${schemaName}`);
 
     // Begin transaction
-    transaction = await beginSchemaTransaction(schemaName);
-
-    // Step 1: Create the schema
-    const { error: createError } = await supabase.rpc('exec_sql', {
-      query: `CREATE SCHEMA IF NOT EXISTS ${schemaName};`
-    });
-
-    if (createError) {
-      errors.push(`Failed to create schema: ${createError.message}`);
-      await rollbackSchemaTransaction(transaction);
-      return { success: false, schemaName, tablesCreated: [], errors, transaction };
+    tracker.startStep('beginning_transaction');
+    try {
+      transaction = await beginSchemaTransaction(schemaName);
+      tracker.completeStep();
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Failed to begin transaction: ${enhancedError.message}`);
+      return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors };
     }
 
-    // Step 2: Get list of tables from public schema
-    const { data: tables, error: tablesError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_type = 'BASE TABLE'
-        ORDER BY table_name
-      `
-    }) as { data: TableRow[] | null; error: any };
+    // Create the schema
+    tracker.startStep('creating_schema');
+    try {
+      const { error: createError } = await supabase.rpc('exec_sql', {
+        query: `CREATE SCHEMA IF NOT EXISTS ${schemaName};`
+      });
 
-    if (tablesError) {
-      errors.push(`Failed to get public schema tables: ${tablesError.message}`);
+      if (createError) {
+        const enhancedError = tracker.createError(createError);
+        enhancedErrors.push(enhancedError);
+        errors.push(`Failed to create schema: ${createError.message}`);
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors, transaction };
+      }
+      tracker.completeStep();
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Schema creation error: ${enhancedError.message}`);
       await rollbackSchemaTransaction(transaction);
-      return { success: false, schemaName, tablesCreated: [], errors, transaction };
+      return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors, transaction };
     }
 
-    if (!tables || tables.length === 0) {
-      errors.push('No tables found in public schema to replicate');
+    // Get list of tables from public schema
+    tracker.startStep('fetching_source_tables');
+    let tables: TableRow[];
+    try {
+      const { data: tablesData, error: tablesError } = await supabase.rpc('exec_sql', {
+        query: `
+          SELECT table_name 
+          FROM information_schema.tables 
+          WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+          ORDER BY table_name
+        `
+      }) as { data: TableRow[] | null; error: any };
+
+      if (tablesError) {
+        const enhancedError = tracker.createError(tablesError);
+        enhancedErrors.push(enhancedError);
+        errors.push(`Failed to get public schema tables: ${tablesError.message}`);
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors, transaction };
+      }
+
+      if (!tablesData || tablesData.length === 0) {
+        const error = new Error('No tables found in public schema to replicate');
+        const enhancedError = tracker.createError(error);
+        enhancedErrors.push(enhancedError);
+        errors.push('No tables found in public schema to replicate');
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors, transaction };
+      }
+
+      tables = tablesData;
+      tracker.completeStep();
+      logger.info(`Found ${tables.length} tables to replicate in transaction`);
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Error fetching source tables: ${enhancedError.message}`);
       await rollbackSchemaTransaction(transaction);
-      return { success: false, schemaName, tablesCreated: [], errors, transaction };
+      return { success: false, schemaName, tablesCreated: [], errors, enhancedErrors, transaction };
     }
 
-    logger.info(`Found ${tables.length} tables to replicate in transaction`);
-
-    // Step 3: Create each table in the new schema within the transaction
+    // Create each table in the new schema
     for (const tableRow of tables) {
       const tableName = tableRow.table_name;
+      tracker.startStep('replicating_table', { tableName });
       
       try {
         // Get table definition
@@ -256,11 +348,16 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         });
 
         if (defError) {
+          const enhancedError = tracker.createError(defError);
+          enhancedErrors.push(enhancedError);
           errors.push(`Failed to get definition for table ${tableName}: ${defError.message}`);
           continue;
         }
 
         if (!tableDef || tableDef.trim() === '') {
+          const error = new Error(`Empty DDL returned for table ${tableName}`);
+          const enhancedError = tracker.createError(error);
+          enhancedErrors.push(enhancedError);
           errors.push(`Empty DDL returned for table ${tableName}`);
           continue;
         }
@@ -274,65 +371,93 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         });
 
         if (createTableError) {
+          const enhancedError = tracker.createError(createTableError);
+          enhancedErrors.push(enhancedError);
           errors.push(`Failed to create table ${tableName}: ${createTableError.message}`);
-          // On table creation failure, rollback the entire transaction
           await rollbackSchemaTransaction(transaction);
-          return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
+          return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
         } else {
           transaction.createdTables.push(tableName);
+          tracker.completeStep();
           logger.debug(`Successfully created table ${tableName} in transaction`);
         }
 
-      } catch (tableError) {
-        errors.push(`Error processing table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
-        // On any error, rollback the transaction
+      } catch (error) {
+        const enhancedError = tracker.createError(error);
+        enhancedErrors.push(enhancedError);
+        errors.push(`Error processing table ${tableName}: ${enhancedError.message}`);
         await rollbackSchemaTransaction(transaction);
-        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
+        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
       }
     }
 
-    // Step 4: Validate schema was created successfully before committing
-    const { data: verifyData, error: verifyError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT COUNT(*) as table_count
-        FROM information_schema.tables 
-        WHERE table_schema = '${schemaName}'
-      `
-    }) as { data: CountRow[] | null; error: any };
+    // Validate schema before committing
+    tracker.startStep('validating_schema_creation');
+    try {
+      const { data: verifyData, error: verifyError } = await supabase.rpc('exec_sql', {
+        query: `
+          SELECT COUNT(*) as table_count
+          FROM information_schema.tables 
+          WHERE table_schema = '${schemaName}'
+        `
+      }) as { data: CountRow[] | null; error: any };
 
-    if (verifyError) {
-      errors.push(`Failed to verify schema creation: ${verifyError.message}`);
+      if (verifyError) {
+        const enhancedError = tracker.createError(verifyError);
+        enhancedErrors.push(enhancedError);
+        errors.push(`Failed to verify schema creation: ${verifyError.message}`);
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
+      }
+
+      if (verifyData && verifyData.length > 0) {
+        const tableCount = verifyData[0].table_count;
+        if (tableCount !== transaction.createdTables.length) {
+          const error = new Error(`Schema verification failed: expected ${transaction.createdTables.length} tables, found ${tableCount}`);
+          const enhancedError = tracker.createError(error);
+          enhancedErrors.push(enhancedError);
+          errors.push(`Schema verification failed: expected ${transaction.createdTables.length} tables, found ${tableCount}`);
+          await rollbackSchemaTransaction(transaction);
+          return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
+        }
+      }
+      tracker.completeStep();
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Schema validation error: ${enhancedError.message}`);
       await rollbackSchemaTransaction(transaction);
-      return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
+      return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
     }
 
-    if (verifyData && verifyData.length > 0) {
-      const tableCount = verifyData[0].table_count;
-      if (tableCount !== transaction.createdTables.length) {
-        errors.push(`Schema verification failed: expected ${transaction.createdTables.length} tables, found ${tableCount}`);
-        await rollbackSchemaTransaction(transaction);
-        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
-      }
+    // Commit the transaction
+    tracker.startStep('committing_transaction');
+    try {
+      await commitSchemaTransaction(transaction);
+      tracker.completeStep();
+    } catch (error) {
+      const enhancedError = tracker.createError(error);
+      enhancedErrors.push(enhancedError);
+      errors.push(`Transaction commit failed: ${enhancedError.message}`);
+      return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
     }
-
-    // If we get here, everything succeeded - commit the transaction
-    await commitSchemaTransaction(transaction);
 
     const success = transaction.createdTables.length > 0 && errors.length === 0;
     logger.info(`Schema ${schemaName} created successfully with ${transaction.createdTables.length} tables using transaction`);
     
-    return { success, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
+    return { success, schemaName, tablesCreated: transaction.createdTables, errors, enhancedErrors, transaction };
 
   } catch (error) {
-    const errorMessage = `Schema creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
-    errors.push(errorMessage);
+    const enhancedError = tracker.createError(error);
+    enhancedErrors.push(enhancedError);
+    errors.push(`Schema creation failed: ${enhancedError.message}`);
     logger.error(`Error creating schema ${schemaName}:`, error);
     
     if (transaction) {
       await rollbackSchemaTransaction(transaction);
     }
     
-    return { success: false, schemaName, tablesCreated: transaction?.createdTables || [], errors, transaction };
+    return { success: false, schemaName, tablesCreated: transaction?.createdTables || [], errors, enhancedErrors, transaction };
   }
 }
 
