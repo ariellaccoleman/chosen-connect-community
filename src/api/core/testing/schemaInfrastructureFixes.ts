@@ -13,6 +13,16 @@ interface CountRow {
 }
 
 /**
+ * Transaction context for tracking schema creation operations
+ */
+interface SchemaTransaction {
+  schemaName: string;
+  createdTables: string[];
+  isActive: boolean;
+  startTime: Date;
+}
+
+/**
  * Test and validate core schema infrastructure functions
  */
 export async function validateSchemaInfrastructure(): Promise<{
@@ -99,19 +109,104 @@ export async function validateSchemaInfrastructure(): Promise<{
 }
 
 /**
- * Improved schema creation with better error handling and validation
+ * Begin a schema transaction
+ */
+async function beginSchemaTransaction(schemaName: string): Promise<SchemaTransaction> {
+  logger.info(`Beginning schema transaction for: ${schemaName}`);
+  
+  const transaction: SchemaTransaction = {
+    schemaName,
+    createdTables: [],
+    isActive: true,
+    startTime: new Date()
+  };
+
+  // Start a database transaction
+  const { error: beginError } = await supabase.rpc('exec_sql', {
+    query: 'BEGIN;'
+  });
+
+  if (beginError) {
+    transaction.isActive = false;
+    throw new Error(`Failed to begin transaction: ${beginError.message}`);
+  }
+
+  return transaction;
+}
+
+/**
+ * Commit a schema transaction
+ */
+async function commitSchemaTransaction(transaction: SchemaTransaction): Promise<void> {
+  if (!transaction.isActive) {
+    logger.warn(`Attempting to commit inactive transaction for schema: ${transaction.schemaName}`);
+    return;
+  }
+
+  logger.info(`Committing schema transaction for: ${transaction.schemaName}`);
+  
+  const { error: commitError } = await supabase.rpc('exec_sql', {
+    query: 'COMMIT;'
+  });
+
+  if (commitError) {
+    logger.error(`Failed to commit transaction: ${commitError.message}`);
+    // Try to rollback on commit failure
+    await rollbackSchemaTransaction(transaction);
+    throw new Error(`Transaction commit failed: ${commitError.message}`);
+  }
+
+  transaction.isActive = false;
+  const duration = new Date().getTime() - transaction.startTime.getTime();
+  logger.info(`Schema transaction committed successfully in ${duration}ms`);
+}
+
+/**
+ * Rollback a schema transaction
+ */
+async function rollbackSchemaTransaction(transaction: SchemaTransaction): Promise<void> {
+  if (!transaction.isActive) {
+    logger.warn(`Attempting to rollback inactive transaction for schema: ${transaction.schemaName}`);
+    return;
+  }
+
+  logger.warn(`Rolling back schema transaction for: ${transaction.schemaName}`);
+  
+  try {
+    const { error: rollbackError } = await supabase.rpc('exec_sql', {
+      query: 'ROLLBACK;'
+    });
+
+    if (rollbackError) {
+      logger.error(`Failed to rollback transaction: ${rollbackError.message}`);
+    } else {
+      logger.info(`Transaction rolled back successfully for schema: ${transaction.schemaName}`);
+    }
+  } catch (error) {
+    logger.error(`Error during rollback for schema ${transaction.schemaName}:`, error);
+  } finally {
+    transaction.isActive = false;
+  }
+}
+
+/**
+ * Enhanced schema creation with transaction support and comprehensive error handling
  */
 export async function createSchemaWithValidation(schemaName: string): Promise<{
   success: boolean;
   schemaName: string;
   tablesCreated: string[];
   errors: string[];
+  transaction?: SchemaTransaction;
 }> {
   const errors: string[] = [];
-  const tablesCreated: string[] = [];
+  let transaction: SchemaTransaction | null = null;
 
   try {
-    logger.info(`Creating schema: ${schemaName}`);
+    logger.info(`Creating schema with transaction support: ${schemaName}`);
+
+    // Begin transaction
+    transaction = await beginSchemaTransaction(schemaName);
 
     // Step 1: Create the schema
     const { error: createError } = await supabase.rpc('exec_sql', {
@@ -120,7 +215,8 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
 
     if (createError) {
       errors.push(`Failed to create schema: ${createError.message}`);
-      return { success: false, schemaName, tablesCreated, errors };
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, schemaName, tablesCreated: [], errors, transaction };
     }
 
     // Step 2: Get list of tables from public schema
@@ -136,17 +232,19 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
 
     if (tablesError) {
       errors.push(`Failed to get public schema tables: ${tablesError.message}`);
-      return { success: false, schemaName, tablesCreated, errors };
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, schemaName, tablesCreated: [], errors, transaction };
     }
 
     if (!tables || tables.length === 0) {
       errors.push('No tables found in public schema to replicate');
-      return { success: false, schemaName, tablesCreated, errors };
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, schemaName, tablesCreated: [], errors, transaction };
     }
 
-    logger.info(`Found ${tables.length} tables to replicate`);
+    logger.info(`Found ${tables.length} tables to replicate in transaction`);
 
-    // Step 3: Create each table in the new schema
+    // Step 3: Create each table in the new schema within the transaction
     for (const tableRow of tables) {
       const tableName = tableRow.table_name;
       
@@ -170,24 +268,30 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         // Replace schema name in the definition
         const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
         
-        // Create table in test schema
+        // Create table in test schema within transaction
         const { error: createTableError } = await supabase.rpc('exec_sql', {
           query: testTableDef
         });
 
         if (createTableError) {
           errors.push(`Failed to create table ${tableName}: ${createTableError.message}`);
+          // On table creation failure, rollback the entire transaction
+          await rollbackSchemaTransaction(transaction);
+          return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
         } else {
-          tablesCreated.push(tableName);
-          logger.debug(`Successfully created table ${tableName} in schema ${schemaName}`);
+          transaction.createdTables.push(tableName);
+          logger.debug(`Successfully created table ${tableName} in transaction`);
         }
 
       } catch (tableError) {
         errors.push(`Error processing table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
+        // On any error, rollback the transaction
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
       }
     }
 
-    // Step 4: Validate schema was created successfully
+    // Step 4: Validate schema was created successfully before committing
     const { data: verifyData, error: verifyError } = await supabase.rpc('exec_sql', {
       query: `
         SELECT COUNT(*) as table_count
@@ -198,18 +302,37 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
 
     if (verifyError) {
       errors.push(`Failed to verify schema creation: ${verifyError.message}`);
-    } else if (verifyData && verifyData.length > 0) {
-      const tableCount = verifyData[0].table_count;
-      logger.info(`Schema ${schemaName} created with ${tableCount} tables`);
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
     }
 
-    const success = tablesCreated.length > 0 && errors.length === 0;
-    return { success, schemaName, tablesCreated, errors };
+    if (verifyData && verifyData.length > 0) {
+      const tableCount = verifyData[0].table_count;
+      if (tableCount !== transaction.createdTables.length) {
+        errors.push(`Schema verification failed: expected ${transaction.createdTables.length} tables, found ${tableCount}`);
+        await rollbackSchemaTransaction(transaction);
+        return { success: false, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
+      }
+    }
+
+    // If we get here, everything succeeded - commit the transaction
+    await commitSchemaTransaction(transaction);
+
+    const success = transaction.createdTables.length > 0 && errors.length === 0;
+    logger.info(`Schema ${schemaName} created successfully with ${transaction.createdTables.length} tables using transaction`);
+    
+    return { success, schemaName, tablesCreated: transaction.createdTables, errors, transaction };
 
   } catch (error) {
-    errors.push(`Schema creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const errorMessage = `Schema creation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    errors.push(errorMessage);
     logger.error(`Error creating schema ${schemaName}:`, error);
-    return { success: false, schemaName, tablesCreated, errors };
+    
+    if (transaction) {
+      await rollbackSchemaTransaction(transaction);
+    }
+    
+    return { success: false, schemaName, tablesCreated: transaction?.createdTables || [], errors, transaction };
   }
 }
 
@@ -289,16 +412,17 @@ export async function getTableDDL(schemaName: string): Promise<{
 }
 
 /**
- * Improved schema cleanup with better error handling
+ * Enhanced schema cleanup with transaction support
  */
 export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
   success: boolean;
   errors: string[];
 }> {
   const errors: string[] = [];
+  let transaction: SchemaTransaction | null = null;
 
   try {
-    logger.info(`Cleaning up schema: ${schemaName}`);
+    logger.info(`Cleaning up schema with transaction support: ${schemaName}`);
 
     // Check if schema exists first
     const { data: existsData, error: existsError } = await supabase.rpc('exec_sql', {
@@ -319,17 +443,21 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
       return { success: true, errors };
     }
 
-    // Drop the schema with CASCADE
+    // Begin transaction for cleanup
+    transaction = await beginSchemaTransaction(`cleanup_${schemaName}`);
+
+    // Drop the schema with CASCADE within transaction
     const { error: dropError } = await supabase.rpc('exec_sql', {
       query: `DROP SCHEMA IF EXISTS ${schemaName} CASCADE`
     });
 
     if (dropError) {
       errors.push(`Failed to drop schema: ${dropError.message}`);
+      await rollbackSchemaTransaction(transaction);
       return { success: false, errors };
     }
 
-    // Verify schema was dropped
+    // Verify schema was dropped before committing
     const { data: verifyData, error: verifyError } = await supabase.rpc('exec_sql', {
       query: `
         SELECT schema_name 
@@ -340,17 +468,31 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
 
     if (verifyError) {
       errors.push(`Failed to verify schema cleanup: ${verifyError.message}`);
-    } else if (verifyData && verifyData.length > 0) {
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, errors };
+    } 
+    
+    if (verifyData && verifyData.length > 0) {
       errors.push(`Schema ${schemaName} still exists after cleanup attempt`);
-    } else {
-      logger.info(`Successfully cleaned up schema: ${schemaName}`);
+      await rollbackSchemaTransaction(transaction);
+      return { success: false, errors };
     }
+
+    // Commit the cleanup transaction
+    await commitSchemaTransaction(transaction);
+    logger.info(`Successfully cleaned up schema: ${schemaName}`);
 
     return { success: errors.length === 0, errors };
 
   } catch (error) {
-    errors.push(`Schema cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    const errorMessage = `Schema cleanup failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    errors.push(errorMessage);
     logger.error(`Error cleaning up schema ${schemaName}:`, error);
+    
+    if (transaction) {
+      await rollbackSchemaTransaction(transaction);
+    }
+    
     return { success: false, errors };
   }
 }
