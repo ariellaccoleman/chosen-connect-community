@@ -1,3 +1,4 @@
+
 import { 
   createTestSchema, 
   dropSchema,
@@ -20,7 +21,7 @@ import {
   createSchemaWithValidation,
   getTableDDL,
   cleanupSchemaWithValidation,
-  compareSchemasDDLEnhanced as enhancedDDLComparison
+  enhancedDDLComparison
 } from '@/api/core/testing/schemaInfrastructureFixes';
 
 describe('Schema Validation', () => {

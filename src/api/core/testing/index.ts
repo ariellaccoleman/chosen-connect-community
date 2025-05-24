@@ -44,3 +44,12 @@ export * from './relationshipTesting';
 
 // Schema-based testing utilities
 export * from './schemaBasedTesting';
+
+// Infrastructure fixes (new) - export with specific naming to avoid conflicts
+export {
+  validateSchemaInfrastructure,
+  createSchemaWithValidation,
+  getTableDDL,
+  cleanupSchemaWithValidation,
+  compareSchemasDDLEnhanced as enhancedDDLComparison
+} from './schemaInfrastructureFixes';

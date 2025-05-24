@@ -3,6 +3,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
 /**
+ * Types for RPC responses
+ */
+interface TableRow {
+  table_name: string;
+}
+
+interface CountRow {
+  table_count: number;
+}
+
+/**
  * Test and validate core schema infrastructure functions
  */
 export async function validateSchemaInfrastructure(): Promise<{
@@ -41,24 +52,22 @@ export async function validateSchemaInfrastructure(): Promise<{
         AND table_type = 'BASE TABLE'
         LIMIT 5
       `
-    });
+    }) as { data: TableRow[] | null; error: any };
 
     if (tablesError) {
       errors.push(`Failed to query public schema tables: ${tablesError.message}`);
-    } else if (!tablesData || (Array.isArray(tablesData) && tablesData.length === 0)) {
+    } else if (!tablesData || tablesData.length === 0) {
       errors.push('No tables found in public schema');
     } else {
       publicSchemaHasTables = true;
-      logger.info(`Found ${Array.isArray(tablesData) ? tablesData.length : 'some'} tables in public schema`);
+      logger.info(`Found ${tablesData.length} tables in public schema`);
     }
 
     // Test pg_get_tabledef function
-    if (publicSchemaHasTables && execSqlWorking) {
+    if (publicSchemaHasTables && execSqlWorking && tablesData && tablesData.length > 0) {
       logger.info('Testing pg_get_tabledef function...');
       
-      // Get a table name to test with
-      const testTableName = Array.isArray(tablesData) && tablesData.length > 0 ? 
-        tablesData[0].table_name : 'profiles';
+      const testTableName = tablesData[0].table_name;
       
       const { data: ddlData, error: ddlError } = await supabase.rpc('pg_get_tabledef', {
         p_schema: 'public',
@@ -124,14 +133,14 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         AND table_type = 'BASE TABLE'
         ORDER BY table_name
       `
-    });
+    }) as { data: TableRow[] | null; error: any };
 
     if (tablesError) {
       errors.push(`Failed to get public schema tables: ${tablesError.message}`);
       return { success: false, schemaName, tablesCreated, errors };
     }
 
-    if (!tables || !Array.isArray(tables) || tables.length === 0) {
+    if (!tables || tables.length === 0) {
       errors.push('No tables found in public schema to replicate');
       return { success: false, schemaName, tablesCreated, errors };
     }
@@ -140,44 +149,42 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
 
     // Step 3: Create each table in the new schema
     for (const tableRow of tables) {
-      if (tableRow && typeof tableRow === 'object' && 'table_name' in tableRow) {
-        const tableName = (tableRow as { table_name: string }).table_name;
-        
-        try {
-          // Get table definition
-          const { data: tableDef, error: defError } = await supabase.rpc('pg_get_tabledef', {
-            p_schema: 'public',
-            p_table: tableName
-          });
+      const tableName = tableRow.table_name;
+      
+      try {
+        // Get table definition
+        const { data: tableDef, error: defError } = await supabase.rpc('pg_get_tabledef', {
+          p_schema: 'public',
+          p_table: tableName
+        });
 
-          if (defError) {
-            errors.push(`Failed to get definition for table ${tableName}: ${defError.message}`);
-            continue;
-          }
-
-          if (!tableDef || tableDef.trim() === '') {
-            errors.push(`Empty DDL returned for table ${tableName}`);
-            continue;
-          }
-
-          // Replace schema name in the definition
-          const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
-          
-          // Create table in test schema
-          const { error: createTableError } = await supabase.rpc('exec_sql', {
-            query: testTableDef
-          });
-
-          if (createTableError) {
-            errors.push(`Failed to create table ${tableName}: ${createTableError.message}`);
-          } else {
-            tablesCreated.push(tableName);
-            logger.debug(`Successfully created table ${tableName} in schema ${schemaName}`);
-          }
-
-        } catch (tableError) {
-          errors.push(`Error processing table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
+        if (defError) {
+          errors.push(`Failed to get definition for table ${tableName}: ${defError.message}`);
+          continue;
         }
+
+        if (!tableDef || tableDef.trim() === '') {
+          errors.push(`Empty DDL returned for table ${tableName}`);
+          continue;
+        }
+
+        // Replace schema name in the definition
+        const testTableDef = tableDef.replace(/public\./g, `${schemaName}.`);
+        
+        // Create table in test schema
+        const { error: createTableError } = await supabase.rpc('exec_sql', {
+          query: testTableDef
+        });
+
+        if (createTableError) {
+          errors.push(`Failed to create table ${tableName}: ${createTableError.message}`);
+        } else {
+          tablesCreated.push(tableName);
+          logger.debug(`Successfully created table ${tableName} in schema ${schemaName}`);
+        }
+
+      } catch (tableError) {
+        errors.push(`Error processing table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
       }
     }
 
@@ -188,13 +195,12 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         FROM information_schema.tables 
         WHERE table_schema = '${schemaName}'
       `
-    });
+    }) as { data: CountRow[] | null; error: any };
 
     if (verifyError) {
       errors.push(`Failed to verify schema creation: ${verifyError.message}`);
-    } else {
-      const tableCount = verifyData && Array.isArray(verifyData) && verifyData.length > 0 ? 
-        verifyData[0].table_count : 0;
+    } else if (verifyData && verifyData.length > 0) {
+      const tableCount = verifyData[0].table_count;
       logger.info(`Schema ${schemaName} created with ${tableCount} tables`);
     }
 
@@ -231,14 +237,14 @@ export async function getTableDDL(schemaName: string): Promise<{
         AND table_type = 'BASE TABLE'
         ORDER BY table_name
       `
-    });
+    }) as { data: TableRow[] | null; error: any };
 
     if (tablesError) {
       errors.push(`Failed to get tables for schema ${schemaName}: ${tablesError.message}`);
       return { success: false, ddl, tableCount, errors };
     }
 
-    if (!tables || !Array.isArray(tables)) {
+    if (!tables || tables.length === 0) {
       errors.push(`No tables found in schema ${schemaName}`);
       return { success: false, ddl, tableCount, errors };
     }
@@ -249,25 +255,23 @@ export async function getTableDDL(schemaName: string): Promise<{
     // Get DDL for each table
     const ddlParts: string[] = [];
     for (const tableRow of tables) {
-      if (tableRow && typeof tableRow === 'object' && 'table_name' in tableRow) {
-        const tableName = (tableRow as { table_name: string }).table_name;
-        
-        try {
-          const { data: tableDDL, error: ddlError } = await supabase.rpc('pg_get_tabledef', {
-            p_schema: schemaName,
-            p_table: tableName
-          });
+      const tableName = tableRow.table_name;
+      
+      try {
+        const { data: tableDDL, error: ddlError } = await supabase.rpc('pg_get_tabledef', {
+          p_schema: schemaName,
+          p_table: tableName
+        });
 
-          if (ddlError) {
-            errors.push(`Failed to get DDL for table ${tableName}: ${ddlError.message}`);
-          } else if (tableDDL && tableDDL.trim() !== '') {
-            ddlParts.push(tableDDL);
-          } else {
-            errors.push(`Empty DDL returned for table ${tableName}`);
-          }
-        } catch (tableError) {
-          errors.push(`Error getting DDL for table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
+        if (ddlError) {
+          errors.push(`Failed to get DDL for table ${tableName}: ${ddlError.message}`);
+        } else if (tableDDL && tableDDL.trim() !== '') {
+          ddlParts.push(tableDDL);
+        } else {
+          errors.push(`Empty DDL returned for table ${tableName}`);
         }
+      } catch (tableError) {
+        errors.push(`Error getting DDL for table ${tableName}: ${tableError instanceof Error ? tableError.message : 'Unknown error'}`);
       }
     }
 
@@ -304,14 +308,14 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
         FROM information_schema.schemata 
         WHERE schema_name = '${schemaName}'
       `
-    });
+    }) as { data: { schema_name: string }[] | null; error: any };
 
     if (existsError) {
       errors.push(`Failed to check if schema exists: ${existsError.message}`);
       return { success: false, errors };
     }
 
-    if (!existsData || !Array.isArray(existsData) || existsData.length === 0) {
+    if (!existsData || existsData.length === 0) {
       logger.info(`Schema ${schemaName} does not exist, no cleanup needed`);
       return { success: true, errors };
     }
@@ -333,11 +337,11 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
         FROM information_schema.schemata 
         WHERE schema_name = '${schemaName}'
       `
-    });
+    }) as { data: { schema_name: string }[] | null; error: any };
 
     if (verifyError) {
       errors.push(`Failed to verify schema cleanup: ${verifyError.message}`);
-    } else if (verifyData && Array.isArray(verifyData) && verifyData.length > 0) {
+    } else if (verifyData && verifyData.length > 0) {
       errors.push(`Schema ${schemaName} still exists after cleanup attempt`);
     } else {
       logger.info(`Successfully cleaned up schema: ${schemaName}`);
@@ -350,4 +354,37 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
     logger.error(`Error cleaning up schema ${schemaName}:`, error);
     return { success: false, errors };
   }
+}
+
+/**
+ * Enhanced DDL comparison with better error handling
+ */
+export async function compareSchemasDDLEnhanced(sourceSchema: string, targetSchema: string): Promise<{
+  source: string;
+  target: string;
+  success: boolean;
+  errors: string[];
+}> {
+  logger.info(`Comparing DDL between schemas: ${sourceSchema} and ${targetSchema}`);
+  
+  const [sourceResult, targetResult] = await Promise.all([
+    getTableDDL(sourceSchema),
+    getTableDDL(targetSchema)
+  ]);
+  
+  const errors = [...sourceResult.errors, ...targetResult.errors];
+  const success = sourceResult.success && targetResult.success;
+  
+  if (!success) {
+    logger.error('DDL comparison failed:', errors);
+  } else {
+    logger.info(`DDL comparison successful: source (${sourceResult.tableCount} tables), target (${targetResult.tableCount} tables)`);
+  }
+  
+  return {
+    source: sourceResult.ddl,
+    target: targetResult.ddl,
+    success,
+    errors
+  };
 }
