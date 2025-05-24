@@ -1,4 +1,3 @@
-
 import { 
   createTestSchema, 
   dropSchema,
@@ -8,8 +7,7 @@ import {
 } from '@/api/core/testing/testSchemaManager';
 import { 
   validateSchemaReplication, 
-  compareSchemasDDL,
-  compareSchemasDDLEnhanced
+  compareSchemasDDL
 } from '@/api/core/testing/schemaValidationUtils';
 import { 
   validateSchemaReplicationComprehensive,
@@ -21,7 +19,7 @@ import {
   createSchemaWithValidation,
   getTableDDL,
   cleanupSchemaWithValidation,
-  enhancedDDLComparison
+  compareSchemasDDLWithValidation
 } from '@/api/core/testing/schemaInfrastructureFixes';
 
 describe('Schema Validation', () => {
@@ -301,25 +299,21 @@ describe('Schema Validation', () => {
     
     console.log('Running enhanced DDL comparison...');
     
-    const result = await compareSchemasDDLEnhanced('public', schema.name);
+    const result = await compareSchemasDDLWithValidation('public', schema.name);
     
     console.log('Enhanced DDL comparison result:', {
       sourceLength: result.source.length,
       targetLength: result.target.length,
-      hasComprehensive: !!result.comprehensive,
-      comprehensiveEqual: result.comprehensive?.isEqual,
-      comprehensiveDifferences: result.comprehensive?.differences.length || 0
+      success: result.success,
+      errorCount: result.errors.length
     });
     
     expect(result.source).toBeTruthy();
     expect(result.target).toBeTruthy();
     expect(result.source).toContain('CREATE TABLE');
     expect(result.target).toContain('CREATE TABLE');
-    
-    if (result.comprehensive) {
-      expect(result.comprehensive.isEqual).toBe(true);
-      expect(result.comprehensive.differences).toHaveLength(0);
-    }
+    expect(result.success).toBe(true);
+    expect(result.errors.length).toBe(0);
   });
 
   test('Legacy validation still works', async () => {

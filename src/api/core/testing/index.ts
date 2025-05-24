@@ -51,5 +51,5 @@ export {
   createSchemaWithValidation,
   getTableDDL,
   cleanupSchemaWithValidation,
-  compareSchemasDDLEnhanced as infraDDLComparison
+  compareSchemasDDLWithValidation
 } from './schemaInfrastructureFixes';

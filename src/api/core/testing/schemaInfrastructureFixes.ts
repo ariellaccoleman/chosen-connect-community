@@ -356,9 +356,9 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
 }
 
 /**
- * Enhanced DDL comparison with better error handling - renamed to avoid conflicts
+ * Enhanced DDL comparison with comprehensive validation - main implementation
  */
-export async function compareSchemasDDLEnhanced(sourceSchema: string, targetSchema: string): Promise<{
+export async function compareSchemasDDLWithValidation(sourceSchema: string, targetSchema: string): Promise<{
   source: string;
   target: string;
   success: boolean;
