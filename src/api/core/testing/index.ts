@@ -11,8 +11,12 @@ export * from './repositoryTestUtils';
 // Mock data generation
 export * from './mockDataGenerator';
 
-// Schema testing and validation (legacy)
-export * from './schemaValidationUtils';
+// Schema testing and validation (legacy) - explicit exports to avoid conflicts
+export {
+  validateSchemaReplication,
+  runSchemaValidationTest,
+  compareSchemasDDL
+} from './schemaValidationUtils';
 
 // Comprehensive schema validation (new)
 export * from './comprehensiveSchemaValidation';
