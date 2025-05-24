@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
@@ -357,7 +356,7 @@ export async function cleanupSchemaWithValidation(schemaName: string): Promise<{
 }
 
 /**
- * Enhanced DDL comparison with better error handling
+ * Enhanced DDL comparison with better error handling - renamed to avoid conflicts
  */
 export async function compareSchemasDDLEnhanced(sourceSchema: string, targetSchema: string): Promise<{
   source: string;
