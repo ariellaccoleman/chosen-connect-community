@@ -15,19 +15,58 @@ import {
   extractSchemaStructure,
   compareSchemaStructures
 } from '@/api/core/testing/comprehensiveSchemaValidation';
+import {
+  validateSchemaInfrastructure,
+  createSchemaWithValidation,
+  getTableDDL,
+  cleanupSchemaWithValidation,
+  compareSchemasDDLEnhanced as enhancedDDLComparison
+} from '@/api/core/testing/schemaInfrastructureFixes';
 
 describe('Schema Validation', () => {
   const createdSchemas: string[] = [];
+
+  beforeAll(async () => {
+    console.log('=== Schema Validation Test Suite Starting ===');
+    
+    // Validate infrastructure before running any tests
+    console.log('Validating schema infrastructure...');
+    const infraValidation = await validateSchemaInfrastructure();
+    console.log('Infrastructure validation result:', {
+      execSqlWorking: infraValidation.execSqlWorking,
+      pgGetTabledefWorking: infraValidation.pgGetTabledefWorking,
+      publicSchemaHasTables: infraValidation.publicSchemaHasTables,
+      errorCount: infraValidation.errors.length
+    });
+    
+    if (infraValidation.errors.length > 0) {
+      console.warn('Infrastructure validation errors:', infraValidation.errors);
+    }
+    
+    // Fail fast if basic infrastructure is broken
+    if (!infraValidation.execSqlWorking) {
+      throw new Error('exec_sql function not working - cannot run schema tests');
+    }
+    
+    if (!infraValidation.publicSchemaHasTables) {
+      throw new Error('No tables found in public schema - cannot test schema replication');
+    }
+  });
 
   beforeEach(() => {
     resetSchemaTracking();
   });
 
   afterEach(async () => {
+    console.log(`Cleaning up ${createdSchemas.length} schemas created during this test...`);
+    
     // Clean up any schemas created during this test
     for (const schemaName of createdSchemas) {
       try {
-        await dropSchema(schemaName);
+        const result = await cleanupSchemaWithValidation(schemaName);
+        if (!result.success) {
+          console.warn(`Failed to cleanup schema ${schemaName}:`, result.errors);
+        }
       } catch (error) {
         console.warn(`Failed to cleanup schema ${schemaName}:`, error);
       }
@@ -36,8 +75,122 @@ describe('Schema Validation', () => {
   });
 
   afterAll(async () => {
+    console.log('=== Schema Validation Test Suite Cleanup ===');
     // Force cleanup all test schemas as a safety net
     await forceCleanupAllTestSchemas();
+  });
+
+  test('Infrastructure validation works correctly', async () => {
+    console.log('Testing infrastructure validation...');
+    
+    const result = await validateSchemaInfrastructure();
+    
+    console.log('Infrastructure validation result:', {
+      execSqlWorking: result.execSqlWorking,
+      pgGetTabledefWorking: result.pgGetTabledefWorking,
+      publicSchemaHasTables: result.publicSchemaHasTables,
+      errors: result.errors
+    });
+    
+    expect(result.execSqlWorking).toBe(true);
+    expect(result.publicSchemaHasTables).toBe(true);
+    // pg_get_tabledef should work, but we'll warn if it doesn't
+    if (!result.pgGetTabledefWorking) {
+      console.warn('pg_get_tabledef function not working properly');
+    }
+  });
+
+  test('Enhanced schema creation works correctly', async () => {
+    console.log('Testing enhanced schema creation...');
+    
+    const schemaName = `enhanced_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    
+    const result = await createSchemaWithValidation(schemaName);
+    
+    // Track this schema for cleanup
+    createdSchemas.push(schemaName);
+    
+    console.log('Enhanced schema creation result:', {
+      success: result.success,
+      schemaName: result.schemaName,
+      tablesCreated: result.tablesCreated.length,
+      errors: result.errors
+    });
+    
+    expect(result.success).toBe(true);
+    expect(result.tablesCreated.length).toBeGreaterThan(0);
+    expect(result.errors.length).toBe(0);
+  });
+
+  test('Enhanced DDL generation works correctly', async () => {
+    console.log('Testing enhanced DDL generation...');
+    
+    // Test DDL generation for public schema
+    const result = await getTableDDL('public');
+    
+    console.log('DDL generation result:', {
+      success: result.success,
+      ddlLength: result.ddl.length,
+      tableCount: result.tableCount,
+      errorCount: result.errors.length
+    });
+    
+    expect(result.success).toBe(true);
+    expect(result.ddl.length).toBeGreaterThan(0);
+    expect(result.tableCount).toBeGreaterThan(0);
+    expect(result.ddl).toContain('CREATE TABLE');
+  });
+
+  test('Enhanced DDL comparison works correctly', async () => {
+    console.log('Testing enhanced DDL comparison...');
+    
+    // Create a test schema first
+    const schemaName = `ddl_comparison_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const createResult = await createSchemaWithValidation(schemaName);
+    
+    // Track this schema for cleanup
+    createdSchemas.push(schemaName);
+    
+    expect(createResult.success).toBe(true);
+    
+    // Compare DDL between public and test schema
+    const comparisonResult = await enhancedDDLComparison('public', schemaName);
+    
+    console.log('Enhanced DDL comparison result:', {
+      success: comparisonResult.success,
+      sourceLength: comparisonResult.source.length,
+      targetLength: comparisonResult.target.length,
+      errorCount: comparisonResult.errors.length
+    });
+    
+    expect(comparisonResult.success).toBe(true);
+    expect(comparisonResult.source.length).toBeGreaterThan(0);
+    expect(comparisonResult.target.length).toBeGreaterThan(0);
+    expect(comparisonResult.source).toContain('CREATE TABLE');
+    expect(comparisonResult.target).toContain('CREATE TABLE');
+  });
+
+  test('Schema cleanup works correctly', async () => {
+    console.log('Testing schema cleanup...');
+    
+    // Create a test schema
+    const schemaName = `cleanup_test_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const createResult = await createSchemaWithValidation(schemaName);
+    
+    expect(createResult.success).toBe(true);
+    
+    // Now clean it up
+    const cleanupResult = await cleanupSchemaWithValidation(schemaName);
+    
+    console.log('Schema cleanup result:', {
+      success: cleanupResult.success,
+      errors: cleanupResult.errors
+    });
+    
+    expect(cleanupResult.success).toBe(true);
+    expect(cleanupResult.errors.length).toBe(0);
+    
+    // Don't add to createdSchemas since we cleaned it up manually
   });
 
   test('Create test schema with comprehensive validation', async () => {

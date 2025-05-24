@@ -1,8 +1,6 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { createTestingRepository } from '../repository/repositoryFactory';
 import { BaseRepository } from '../repository/BaseRepository';
-import { createMockRepository } from '../repository/MockRepository';
 import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@/utils/logger';
 import { 
@@ -14,6 +12,12 @@ import {
   forceCleanupAllTestSchemas,
   SchemaInfo 
 } from './testSchemaManager';
+import {
+  validateSchemaInfrastructure,
+  createSchemaWithValidation,
+  getTableDDL,
+  cleanupSchemaWithValidation
+} from './schemaInfrastructureFixes';
 
 /**
  * Schema registry to track created test schemas
@@ -45,23 +49,58 @@ export function generateSchemaName(): string {
 }
 
 /**
- * Create a new test schema with a unique name
+ * Create a new test schema with enhanced validation and error handling
  */
 export async function createUniqueTestSchema(options: {
   validateSchema?: boolean;
+  validateInfrastructure?: boolean;
 } = {}): Promise<string | null> {
   try {
-    const schemaInfo = await createTestSchema({
-      validateSchema: options.validateSchema
-    });
+    // Validate infrastructure first if requested
+    if (options.validateInfrastructure) {
+      logger.info('Validating schema infrastructure before creating test schema...');
+      const infraValidation = await validateSchemaInfrastructure();
+      
+      if (!infraValidation.execSqlWorking || !infraValidation.publicSchemaHasTables) {
+        logger.error('Schema infrastructure validation failed:', infraValidation.errors);
+        return null;
+      }
+      
+      if (!infraValidation.pgGetTabledefWorking) {
+        logger.warn('pg_get_tabledef function not working, schema validation may fail');
+      }
+    }
+
+    const schemaName = generateSchemaName();
+    logger.info(`Creating unique test schema: ${schemaName}`);
+
+    // Use the improved schema creation function
+    const result = await createSchemaWithValidation(schemaName);
     
-    if (schemaInfo.validationResult && !schemaInfo.validationResult.isValid) {
-      logger.error(`Created schema but validation failed: ${schemaInfo.name}`);
-      logger.error(schemaInfo.validationResult.summary);
+    if (!result.success) {
+      logger.error(`Failed to create schema ${schemaName}:`, result.errors);
+      return null;
+    }
+
+    if (result.tablesCreated.length === 0) {
+      logger.error(`Schema ${schemaName} created but no tables were replicated`);
+      await cleanupSchemaWithValidation(schemaName);
+      return null;
+    }
+
+    logger.info(`Successfully created test schema ${schemaName} with ${result.tablesCreated.length} tables`);
+    
+    // Validate schema if requested
+    if (options.validateSchema) {
+      const validationResult = await validateTestSchema(schemaName);
+      if (!validationResult || !validationResult.validationResult?.isValid) {
+        logger.error(`Schema validation failed for ${schemaName}`);
+        await cleanupSchemaWithValidation(schemaName);
+        return null;
+      }
     }
     
-    logger.info(`Created test schema: ${schemaInfo.name}`);
-    return schemaInfo.name;
+    return schemaName;
   } catch (error) {
     logger.error('Error creating unique test schema:', error);
     return null;
@@ -124,8 +163,7 @@ export async function cloneSchemaStructure(targetSchema: string): Promise<void> 
 }
 
 /**
- * Verify that required tables exist in the test schema
- * and optionally validate the schema structure
+ * Verify that required tables exist in the test schema with enhanced validation
  */
 export async function verifySchemaSetup(
   schema: string, 
@@ -135,6 +173,8 @@ export async function verifySchemaSetup(
   } = {}
 ): Promise<boolean> {
   try {
+    logger.info(`Verifying schema setup for: ${schema}`);
+
     // First, check if required tables exist
     const { data, error } = await supabase.rpc('exec_sql', {
       query: `
@@ -151,6 +191,7 @@ export async function verifySchemaSetup(
     
     // Extract table names from result
     const existingTables = (data || []).map((row: any) => row.table_name);
+    logger.info(`Found ${existingTables.length} tables in schema ${schema}`);
     
     // Check required tables
     const requiredTables = options.requiredTables || [];
@@ -216,39 +257,37 @@ export async function createTestAuthUsersTable(schema: string): Promise<void> {
 }
 
 /**
- * Releases a schema after test completion
+ * Releases a schema after test completion with improved cleanup
  */
 export async function releaseTestSchema(schema: string): Promise<void> {
   if (!schema) {
     return;
   }
   
-  if (schemaRegistry[schema]) {
-    schemaRegistry[schema].inUse = false;
-    console.log(`Released schema ${schema}`);
-  }
+  logger.info(`Releasing test schema: ${schema}`);
   
-  // Always drop the schema immediately, regardless of RETAIN_TEST_SCHEMAS
-  // This ensures cleanup happens consistently
-  await dropTestSchema(schema);
+  // Use the improved cleanup function
+  const result = await cleanupSchemaWithValidation(schema);
+  
+  if (!result.success) {
+    logger.error(`Failed to release schema ${schema}:`, result.errors);
+  } else {
+    logger.info(`Successfully released schema ${schema}`);
+  }
 }
 
 /**
- * Drop a test schema and all its objects
+ * Drop a test schema using improved cleanup
  */
 export async function dropTestSchema(schema: string): Promise<void> {
-  try {
-    if (!schema) {
-      return;
-    }
-    
-    // Use the centralized dropSchema function
-    await dropSchema(schema);
-    
-    delete schemaRegistry[schema];
-    console.log(`Dropped schema ${schema}`);
-  } catch (error) {
-    console.error(`Error dropping schema ${schema}:`, error);
+  if (!schema) {
+    return;
+  }
+  
+  const result = await cleanupSchemaWithValidation(schema);
+  
+  if (!result.success) {
+    logger.error(`Failed to drop schema ${schema}:`, result.errors);
   }
 }
 
@@ -301,24 +340,29 @@ export async function seedTestUser(
 }
 
 /**
- * Set up the testing schema by cloning the structure from public schema
- * ALWAYS creates a new unique schema - never reuses 'testing' schema
+ * Set up the testing schema with enhanced validation and error handling
  */
 export async function setupTestSchema(options: {
   schemaName?: string;
   requiredTables?: string[];
   seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
   validateSchema?: boolean;
+  validateInfrastructure?: boolean;
 } = {}): Promise<string | null> {
   try {
+    logger.info('Setting up test schema with enhanced validation...');
+
     // NEVER use a provided schema name - always create unique ones
-    // This ensures test isolation
     const schemaName = await createUniqueTestSchema({
-      validateSchema: options.validateSchema
+      validateSchema: options.validateSchema,
+      validateInfrastructure: options.validateInfrastructure
     });
     
-    if (!schemaName) return null;
-    
+    if (!schemaName) {
+      logger.error('Failed to create unique test schema');
+      return null;
+    }
+
     // Clone public schema structure if schema was not created with validation
     if (!options.validateSchema) {
       await cloneSchemaStructure(schemaName);
@@ -334,7 +378,7 @@ export async function setupTestSchema(options: {
       }
     }
     
-    // Verify schema setup
+    // Verify schema setup with enhanced validation
     const isValid = await verifySchemaSetup(schemaName, {
       requiredTables: options.requiredTables,
       validateStructure: options.validateSchema
@@ -346,7 +390,7 @@ export async function setupTestSchema(options: {
       return null;
     }
     
-    logger.info(`Testing schema ${schemaName} setup complete`);
+    logger.info(`Testing schema ${schemaName} setup complete and validated`);
     return schemaName;
   } catch (error) {
     logger.error('Error setting up testing schema:', error);
@@ -409,8 +453,7 @@ export async function seedTestData<T>(
 }
 
 /**
- * Create a test context that provides repositories and utilities for testing
- * ALWAYS uses unique randomized schema names for test isolation
+ * Create a test context with enhanced schema validation
  */
 export function createTestContext<T>(tableName: string, options: {
   schema?: string; // This will be ignored - always create unique schemas
@@ -418,6 +461,7 @@ export function createTestContext<T>(tableName: string, options: {
   requiredTables?: string[];
   mockDataInTestEnv?: boolean;
   validateSchema?: boolean;
+  validateInfrastructure?: boolean;
 } = {}) {
   // Always start with a unique schema - ignore any provided schema option
   let testSchema: string | null = null;
@@ -434,17 +478,23 @@ export function createTestContext<T>(tableName: string, options: {
     initialData?: T[];
     seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
     validateSchema?: boolean;
+    validateInfrastructure?: boolean;
   } = {}): Promise<void> => {
+    logger.info(`Setting up test context for table: ${tableName}`);
+    
     // Create a unique schema for this test context
     testSchema = await setupTestSchema({
       requiredTables: options.requiredTables,
       seedUsers: setupOptions.seedUsers,
-      validateSchema: setupOptions.validateSchema || options.validateSchema
+      validateSchema: setupOptions.validateSchema || options.validateSchema,
+      validateInfrastructure: setupOptions.validateInfrastructure || options.validateInfrastructure
     });
     
     if (!testSchema) {
       throw new Error('Failed to create test schema');
     }
+    
+    logger.info(`Test context using schema: ${testSchema}`);
     
     // Clear existing data first
     await clearTestTable(tableName, testSchema);
@@ -541,4 +591,37 @@ export async function globalTestCleanup(): Promise<void> {
   await cleanupOldTestSchemas();
   
   logger.info('Global test cleanup complete');
+}
+
+/**
+ * Enhanced DDL comparison with better error handling
+ */
+export async function compareSchemasDDLEnhanced(sourceSchema: string, targetSchema: string): Promise<{
+  source: string;
+  target: string;
+  success: boolean;
+  errors: string[];
+}> {
+  logger.info(`Comparing DDL between schemas: ${sourceSchema} and ${targetSchema}`);
+  
+  const [sourceResult, targetResult] = await Promise.all([
+    getTableDDL(sourceSchema),
+    getTableDDL(targetSchema)
+  ]);
+  
+  const errors = [...sourceResult.errors, ...targetResult.errors];
+  const success = sourceResult.success && targetResult.success;
+  
+  if (!success) {
+    logger.error('DDL comparison failed:', errors);
+  } else {
+    logger.info(`DDL comparison successful: source (${sourceResult.tableCount} tables), target (${targetResult.tableCount} tables)`);
+  }
+  
+  return {
+    source: sourceResult.ddl,
+    target: targetResult.ddl,
+    success,
+    errors
+  };
 }
