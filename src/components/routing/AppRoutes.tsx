@@ -23,6 +23,7 @@ import TestDataGenerator from '@/pages/TestDataGenerator';
 import Hubs from '@/pages/Hubs';
 import HubDetail from '@/pages/HubDetail';
 import Feed from '@/pages/Feed';
+import TestSchemaFunctionsPage from '@/pages/TestSchemaFunctions';
 
 // Chat Routes
 import Chat from '@/pages/Chat';
@@ -55,6 +56,9 @@ const AppRoutes = () => {
       <Route path={APP_ROUTES.ABOUT} element={<About />} />
       <Route path={APP_ROUTES.AUTH} element={<PublicRoute><Auth /></PublicRoute>} />
       <Route path={APP_ROUTES.COMMUNITY_GUIDE} element={<CommunityGuide />} />
+      
+      {/* Testing Routes */}
+      <Route path={APP_ROUTES.TEST_SCHEMA_FUNCTIONS} element={<TestSchemaFunctionsPage />} />
       
       {/* Protected Routes */}
       <Route path={APP_ROUTES.DASHBOARD} element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

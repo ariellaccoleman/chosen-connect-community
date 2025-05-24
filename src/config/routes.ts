@@ -53,5 +53,8 @@ export const APP_ROUTES = {
   ADMIN_TESTS: "/admin/test-reports",
   TEST_RUN_DETAIL: "/admin/test-reports/:testRunId",
   ADMIN_TEST_DETAIL: "/admin/test-reports/:testRunId",
-  ADMIN_HUBS: "/admin/hubs"
+  ADMIN_HUBS: "/admin/hubs",
+  
+  // Testing Routes
+  TEST_SCHEMA_FUNCTIONS: "/test-schema-functions"
 };
