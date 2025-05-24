@@ -302,6 +302,7 @@ export async function seedTestUser(
 
 /**
  * Set up the testing schema by cloning the structure from public schema
+ * ALWAYS creates a new unique schema - never reuses 'testing' schema
  */
 export async function setupTestSchema(options: {
   schemaName?: string;
@@ -310,8 +311,9 @@ export async function setupTestSchema(options: {
   validateSchema?: boolean;
 } = {}): Promise<string | null> {
   try {
-    // Create a unique schema or use provided name
-    const schemaName = options.schemaName || await createUniqueTestSchema({
+    // NEVER use a provided schema name - always create unique ones
+    // This ensures test isolation
+    const schemaName = await createUniqueTestSchema({
       validateSchema: options.validateSchema
     });
     
@@ -355,7 +357,7 @@ export async function setupTestSchema(options: {
 /**
  * Execute raw SQL in the testing schema
  */
-export async function executeTestSQL(sql: string, schema: string = 'testing'): Promise<any> {
+export async function executeTestSQL(sql: string, schema: string): Promise<any> {
   try {
     // Execute SQL with schema prefix for table references
     const { data, error } = await supabase.rpc('exec_sql', { query: sql });
@@ -374,9 +376,9 @@ export async function executeTestSQL(sql: string, schema: string = 'testing'): P
 /**
  * Clear all data from a table in the testing schema
  */
-export async function clearTestTable(tableName: string, schema: string = 'testing'): Promise<void> {
+export async function clearTestTable(tableName: string, schema: string): Promise<void> {
   try {
-    await executeTestSQL(`DELETE FROM ${schema}.${tableName}`);
+    await executeTestSQL(`DELETE FROM ${schema}.${tableName}`, schema);
     console.log(`Cleared test data from ${schema}.${tableName}`);
   } catch (error) {
     console.error(`Error clearing test data from ${tableName}:`, error);
@@ -390,7 +392,7 @@ export async function clearTestTable(tableName: string, schema: string = 'testin
 export async function seedTestData<T>(
   tableName: string, 
   data: T[],
-  schema: string = 'testing'
+  schema: string
 ): Promise<void> {
   if (!data || data.length === 0) {
     return;
@@ -408,33 +410,40 @@ export async function seedTestData<T>(
 
 /**
  * Create a test context that provides repositories and utilities for testing
+ * ALWAYS uses unique randomized schema names for test isolation
  */
 export function createTestContext<T>(tableName: string, options: {
-  schema?: string;
+  schema?: string; // This will be ignored - always create unique schemas
   initialData?: T[];
   requiredTables?: string[];
   mockDataInTestEnv?: boolean;
   validateSchema?: boolean;
 } = {}) {
-  // The schema to use - will be determined during setup
-  let testSchema = options.schema || 'testing';
+  // Always start with a unique schema - ignore any provided schema option
+  let testSchema: string | null = null;
   
   // Always use real database repository, never mock
-  const repository = createTestingRepository<T>(tableName, { schema: testSchema });
+  const getRepository = (): BaseRepository<T> => {
+    if (!testSchema) {
+      throw new Error('Test context not set up - call setup() first');
+    }
+    return createTestingRepository<T>(tableName, { schema: testSchema });
+  };
   
   const setup = async (setupOptions: {
     initialData?: T[];
     seedUsers?: Array<{ id: string; email: string; rawUserMetaData?: any }>;
     validateSchema?: boolean;
   } = {}): Promise<void> => {
-    // Ensure we have a valid schema
-    if (!testSchema || testSchema === 'testing') {
-      // Create a unique schema for this test context
-      testSchema = await setupTestSchema({
-        requiredTables: options.requiredTables,
-        seedUsers: setupOptions.seedUsers,
-        validateSchema: setupOptions.validateSchema || options.validateSchema
-      }) || 'testing';
+    // Create a unique schema for this test context
+    testSchema = await setupTestSchema({
+      requiredTables: options.requiredTables,
+      seedUsers: setupOptions.seedUsers,
+      validateSchema: setupOptions.validateSchema || options.validateSchema
+    });
+    
+    if (!testSchema) {
+      throw new Error('Failed to create test schema');
     }
     
     // Clear existing data first
@@ -448,32 +457,37 @@ export function createTestContext<T>(tableName: string, options: {
   };
   
   const cleanup = async (): Promise<void> => {
-    // Clear data but don't drop schema - that's handled by releaseTestSchema
-    await clearTestTable(tableName, testSchema);
+    if (testSchema) {
+      // Clear data but don't drop schema - that's handled by releaseTestSchema
+      await clearTestTable(tableName, testSchema);
+    }
   };
   
   const getCurrentSchema = (): string => {
+    if (!testSchema) {
+      throw new Error('Test context not set up - call setup() first');
+    }
     return testSchema;
-  };
-  
-  const getRepository = (): BaseRepository<T> => {
-    return repository;
   };
   
   const release = async (): Promise<void> => {
     await cleanup();
-    if (testSchema && testSchema !== 'testing') {
+    if (testSchema) {
       await releaseTestSchema(testSchema);
+      testSchema = null;
     }
   };
   
   // Add a method to validate the schema structure
   const validateSchema = async (): Promise<SchemaInfo | null> => {
+    if (!testSchema) {
+      throw new Error('Test context not set up - call setup() first');
+    }
     return await validateTestSchema(testSchema);
   };
   
   return {
-    repository,
+    repository: getRepository(), // Kept for backward compatibility
     setup,
     cleanup,
     getCurrentSchema,

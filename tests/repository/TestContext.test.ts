@@ -1,9 +1,6 @@
 
 import { 
-  createTestContext, 
-  setupTestingEnvironment, 
-  teardownTestingEnvironment,
-  setupTestSchema
+  createTestContext
 } from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,6 +21,7 @@ describe('Test Context Helper', () => {
   const mockProfiles = Array(3).fill(null).map(() => createMockProfile());
   
   // Create a test context for profiles with a unique schema
+  // This will automatically generate a randomized schema name
   const profileContext = createTestContext<Profile>('profiles', {
     initialData: mockProfiles,
     mockDataInTestEnv: false, // Always use real database
@@ -54,8 +52,7 @@ describe('Test Context Helper', () => {
     // Use the repository from the test context
     const repository = profileContext.getRepository();
     console.log('Got repository, executing select query');
-    console.log('Repository type:', typeof repository);
-    console.log('Repository methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(repository)));
+    console.log('Current schema:', profileContext.getCurrentSchema());
     
     const result = await repository.select().execute();
     console.log('Query result:', { 
@@ -93,7 +90,7 @@ describe('Test Context Helper', () => {
     const repository = profileContext.getRepository();
     
     console.log('Inserting new profile:', newProfile.id);
-    console.log('Profile data:', JSON.stringify(newProfile, null, 2));
+    console.log('Current schema:', profileContext.getCurrentSchema());
     
     // Insert the profile
     const insertResult = await repository.insert(newProfile).execute();
@@ -133,6 +130,23 @@ describe('Test Context Helper', () => {
       first_name: newProfile.first_name,
       last_name: newProfile.last_name
     });
+  });
+
+  test('should validate schema structure', async () => {
+    console.log('Starting test: should validate schema structure');
+    
+    // Validate the schema structure
+    const validationResult = await profileContext.validateSchema();
+    console.log('Schema validation result:', {
+      exists: !!validationResult,
+      status: validationResult?.status,
+      isValid: validationResult?.validationResult?.isValid,
+      summary: validationResult?.validationResult?.summary?.substring(0, 100) + '...'
+    });
+    
+    expect(validationResult).toBeTruthy();
+    expect(validationResult?.status).toBe('validated');
+    expect(validationResult?.validationResult?.isValid).toBe(true);
   });
 
   // Release the test schema after all tests

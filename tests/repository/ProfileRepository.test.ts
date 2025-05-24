@@ -1,20 +1,19 @@
 
 import { 
-  setupTestSchema, 
-  cleanupOldTestSchemas,
-  clearTestTable, 
-  seedTestData,
   createTestContext
 } from '@/api/core/testing/schemaBasedTesting';
 import { Profile } from '@/types/profile';
 import { v4 as uuidv4 } from 'uuid';
 
 describe('ProfileRepository with Schema-Based Testing', () => {
-  // Set up test context for managing database schema and lifecycle
+  // Create test context for managing database schema and lifecycle
+  // This will automatically generate a unique schema for each test run
   const testContext = createTestContext<Profile>('profiles', {
     requiredTables: ['profiles'],
     // Never use mock data, always use a real database
-    mockDataInTestEnv: false
+    mockDataInTestEnv: false,
+    // Enable schema validation to ensure proper setup
+    validateSchema: true
   });
   
   // Generate test profiles before each test
@@ -32,8 +31,11 @@ describe('ProfileRepository with Schema-Based Testing', () => {
       updated_at: new Date().toISOString()
     }));
     
-    // Set up test schema and seed data
-    await testContext.setup({ initialData: mockProfiles });
+    // Set up test schema and seed data with validation
+    await testContext.setup({ 
+      initialData: mockProfiles,
+      validateSchema: true
+    });
   });
   
   afterEach(async () => {
@@ -140,8 +142,5 @@ describe('ProfileRepository with Schema-Based Testing', () => {
   // Clean up test schema after all tests
   afterAll(async () => {
     await testContext.release();
-    
-    // Also clean up any old test schemas that might be lingering
-    await cleanupOldTestSchemas();
   });
 });
