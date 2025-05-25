@@ -14,31 +14,8 @@ export * from './repositoryTestUtils';
 // Mock data generation
 export * from './mockDataGenerator';
 
-// Schema testing and validation (legacy) - explicit exports to avoid conflicts
-export {
-  validateSchemaReplication,
-  runSchemaValidationTest,
-  compareSchemasDDL
-} from './schemaValidationUtils';
-
 // Comprehensive schema validation (new)
 export * from './comprehensiveSchemaValidation';
-
-// Test schema management (legacy - use TestInfrastructure from testClient instead)
-export {
-  createTestSchema, 
-  validateTestSchema,
-  schemaExists, 
-  releaseSchema,
-  addTestUser,
-  dropSchema,
-  cleanupReleasedSchemas,
-  getActiveSchemas,
-  resetSchemaTracking
-} from './testSchemaManager';
-
-// Export the SchemaInfo type properly
-export type { SchemaInfo } from './testSchemaManager';
 
 // Snapshot testing
 export * from './snapshotTesting';
@@ -60,3 +37,6 @@ export {
   cleanupSchemaWithValidation,
   compareSchemasDDLWithValidation
 } from './schemaInfrastructureFixes';
+
+// Error types for enhanced error handling
+export * from './errorTypes';

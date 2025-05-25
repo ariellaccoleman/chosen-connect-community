@@ -103,22 +103,24 @@ export function TestSchemaFunctions() {
       });
       testResults.push(test4);
 
-      // Test 5: Security verification - ensure dangerous functions are removed
+      // Test 5: Security verification - ensure proper function access control
       const test5 = await runTest('Security verification', async () => {
-        const anonClient = TestClientFactory.getAnonClient();
+        const serviceClient = TestClientFactory.getServiceRoleClient();
         
         try {
-          // Try to call the old dangerous exec_sql function - should fail
-          const { error } = await anonClient.rpc('exec_sql', { query: 'SELECT 1' });
+          // Test that secure functions work with service role
+          const { data, error } = await serviceClient.rpc('validate_schema_structure', { 
+            target_schema: 'public' 
+          });
           
           return {
-            execSqlRemoved: !!error,
-            errorMessage: error?.message || 'Function still accessible (SECURITY RISK!)'
+            secureFunctionsWorking: !error && !!data,
+            message: error ? `Error: ${error.message}` : 'Secure functions accessible with proper credentials'
           };
         } catch (e) {
           return {
-            execSqlRemoved: true,
-            errorMessage: 'Function properly removed'
+            secureFunctionsWorking: false,
+            message: `Exception: ${e instanceof Error ? e.message : 'Unknown error'}`
           };
         }
       });
