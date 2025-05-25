@@ -11,14 +11,23 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      # Production project (for any integration tests)
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      
+      # Test project (for unit/isolated tests)
+      TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+      TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+      TEST_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+      
+      # Other variables
       TEST_REPORTING_API_KEY: ${{ secrets.TEST_REPORTING_API_KEY }}
       GITHUB_SHA: ${{ github.sha }}
       GITHUB_REF_NAME: ${{ github.ref_name }}
       APP_URL: 'https://app.chosen.dev'
       NODE_ENV: 'test'
+
     steps:
       - uses: actions/checkout@v3
 
@@ -35,8 +44,8 @@ jobs:
 
       - name: Print Supabase service role key env info
         run: |
-          echo "SERVICE ROLE KEY LENGTH: ${#SUPABASE_SERVICE_ROLE_KEY}"
-          echo "SERVICE ROLE KEY START: ${SUPABASE_SERVICE_ROLE_KEY:0:10}"
+          echo "PROD SERVICE ROLE KEY LENGTH: ${#SUPABASE_SERVICE_ROLE_KEY}"
+          echo "TEST SERVICE ROLE KEY LENGTH: ${#TEST_SUPABASE_SERVICE_ROLE_KEY}"
 
       - name: Run tests
         run: ./run-tests.cjs
