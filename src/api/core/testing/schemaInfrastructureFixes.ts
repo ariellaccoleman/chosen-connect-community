@@ -24,6 +24,17 @@ interface SchemaValidationResult {
 }
 
 /**
+ * Type guard for SchemaValidationResult
+ */
+function isSchemaValidationResult(data: any): data is SchemaValidationResult {
+  return data && 
+    typeof data === 'object' &&
+    typeof data.schema_name === 'string' &&
+    typeof data.table_count === 'number' &&
+    Array.isArray(data.tables);
+}
+
+/**
  * Test and validate core schema infrastructure functions
  */
 export async function validateSchemaInfrastructure(): Promise<{
@@ -56,8 +67,8 @@ export async function validateSchemaInfrastructure(): Promise<{
         enhancedErrors.push(enhancedError);
         errors.push(`Schema validation function error: ${schemaError.message}`);
         logger.error('Schema validation test failed:', schemaError);
-      } else if (schemaData && typeof schemaData === 'object') {
-        const result = schemaData as SchemaValidationResult;
+      } else if (schemaData && isSchemaValidationResult(schemaData)) {
+        const result = schemaData;
         execSqlWorking = true; // Schema validation works, so underlying functions work
         tracker.completeStep();
         logger.info('Schema validation function working correctly');
@@ -194,7 +205,7 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         return { success: false, schemaName, tablesCreated, errors, enhancedErrors };
       }
 
-      if (!publicSchemaData || typeof publicSchemaData !== 'object') {
+      if (!publicSchemaData || !isSchemaValidationResult(publicSchemaData)) {
         const error = new Error('Invalid public schema data received');
         const enhancedError = tracker.createError(error);
         enhancedErrors.push(enhancedError);
@@ -202,7 +213,7 @@ export async function createSchemaWithValidation(schemaName: string): Promise<{
         return { success: false, schemaName, tablesCreated, errors, enhancedErrors };
       }
 
-      const result = publicSchemaData as SchemaValidationResult;
+      const result = publicSchemaData;
       if (!result.tables || result.tables.length === 0) {
         const error = new Error('No tables found in public schema to replicate');
         const enhancedError = tracker.createError(error);
@@ -270,12 +281,12 @@ export async function getTableDDL(schemaName: string): Promise<{
       return { success: false, ddl, tableCount, errors };
     }
 
-    if (!schemaData || typeof schemaData !== 'object') {
+    if (!schemaData || !isSchemaValidationResult(schemaData)) {
       errors.push('Invalid schema data received');
       return { success: false, ddl, tableCount, errors };
     }
 
-    const result = schemaData as SchemaValidationResult;
+    const result = schemaData;
     tableCount = result.table_count;
 
     if (!result.tables || result.tables.length === 0) {
