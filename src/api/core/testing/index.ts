@@ -2,19 +2,23 @@
 /**
  * Repository Testing Module
  * 
- * This module provides utilities for testing repositories with enhanced security
+ * This module provides utilities for testing repositories with the new
+ * simplified architecture using a dedicated test Supabase project
  */
 
-// Secure test utilities (recommended)
+// NEW: Simplified test utilities for dedicated test project (recommended)
+export * from './simplifiedTestUtils';
+
+// Secure test utilities (still available)
 export * from './secureTestUtils';
 
-// Legacy test repository utilities (deprecated - use secureTestUtils instead)
+// Legacy test repository utilities (deprecated)
 export * from './repositoryTestUtils';
 
 // Mock data generation
 export * from './mockDataGenerator';
 
-// Comprehensive schema validation (new)
+// Comprehensive schema validation (for production project)
 export * from './comprehensiveSchemaValidation';
 
 // Snapshot testing
@@ -26,10 +30,10 @@ export * from './validationUtils';
 // Relationship testing
 export * from './relationshipTesting';
 
-// Schema-based testing utilities (legacy - migrated to secure utilities)
+// Schema-based testing utilities (legacy - use simplified utils instead)
 export * from './schemaBasedTesting';
 
-// Infrastructure fixes (new) - export with specific naming to avoid conflicts
+// Infrastructure fixes (legacy - not needed with dedicated test project)
 export {
   validateSchemaInfrastructure,
   createSchemaWithValidation,

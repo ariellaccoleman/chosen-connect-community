@@ -2,8 +2,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+// Use dedicated test project URLs and keys
+const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
+const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined" && typeof process !== "undefined";
@@ -17,41 +18,39 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Test Client Factory
- * Creates different Supabase clients for different testing scenarios
- * 
- * WARNING: This module should ONLY be used in Node.js/test environments!
+ * Simplified Test Client Factory for dedicated test project
+ * No more complex environment detection or schema manipulation needed!
  */
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
   private static anonClient: SupabaseClient<Database> | null = null;
 
   /**
-   * Ensure we're in a test environment before proceeding
+   * Ensure we're in a test environment
    */
   private static ensureTestEnvironment(): void {
     if (!isNodeEnvironment) {
-      throw new Error('TestClientFactory can only be used in Node.js/test environments, not in the browser');
+      throw new Error('TestClientFactory can only be used in Node.js/test environments');
     }
   }
 
   /**
-   * Get service role client for schema setup and administrative operations
-   * Only use for initial test infrastructure setup, not for testing application logic
+   * Get service role client for test data setup and cleanup
+   * Uses the dedicated test project - no security concerns!
    */
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.serviceRoleClient) {
-      const serviceRoleKey = getEnvVar('SUPABASE_SERVICE_ROLE_KEY');
+      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
-        throw new Error('SUPABASE_SERVICE_ROLE_KEY not found - required for test infrastructure setup');
+        throw new Error('TEST_SUPABASE_SERVICE_ROLE_KEY not found - required for test setup');
       }
 
-      console.log('🔧 Creating service role client for test infrastructure');
+      console.log('🔧 Creating service role client for dedicated test project');
       
-      this.serviceRoleClient = createClient<Database>(SUPABASE_URL, serviceRoleKey, {
+      this.serviceRoleClient = createClient<Database>(TEST_SUPABASE_URL, serviceRoleKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -64,15 +63,15 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
-   * This mimics production behavior and should be used for most tests
+   * Uses the dedicated test project with real database behavior
    */
   static getAnonClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.anonClient) {
-      console.log('🔧 Creating anonymous client for application testing');
+      console.log('🔧 Creating anonymous client for test project');
       
-      this.anonClient = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      this.anonClient = createClient<Database>(TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -100,12 +99,12 @@ export class TestClientFactory {
       throw new Error(`Failed to authenticate test user: ${error.message}`);
     }
 
-    console.log(`🔧 Created authenticated client for user: ${userEmail}`);
+    console.log(`🔧 Authenticated test user: ${userEmail}`);
     return client;
   }
 
   /**
-   * Clean up clients (call in test teardown)
+   * Clean up clients
    */
   static cleanup(): void {
     this.serviceRoleClient = null;
@@ -114,96 +113,14 @@ export class TestClientFactory {
 }
 
 /**
- * Test Infrastructure Utils
- * Secure utilities for managing test schemas and data
+ * Simplified Test Infrastructure - no more complex schema manipulation!
  */
 export class TestInfrastructure {
-  /**
-   * Get service client with environment check
-   */
-  private static getServiceClient() {
-    if (!isNodeEnvironment) {
-      throw new Error('TestInfrastructure can only be used in Node.js/test environments');
-    }
-    return TestClientFactory.getServiceRoleClient();
-  }
-
-  /**
-   * Create a test schema using the secure function
-   */
-  static async createTestSchema(baseName = 'test'): Promise<string> {
-    const serviceClient = this.getServiceClient();
-    const schemaName = `${baseName}_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    
-    const { data, error } = await serviceClient.rpc('create_test_schema', {
-      schema_name: schemaName
-    });
-
-    if (error) {
-      throw new Error(`Failed to create test schema: ${error.message}`);
-    }
-
-    console.log(`✅ Created test schema: ${schemaName}`);
-    return schemaName;
-  }
-
-  /**
-   * Drop a test schema using the secure function
-   */
-  static async dropTestSchema(schemaName: string): Promise<void> {
-    const serviceClient = this.getServiceClient();
-    
-    const { data, error } = await serviceClient.rpc('drop_test_schema', {
-      schema_name: schemaName
-    });
-
-    if (error) {
-      throw new Error(`Failed to drop test schema: ${error.message}`);
-    }
-
-    console.log(`✅ Dropped test schema: ${schemaName}`);
-  }
-
-  /**
-   * Validate schema structure using the secure function
-   */
-  static async validateSchema(schemaName: string): Promise<any> {
-    const serviceClient = this.getServiceClient();
-    
-    const { data, error } = await serviceClient.rpc('validate_schema_structure', {
-      target_schema: schemaName
-    });
-
-    if (error) {
-      throw new Error(`Failed to validate schema: ${error.message}`);
-    }
-
-    return data;
-  }
-
-  /**
-   * Get table information using the secure function
-   */
-  static async getTableInfo(schemaName: string, tableName: string): Promise<any> {
-    const serviceClient = this.getServiceClient();
-    
-    const { data, error } = await serviceClient.rpc('get_table_info', {
-      p_schema: schemaName,
-      p_table: tableName
-    });
-
-    if (error) {
-      throw new Error(`Failed to get table info: ${error.message}`);
-    }
-
-    return data;
-  }
-
   /**
    * Create test users for authentication testing
    */
   static async createTestUser(email: string, password: string, metadata?: any): Promise<any> {
-    const serviceClient = this.getServiceClient();
+    const serviceClient = TestClientFactory.getServiceRoleClient();
     
     const { data, error } = await serviceClient.auth.admin.createUser({
       email,
@@ -224,7 +141,7 @@ export class TestInfrastructure {
    * Delete test users
    */
   static async deleteTestUser(userId: string): Promise<void> {
-    const serviceClient = this.getServiceClient();
+    const serviceClient = TestClientFactory.getServiceRoleClient();
     
     const { error } = await serviceClient.auth.admin.deleteUser(userId);
 
@@ -233,5 +150,56 @@ export class TestInfrastructure {
     }
 
     console.log(`✅ Deleted test user: ${userId}`);
+  }
+
+  /**
+   * Clean up test data from tables
+   */
+  static async cleanupTable(tableName: string): Promise<void> {
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    
+    // Use service role to bypass RLS for cleanup
+    const { error } = await serviceClient
+      .from(tableName)
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all records
+
+    if (error) {
+      console.warn(`Warning: Could not clean up table ${tableName}:`, error.message);
+    } else {
+      console.log(`✅ Cleaned up table: ${tableName}`);
+    }
+  }
+
+  /**
+   * Seed test data into a table
+   */
+  static async seedTable<T>(tableName: string, data: T[]): Promise<void> {
+    if (!data || data.length === 0) return;
+
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    
+    const { error } = await serviceClient
+      .from(tableName)
+      .insert(data);
+
+    if (error) {
+      throw new Error(`Failed to seed table ${tableName}: ${error.message}`);
+    }
+
+    console.log(`✅ Seeded ${data.length} records into ${tableName}`);
+  }
+
+  /**
+   * Get test project info
+   */
+  static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
+    const testUrl = getEnvVar('TEST_SUPABASE_URL');
+    const prodUrl = getEnvVar('SUPABASE_URL');
+    
+    return {
+      url: testUrl || TEST_SUPABASE_URL,
+      usingDedicatedProject: testUrl !== prodUrl && !!testUrl
+    };
   }
 }
