@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 // DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE
 // DOING SO WILL BREAK THE SHEBANG AND ALL TESTING
@@ -13,6 +14,20 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.s
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TEST_REPORTING_API_KEY = process.env.TEST_REPORTING_API_KEY || "test-key";
+
+// Enhanced logging for debugging key issues
+console.log('🔍 Test Runner Environment Analysis:');
+console.log('- SUPABASE_URL:', SUPABASE_URL);
+console.log('- SUPABASE_ANON_KEY:', SUPABASE_ANON_KEY ? '[SET - Length: ' + SUPABASE_ANON_KEY.length + ']' : '[NOT SET]');
+console.log('- SUPABASE_SERVICE_ROLE_KEY:', SUPABASE_SERVICE_ROLE_KEY ? '[SET - Length: ' + SUPABASE_SERVICE_ROLE_KEY.length + ']' : '[NOT SET]');
+console.log('- TEST_REPORTING_API_KEY:', TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- CI:', process.env.CI);
+console.log('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
+
+if (SUPABASE_SERVICE_ROLE_KEY) {
+  console.log('- Service role key prefix:', SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...');
+}
 
 // Create a custom Jest reporter to capture test results
 const TEST_REPORTER_PATH = './tests/setup/testReporter.cjs';
@@ -117,7 +132,7 @@ async function createTestRun() {
   const testRunId = await createTestRun();
   console.log('Test Run ID:', testRunId);
   
-  // Set up environment variables for the test
+  // Set up environment variables for the test with enhanced logging
   const testEnv = {
     ...process.env,
     TEST_RUN_ID: testRunId,
@@ -131,20 +146,24 @@ async function createTestRun() {
   if (SUPABASE_SERVICE_ROLE_KEY) {
     testEnv.SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SERVICE_ROLE_KEY;
     console.log('✅ SUPABASE_SERVICE_ROLE_KEY is available for tests');
+    console.log('✅ Service role key length:', SUPABASE_SERVICE_ROLE_KEY.length);
   } else {
     console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not found - schema-based tests may fail');
   }
 
-  // Log environment variables for debugging
+  // Enhanced environment logging
   console.log('================= Test Environment =================');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
-  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? '[SET]' : '[NOT SET]'}`);
-  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? '[SET - ' + SUPABASE_ANON_KEY.length + ' chars]' : '[NOT SET]'}`);
+  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY ? '[SET - ' + SUPABASE_SERVICE_ROLE_KEY.length + ' chars]' : '[NOT SET]'}`);
   console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
   console.log(`- TEST_RUN_ID: ${testRunId}`);
   console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
   console.log(`- GITHUB_SHA: ${process.env.GITHUB_SHA || '[NOT SET]'}`);
   console.log(`- GITHUB_REF_NAME: ${process.env.GITHUB_REF_NAME || '[NOT SET]'}`);
+  console.log(`- NODE_ENV: ${testEnv.NODE_ENV}`);
+  console.log(`- CI: ${process.env.CI || '[NOT SET]'}`);
+  console.log(`- GITHUB_ACTIONS: ${process.env.GITHUB_ACTIONS || '[NOT SET]'}`);
   console.log('===================================================');
 
   // Create a test to verify if API keys are set correctly and report to the API

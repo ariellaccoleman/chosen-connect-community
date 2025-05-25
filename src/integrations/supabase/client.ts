@@ -9,36 +9,72 @@ const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined";
 
-// Detect test environment (safely check without relying on process directly)
-const isTestEnvironment = 
-  // Only access process if we're in a Node environment
-  isNodeEnvironment && 
-  (
-    (typeof process !== 'undefined' && process.env?.NODE_ENV === 'test') ||
-    (typeof process !== 'undefined' && process.env?.JEST_WORKER_ID !== undefined) ||
-    (typeof global !== 'undefined' && global.process?.env?.NODE_ENV === 'test')
+// Enhanced test environment detection with detailed logging
+const detectTestEnvironment = () => {
+  const conditions = {
+    nodeEnvTest: typeof process !== 'undefined' && process.env?.NODE_ENV === 'test',
+    jestWorker: typeof process !== 'undefined' && process.env?.JEST_WORKER_ID !== undefined,
+    globalProcessTest: typeof global !== 'undefined' && global.process?.env?.NODE_ENV === 'test',
+    testRunId: typeof process !== 'undefined' && process.env?.TEST_RUN_ID !== undefined,
+    ciEnvironment: typeof process !== 'undefined' && (
+      process.env?.CI === 'true' || 
+      process.env?.GITHUB_ACTIONS === 'true'
+    )
+  };
+  
+  const isTest = isNodeEnvironment && (
+    conditions.nodeEnvTest ||
+    conditions.jestWorker ||
+    conditions.globalProcessTest ||
+    conditions.testRunId
   );
+  
+  // Detailed logging for debugging
+  if (isNodeEnvironment) {
+    console.log('🔍 Supabase Client Environment Detection:', {
+      isNodeEnvironment,
+      isTest,
+      conditions,
+      hasServiceRoleKey: !!(typeof process !== 'undefined' && process.env?.SUPABASE_SERVICE_ROLE_KEY),
+      serviceRoleKeyLength: typeof process !== 'undefined' && process.env?.SUPABASE_SERVICE_ROLE_KEY 
+        ? process.env.SUPABASE_SERVICE_ROLE_KEY.length 
+        : 0
+    });
+  }
+  
+  return isTest;
+};
 
-// Choose the appropriate key based on environment
+const isTestEnvironment = detectTestEnvironment();
+
+// Enhanced key selection with detailed logging
 const getSupabaseKey = () => {
   if (isTestEnvironment) {
     // Use service role key in test environment for schema operations
     const serviceRoleKey = typeof process !== 'undefined' ? process.env.SUPABASE_SERVICE_ROLE_KEY : undefined;
+    
     if (serviceRoleKey) {
       console.log('🔧 Using Supabase service role key for test environment');
+      console.log('🔧 Service role key starts with:', serviceRoleKey.substring(0, 20) + '...');
       return serviceRoleKey;
     } else {
       console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not found, falling back to anon key');
+      console.warn('⚠️ This will cause schema validation tests to fail');
+      console.warn('⚠️ Available env vars:', Object.keys(process?.env || {}).filter(k => k.includes('SUPABASE')));
       return SUPABASE_PUBLISHABLE_KEY;
     }
   }
+  
+  console.log('🔧 Using anon key for browser environment');
   return SUPABASE_PUBLISHABLE_KEY;
 };
+
+const selectedKey = getSupabaseKey();
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, getSupabaseKey(), {
+export const supabase = createClient<Database>(SUPABASE_URL, selectedKey, {
   auth: {
     persistSession: !isNodeEnvironment, // Don't persist sessions in test environment
     autoRefreshToken: !isNodeEnvironment, // Don't auto-refresh in test environment
@@ -66,7 +102,9 @@ if (!isNodeEnvironment) {
   });
 } else {
   if (isTestEnvironment) {
-    console.log("🔧 Supabase client initialized for test environment with elevated permissions");
+    console.log("🔧 Supabase client initialized for test environment");
+    console.log("🔧 Using key type:", selectedKey === SUPABASE_PUBLISHABLE_KEY ? 'ANON' : 'SERVICE_ROLE');
+    console.log("🔧 Key length:", selectedKey.length);
   } else {
     console.log("🔧 Supabase client initialized for Node.js environment");
   }
