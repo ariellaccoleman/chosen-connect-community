@@ -1,3 +1,4 @@
+
 #!/usr/bin/env node
 // DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE
 // DOING SO WILL BREAK THE SHEBANG AND ALL TESTING
@@ -10,7 +11,8 @@ const path = require('path');
 
 // Supabase URL and key
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
-const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TEST_REPORTING_API_KEY = process.env.TEST_REPORTING_API_KEY || "test-key";
 
 // Create a custom Jest reporter to capture test results
@@ -115,15 +117,30 @@ async function createTestRun() {
   // Create or get the test run ID
   const testRunId = await createTestRun();
   console.log('Test Run ID:', testRunId);
-  process.env.TEST_RUN_ID = testRunId;
-  process.env.SUPABASE_URL = SUPABASE_URL;
-  process.env.SUPABASE_KEY = SUPABASE_KEY;
-  process.env.TEST_REPORTING_API_KEY = TEST_REPORTING_API_KEY;
+  
+  // Set up environment variables for the test
+  const testEnv = {
+    ...process.env,
+    TEST_RUN_ID: testRunId,
+    SUPABASE_URL: SUPABASE_URL,
+    SUPABASE_ANON_KEY: SUPABASE_ANON_KEY,
+    TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY,
+    NODE_ENV: 'test'
+  };
+
+  // Add service role key if available
+  if (SUPABASE_SERVICE_ROLE_KEY) {
+    testEnv.SUPABASE_SERVICE_ROLE_KEY = SUPABASE_SERVICE_ROLE_KEY;
+    console.log('✅ SUPABASE_SERVICE_ROLE_KEY is available for tests');
+  } else {
+    console.warn('⚠️ SUPABASE_SERVICE_ROLE_KEY not found - schema-based tests may fail');
+  }
 
   // Log environment variables for debugging
   console.log('================= Test Environment =================');
   console.log(`- SUPABASE_URL: ${SUPABASE_URL}`);
-  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY ? '[SET]' : '[NOT SET]'}`);
+  console.log(`- SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]'}`);
   console.log(`- TEST_REPORTING_API_KEY: ${TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
   console.log(`- TEST_RUN_ID: ${testRunId}`);
   console.log(`- APP_URL: ${process.env.APP_URL || '[NOT SET]'}`);
@@ -148,11 +165,13 @@ async function createTestRun() {
       console.log('All required environment variables are set');
       console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
       console.log('SUPABASE_URL:', process.env.SUPABASE_URL);
+      console.log('SUPABASE_SERVICE_ROLE_KEY available:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
     });
     
     test('Test API is working', async () => {
       // Explicitly print variables
       console.log('TEST_RUN_ID from environment:', process.env.TEST_RUN_ID);
+      console.log('Service role key available:', !!process.env.SUPABASE_SERVICE_ROLE_KEY);
       
       // We'll verify this test appears in results to confirm API is working
       expect(true).toBe(true);
@@ -171,13 +190,7 @@ async function createTestRun() {
       `npx jest ${testPathPattern} --verbose --reporters=default --reporters=${TEST_REPORTER_PATH}`,
       { 
         stdio: 'inherit',
-        env: {
-          ...process.env,
-          TEST_RUN_ID: testRunId,
-          SUPABASE_URL: SUPABASE_URL,
-          SUPABASE_KEY: SUPABASE_KEY,
-          TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY
-        }
+        env: testEnv
       }
     );
   } catch (error) {
