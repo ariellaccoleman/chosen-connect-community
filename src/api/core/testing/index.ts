@@ -9,8 +9,12 @@
 // NEW: Simplified test utilities for dedicated test project (recommended)
 export * from './simplifiedTestUtils';
 
-// Secure test utilities (still available)
-export * from './secureTestUtils';
+// Secure test utilities (still available) - but rename TestUserFactory to avoid conflict
+export { 
+  SecureTestContext,
+  createSecureTestContext,
+  TestUserFactory as SecureTestUserFactory
+} from './secureTestUtils';
 
 // Legacy test repository utilities (deprecated)
 export * from './repositoryTestUtils';

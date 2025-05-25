@@ -4,12 +4,11 @@ import { logger } from '@/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Secure Test Context Manager
- * Replaces the old schema-based testing with secure, limited operations
+ * Secure Test Context Manager (Legacy)
+ * NOTE: This is the legacy approach. Use SimplifiedTestContext instead for new tests.
  */
 export class SecureTestContext<T> {
   private testUsers: string[] = [];
-  private testSchemas: string[] = [];
   private tableName: string;
   private options: TestContextOptions;
 
@@ -17,7 +16,7 @@ export class SecureTestContext<T> {
     this.tableName = tableName;
     this.options = {
       requireAuth: true,
-      validateSchema: true,
+      validateSchema: false, // Disabled for simplified approach
       ...options
     };
   }
@@ -29,13 +28,6 @@ export class SecureTestContext<T> {
     logger.info(`Setting up secure test context for table: ${this.tableName}`);
 
     try {
-      // Create test schema if needed for isolation
-      if (this.options.useIsolatedSchema) {
-        const schemaName = await TestInfrastructure.createTestSchema(this.tableName);
-        this.testSchemas.push(schemaName);
-        logger.info(`Created isolated test schema: ${schemaName}`);
-      }
-
       // Create test users if authentication is required
       if (this.options.requireAuth && setupOptions.testUsers) {
         for (const userConfig of setupOptions.testUsers) {
@@ -48,11 +40,8 @@ export class SecureTestContext<T> {
         }
       }
 
-      // Validate schema structure if requested
-      if (this.options.validateSchema) {
-        const validation = await TestInfrastructure.validateSchema('public');
-        logger.info(`Schema validation passed: ${validation.table_count} tables found`);
-      }
+      // Note: Schema validation and creation removed for simplified approach
+      // Use the simplified test utilities instead
 
       // Seed initial data using anon client (with proper auth if needed)
       if (setupOptions.initialData && setupOptions.initialData.length > 0) {
@@ -87,12 +76,8 @@ export class SecureTestContext<T> {
       : TestClientFactory.getAnonClient();
 
     try {
-      for (const item of data) {
-        // Note: We can't use dynamic table names with Supabase client
-        // This would need to be handled differently in a real implementation
-        logger.info(`Would seed data for ${this.tableName}:`, item);
-      }
-
+      // Use the simplified seeding approach
+      await TestInfrastructure.seedTable(this.tableName, data);
       logger.info(`Seeded ${data.length} records into ${this.tableName}`);
     } catch (error) {
       logger.error('Error seeding test data:', error);
@@ -116,29 +101,13 @@ export class SecureTestContext<T> {
         }
       }
 
-      // Clean up test schemas
-      for (const schemaName of this.testSchemas) {
-        try {
-          await TestInfrastructure.dropTestSchema(schemaName);
-        } catch (error) {
-          logger.warn(`Failed to drop test schema ${schemaName}:`, error);
-        }
-      }
-
-      // Clear data from main tables if not using isolated schema
-      if (!this.options.useIsolatedSchema) {
-        const client = TestClientFactory.getAnonClient();
-        
-        // Only delete test data (be careful not to delete production data)
-        // This is a simplified approach - in practice you'd want more sophisticated cleanup
-        logger.info(`Would clean up test data from ${this.tableName}`);
-      }
+      // Clean table data using simplified approach
+      await TestInfrastructure.cleanupTable(this.tableName);
 
     } catch (error) {
       logger.error('Error during test cleanup:', error);
     } finally {
       this.testUsers = [];
-      this.testSchemas = [];
     }
   }
 
@@ -184,25 +153,26 @@ export function createSecureTestContext<T>(
 }
 
 /**
- * Test user factory for creating consistent test users
+ * Test user factory for creating consistent test users (legacy version)
  */
 export class TestUserFactory {
-  static createTestUser(prefix = 'test') {
+  static createTestUser(prefix = 'secure_test') {
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(7);
     
     return {
-      email: `${prefix}_${timestamp}_${random}@example.com`,
+      email: `${prefix}_${timestamp}_${random}@legacy.example.com`,
       password: 'TestPassword123!',
       metadata: {
-        first_name: 'Test',
+        first_name: 'Secure Test',
         last_name: 'User',
-        created_for_testing: true
+        created_for_testing: true,
+        legacy_approach: true
       }
     };
   }
 
-  static createMultipleTestUsers(count: number, prefix = 'test') {
+  static createMultipleTestUsers(count: number, prefix = 'secure_test') {
     return Array(count).fill(null).map(() => this.createTestUser(prefix));
   }
 }

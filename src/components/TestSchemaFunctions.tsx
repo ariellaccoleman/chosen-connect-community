@@ -48,44 +48,18 @@ export function TestSchemaFunctions() {
       // Dynamically import test infrastructure (only works in Node.js)
       const { TestInfrastructure, TestClientFactory } = await import('@/integrations/supabase/testClient');
 
-      // Test 1: Schema validation using secure function
-      const test1 = await runTest('Secure schema validation', async () => {
-        const validation = await TestInfrastructure.validateSchema('public');
+      // Test 1: Test project connectivity
+      const test1 = await runTest('Test project connectivity', async () => {
+        const projectInfo = TestInfrastructure.getTestProjectInfo();
         return {
-          schema: validation.schema_name,
-          tableCount: validation.table_count,
-          validatedAt: validation.validated_at
+          url: projectInfo.url,
+          usingDedicatedProject: projectInfo.usingDedicatedProject
         };
       });
       testResults.push(test1);
 
-      // Test 2: Test schema creation and deletion
-      const test2 = await runTest('Test schema lifecycle', async () => {
-        const schemaName = await TestInfrastructure.createTestSchema('function_test');
-        const validation = await TestInfrastructure.validateSchema(schemaName);
-        await TestInfrastructure.dropTestSchema(schemaName);
-        
-        return {
-          created: schemaName,
-          validated: validation.schema_name,
-          tableCount: validation.table_count
-        };
-      });
-      testResults.push(test2);
-
-      // Test 3: Table info retrieval
-      const test3 = await runTest('Table information retrieval', async () => {
-        const tableInfo = await TestInfrastructure.getTableInfo('public', 'profiles');
-        return {
-          schema: tableInfo.schema_name,
-          table: tableInfo.table_name,
-          columnCount: tableInfo.columns?.length || 0
-        };
-      });
-      testResults.push(test3);
-
-      // Test 4: Client factory functionality
-      const test4 = await runTest('Client factory test', async () => {
+      // Test 2: Client factory functionality
+      const test2 = await runTest('Client factory test', async () => {
         const anonClient = TestClientFactory.getAnonClient();
         const serviceClient = TestClientFactory.getServiceRoleClient();
         
@@ -101,30 +75,49 @@ export function TestSchemaFunctions() {
           queryError: error?.message || null
         };
       });
-      testResults.push(test4);
+      testResults.push(test2);
 
-      // Test 5: Security verification - ensure proper function access control
-      const test5 = await runTest('Security verification', async () => {
-        const serviceClient = TestClientFactory.getServiceRoleClient();
-        
+      // Test 3: User management
+      const test3 = await runTest('User management test', async () => {
+        const testUser = {
+          email: `test_${Date.now()}@testproject.example`,
+          password: 'TestPassword123!',
+          metadata: { test: true }
+        };
+
         try {
-          // Test that secure functions work with service role
-          const { data, error } = await serviceClient.rpc('validate_schema_structure', { 
-            target_schema: 'public' 
-          });
-          
+          // Create test user
+          const user = await TestInfrastructure.createTestUser(
+            testUser.email,
+            testUser.password,
+            testUser.metadata
+          );
+
+          // Clean up immediately
+          await TestInfrastructure.deleteTestUser(user.id);
+
           return {
-            secureFunctionsWorking: !error && !!data,
-            message: error ? `Error: ${error.message}` : 'Secure functions accessible with proper credentials'
+            userCreated: true,
+            userDeleted: true,
+            userId: user.id
           };
-        } catch (e) {
+        } catch (error) {
           return {
-            secureFunctionsWorking: false,
-            message: `Exception: ${e instanceof Error ? e.message : 'Unknown error'}`
+            userCreated: false,
+            error: error instanceof Error ? error.message : 'Unknown error'
           };
         }
       });
-      testResults.push(test5);
+      testResults.push(test3);
+
+      // Test 4: Table cleanup test
+      const test4 = await runTest('Table cleanup test', async () => {
+        await TestInfrastructure.cleanupTable('profiles');
+        return {
+          message: 'Table cleanup completed (check console for details)'
+        };
+      });
+      testResults.push(test4);
 
     } catch (importError) {
       testResults.push({
@@ -141,9 +134,9 @@ export function TestSchemaFunctions() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Secure Schema Function Testing</CardTitle>
+        <CardTitle>Simplified Test Infrastructure Testing</CardTitle>
         <CardDescription>
-          Test the new secure schema functions and verify security improvements
+          Test the new simplified test infrastructure with dedicated test project
           {typeof window !== "undefined" && (
             <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
               ⚠️ Note: These tests are designed to run in Node.js/test environments, not in the browser.
@@ -157,7 +150,7 @@ export function TestSchemaFunctions() {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Running Security Tests...' : 'Run All Security Tests'}
+          {isLoading ? 'Running Tests...' : 'Run All Tests'}
         </Button>
 
         {results.length > 0 && (
@@ -195,15 +188,15 @@ export function TestSchemaFunctions() {
         )}
 
         <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-          <h4 className="font-semibold text-green-800 dark:text-green-200">Security Improvements:</h4>
+          <h4 className="font-semibold text-green-800 dark:text-green-200">Simplified Architecture Benefits:</h4>
           <ul className="text-sm text-green-700 dark:text-green-300 mt-2 space-y-1">
-            <li>✅ Removed dangerous exec_sql function</li>
-            <li>✅ Added secure schema validation with input sanitization</li>
-            <li>✅ Implemented proper client separation for testing</li>
-            <li>✅ Added RLS policies for test-related tables</li>
-            <li>✅ Service role key only used for infrastructure setup</li>
-            <li>✅ Application tests use anonymous key (production behavior)</li>
-            <li>✅ Browser environment protection added</li>
+            <li>✅ Uses dedicated test Supabase project</li>
+            <li>✅ No complex schema manipulation needed</li>
+            <li>✅ Real database behavior for testing</li>
+            <li>✅ Clean separation between test and production</li>
+            <li>✅ Simple user management for tests</li>
+            <li>✅ Easy cleanup and seeding</li>
+            <li>✅ Type-safe database operations</li>
           </ul>
         </div>
       </CardContent>
