@@ -31,16 +31,22 @@ console.log('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS || 'NOT SET');
 
 // Check for SUPABASE_SERVICE_ROLE_KEY and log its availability
 if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.log('🔧 SUPABASE_SERVICE_ROLE_KEY is available for schema operations');
+  console.log('🔧 SUPABASE_SERVICE_ROLE_KEY is available for infrastructure operations');
   console.log('🔧 Service role key length:', process.env.SUPABASE_SERVICE_ROLE_KEY.length);
   console.log('🔧 Service role key starts with:', process.env.SUPABASE_SERVICE_ROLE_KEY.substring(0, 20) + '...');
 } else {
-  console.log('⚠️ SUPABASE_SERVICE_ROLE_KEY not set - some tests may use anon key fallback');
+  console.log('⚠️ SUPABASE_SERVICE_ROLE_KEY not set - infrastructure setup will not work');
   console.log('This is expected in local development but should be available in CI');
   
   // List all environment variables that contain 'SUPABASE' for debugging
   const supabaseVars = Object.keys(process.env).filter(key => key.includes('SUPABASE'));
   console.log('Available SUPABASE environment variables:', supabaseVars);
 }
+
+// Security note about testing approach
+console.log('🔒 Security Note: Tests now use secure client factory');
+console.log('   - Service role key only used for test infrastructure setup');
+console.log('   - Application tests use anonymous key to match production behavior');
+console.log('   - Authentication tests use proper user sessions');
 
 console.log('🔧 Test environment setup complete');

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { TestInfrastructure, TestClientFactory } from '@/integrations/supabase/testClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,52 +33,81 @@ export function TestSchemaFunctions() {
     setIsLoading(true);
     const testResults: TestResult[] = [];
 
-    // Test 1: Basic RPC call that should return data
-    const test1 = await runTest('Direct SELECT query', async () => {
-      const { data, error } = await supabase.rpc('exec_sql', {
-        query: 'SELECT 1 as test_value, \'hello\' as message'
-      });
-      if (error) throw error;
-      return data;
+    // Test 1: Schema validation using secure function
+    const test1 = await runTest('Secure schema validation', async () => {
+      const validation = await TestInfrastructure.validateSchema('public');
+      return {
+        schema: validation.schema_name,
+        tableCount: validation.table_count,
+        validatedAt: validation.validated_at
+      };
     });
     testResults.push(test1);
 
-    // Test 2: Test pg_get_tabledef function
-    const test2 = await runTest('pg_get_tabledef function', async () => {
-      const { data, error } = await supabase.rpc('pg_get_tabledef', {
-        p_schema: 'public',
-        p_table: 'profiles'
-      });
-      if (error) throw error;
-      return data ? data.substring(0, 100) + '...' : 'No DDL returned';
+    // Test 2: Test schema creation and deletion
+    const test2 = await runTest('Test schema lifecycle', async () => {
+      const schemaName = await TestInfrastructure.createTestSchema('function_test');
+      const validation = await TestInfrastructure.validateSchema(schemaName);
+      await TestInfrastructure.dropTestSchema(schemaName);
+      
+      return {
+        created: schemaName,
+        validated: validation.schema_name,
+        tableCount: validation.table_count
+      };
     });
     testResults.push(test2);
 
-    // Test 3: Check if testing schema exists
-    const test3 = await runTest('Check testing schema', async () => {
-      const { data, error } = await supabase.rpc('exec_sql', {
-        query: 'SELECT schema_name FROM information_schema.schemata WHERE schema_name = \'testing\''
-      });
-      if (error) throw error;
-      return data;
+    // Test 3: Table info retrieval
+    const test3 = await runTest('Table information retrieval', async () => {
+      const tableInfo = await TestInfrastructure.getTableInfo('public', 'profiles');
+      return {
+        schema: tableInfo.schema_name,
+        table: tableInfo.table_name,
+        columnCount: tableInfo.columns?.length || 0
+      };
     });
     testResults.push(test3);
 
-    // Test 4: List all available RPC functions
-    const test4 = await runTest('List RPC functions', async () => {
-      const { data, error } = await supabase.rpc('exec_sql', {
-        query: `
-          SELECT routine_name, routine_type 
-          FROM information_schema.routines 
-          WHERE routine_schema = 'public' 
-          AND routine_name LIKE '%exec%'
-          ORDER BY routine_name
-        `
-      });
-      if (error) throw error;
-      return data;
+    // Test 4: Client factory functionality
+    const test4 = await runTest('Client factory test', async () => {
+      const anonClient = TestClientFactory.getAnonClient();
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      // Test basic connectivity with anon client
+      const { data, error } = await anonClient
+        .from('profiles')
+        .select('id')
+        .limit(1);
+      
+      return {
+        anonClientWorks: !error,
+        serviceClientExists: !!serviceClient,
+        queryError: error?.message || null
+      };
     });
     testResults.push(test4);
+
+    // Test 5: Security verification - ensure dangerous functions are removed
+    const test5 = await runTest('Security verification', async () => {
+      const anonClient = TestClientFactory.getAnonClient();
+      
+      try {
+        // Try to call the old dangerous exec_sql function - should fail
+        const { error } = await anonClient.rpc('exec_sql', { query: 'SELECT 1' });
+        
+        return {
+          execSqlRemoved: !!error,
+          errorMessage: error?.message || 'Function still accessible (SECURITY RISK!)'
+        };
+      } catch (e) {
+        return {
+          execSqlRemoved: true,
+          errorMessage: 'Function properly removed'
+        };
+      }
+    });
+    testResults.push(test5);
 
     setResults(testResults);
     setIsLoading(false);
@@ -87,9 +116,9 @@ export function TestSchemaFunctions() {
   return (
     <Card className="w-full max-w-4xl mx-auto">
       <CardHeader>
-        <CardTitle>Schema Function Testing</CardTitle>
+        <CardTitle>Secure Schema Function Testing</CardTitle>
         <CardDescription>
-          Test the core schema functions to debug any issues
+          Test the new secure schema functions and verify security improvements
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -98,7 +127,7 @@ export function TestSchemaFunctions() {
           disabled={isLoading}
           className="w-full"
         >
-          {isLoading ? 'Running Tests...' : 'Run All Tests'}
+          {isLoading ? 'Running Security Tests...' : 'Run All Security Tests'}
         </Button>
 
         {results.length > 0 && (
@@ -135,12 +164,16 @@ export function TestSchemaFunctions() {
           </div>
         )}
 
-        <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <h4 className="font-semibold text-blue-800 dark:text-blue-200">Debugging Info:</h4>
-          <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-            The issue you're experiencing suggests that the `exec_sql` function is returning `void` instead of data. 
-            This component will help us understand what's happening with the RPC functions.
-          </p>
+        <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <h4 className="font-semibold text-green-800 dark:text-green-200">Security Improvements:</h4>
+          <ul className="text-sm text-green-700 dark:text-green-300 mt-2 space-y-1">
+            <li>✅ Removed dangerous exec_sql function</li>
+            <li>✅ Added secure schema validation with input sanitization</li>
+            <li>✅ Implemented proper client separation for testing</li>
+            <li>✅ Added RLS policies for test-related tables</li>
+            <li>✅ Service role key only used for infrastructure setup</li>
+            <li>✅ Application tests use anonymous key (production behavior)</li>
+          </ul>
         </div>
       </CardContent>
     </Card>

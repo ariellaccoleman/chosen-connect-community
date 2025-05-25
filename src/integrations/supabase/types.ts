@@ -1711,12 +1711,20 @@ export type Database = {
       }
     }
     Functions: {
-      exec_sql: {
-        Args: { query: string }
-        Returns: undefined
+      create_test_schema: {
+        Args: { schema_name: string }
+        Returns: Json
+      }
+      drop_test_schema: {
+        Args: { schema_name: string }
+        Returns: Json
       }
       get_cached_tags: {
         Args: { cache_key: string }
+        Returns: Json
+      }
+      get_table_info: {
+        Args: { p_schema: string; p_table: string }
         Returns: Json
       }
       is_site_admin: {
@@ -1738,13 +1746,13 @@ export type Database = {
           updated_at: string | null
         }[]
       }
-      setup_testing_schema: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
       update_tag_cache: {
         Args: { cache_key: string; cache_data: Json }
         Returns: boolean
+      }
+      validate_schema_structure: {
+        Args: { target_schema: string }
+        Returns: Json
       }
     }
     Enums: {
