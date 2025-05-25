@@ -1,6 +1,5 @@
 
 import React, { useState } from 'react';
-import { TestInfrastructure, TestClientFactory } from '@/integrations/supabase/testClient';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,81 +32,105 @@ export function TestSchemaFunctions() {
     setIsLoading(true);
     const testResults: TestResult[] = [];
 
-    // Test 1: Schema validation using secure function
-    const test1 = await runTest('Secure schema validation', async () => {
-      const validation = await TestInfrastructure.validateSchema('public');
-      return {
-        schema: validation.schema_name,
-        tableCount: validation.table_count,
-        validatedAt: validation.validated_at
-      };
-    });
-    testResults.push(test1);
+    // Check if we're in a browser environment and warn
+    if (typeof window !== "undefined") {
+      testResults.push({
+        test: 'Environment Check',
+        success: false,
+        error: 'Test infrastructure can only run in Node.js/test environments, not in the browser'
+      });
+      setResults(testResults);
+      setIsLoading(false);
+      return;
+    }
 
-    // Test 2: Test schema creation and deletion
-    const test2 = await runTest('Test schema lifecycle', async () => {
-      const schemaName = await TestInfrastructure.createTestSchema('function_test');
-      const validation = await TestInfrastructure.validateSchema(schemaName);
-      await TestInfrastructure.dropTestSchema(schemaName);
-      
-      return {
-        created: schemaName,
-        validated: validation.schema_name,
-        tableCount: validation.table_count
-      };
-    });
-    testResults.push(test2);
+    try {
+      // Dynamically import test infrastructure (only works in Node.js)
+      const { TestInfrastructure, TestClientFactory } = await import('@/integrations/supabase/testClient');
 
-    // Test 3: Table info retrieval
-    const test3 = await runTest('Table information retrieval', async () => {
-      const tableInfo = await TestInfrastructure.getTableInfo('public', 'profiles');
-      return {
-        schema: tableInfo.schema_name,
-        table: tableInfo.table_name,
-        columnCount: tableInfo.columns?.length || 0
-      };
-    });
-    testResults.push(test3);
+      // Test 1: Schema validation using secure function
+      const test1 = await runTest('Secure schema validation', async () => {
+        const validation = await TestInfrastructure.validateSchema('public');
+        return {
+          schema: validation.schema_name,
+          tableCount: validation.table_count,
+          validatedAt: validation.validated_at
+        };
+      });
+      testResults.push(test1);
 
-    // Test 4: Client factory functionality
-    const test4 = await runTest('Client factory test', async () => {
-      const anonClient = TestClientFactory.getAnonClient();
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Test basic connectivity with anon client
-      const { data, error } = await anonClient
-        .from('profiles')
-        .select('id')
-        .limit(1);
-      
-      return {
-        anonClientWorks: !error,
-        serviceClientExists: !!serviceClient,
-        queryError: error?.message || null
-      };
-    });
-    testResults.push(test4);
-
-    // Test 5: Security verification - ensure dangerous functions are removed
-    const test5 = await runTest('Security verification', async () => {
-      const anonClient = TestClientFactory.getAnonClient();
-      
-      try {
-        // Try to call the old dangerous exec_sql function - should fail
-        const { error } = await anonClient.rpc('exec_sql', { query: 'SELECT 1' });
+      // Test 2: Test schema creation and deletion
+      const test2 = await runTest('Test schema lifecycle', async () => {
+        const schemaName = await TestInfrastructure.createTestSchema('function_test');
+        const validation = await TestInfrastructure.validateSchema(schemaName);
+        await TestInfrastructure.dropTestSchema(schemaName);
         
         return {
-          execSqlRemoved: !!error,
-          errorMessage: error?.message || 'Function still accessible (SECURITY RISK!)'
+          created: schemaName,
+          validated: validation.schema_name,
+          tableCount: validation.table_count
         };
-      } catch (e) {
+      });
+      testResults.push(test2);
+
+      // Test 3: Table info retrieval
+      const test3 = await runTest('Table information retrieval', async () => {
+        const tableInfo = await TestInfrastructure.getTableInfo('public', 'profiles');
         return {
-          execSqlRemoved: true,
-          errorMessage: 'Function properly removed'
+          schema: tableInfo.schema_name,
+          table: tableInfo.table_name,
+          columnCount: tableInfo.columns?.length || 0
         };
-      }
-    });
-    testResults.push(test5);
+      });
+      testResults.push(test3);
+
+      // Test 4: Client factory functionality
+      const test4 = await runTest('Client factory test', async () => {
+        const anonClient = TestClientFactory.getAnonClient();
+        const serviceClient = TestClientFactory.getServiceRoleClient();
+        
+        // Test basic connectivity with anon client
+        const { data, error } = await anonClient
+          .from('profiles')
+          .select('id')
+          .limit(1);
+        
+        return {
+          anonClientWorks: !error,
+          serviceClientExists: !!serviceClient,
+          queryError: error?.message || null
+        };
+      });
+      testResults.push(test4);
+
+      // Test 5: Security verification - ensure dangerous functions are removed
+      const test5 = await runTest('Security verification', async () => {
+        const anonClient = TestClientFactory.getAnonClient();
+        
+        try {
+          // Try to call the old dangerous exec_sql function - should fail
+          const { error } = await anonClient.rpc('exec_sql', { query: 'SELECT 1' });
+          
+          return {
+            execSqlRemoved: !!error,
+            errorMessage: error?.message || 'Function still accessible (SECURITY RISK!)'
+          };
+        } catch (e) {
+          return {
+            execSqlRemoved: true,
+            errorMessage: 'Function properly removed'
+          };
+        }
+      });
+      testResults.push(test5);
+
+    } catch (importError) {
+      testResults.push({
+        test: 'Import Test Infrastructure',
+        success: false,
+        error: `Failed to import test infrastructure: ${importError instanceof Error ? importError.message : 'Unknown error'}`
+      });
+    }
 
     setResults(testResults);
     setIsLoading(false);
@@ -119,6 +142,11 @@ export function TestSchemaFunctions() {
         <CardTitle>Secure Schema Function Testing</CardTitle>
         <CardDescription>
           Test the new secure schema functions and verify security improvements
+          {typeof window !== "undefined" && (
+            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
+              ⚠️ Note: These tests are designed to run in Node.js/test environments, not in the browser.
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -173,6 +201,7 @@ export function TestSchemaFunctions() {
             <li>✅ Added RLS policies for test-related tables</li>
             <li>✅ Service role key only used for infrastructure setup</li>
             <li>✅ Application tests use anonymous key (production behavior)</li>
+            <li>✅ Browser environment protection added</li>
           </ul>
         </div>
       </CardContent>
