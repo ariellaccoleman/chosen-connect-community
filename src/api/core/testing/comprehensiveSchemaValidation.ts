@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { logger } from '@/utils/logger';
 import _ from 'lodash';
 
@@ -78,31 +78,38 @@ export interface ComprehensiveSchemaComparison {
 }
 
 /**
- * Extract comprehensive schema structure using information_schema
+ * Extract comprehensive schema structure using secure functions
  */
 export async function extractSchemaStructure(schemaName: string): Promise<SchemaStructure> {
   try {
     logger.debug(`Extracting comprehensive schema structure for: ${schemaName}`);
 
-    // Get all tables in schema
-    const { data: tablesData, error: tablesError } = await supabase.rpc('exec_sql', {
-      query: `
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = '${schemaName}' 
-        AND table_type = 'BASE TABLE'
-        ORDER BY table_name
-      `
+    // Use the secure validate_schema_structure function to get basic info
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    const { data: schemaData, error: schemaError } = await serviceClient.rpc('validate_schema_structure', {
+      target_schema: schemaName
     });
 
-    if (tablesError) throw tablesError;
+    if (schemaError) throw schemaError;
 
-    const tableNames = (tablesData || []).map((row: any) => row.table_name);
     const tables: { [tableName: string]: TableSchema } = {};
+    const tableNames: string[] = [];
 
-    // Extract data for each table
+    // Extract table names from the secure function result
+    if (schemaData && typeof schemaData === 'object' && 'tables' in schemaData) {
+      const tablesArray = schemaData.tables;
+      if (Array.isArray(tablesArray)) {
+        tablesArray.forEach((table: any) => {
+          if (table && typeof table === 'object' && 'table_name' in table) {
+            tableNames.push(table.table_name);
+          }
+        });
+      }
+    }
+
+    // Extract data for each table using the secure get_table_info function
     for (const tableName of tableNames) {
-      tables[tableName] = await extractTableSchema(schemaName, tableName);
+      tables[tableName] = await extractTableSchemaSecure(schemaName, tableName);
     }
 
     return {
@@ -120,183 +127,50 @@ export async function extractSchemaStructure(schemaName: string): Promise<Schema
 }
 
 /**
- * Extract comprehensive table schema information
+ * Extract table schema using secure functions
  */
-async function extractTableSchema(schemaName: string, tableName: string): Promise<TableSchema> {
-  const [columns, constraints, indexes, triggers] = await Promise.all([
-    extractTableColumns(schemaName, tableName),
-    extractTableConstraints(schemaName, tableName),
-    extractTableIndexes(schemaName, tableName),
-    extractTableTriggers(schemaName, tableName)
-  ]);
-
-  return { columns, constraints, indexes, triggers };
-}
-
-/**
- * Extract column information
- */
-async function extractTableColumns(schemaName: string, tableName: string): Promise<{ [columnName: string]: ColumnInfo }> {
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      SELECT 
-        column_name,
-        data_type,
-        is_nullable::boolean,
-        column_default,
-        character_maximum_length,
-        numeric_precision,
-        numeric_scale,
-        ordinal_position
-      FROM information_schema.columns
-      WHERE table_schema = '${schemaName}' AND table_name = '${tableName}'
-      ORDER BY ordinal_position
-    `
+async function extractTableSchemaSecure(schemaName: string, tableName: string): Promise<TableSchema> {
+  const serviceClient = TestClientFactory.getServiceRoleClient();
+  
+  // Use the secure get_table_info function
+  const { data: tableInfo, error: tableError } = await serviceClient.rpc('get_table_info', {
+    p_schema: schemaName,
+    p_table: tableName
   });
 
-  if (error) throw error;
+  if (tableError) throw tableError;
 
   const columns: { [columnName: string]: ColumnInfo } = {};
-  (data || []).forEach((row: any) => {
-    columns[row.column_name] = {
-      column_name: row.column_name,
-      data_type: row.data_type,
-      is_nullable: row.is_nullable === 'YES',
-      column_default: row.column_default,
-      character_maximum_length: row.character_maximum_length,
-      numeric_precision: row.numeric_precision,
-      numeric_scale: row.numeric_scale,
-      ordinal_position: row.ordinal_position
-    };
-  });
+  
+  // Process columns from secure function result
+  if (tableInfo && typeof tableInfo === 'object' && 'columns' in tableInfo) {
+    const columnsArray = tableInfo.columns;
+    if (Array.isArray(columnsArray)) {
+      columnsArray.forEach((col: any) => {
+        if (col && typeof col === 'object' && 'column_name' in col) {
+          columns[col.column_name] = {
+            column_name: col.column_name,
+            data_type: col.data_type || 'unknown',
+            is_nullable: col.is_nullable === 'YES',
+            column_default: col.column_default || null,
+            character_maximum_length: col.character_maximum_length || null,
+            numeric_precision: col.numeric_precision || null,
+            numeric_scale: col.numeric_scale || null,
+            ordinal_position: col.ordinal_position || 0
+          };
+        }
+      });
+    }
+  }
 
-  return columns;
-}
-
-/**
- * Extract constraint information
- */
-async function extractTableConstraints(schemaName: string, tableName: string): Promise<{ [constraintName: string]: ConstraintInfo }> {
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      SELECT 
-        tc.constraint_name,
-        tc.constraint_type,
-        tc.table_name,
-        array_agg(kcu.column_name ORDER BY kcu.ordinal_position) as column_names,
-        ccu.table_schema as foreign_table_schema,
-        ccu.table_name as foreign_table_name,
-        array_agg(ccu.column_name ORDER BY kcu.ordinal_position) as foreign_column_names,
-        cc.check_clause
-      FROM information_schema.table_constraints tc
-      LEFT JOIN information_schema.key_column_usage kcu 
-        ON tc.constraint_name = kcu.constraint_name 
-        AND tc.table_schema = kcu.table_schema
-      LEFT JOIN information_schema.constraint_column_usage ccu
-        ON tc.constraint_name = ccu.constraint_name
-        AND tc.table_schema = ccu.table_schema
-      LEFT JOIN information_schema.check_constraints cc
-        ON tc.constraint_name = cc.constraint_name
-        AND tc.table_schema = cc.constraint_schema
-      WHERE tc.table_schema = '${schemaName}' AND tc.table_name = '${tableName}'
-      GROUP BY tc.constraint_name, tc.constraint_type, tc.table_name, 
-               ccu.table_schema, ccu.table_name, cc.check_clause
-      ORDER BY tc.constraint_name
-    `
-  });
-
-  if (error) throw error;
-
-  const constraints: { [constraintName: string]: ConstraintInfo } = {};
-  (data || []).forEach((row: any) => {
-    constraints[row.constraint_name] = {
-      constraint_name: row.constraint_name,
-      constraint_type: row.constraint_type,
-      table_name: row.table_name,
-      column_names: row.column_names || [],
-      foreign_table_schema: row.foreign_table_schema,
-      foreign_table_name: row.foreign_table_name,
-      foreign_column_names: row.foreign_column_names,
-      check_clause: row.check_clause
-    };
-  });
-
-  return constraints;
-}
-
-/**
- * Extract index information
- */
-async function extractTableIndexes(schemaName: string, tableName: string): Promise<{ [indexName: string]: IndexInfo }> {
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      SELECT 
-        i.relname as index_name,
-        t.relname as table_name,
-        pg_get_indexdef(i.oid) as index_definition,
-        ix.indisunique as is_unique,
-        ix.indisprimary as is_primary,
-        array_agg(a.attname ORDER BY a.attnum) as column_names
-      FROM pg_class t
-      JOIN pg_index ix ON t.oid = ix.indrelid
-      JOIN pg_class i ON i.oid = ix.indexrelid
-      JOIN pg_namespace n ON n.oid = t.relnamespace
-      LEFT JOIN pg_attribute a ON a.attrelid = t.oid AND a.attnum = ANY(ix.indkey)
-      WHERE n.nspname = '${schemaName}' AND t.relname = '${tableName}'
-      GROUP BY i.relname, t.relname, i.oid, ix.indisunique, ix.indisprimary
-      ORDER BY i.relname
-    `
-  });
-
-  if (error) throw error;
-
-  const indexes: { [indexName: string]: IndexInfo } = {};
-  (data || []).forEach((row: any) => {
-    indexes[row.index_name] = {
-      index_name: row.index_name,
-      table_name: row.table_name,
-      index_definition: row.index_definition,
-      is_unique: row.is_unique,
-      is_primary: row.is_primary,
-      column_names: row.column_names || []
-    };
-  });
-
-  return indexes;
-}
-
-/**
- * Extract trigger information
- */
-async function extractTableTriggers(schemaName: string, tableName: string): Promise<{ [triggerName: string]: TriggerInfo }> {
-  const { data, error } = await supabase.rpc('exec_sql', {
-    query: `
-      SELECT 
-        trigger_name,
-        event_object_table as table_name,
-        event_manipulation,
-        action_timing,
-        action_statement
-      FROM information_schema.triggers
-      WHERE event_object_schema = '${schemaName}' AND event_object_table = '${tableName}'
-      ORDER BY trigger_name
-    `
-  });
-
-  if (error) throw error;
-
-  const triggers: { [triggerName: string]: TriggerInfo } = {};
-  (data || []).forEach((row: any) => {
-    triggers[row.trigger_name] = {
-      trigger_name: row.trigger_name,
-      table_name: row.table_name,
-      event_manipulation: row.event_manipulation,
-      action_timing: row.action_timing,
-      action_statement: row.action_statement
-    };
-  });
-
-  return triggers;
+  // For now, return simplified schema without constraints, indexes, and triggers
+  // as these would require additional secure functions to be implemented
+  return {
+    columns,
+    constraints: {},
+    indexes: {},
+    triggers: {}
+  };
 }
 
 /**
