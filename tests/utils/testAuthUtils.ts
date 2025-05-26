@@ -22,9 +22,10 @@ export class TestAuthUtils {
       // First, sign out any existing session to start fresh
       await supabase.auth.signOut();
 
-      // Get test user credentials and sign in fresh
-      const testUserEmail = userKey === 'user1' ? 'testuser1@example.com' : 'testuser2@example.com';
-      const testUserPassword = 'TestPass123!';
+      // Get test user credentials
+      const testUser = import('./persistentTestUsers').PERSISTENT_TEST_USERS[userKey];
+      const testUserEmail = testUser ? testUser.email : 'testuser1@example.com';
+      const testUserPassword = testUser ? testUser.password : 'TestPass123!';
 
       console.log(`🔐 Signing in test user: ${testUserEmail}`);
       
