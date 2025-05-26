@@ -3,6 +3,7 @@ import { organizationRelationshipsApi } from '@/api/organizations/relationshipsA
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { ProfileOrganizationRelationship } from '@/types';
+import { v4 as uuidv4 } from 'uuid';
 
 describe('Organization Relationships API - Database Tests', () => {
   let testUser: any;
@@ -27,7 +28,7 @@ describe('Organization Relationships API - Database Tests', () => {
       testUser = user;
     } catch (error) {
       console.warn('Could not get test user, using mock ID');
-      testUser = { id: crypto.randomUUID() }; // Use proper UUID format
+      testUser = { id: uuidv4() }; // Use uuid package
     }
     
     // Create a test organization
@@ -179,7 +180,7 @@ describe('Organization Relationships API - Database Tests', () => {
     test('should handle non-existent organization', async () => {
       const relationshipData = {
         profile_id: testUser.id,
-        organization_id: crypto.randomUUID(), // Use proper UUID format
+        organization_id: uuidv4(), // Use uuid package
         connection_type: 'current' as const,
         department: 'Engineering'
       };
@@ -191,7 +192,7 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent profile', async () => {
-      const nonExistentProfileId = crypto.randomUUID();
+      const nonExistentProfileId = uuidv4();
       
       const relationshipData = {
         profile_id: nonExistentProfileId,
@@ -263,7 +264,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should handle non-existent relationship', async () => {
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
-        crypto.randomUUID(), // Use proper UUID format
+        uuidv4(), // Use uuid package
         { connection_type: 'former' }
       );
       
@@ -313,7 +314,7 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent relationship', async () => {
-      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(crypto.randomUUID());
+      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(uuidv4());
       
       expect(result.status).toBe('success'); // Delete operations often succeed even if nothing to delete
       expect(result.data).toBe(true);

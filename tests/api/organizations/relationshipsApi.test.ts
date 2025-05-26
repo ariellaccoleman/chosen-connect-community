@@ -2,6 +2,7 @@
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Integration tests for Organization Relationships API
@@ -29,7 +30,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       testUser = user;
     } catch (error) {
       console.warn('Could not get test user, using mock ID');
-      testUser = { id: crypto.randomUUID() }; // Use proper UUID format
+      testUser = { id: uuidv4() }; // Use uuid package
     }
     
     // Create a test organization
@@ -165,7 +166,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // Test updating non-existent relationship
     result = await organizationRelationshipsApi.updateOrganizationRelationship(
-      crypto.randomUUID(), // Use proper UUID format
+      uuidv4(), // Use uuid package
       { connection_type: 'former' }
     );
     expect(result.status).toBe('error');
@@ -180,7 +181,7 @@ describe('Organization Relationships API - Integration Tests', () => {
     // Test that relationship requires valid organization
     const result = await organizationRelationshipsApi.addOrganizationRelationship({
       profile_id: testUser.id,
-      organization_id: crypto.randomUUID(), // Use proper UUID format for non-existent org
+      organization_id: uuidv4(), // Use uuid package for non-existent org
       connection_type: 'current'
     });
     
@@ -195,7 +196,7 @@ describe('Organization Relationships API - Integration Tests', () => {
     }
 
     // Test creating relationship for non-existent profile
-    const nonExistentProfileId = crypto.randomUUID();
+    const nonExistentProfileId = uuidv4();
     const result = await organizationRelationshipsApi.addOrganizationRelationship({
       profile_id: nonExistentProfileId,
       organization_id: testOrganization.id,
