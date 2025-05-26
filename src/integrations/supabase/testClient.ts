@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -6,14 +5,12 @@ import type { Database } from './types';
 const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
 const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 
-// Detect if we're in a Node.js environment (including tests)
-const isNodeEnvironment = typeof window === "undefined" && typeof process !== "undefined";
-
 /**
  * Runtime function to detect test environment with comprehensive checks
  */
 const isTestEnvironment = (): boolean => {
-  if (!isNodeEnvironment) {
+  // First check if we're in a Node.js environment at all
+  if (typeof window !== "undefined" || typeof process === "undefined") {
     return false;
   }
 
@@ -27,7 +24,7 @@ const isTestEnvironment = (): boolean => {
     hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
   };
 
-  // Log environment check details
+  // Log environment check details for debugging
   console.log('🔍 TestClientFactory Environment Detection:');
   console.log('Environment checks:', checks);
   console.log('NODE_ENV:', process.env.NODE_ENV);
@@ -42,7 +39,7 @@ const isTestEnvironment = (): boolean => {
 
 // Helper function to safely access environment variables
 const getEnvVar = (name: string): string | undefined => {
-  if (!isNodeEnvironment) {
+  if (typeof window !== "undefined" || typeof process === "undefined") {
     return undefined;
   }
   return process.env[name];
@@ -60,10 +57,6 @@ export class TestClientFactory {
    * Ensure we're in a test environment - improved runtime detection
    */
   private static ensureTestEnvironment(): void {
-    if (!isNodeEnvironment) {
-      throw new Error('TestClientFactory can only be used in Node.js environments');
-    }
-
     const isTest = isTestEnvironment();
     
     if (!isTest) {
