@@ -34,7 +34,11 @@ const isTestEnvironment = (): boolean => {
   console.log('JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
 
   // Return true if any test environment indicator is present
-  return Object.values(checks).some(check => check);
+  const isTest = Object.values(checks).some(check => check === true);
+  console.log('🔍 Final test environment result:', isTest);
+  console.log('🔍 True checks:', Object.entries(checks).filter(([key, value]) => value === true).map(([key]) => key));
+  
+  return isTest;
 };
 
 // Helper function to safely access environment variables
