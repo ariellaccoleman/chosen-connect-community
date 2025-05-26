@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -47,7 +48,7 @@ const getEnvVar = (name: string): string | undefined => {
 
 /**
  * Simplified Test Client Factory for dedicated test project
- * No more complex environment detection or schema manipulation needed!
+ * Focused on database-based testing with real Supabase behavior
  */
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
@@ -162,10 +163,23 @@ export class TestClientFactory {
       this.anonClient = null;
     }
   }
+
+  /**
+   * Get test project info
+   */
+  static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
+    const testUrl = getEnvVar('TEST_SUPABASE_URL');
+    const prodUrl = getEnvVar('SUPABASE_URL');
+    
+    return {
+      url: testUrl || TEST_SUPABASE_URL,
+      usingDedicatedProject: testUrl !== prodUrl && !!testUrl
+    };
+  }
 }
 
 /**
- * Simplified Test Infrastructure - no more complex schema manipulation!
+ * Simplified Test Infrastructure for database-based testing
  */
 export class TestInfrastructure {
   /**
@@ -274,12 +288,6 @@ export class TestInfrastructure {
    * Get test project info
    */
   static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    const testUrl = getEnvVar('TEST_SUPABASE_URL');
-    const prodUrl = getEnvVar('SUPABASE_URL');
-    
-    return {
-      url: testUrl || TEST_SUPABASE_URL,
-      usingDedicatedProject: testUrl !== prodUrl && !!testUrl
-    };
+    return TestClientFactory.getTestProjectInfo();
   }
 }
