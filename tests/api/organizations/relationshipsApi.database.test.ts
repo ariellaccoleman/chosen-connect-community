@@ -19,66 +19,80 @@ describe('Organization Relationships API - Database Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up test data first
-    await TestInfrastructure.cleanupTable('org_relationships');
-    
-    // Set up authentication for the main client
-    await TestAuthUtils.setupTestAuth('user1');
-    
-    // Get the authenticated user
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    
-    // Create a test organization using service client (for setup only)
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
-    // Ensure profile exists first - use service client to bypass RLS
-    const { error: profileError } = await serviceClient
-      .from('profiles')
-      .upsert({ 
-        id: testUser.id, 
-        email: testUser.email || 'testuser1@example.com',
-        first_name: 'Test',
-        last_name: 'User'
-      }, {
-        onConflict: 'id'
-      });
-    
-    if (profileError) {
-      console.warn('Profile creation warning:', profileError);
+    try {
+      // Clean up test data first
+      await TestInfrastructure.cleanupTable('org_relationships');
+      
+      // Set up authentication for the main client
+      console.log('🔐 Setting up test authentication...');
+      await TestAuthUtils.setupTestAuth('user1');
+      
+      // Get the authenticated user
+      console.log('👤 Getting current test user...');
+      testUser = await TestAuthUtils.getCurrentTestUser();
+      console.log('✅ Test user authenticated:', testUser.id, testUser.email);
+      
+      // Create a test organization using service client (for setup only)
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      // Ensure profile exists first - use service client to bypass RLS
+      const { error: profileError } = await serviceClient
+        .from('profiles')
+        .upsert({ 
+          id: testUser.id, 
+          email: testUser.email || 'testuser1@example.com',
+          first_name: 'Test',
+          last_name: 'User'
+        }, {
+          onConflict: 'id'
+        });
+      
+      if (profileError) {
+        console.warn('Profile creation warning:', profileError);
+      }
+      
+      const { data: orgData, error: orgError } = await serviceClient
+        .from('organizations')
+        .insert({
+          name: 'Test Organization',
+          description: 'A test organization'
+        })
+        .select()
+        .single();
+      
+      if (orgError) {
+        console.error('Failed to create test organization:', orgError);
+        throw orgError;
+      }
+      
+      testOrganization = orgData;
+      console.log('✅ Test setup complete');
+    } catch (error) {
+      console.error('❌ Test setup failed:', error);
+      throw error;
     }
-    
-    const { data: orgData, error: orgError } = await serviceClient
-      .from('organizations')
-      .insert({
-        name: 'Test Organization',
-        description: 'A test organization'
-      })
-      .select()
-      .single();
-    
-    if (orgError) {
-      console.error('Failed to create test organization:', orgError);
-      throw orgError;
-    }
-    
-    testOrganization = orgData;
   });
 
   afterEach(async () => {
-    // Clean up test data using service client
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
-    if (testOrganization?.id) {
-      await serviceClient
-        .from('organizations')
-        .delete()
-        .eq('id', testOrganization.id);
+    try {
+      // Clean up test data using service client
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      if (testOrganization?.id) {
+        await serviceClient
+          .from('organizations')
+          .delete()
+          .eq('id', testOrganization.id);
+      }
+      
+      await TestInfrastructure.cleanupTable('org_relationships');
+      
+      // Clean up test authentication
+      await TestAuthUtils.cleanupTestAuth();
+      console.log('✅ Test cleanup complete');
+    } catch (error) {
+      console.error('❌ Test cleanup failed:', error);
     }
-    
-    await TestInfrastructure.cleanupTable('org_relationships');
-    
-    // Clean up test authentication
-    await TestAuthUtils.cleanupTestAuth();
   });
 
   afterAll(() => {
@@ -87,6 +101,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
   describe('getUserOrganizationRelationships', () => {
     test('should return empty array when user has no relationships', async () => {
+      console.log('🧪 Testing getUserOrganizationRelationships with no relationships');
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
       
       expect(result.status).toBe('success');
@@ -94,6 +109,8 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should return user relationships with organization details', async () => {
+      console.log('🧪 Testing getUserOrganizationRelationships with existing relationship');
+      
       // Create a test relationship directly in database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
@@ -126,6 +143,7 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle invalid UUID format gracefully', async () => {
+      console.log('🧪 Testing getUserOrganizationRelationships with invalid UUID');
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid');
       
       expect(result.status).toBe('error');
@@ -135,6 +153,8 @@ describe('Organization Relationships API - Database Tests', () => {
 
   describe('addOrganizationRelationship', () => {
     test('should create a new relationship successfully', async () => {
+      console.log('🧪 Testing addOrganizationRelationship');
+      
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: testOrganization.id,
@@ -143,12 +163,12 @@ describe('Organization Relationships API - Database Tests', () => {
         notes: 'New relationship'
       };
 
-      console.log('🔍 Test Debug: Calling addOrganizationRelationship with data:', relationshipData);
+      console.log('🔍 Calling addOrganizationRelationship with data:', relationshipData);
       
       // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
       
-      console.log('🔍 Test Debug: API Response:', {
+      console.log('🔍 API Response:', {
         status: result.status,
         data: result.data,
         error: result.error
@@ -177,6 +197,8 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle missing profile_id', async () => {
+      console.log('🧪 Testing addOrganizationRelationship with missing profile_id');
+      
       const relationshipData = {
         organization_id: testOrganization.id,
         connection_type: 'current' as const
@@ -189,6 +211,8 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent organization', async () => {
+      console.log('🧪 Testing addOrganizationRelationship with non-existent organization');
+      
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: uuidv4(),

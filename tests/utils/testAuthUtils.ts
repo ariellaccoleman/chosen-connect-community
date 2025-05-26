@@ -28,12 +28,22 @@ export class TestAuthUtils {
       }
 
       // Set the session on the main client
-      await supabase.auth.setSession({
+      const { error: setSessionError } = await supabase.auth.setSession({
         access_token: testSession.access_token,
         refresh_token: testSession.refresh_token
       });
 
-      console.log(`✅ Test auth setup complete for ${userKey}`);
+      if (setSessionError) {
+        throw new Error(`Failed to set session: ${setSessionError.message}`);
+      }
+
+      // Verify the session was set correctly
+      const { data: { session: verifySession }, error: verifyError } = await supabase.auth.getSession();
+      if (verifyError || !verifySession) {
+        throw new Error(`Session verification failed: ${verifyError?.message || 'No session found'}`);
+      }
+
+      console.log(`✅ Test auth setup complete for ${userKey} - User ID: ${verifySession.user.id}`);
     } catch (error) {
       console.error('❌ Failed to setup test auth:', error);
       throw error;
@@ -68,10 +78,26 @@ export class TestAuthUtils {
    * Get the current authenticated user from the main client
    */
   static async getCurrentTestUser() {
+    // First verify we have a session
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) {
+      throw new Error(`Failed to get session: ${sessionError.message}`);
+    }
+    
+    if (!session) {
+      throw new Error('Auth session missing!');
+    }
+
+    // Then get the user
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) {
       throw new Error(`Failed to get current user: ${error.message}`);
     }
+    
+    if (!user) {
+      throw new Error('User not found in session!');
+    }
+    
     return user;
   }
 }
