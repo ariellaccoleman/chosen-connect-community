@@ -34,6 +34,21 @@ describe('Organization Relationships API - Integration Tests', () => {
     
     // Create a test organization
     const serviceClient = TestClientFactory.getServiceRoleClient();
+    
+    // Ensure profile exists for the test user
+    const { error: profileError } = await serviceClient
+      .from('profiles')
+      .upsert({ 
+        id: testUser.id, 
+        email: testUser.email || 'testuser1@example.com',
+        first_name: 'Test',
+        last_name: 'User'
+      });
+    
+    if (profileError) {
+      console.warn('Profile creation warning:', profileError);
+    }
+    
     const { data: orgData, error: orgError } = await serviceClient
       .from('organizations')
       .insert({
@@ -150,7 +165,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // Test updating non-existent relationship
     result = await organizationRelationshipsApi.updateOrganizationRelationship(
-      'non-existent-id',
+      crypto.randomUUID(), // Use proper UUID format
       { connection_type: 'former' }
     );
     expect(result.status).toBe('error');
@@ -165,7 +180,7 @@ describe('Organization Relationships API - Integration Tests', () => {
     // Test that relationship requires valid organization
     const result = await organizationRelationshipsApi.addOrganizationRelationship({
       profile_id: testUser.id,
-      organization_id: 'non-existent-org-id',
+      organization_id: crypto.randomUUID(), // Use proper UUID format for non-existent org
       connection_type: 'current'
     });
     
