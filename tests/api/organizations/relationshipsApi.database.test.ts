@@ -141,7 +141,16 @@ describe('Organization Relationships API - Database Tests', () => {
         notes: 'New relationship'
       };
 
+      console.log('🔍 Test Debug: Calling addOrganizationRelationship with data:', relationshipData);
+      
       const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      
+      console.log('🔍 Test Debug: API Response:', {
+        status: result.status,
+        data: result.data,
+        error: result.error,
+        fullResult: result
+      });
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
@@ -153,6 +162,12 @@ describe('Organization Relationships API - Database Tests', () => {
         .select('*')
         .eq('profile_id', testUser.id)
         .eq('organization_id', testOrganization.id);
+      
+      console.log('🔍 Test Debug: Database verification:', {
+        relationships,
+        error,
+        relationshipCount: relationships?.length
+      });
       
       expect(error).toBeNull();
       expect(relationships).toHaveLength(1);
@@ -238,10 +253,22 @@ describe('Organization Relationships API - Database Tests', () => {
         notes: 'Updated notes'
       };
 
+      console.log('🔍 Test Debug: Calling updateOrganizationRelationship with:', {
+        relationshipId: testRelationshipId,
+        updateData
+      });
+
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         testRelationshipId,
         updateData
       );
+      
+      console.log('🔍 Test Debug: Update API Response:', {
+        status: result.status,
+        data: result.data,
+        error: result.error,
+        fullResult: result
+      });
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
@@ -296,7 +323,16 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should delete relationship successfully', async () => {
+      console.log('🔍 Test Debug: Calling deleteOrganizationRelationship with id:', testRelationshipId);
+      
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId);
+      
+      console.log('🔍 Test Debug: Delete API Response:', {
+        status: result.status,
+        data: result.data,
+        error: result.error,
+        fullResult: result
+      });
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
