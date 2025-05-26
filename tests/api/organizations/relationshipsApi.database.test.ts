@@ -142,15 +142,24 @@ describe('Organization Relationships API - Database Tests', () => {
       };
 
       console.log('🔍 Test Debug: Calling addOrganizationRelationship with data:', relationshipData);
+      console.log('🔍 Test User:', testUser);
+      console.log('🔍 Test Organization:', testOrganization);
       
       const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
       
-      console.log('🔍 Test Debug: API Response:', {
-        status: result.status,
-        data: result.data,
-        error: result.error,
-        fullResult: result
-      });
+      console.log('🔍 Test Debug: API Response Status:', result.status);
+      console.log('🔍 Test Debug: API Response Data:', result.data);
+      console.log('🔍 Test Debug: API Response Error:', result.error);
+      console.log('🔍 Test Debug: Full API Response:', JSON.stringify(result, null, 2));
+      
+      if (result.status === 'error') {
+        console.error('🚨 API Error Details:', {
+          message: result.error?.message,
+          code: result.error?.code,
+          details: result.error?.details,
+          original: result.error?.original
+        });
+      }
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
