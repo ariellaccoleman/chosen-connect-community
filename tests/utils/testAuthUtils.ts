@@ -19,22 +19,27 @@ export class TestAuthUtils {
       const { data: { session } } = await supabase.auth.getSession();
       this.originalSession = session;
 
-      // Get authenticated client for the test user
-      const testClient = await PersistentTestUserHelper.getUserClient(userKey);
-      const { data: { session: testSession }, error } = await testClient.auth.getSession();
-      
-      if (error || !testSession) {
-        throw new Error(`Failed to get test session: ${error?.message}`);
-      }
+      // First, sign out any existing session to start fresh
+      await supabase.auth.signOut();
 
-      // Set the session on the main client
-      const { error: setSessionError } = await supabase.auth.setSession({
-        access_token: testSession.access_token,
-        refresh_token: testSession.refresh_token
+      // Get test user credentials and sign in fresh
+      const testUserEmail = userKey === 'user1' ? 'testuser1@example.com' : 'testuser2@example.com';
+      const testUserPassword = 'testpassword123';
+
+      console.log(`🔐 Signing in test user: ${testUserEmail}`);
+      
+      // Sign in with email/password to get a fresh, valid session
+      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+        email: testUserEmail,
+        password: testUserPassword
       });
 
-      if (setSessionError) {
-        throw new Error(`Failed to set session: ${setSessionError.message}`);
+      if (signInError) {
+        throw new Error(`Failed to sign in test user: ${signInError.message}`);
+      }
+
+      if (!signInData.session) {
+        throw new Error('No session returned from sign in');
       }
 
       // Verify the session was set correctly
@@ -55,15 +60,20 @@ export class TestAuthUtils {
    */
   static async cleanupTestAuth(): Promise<void> {
     try {
+      // Always sign out the test user first
+      await supabase.auth.signOut();
+
+      // If there was an original session, try to restore it
       if (this.originalSession) {
-        // Restore original session
-        await supabase.auth.setSession({
-          access_token: this.originalSession.access_token,
-          refresh_token: this.originalSession.refresh_token
-        });
-      } else {
-        // Sign out if there was no original session
-        await supabase.auth.signOut();
+        try {
+          await supabase.auth.setSession({
+            access_token: this.originalSession.access_token,
+            refresh_token: this.originalSession.refresh_token
+          });
+        } catch (restoreError) {
+          console.warn('Could not restore original session:', restoreError);
+          // Don't throw here as it might mask test failures
+        }
       }
 
       this.originalSession = null;
