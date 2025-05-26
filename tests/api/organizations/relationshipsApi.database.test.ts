@@ -1,4 +1,3 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -34,7 +33,7 @@ describe('Organization Relationships API - Database Tests', () => {
     // Create a test organization
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
-    // Ensure profile exists first
+    // Ensure profile exists first - use service client to bypass RLS
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
@@ -42,6 +41,8 @@ describe('Organization Relationships API - Database Tests', () => {
         email: testUser.email || 'testuser1@example.com',
         first_name: 'Test',
         last_name: 'User'
+      }, {
+        onConflict: 'id'
       });
     
     if (profileError) {

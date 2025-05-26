@@ -1,4 +1,3 @@
-
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
@@ -57,26 +56,8 @@ export const organizationRelationshipsApi = {
         throw new Error('Profile ID is required');
       }
       
-      // First check if profile exists
-      const { data: existingProfile, error: profileCheckError } = await client
-        .from('profiles')
-        .select('id')
-        .eq('id', relationship.profile_id)
-        .maybeSingle();
-      
-      if (profileCheckError) throw profileCheckError;
-      
-      // If profile doesn't exist, create a minimal one
-      if (!existingProfile) {
-        logger.info(`Profile ${relationship.profile_id} doesn't exist, creating new profile`);
-        const { error: profileCreateError } = await client
-          .from('profiles')
-          .insert({ id: relationship.profile_id });
-        
-        if (profileCreateError) throw profileCreateError;
-      }
-      
-      // Create relationship
+      // Create relationship directly - let the database handle any profile requirements
+      // The test setup should ensure profiles exist, and in production, profiles are created via auth triggers
       logger.info(`Creating organization relationship`, relationship);
       const { error } = await client
         .from('org_relationships')
