@@ -20,6 +20,9 @@ describe('Test Project Validation', () => {
     if (process.env.TEST_SUPABASE_URL) {
       expect(projectInfo.usingDedicatedProject).toBe(true);
       expect(projectInfo.url).toBe(process.env.TEST_SUPABASE_URL);
+    } else {
+      // If no TEST_SUPABASE_URL, we're using fallback
+      console.log('⚠️ Using fallback project - recommend setting TEST_SUPABASE_URL');
     }
   });
 
@@ -78,5 +81,20 @@ describe('Test Project Validation', () => {
     if (!hasServiceKey) {
       console.warn('⚠️ No service role key - some test operations may be limited');
     }
+  });
+
+  test('should provide persistent test user guidance', () => {
+    // This test documents the approach for persistent test users
+    console.log('📋 Persistent Test Users Setup Guide:');
+    console.log('1. Manually create 3 test users in your test Supabase project:');
+    console.log('   - testuser1@example.com (password: TestPass123!)');
+    console.log('   - testuser2@example.com (password: TestPass123!)'); 
+    console.log('   - testuser3@example.com (password: TestPass123!)');
+    console.log('2. These users should have confirmed emails and be ready for authentication');
+    console.log('3. Tests will use TestClientFactory.createAuthenticatedClient() to authenticate as these users');
+    console.log('4. No dynamic user creation needed - persistent users provide stable test environment');
+    
+    // Test passes - this is just documentation
+    expect(true).toBe(true);
   });
 });

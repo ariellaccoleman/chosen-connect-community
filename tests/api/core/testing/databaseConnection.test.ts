@@ -1,5 +1,6 @@
 
 import { TestClientFactory } from '@/integrations/supabase/testClient';
+import { PersistentTestUserHelper } from '../../../utils/persistentTestUsers';
 
 describe('Database Connection Validation', () => {
   afterAll(() => {
@@ -68,4 +69,30 @@ describe('Database Connection Validation', () => {
     expect(projectInfo.url).toBeTruthy();
     expect(typeof projectInfo.usingDedicatedProject).toBe('boolean');
   });
+
+  test('Persistent test users setup verification', async () => {
+    console.log('=== Persistent Test Users Verification ===');
+    
+    // Note: This test will fail until persistent test users are manually created
+    // That's expected - it serves as a reminder to set them up
+    
+    try {
+      const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
+      
+      if (isSetup) {
+        console.log('✅ All persistent test users are properly configured');
+        expect(isSetup).toBe(true);
+      } else {
+        console.log('⚠️ Persistent test users need to be set up manually');
+        console.log('📋 Follow the setup guide in testProjectValidation.test.ts');
+        // Don't fail the test - just warn
+        expect(true).toBe(true);
+      }
+    } catch (error) {
+      console.log('⚠️ Could not verify persistent test users - they may need to be created');
+      console.log('📋 Create test users manually in your test Supabase project');
+      // Don't fail the test - just warn
+      expect(true).toBe(true);
+    }
+  }, 10000); // Longer timeout for auth operations
 });

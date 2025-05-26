@@ -78,13 +78,29 @@ describe('API Factory with Database Repository', () => {
     expect(result.error).toBeDefined();
   });
 
+  test('database repository handles invalid UUID format gracefully', async () => {
+    const factory = createApiFactory<TestEntity>({
+      tableName: 'profiles'
+    });
+    
+    // Try to get a record with invalid UUID format
+    const result = await factory.getById('invalid-uuid-format');
+    
+    console.log(`Database getById with invalid UUID result: ${JSON.stringify({ status: result.status, hasData: !!result.data })}`);
+    
+    // Should handle invalid UUID gracefully and return error status
+    expect(result.status).toBe('error');
+    expect(result.error).toBeDefined();
+    expect(result.data).toBeNull();
+  });
+
   test('database repository respects RLS policies', async () => {
     const factory = createApiFactory<TestEntity>({
       tableName: 'profiles'
     });
     
-    // Try to get a specific record by ID
-    const result = await factory.getById('nonexistent-id');
+    // Try to get a specific record by valid UUID format
+    const result = await factory.getById('00000000-0000-0000-0000-000000000000');
     
     console.log(`Database getById result: ${JSON.stringify({ status: result.status, hasData: !!result.data })}`);
     
