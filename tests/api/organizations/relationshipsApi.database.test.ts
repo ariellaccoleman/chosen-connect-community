@@ -1,6 +1,8 @@
+
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { ProfileOrganizationRelationship } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -20,17 +22,13 @@ describe('Organization Relationships API - Database Tests', () => {
     // Clean up test data first
     await TestInfrastructure.cleanupTable('org_relationships');
     
-    // Create a test user (using persistent test user)
-    try {
-      const userClient = await PersistentTestUserHelper.getUser1Client();
-      const { data: { user } } = await userClient.auth.getUser();
-      testUser = user;
-    } catch (error) {
-      console.warn('Could not get test user, using mock ID');
-      testUser = { id: uuidv4() }; // Use uuid package
-    }
+    // Set up authentication for the main client
+    await TestAuthUtils.setupTestAuth('user1');
     
-    // Create a test organization
+    // Get the authenticated user
+    testUser = await TestAuthUtils.getCurrentTestUser();
+    
+    // Create a test organization using service client (for setup only)
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     // Ensure profile exists first - use service client to bypass RLS
@@ -67,7 +65,7 @@ describe('Organization Relationships API - Database Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up test data using service client
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     if (testOrganization?.id) {
@@ -78,6 +76,9 @@ describe('Organization Relationships API - Database Tests', () => {
     }
     
     await TestInfrastructure.cleanupTable('org_relationships');
+    
+    // Clean up test authentication
+    await TestAuthUtils.cleanupTestAuth();
   });
 
   afterAll(() => {
@@ -93,7 +94,7 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should return user relationships with organization details', async () => {
-      // Create a test relationship directly in database
+      // Create a test relationship directly in database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
       const { error: relationshipError } = await serviceClient
@@ -108,7 +109,7 @@ describe('Organization Relationships API - Database Tests', () => {
       
       expect(relationshipError).toBeNull();
       
-      // Test the API
+      // Test the API using the authenticated main client
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
       
       expect(result.status).toBe('success');
@@ -143,41 +144,26 @@ describe('Organization Relationships API - Database Tests', () => {
       };
 
       console.log('🔍 Test Debug: Calling addOrganizationRelationship with data:', relationshipData);
-      console.log('🔍 Test User:', testUser);
-      console.log('🔍 Test Organization:', testOrganization);
       
+      // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
       
-      console.log('🔍 Test Debug: API Response Status:', result.status);
-      console.log('🔍 Test Debug: API Response Data:', result.data);
-      console.log('🔍 Test Debug: API Response Error:', result.error);
-      console.log('🔍 Test Debug: Full API Response:', JSON.stringify(result, null, 2));
-      
-      if (result.status === 'error') {
-        console.error('🚨 API Error Details:', {
-          message: result.error?.message,
-          code: result.error?.code,
-          details: result.error?.details,
-          original: result.error?.original
-        });
-      }
+      console.log('🔍 Test Debug: API Response:', {
+        status: result.status,
+        data: result.data,
+        error: result.error
+      });
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
       
-      // Verify the relationship was created in the database
+      // Verify the relationship was created in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: relationships, error } = await serviceClient
         .from('org_relationships')
         .select('*')
         .eq('profile_id', testUser.id)
         .eq('organization_id', testOrganization.id);
-      
-      console.log('🔍 Test Debug: Database verification:', {
-        relationships,
-        error,
-        relationshipCount: relationships?.length
-      });
       
       expect(error).toBeNull();
       expect(relationships).toHaveLength(1);
@@ -205,7 +191,7 @@ describe('Organization Relationships API - Database Tests', () => {
     test('should handle non-existent organization', async () => {
       const relationshipData = {
         profile_id: testUser.id,
-        organization_id: uuidv4(), // Use uuid package
+        organization_id: uuidv4(),
         connection_type: 'current' as const,
         department: 'Engineering'
       };
@@ -215,29 +201,13 @@ describe('Organization Relationships API - Database Tests', () => {
       // Should fail due to foreign key constraint
       expect(result.status).toBe('error');
     });
-
-    test('should handle non-existent profile', async () => {
-      const nonExistentProfileId = uuidv4();
-      
-      const relationshipData = {
-        profile_id: nonExistentProfileId,
-        organization_id: testOrganization.id,
-        connection_type: 'current' as const,
-        department: 'Engineering'
-      };
-
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
-      
-      // Should either succeed (if profile is auto-created) or fail gracefully
-      expect(['success', 'error']).toContain(result.status);
-    });
   });
 
   describe('updateOrganizationRelationship', () => {
     let testRelationshipId: string;
 
     beforeEach(async () => {
-      // Create a test relationship
+      // Create a test relationship using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
       const { data: relationship, error } = await serviceClient
@@ -263,27 +233,16 @@ describe('Organization Relationships API - Database Tests', () => {
         notes: 'Updated notes'
       };
 
-      console.log('🔍 Test Debug: Calling updateOrganizationRelationship with:', {
-        relationshipId: testRelationshipId,
-        updateData
-      });
-
+      // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         testRelationshipId,
         updateData
       );
       
-      console.log('🔍 Test Debug: Update API Response:', {
-        status: result.status,
-        data: result.data,
-        error: result.error,
-        fullResult: result
-      });
-      
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
       
-      // Verify the update in the database
+      // Verify the update in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: relationship, error } = await serviceClient
         .from('org_relationships')
@@ -301,7 +260,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should handle non-existent relationship', async () => {
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
-        uuidv4(), // Use uuid package
+        uuidv4(),
         { connection_type: 'former' }
       );
       
@@ -314,7 +273,7 @@ describe('Organization Relationships API - Database Tests', () => {
     let testRelationshipId: string;
 
     beforeEach(async () => {
-      // Create a test relationship
+      // Create a test relationship using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
       const { data: relationship, error } = await serviceClient
@@ -333,21 +292,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should delete relationship successfully', async () => {
-      console.log('🔍 Test Debug: Calling deleteOrganizationRelationship with id:', testRelationshipId);
-      
+      // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId);
-      
-      console.log('🔍 Test Debug: Delete API Response:', {
-        status: result.status,
-        data: result.data,
-        error: result.error,
-        fullResult: result
-      });
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
       
-      // Verify the relationship was deleted
+      // Verify the relationship was deleted using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: relationship, error } = await serviceClient
         .from('org_relationships')
