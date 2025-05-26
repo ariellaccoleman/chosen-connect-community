@@ -9,11 +9,6 @@ const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOi
  * Runtime function to detect test environment with comprehensive checks
  */
 const isTestEnvironment = (): boolean => {
-  // First check if we're in a Node.js environment at all
-  if (typeof window !== "undefined" || typeof process === "undefined") {
-    return false;
-  }
-
   const checks = {
     NODE_ENV: process.env.NODE_ENV === 'test',
     JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
