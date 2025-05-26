@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { PersistentTestUserHelper } from './persistentTestUsers';
+import { PERSISTENT_TEST_USERS } from './persistentTestUsers';
 
 /**
  * Test utility to manage authentication context for the main Supabase client
@@ -13,7 +13,7 @@ export class TestAuthUtils {
    * Set up authentication for a test user on the main Supabase client
    * This temporarily authenticates the main client as a test user
    */
-  static async setupTestAuth(userKey: keyof typeof import('./persistentTestUsers').PERSISTENT_TEST_USERS = 'user1'): Promise<void> {
+  static async setupTestAuth(userKey: keyof typeof PERSISTENT_TEST_USERS = 'user1'): Promise<void> {
     try {
       // Get the current session to restore later
       const { data: { session } } = await supabase.auth.getSession();
@@ -23,16 +23,17 @@ export class TestAuthUtils {
       await supabase.auth.signOut();
 
       // Get test user credentials
-      const testUser = import('./persistentTestUsers').PERSISTENT_TEST_USERS[userKey];
-      const testUserEmail = testUser ? testUser.email : 'testuser1@example.com';
-      const testUserPassword = testUser ? testUser.password : 'TestPass123!';
+      const testUser = PERSISTENT_TEST_USERS[userKey];
+      if (!testUser) {
+        throw new Error(`Test user '${userKey}' not found in PERSISTENT_TEST_USERS`);
+      }
 
-      console.log(`🔐 Signing in test user: ${testUserEmail}`);
+      console.log(`🔐 Signing in test user: ${testUser.email}`);
       
       // Sign in with email/password to get a fresh, valid session
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       });
 
       if (signInError) {
