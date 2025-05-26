@@ -19,19 +19,8 @@ const isTestEnvironment = (): boolean => {
     hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
   };
 
-  // Log environment check details for debugging
-  console.log('🔍 TestClientFactory Environment Detection:');
-  console.log('Environment checks:', checks);
-  console.log('NODE_ENV:', process.env.NODE_ENV);
-  console.log('CI:', process.env.CI);
-  console.log('GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
-  console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
-  console.log('JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
-
   // Return true if any test environment indicator is present
   const isTest = Object.values(checks).some(check => check === true);
-  console.log('🔍 Final test environment result:', isTest);
-  console.log('🔍 True checks:', Object.entries(checks).filter(([key, value]) => value === true).map(([key]) => key));
   
   return isTest;
 };
