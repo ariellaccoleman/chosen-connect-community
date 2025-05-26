@@ -1,4 +1,3 @@
-
 #!/usr/bin/env node
 // DO NOT PUT A BLANK LINE AT THE FRONT OF THIS FILE
 
