@@ -9,13 +9,36 @@ const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOi
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined" && typeof process !== "undefined";
 
-// Detect if we're specifically in a Jest test environment
-const isJestEnvironment = isNodeEnvironment && (
-  process.env.NODE_ENV === 'test' || 
-  typeof process.env.JEST_WORKER_ID !== 'undefined' ||
-  typeof (global as any).__coverage__ !== 'undefined' ||
-  process.argv.some(arg => arg.includes('jest'))
-);
+/**
+ * Runtime function to detect test environment with comprehensive checks
+ */
+const isTestEnvironment = (): boolean => {
+  if (!isNodeEnvironment) {
+    return false;
+  }
+
+  const checks = {
+    NODE_ENV: process.env.NODE_ENV === 'test',
+    JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
+    TEST_RUN_ID: typeof process.env.TEST_RUN_ID !== 'undefined',
+    CI: process.env.CI === 'true',
+    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS === 'true',
+    hasJestArg: process.argv.some(arg => arg.includes('jest')),
+    hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
+  };
+
+  // Log environment check details
+  console.log('🔍 TestClientFactory Environment Detection:');
+  console.log('Environment checks:', checks);
+  console.log('NODE_ENV:', process.env.NODE_ENV);
+  console.log('CI:', process.env.CI);
+  console.log('GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
+  console.log('TEST_RUN_ID:', process.env.TEST_RUN_ID);
+  console.log('JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
+
+  // Return true if any test environment indicator is present
+  return Object.values(checks).some(check => check);
+};
 
 // Helper function to safely access environment variables
 const getEnvVar = (name: string): string | undefined => {
@@ -34,22 +57,29 @@ export class TestClientFactory {
   private static anonClient: SupabaseClient<Database> | null = null;
 
   /**
-   * Ensure we're in a test environment - improved detection
+   * Ensure we're in a test environment - improved runtime detection
    */
   private static ensureTestEnvironment(): void {
     if (!isNodeEnvironment) {
       throw new Error('TestClientFactory can only be used in Node.js environments');
     }
 
-    // Allow usage in Jest test environment or when NODE_ENV is test
-    if (!isJestEnvironment) {
-      console.warn('TestClientFactory: Not in Jest environment, but proceeding...');
-      console.warn('Environment indicators:', {
-        NODE_ENV: process.env.NODE_ENV,
-        JEST_WORKER_ID: process.env.JEST_WORKER_ID,
-        hasJestArg: process.argv.some(arg => arg.includes('jest')),
-        hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
-      });
+    const isTest = isTestEnvironment();
+    
+    if (!isTest) {
+      console.warn('🔍 TestClientFactory: Environment detection results:');
+      console.warn('- Not in an obvious test environment');
+      console.warn('- NODE_ENV:', process.env.NODE_ENV);
+      console.warn('- CI:', process.env.CI);
+      console.warn('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
+      console.warn('- TEST_RUN_ID:', process.env.TEST_RUN_ID);
+      console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
+      console.warn('⚠️ Proceeding with caution - ensure this is intentional');
+      
+      // Don't throw an error - just warn and proceed
+      // This allows tests to run even if environment detection isn't perfect
+    } else {
+      console.log('✅ TestClientFactory: Test environment detected successfully');
     }
   }
 

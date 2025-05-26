@@ -2,9 +2,35 @@
 // Simplified environment setup for dedicated test project
 console.log('🔧 Test environment setup starting...');
 
+// Enhanced environment detection function
+function isTestEnvironment() {
+  const checks = {
+    NODE_ENV: process.env.NODE_ENV === 'test',
+    JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
+    TEST_RUN_ID: typeof process.env.TEST_RUN_ID !== 'undefined',
+    CI: process.env.CI === 'true',
+    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS === 'true'
+  };
+  
+  console.log('🔍 Environment Detection Results:');
+  Object.entries(checks).forEach(([key, value]) => {
+    console.log(`   ${key}: ${value ? '✅' : '❌'}`);
+  });
+  
+  return Object.values(checks).some(check => check);
+}
+
 // Ensure NODE_ENV is set to test
-process.env.NODE_ENV = 'test';
-console.log('🔧 Set NODE_ENV to:', process.env.NODE_ENV);
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'test';
+  console.log('🔧 Set NODE_ENV to: test (was not set)');
+} else {
+  console.log('🔧 NODE_ENV already set to:', process.env.NODE_ENV);
+}
+
+// Run environment detection
+const isTest = isTestEnvironment();
+console.log('🔧 Test environment detected:', isTest ? '✅ YES' : '⚠️ NO');
 
 // Test project configuration (primary)
 if (!process.env.TEST_SUPABASE_URL) {
@@ -17,12 +43,14 @@ if (!process.env.TEST_SUPABASE_ANON_KEY) {
 
 // Enhanced environment logging
 console.log('🔧 Environment variables check:');
+console.log('- NODE_ENV:', process.env.NODE_ENV);
+console.log('- CI:', process.env.CI || 'NOT SET');
+console.log('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS || 'NOT SET');
 console.log('- TEST_SUPABASE_URL:', !!process.env.TEST_SUPABASE_URL ? 'SET' : 'NOT SET');
 console.log('- TEST_SUPABASE_ANON_KEY:', !!process.env.TEST_SUPABASE_ANON_KEY ? 'SET' : 'NOT SET');
 console.log('- TEST_SUPABASE_SERVICE_ROLE_KEY:', !!process.env.TEST_SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'NOT SET');
 console.log('- TEST_RUN_ID:', !!process.env.TEST_RUN_ID ? 'SET' : 'NOT SET');
-console.log('- CI:', process.env.CI || 'NOT SET');
-console.log('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS || 'NOT SET');
+console.log('- JEST_WORKER_ID:', !!process.env.JEST_WORKER_ID ? 'SET' : 'NOT SET');
 
 // Check for dedicated test project setup
 const usingDedicatedProject = process.env.TEST_SUPABASE_URL && 
@@ -52,4 +80,9 @@ console.log('   - No more complex schema manipulation or workarounds');
 console.log('   - Service role key safe to use since it\'s a separate test project');
 console.log('   - Clean setup and teardown with real database behavior');
 
-console.log('🔧 Test environment setup complete');
+if (isTest) {
+  console.log('🔧 Test environment setup complete - environment detection successful');
+} else {
+  console.log('⚠️ Test environment setup complete - but environment detection failed');
+  console.log('⚠️ Tests may still work but please verify environment variables');
+}
