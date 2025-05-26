@@ -5,6 +5,11 @@ class TestReporter {
     this._globalConfig = globalConfig;
     this._options = options;
     this.testRunId = process.env.TEST_RUN_ID || null;
+    
+    // Use production project for test reporting
+    this.reportingUrl = process.env.PROD_SUPABASE_URL || process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
+    this.reportingApiKey = process.env.TEST_REPORTING_API_KEY;
+    
     this.results = {
       passed: 0,
       failed: 0,
@@ -18,8 +23,8 @@ class TestReporter {
     };
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
-    console.log(`SUPABASE_URL: ${process.env.SUPABASE_URL || 'not set'}`);
-    console.log(`TEST_REPORTING_API_KEY: ${process.env.TEST_REPORTING_API_KEY ? '[SET]' : '[NOT SET]'}`);
+    console.log(`Reporting to PRODUCTION PROJECT: ${this.reportingUrl}`);
+    console.log(`TEST_REPORTING_API_KEY: ${this.reportingApiKey ? '[SET]' : '[NOT SET]'}`);
   }
 
   /**
@@ -67,14 +72,15 @@ class TestReporter {
    */
   async onRunStart() {
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
+    console.log(`Reporting to production project: ${this.reportingUrl}`);
     
     // Validate required environment variables
-    if (!process.env.SUPABASE_URL) {
-      console.error('SUPABASE_URL is not set. Cannot create test run.');
+    if (!this.reportingUrl) {
+      console.error('Production Supabase URL is not set. Cannot create test run.');
       return;
     }
     
-    if (!process.env.TEST_REPORTING_API_KEY) {
+    if (!this.reportingApiKey) {
       console.error('TEST_REPORTING_API_KEY is not set. Cannot create test run.');
       return;
     }
@@ -82,14 +88,14 @@ class TestReporter {
     try {
       // Create a new test run only if we don't already have a test run ID
       if (!this.testRunId) {
-        console.log(`Creating new test run via ${process.env.SUPABASE_URL}/functions/v1/report-test-results/create-run`);
+        console.log(`Creating new test run via ${this.reportingUrl}/functions/v1/report-test-results/create-run (PRODUCTION)`);
         
-        // Create a new test run in Supabase
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/create-run`, {
+        // Create a new test run in Production Supabase
+        const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/create-run`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
+            'x-api-key': this.reportingApiKey
           },
           body: JSON.stringify({
             git_commit: process.env.GITHUB_SHA || null,
@@ -108,7 +114,7 @@ class TestReporter {
           if (response.ok) {
             this.testRunId = data.test_run_id;
             process.env.TEST_RUN_ID = this.testRunId;
-            console.log(`Created test run with ID: ${this.testRunId}`);
+            console.log(`Created test run with ID: ${this.testRunId} (in PRODUCTION)`);
           } else {
             console.error('Failed to create test run via edge function:', data);
           }
@@ -116,7 +122,7 @@ class TestReporter {
           console.error('Failed to parse response as JSON:', responseText);
         }
       } else {
-        console.log(`Using existing test run ID: ${this.testRunId}`);
+        console.log(`Using existing test run ID: ${this.testRunId} (reporting to PRODUCTION)`);
       }
     } catch (error) {
       console.error('Error in onRunStart:', error);
@@ -154,18 +160,18 @@ class TestReporter {
       
       this.results.suites.set(suiteId, suiteInfo);
       
-      // Try to record the suite start in the database
+      // Try to record the suite start in the production database
       try {
         if (!this.testRunId) {
           console.error('No testRunId available. Cannot record test suite.');
           return;
         }
         
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
+        const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-suite`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
+            'x-api-key': this.reportingApiKey
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
@@ -180,7 +186,7 @@ class TestReporter {
         if (response.ok) {
           const data = await response.json();
           suiteInfo.id = data.test_suite_id;
-          console.log(`Recorded start of test suite "${suiteName}" with ID ${data.test_suite_id}`);
+          console.log(`Recorded start of test suite "${suiteName}" with ID ${data.test_suite_id} (in PRODUCTION)`);
         } else {
           const errorText = await response.text();
           console.error(`Failed to record test suite start: ${errorText}`);
@@ -210,17 +216,17 @@ class TestReporter {
       return;
     }
     
-    console.log(`Processing ${testResult.testResults.length} test results for "${suite.name}" (Suite ID: ${suite.id})`);
+    console.log(`Processing ${testResult.testResults.length} test results for "${suite.name}" (Suite ID: ${suite.id}) -> PRODUCTION`);
     
     // Add special handling for suites that failed to run
     if (testResult.testExecError) {
       try {
         // Submit a synthetic test result for the entire suite failure
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
+        const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-result`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
+            'x-api-key': this.reportingApiKey
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
@@ -239,7 +245,7 @@ class TestReporter {
           const responseText = await response.text();
           console.error(`Failed to save suite failure test result: ${responseText}`);
         } else {
-          console.log(`Successfully reported suite failure for: ${suite.name}`);
+          console.log(`Successfully reported suite failure for: ${suite.name} -> PRODUCTION`);
         }
       } catch (error) {
         console.error(`Error saving suite failure result for ${suite.name}:`, error);
@@ -250,7 +256,7 @@ class TestReporter {
       this.results.failed++;
     }
     
-    // Process each test and send individually
+    // Process each test and send individually to production
     for (const result of testResult.testResults || []) {
       if (!result) {
         console.warn('Skipping undefined test result');
@@ -293,7 +299,7 @@ class TestReporter {
       else if (testStatus === 'failed') this.results.failed++;
       else this.results.skipped++;
       
-      console.log(`- Test: "${testName}", Status: ${testStatus}, Suite: ${suite.name} (ID: ${suite.id})`);
+      console.log(`- Test: "${testName}", Status: ${testStatus}, Suite: ${suite.name} (ID: ${suite.id}) -> PRODUCTION`);
       
       // Safely handle possibly undefined properties
       const failureMessages = result.failureMessages || [];
@@ -302,12 +308,12 @@ class TestReporter {
         : null;
       
       try {
-        // Submit individual test result
-        const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-result`, {
+        // Submit individual test result to production
+        const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-result`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': process.env.TEST_REPORTING_API_KEY
+            'x-api-key': this.reportingApiKey
           },
           body: JSON.stringify({
             test_run_id: this.testRunId,
@@ -326,7 +332,7 @@ class TestReporter {
           const responseText = await response.text();
           console.error(`Failed to save test result: ${responseText}`);
         } else {
-          console.log(`Successfully reported test result: "${testName}"`);
+          console.log(`Successfully reported test result: "${testName}" -> PRODUCTION`);
         }
       } catch (error) {
         console.error(`Error saving test result for ${testName}:`, error);
@@ -364,7 +370,7 @@ class TestReporter {
     // Determine status from actual test results
     const status = testResult.testExecError || testResult.numFailingTests > 0 ? 'failure' : 'success';
     
-    console.log(`Completed test suite: "${suite.name}" - ${status} (${testCount} tests, ${duration}ms)`);
+    console.log(`Completed test suite: "${suite.name}" - ${status} (${testCount} tests, ${duration}ms) -> PRODUCTION`);
     
     if (!this.testRunId) {
       console.error('No testRunId available. Cannot update test suite.');
@@ -375,12 +381,12 @@ class TestReporter {
       // First process the individual tests in this suite
       await this.processTestResults(testResult, suite);
       
-      // Then update the suite record with final results
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/record-suite`, {
+      // Then update the suite record with final results in production
+      const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-suite`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.TEST_REPORTING_API_KEY
+          'x-api-key': this.reportingApiKey
         },
         body: JSON.stringify({
           test_run_id: this.testRunId,
@@ -399,7 +405,7 @@ class TestReporter {
         console.error(`Failed to update test suite: ${errorText}`);
       } else {
         const data = await response.json();
-        console.log(`Updated test suite "${suite.name}" with ID ${data.test_suite_id}`);
+        console.log(`Updated test suite "${suite.name}" with ID ${data.test_suite_id} -> PRODUCTION`);
       }
     } catch (error) {
       console.error(`Error updating test suite ${suite.name}:`, error);
@@ -426,20 +432,20 @@ class TestReporter {
       return;
     }
     
-    console.log(`Test run complete. Updating test run ${this.testRunId} with final summary results.`);
+    console.log(`Test run complete. Updating test run ${this.testRunId} with final summary results -> PRODUCTION.`);
     console.log(`Final counts: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped, total: ${this.results.total}`);
     
     // Determine final status
     const status = this.results.failed > 0 ? 'failure' : 'success';
     
     try {
-      // Update test run with final results
-      console.log(`Sending final update to ${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`);
-      const response = await fetch(`${process.env.SUPABASE_URL}/functions/v1/report-test-results/update-run`, {
+      // Update test run with final results in production
+      console.log(`Sending final update to ${this.reportingUrl}/functions/v1/report-test-results/update-run (PRODUCTION)`);
+      const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/update-run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': process.env.TEST_REPORTING_API_KEY
+          'x-api-key': this.reportingApiKey
         },
         body: JSON.stringify({
           test_run_id: this.testRunId,
@@ -454,8 +460,8 @@ class TestReporter {
       
       if (response.ok) {
         const responseData = await response.json();
-        console.log(`Test run updated successfully with final counts. Response:`, JSON.stringify(responseData));
-        console.log(`View full results at ${process.env.APP_URL || ''}/admin/tests/${this.testRunId}`);
+        console.log(`Test run updated successfully with final counts in PRODUCTION. Response:`, JSON.stringify(responseData));
+        console.log(`View full results at ${process.env.APP_URL || 'https://app.chosen.dev'}/admin/test-reports/${this.testRunId}`);
       } else {
         const errorText = await response.text();
         console.error('Failed to update test run via edge function:', errorText);

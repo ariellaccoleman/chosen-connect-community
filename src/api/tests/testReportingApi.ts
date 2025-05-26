@@ -1,15 +1,53 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 import { Tables } from '@/integrations/supabase/types';
-import { apiClient } from '@/api/core/apiClient';
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/integrations/supabase/types';
 
 type TestRun = Tables<'test_runs'>;
 type TestResult = Tables<'test_results'>;
 type TestSuite = Tables<'test_suites'>;
 
+// Create a dedicated client for test reporting (always points to production)
+const createProductionClient = () => {
+  // In browser environment, use the regular production URLs
+  if (typeof window !== 'undefined') {
+    const prodUrl = "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
+    const prodAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+    
+    return createClient<Database>(prodUrl, prodAnonKey);
+  }
+  
+  // In Node.js environment (tests), use production environment variables
+  const prodUrl = process.env.PROD_SUPABASE_URL || process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
+  const prodAnonKey = process.env.PROD_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+  
+  return createClient<Database>(prodUrl, prodAnonKey);
+};
+
+// Get the production client for test reporting
+const getProductionClient = () => {
+  return createProductionClient();
+};
+
+// Create a function-based API client for edge function calls
+const createFunctionApiClient = () => {
+  const prodUrl = typeof window !== 'undefined' 
+    ? "https://nvaqqkffmfuxdnwnqhxo.supabase.co"
+    : process.env.PROD_SUPABASE_URL || process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
+  
+  return {
+    functionQuery: async (callback: (functions: any) => any) => {
+      const client = createProductionClient();
+      return await callback(client.functions);
+    }
+  };
+};
+
+const apiClient = createFunctionApiClient();
+
 /**
- * Create a new test run in the database
+ * Create a new test run in the database (always in production)
  */
 export const createTestRun = async (): Promise<string | null> => {
   try {
@@ -17,7 +55,7 @@ export const createTestRun = async (): Promise<string | null> => {
     const gitCommit = process.env.GITHUB_SHA || null;
     const gitBranch = process.env.GITHUB_REF_NAME || null;
     
-    // Call the create-run endpoint
+    // Call the create-run endpoint (always on production project)
     const { data, error } = await apiClient.functionQuery((functions) => 
       functions.invoke('report-test-results/create-run', {
         method: 'POST',
@@ -41,7 +79,7 @@ export const createTestRun = async (): Promise<string | null> => {
 };
 
 /**
- * Save test suite to the database
+ * Save test suite to the database (always in production)
  */
 export const saveTestSuite = async (
   testRunId: string,
@@ -53,7 +91,7 @@ export const saveTestSuite = async (
   errorMessage?: string
 ): Promise<string | null> => {
   try {
-    // Call the record-suite endpoint
+    // Call the record-suite endpoint (always on production project)
     const { data, error } = await apiClient.functionQuery((functions) => 
       functions.invoke('report-test-results/record-suite', {
         method: 'POST',
@@ -82,7 +120,7 @@ export const saveTestSuite = async (
 };
 
 /**
- * Save test result to the database
+ * Save test result to the database (always in production)
  */
 export const saveTestResult = async (
   testRunId: string,
@@ -96,7 +134,7 @@ export const saveTestResult = async (
   consoleOutput?: string
 ): Promise<boolean> => {
   try {
-    // Call the record-result endpoint
+    // Call the record-result endpoint (always on production project)
     const { error } = await apiClient.functionQuery((functions) => 
       functions.invoke('report-test-results/record-result', {
         method: 'POST',
@@ -127,7 +165,7 @@ export const saveTestResult = async (
 };
 
 /**
- * Update test run with final results
+ * Update test run with final results (always in production)
  * This is called once at the end of the test run with the final counts
  */
 export const updateTestRunStatus = async (
@@ -141,7 +179,7 @@ export const updateTestRunStatus = async (
   try {
     const status = failedTests > 0 ? 'failure' : 'success';
     
-    // Call the update-run endpoint
+    // Call the update-run endpoint (always on production project)
     const { error } = await apiClient.functionQuery((functions) => 
       functions.invoke('report-test-results/update-run', {
         method: 'POST',
@@ -170,10 +208,11 @@ export const updateTestRunStatus = async (
 };
 
 /**
- * Get all test runs
+ * Get all test runs (from production database)
  */
 export const getAllTestRuns = async (): Promise<TestRun[]> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_runs')
       .select('*')
@@ -192,10 +231,11 @@ export const getAllTestRuns = async (): Promise<TestRun[]> => {
 };
 
 /**
- * Get test run by ID
+ * Get test run by ID (from production database)
  */
 export const getTestRunById = async (testRunId: string): Promise<TestRun | null> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_runs')
       .select('*')
@@ -215,10 +255,11 @@ export const getTestRunById = async (testRunId: string): Promise<TestRun | null>
 };
 
 /**
- * Get test suites for a specific test run
+ * Get test suites for a specific test run (from production database)
  */
 export const getTestSuitesByRunId = async (testRunId: string): Promise<TestSuite[]> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_suites')
       .select('*')
@@ -238,10 +279,11 @@ export const getTestSuitesByRunId = async (testRunId: string): Promise<TestSuite
 };
 
 /**
- * Get test results for a specific test run
+ * Get test results for a specific test run (from production database)
  */
 export const getTestResultsByRunId = async (testRunId: string): Promise<TestResult[]> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_results')
       .select('*')
@@ -261,7 +303,7 @@ export const getTestResultsByRunId = async (testRunId: string): Promise<TestResu
 };
 
 /**
- * Get test results grouped by suite for a specific run
+ * Get test results grouped by suite for a specific run (from production database)
  */
 export const getTestResultsGroupedBySuite = async (testRunId: string): Promise<{
   suites: TestSuite[],
@@ -305,10 +347,11 @@ export const getTestResultsGroupedBySuite = async (testRunId: string): Promise<{
 };
 
 /**
- * Get recent failed tests
+ * Get recent failed tests (from production database)
  */
 export const getRecentFailedTests = async (limit = 20): Promise<TestResult[]> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_results')
       .select(`
@@ -334,10 +377,11 @@ export const getRecentFailedTests = async (limit = 20): Promise<TestResult[]> =>
 };
 
 /**
- * Get recent failed test suites
+ * Get recent failed test suites (from production database)
  */
 export const getRecentFailedSuites = async (limit = 20): Promise<TestSuite[]> => {
   try {
+    const supabase = getProductionClient();
     const { data, error } = await supabase
       .from('test_suites')
       .select(`

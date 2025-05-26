@@ -1,3 +1,4 @@
+
 name: API Tests
 
 on:
@@ -11,12 +12,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      # Production project (for any integration tests)
+      # Production project (for test reporting and any integration tests)
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       
-      # Test project (for unit/isolated tests)
+      # Production project URLs for test reporting (explicit variables)
+      PROD_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      PROD_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      
+      # Test project (for isolated test execution)
       TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
       TEST_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
       TEST_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
@@ -42,10 +47,19 @@ jobs:
       - name: Make test script executable
         run: chmod +x run-tests.cjs
 
-      - name: Print Supabase service role key env info
+      - name: Print dual connection environment info
         run: |
-          echo "PROD SERVICE ROLE KEY LENGTH: ${#SUPABASE_SERVICE_ROLE_KEY}"
-          echo "TEST SERVICE ROLE KEY LENGTH: ${#TEST_SUPABASE_SERVICE_ROLE_KEY}"
+          echo "=== DUAL CONNECTION ARCHITECTURE ==="
+          echo "PROD PROJECT (for reporting):"
+          echo "  - PROD_SUPABASE_URL: ${{ secrets.SUPABASE_URL && '[SET]' || '[NOT SET]' }}"
+          echo "  - PROD_SUPABASE_ANON_KEY LENGTH: ${#SUPABASE_ANON_KEY}"
+          echo ""
+          echo "TEST PROJECT (for execution):"
+          echo "  - TEST_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL && '[SET]' || '[NOT SET]' }}"
+          echo "  - TEST_SUPABASE_ANON_KEY LENGTH: ${#TEST_SUPABASE_ANON_KEY}"
+          echo "  - TEST SERVICE ROLE KEY LENGTH: ${#TEST_SUPABASE_SERVICE_ROLE_KEY}"
+          echo ""
+          echo "Results will be visible in production admin interface"
 
-      - name: Run tests
+      - name: Run tests with dual connection
         run: ./run-tests.cjs
