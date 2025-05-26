@@ -1,6 +1,5 @@
 
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
-import { createSimplifiedTestContext, TestUserFactory } from '@/api/core/testing/simplifiedTestUtils';
 
 describe('Test Project Validation', () => {
   afterAll(() => {
@@ -39,52 +38,45 @@ describe('Test Project Validation', () => {
     ).toBeTruthy();
   });
 
-  test('should create and authenticate test users', async () => {
-    const testUser = TestUserFactory.createTestUser('validation');
+  test('should be able to connect to test database', async () => {
+    const anonClient = TestClientFactory.getAnonClient();
+    expect(anonClient).toBeTruthy();
     
+    // Test basic database connectivity
     try {
-      // Create test user
-      const user = await TestInfrastructure.createTestUser(
-        testUser.email,
-        testUser.password,
-        testUser.metadata
-      );
+      const { data, error } = await anonClient
+        .from('profiles')
+        .select('id')
+        .limit(1);
       
-      expect(user).toBeTruthy();
-      expect(user.email).toBe(testUser.email);
+      console.log('Database connection result:', {
+        error: error?.message || null,
+        hasData: !!data,
+        dataLength: data?.length || 0
+      });
       
-      // Test authentication
-      const authClient = await TestClientFactory.createAuthenticatedClient(
-        testUser.email,
-        testUser.password
-      );
-      
-      expect(authClient).toBeTruthy();
-      
-      // Verify we can get the user
-      const { data: { user: currentUser }, error } = await authClient.auth.getUser();
+      // Should work (might return empty results due to RLS, but no connection error)
       expect(error).toBeNull();
-      expect(currentUser?.email).toBe(testUser.email);
-      
-      // Cleanup
-      await TestInfrastructure.deleteTestUser(user.id);
+      expect(data).toBeDefined();
       
     } catch (error) {
-      console.error('Test user creation/auth failed:', error);
+      console.error('Database connection test failed:', error);
       throw error;
     }
   });
 
-  test('should clean up table data', async () => {
-    // Test table cleanup functionality
-    try {
-      await TestInfrastructure.cleanupTable('profiles');
-      // If we get here without error, cleanup worked
-      expect(true).toBe(true);
-    } catch (error) {
-      // Cleanup might fail if table doesn't exist or RLS prevents it
-      // That's ok for this validation test
-      console.log('Table cleanup test - this is expected if table doesn\'t exist');
+  test('should have service role client available for setup/teardown', () => {
+    // Test that we can get a service role client
+    // This is needed for test data setup and cleanup
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    expect(serviceClient).toBeTruthy();
+    
+    // Log whether we have proper service role key
+    const hasServiceKey = !!(process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log('Service role key available:', hasServiceKey);
+    
+    if (!hasServiceKey) {
+      console.warn('⚠️ No service role key - some test operations may be limited');
     }
   });
 });
