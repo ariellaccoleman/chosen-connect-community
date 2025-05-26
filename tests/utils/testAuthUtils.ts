@@ -24,7 +24,7 @@ export class TestAuthUtils {
 
       // Get test user credentials and sign in fresh
       const testUserEmail = userKey === 'user1' ? 'testuser1@example.com' : 'testuser2@example.com';
-      const testUserPassword = 'testpassword123';
+      const testUserPassword = 'TestPass123!';
 
       console.log(`🔐 Signing in test user: ${testUserEmail}`);
       
