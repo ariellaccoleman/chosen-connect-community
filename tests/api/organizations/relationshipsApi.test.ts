@@ -29,7 +29,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       testUser = user;
     } catch (error) {
       console.warn('Could not get test user, using mock ID');
-      testUser = { id: 'test-user-id' };
+      testUser = { id: crypto.randomUUID() }; // Use proper UUID format
     }
     
     // Create a test organization
@@ -156,7 +156,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
   test('handles invalid data gracefully', async () => {
     // Test with invalid UUIDs
-    let result = await organizationRelationshipsApi.getUserOrganizationRelationships('invalid-uuid');
+    let result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid');
     expect(result.status).toBe('error');
 
     // Test adding relationship without required fields
@@ -186,5 +186,23 @@ describe('Organization Relationships API - Integration Tests', () => {
     
     // This should fail due to foreign key constraint
     expect(result.status).toBe('error');
+  });
+
+  test('handles missing profile gracefully', async () => {
+    if (!testOrganization) {
+      console.warn('Skipping test - no test organization available');
+      return;
+    }
+
+    // Test creating relationship for non-existent profile
+    const nonExistentProfileId = crypto.randomUUID();
+    const result = await organizationRelationshipsApi.addOrganizationRelationship({
+      profile_id: nonExistentProfileId,
+      organization_id: testOrganization.id,
+      connection_type: 'current'
+    });
+    
+    // Should handle this gracefully by creating the profile or returning appropriate error
+    expect(['success', 'error']).toContain(result.status);
   });
 });

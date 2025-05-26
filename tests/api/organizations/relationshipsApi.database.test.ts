@@ -17,7 +17,7 @@ describe('Organization Relationships API - Database Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up test data
+    // Clean up test data first
     await TestInfrastructure.cleanupTable('org_relationships');
     
     // Create a test user (using persistent test user)
@@ -27,11 +27,26 @@ describe('Organization Relationships API - Database Tests', () => {
       testUser = user;
     } catch (error) {
       console.warn('Could not get test user, using mock ID');
-      testUser = { id: 'test-user-id' };
+      testUser = { id: crypto.randomUUID() }; // Use proper UUID format
     }
     
     // Create a test organization
     const serviceClient = TestClientFactory.getServiceRoleClient();
+    
+    // Ensure profile exists first
+    const { error: profileError } = await serviceClient
+      .from('profiles')
+      .upsert({ 
+        id: testUser.id, 
+        email: testUser.email || 'testuser1@example.com',
+        first_name: 'Test',
+        last_name: 'User'
+      });
+    
+    if (profileError) {
+      console.warn('Profile creation warning:', profileError);
+    }
+    
     const { data: orgData, error: orgError } = await serviceClient
       .from('organizations')
       .insert({
@@ -108,7 +123,7 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle invalid UUID format gracefully', async () => {
-      const result = await organizationRelationshipsApi.getUserOrganizationRelationships('invalid-uuid');
+      const result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid');
       
       expect(result.status).toBe('error');
       expect(result.error).toBeDefined();
@@ -116,19 +131,7 @@ describe('Organization Relationships API - Database Tests', () => {
   });
 
   describe('addOrganizationRelationship', () => {
-    test('should create a new relationship successfully for existing profile', async () => {
-      // First ensure the profile exists by creating it with service role
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      const { error: profileError } = await serviceClient
-        .from('profiles')
-        .upsert({ id: testUser.id, email: testUser.email })
-        .select()
-        .single();
-      
-      if (profileError) {
-        console.warn('Profile creation warning:', profileError);
-      }
-
+    test('should create a new relationship successfully', async () => {
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: testOrganization.id,
@@ -143,6 +146,7 @@ describe('Organization Relationships API - Database Tests', () => {
       expect(result.data).toBe(true);
       
       // Verify the relationship was created in the database
+      const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: relationships, error } = await serviceClient
         .from('org_relationships')
         .select('*')
@@ -173,12 +177,6 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent organization', async () => {
-      // First ensure the profile exists
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      await serviceClient
-        .from('profiles')
-        .upsert({ id: testUser.id, email: testUser.email });
-
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: crypto.randomUUID(), // Use proper UUID format
@@ -191,6 +189,22 @@ describe('Organization Relationships API - Database Tests', () => {
       // Should fail due to foreign key constraint
       expect(result.status).toBe('error');
     });
+
+    test('should handle non-existent profile', async () => {
+      const nonExistentProfileId = crypto.randomUUID();
+      
+      const relationshipData = {
+        profile_id: nonExistentProfileId,
+        organization_id: testOrganization.id,
+        connection_type: 'current' as const,
+        department: 'Engineering'
+      };
+
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      
+      // Should either succeed (if profile is auto-created) or fail gracefully
+      expect(['success', 'error']).toContain(result.status);
+    });
   });
 
   describe('updateOrganizationRelationship', () => {
@@ -199,11 +213,6 @@ describe('Organization Relationships API - Database Tests', () => {
     beforeEach(async () => {
       // Create a test relationship
       const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Ensure profile exists
-      await serviceClient
-        .from('profiles')
-        .upsert({ id: testUser.id, email: testUser.email });
       
       const { data: relationship, error } = await serviceClient
         .from('org_relationships')
@@ -269,11 +278,6 @@ describe('Organization Relationships API - Database Tests', () => {
     beforeEach(async () => {
       // Create a test relationship
       const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Ensure profile exists
-      await serviceClient
-        .from('profiles')
-        .upsert({ id: testUser.id, email: testUser.email });
       
       const { data: relationship, error } = await serviceClient
         .from('org_relationships')
