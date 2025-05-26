@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -168,12 +167,18 @@ export class TestClientFactory {
    * Get test project info
    */
   static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    const testUrl = getEnvVar('TEST_SUPABASE_URL');
-    const prodUrl = getEnvVar('SUPABASE_URL');
-    
+    const testUrl = process.env.TEST_SUPABASE_URL;
+    const prodUrl = process.env.SUPABASE_URL;
+
+    console.log('🔍 TestProjectInfo env:', {
+      TEST_SUPABASE_URL: testUrl,
+      SUPABASE_URL: prodUrl,
+    });
+
     return {
-      url: testUrl || TEST_SUPABASE_URL,
-      usingDedicatedProject: testUrl !== prodUrl && !!testUrl
+      url: testUrl || TEST_SUPABASE_URL,  // fallback hardcoded
+      usingDedicatedProject:
+        !!testUrl && !!prodUrl && testUrl.trim() !== prodUrl.trim()
     };
   }
 }
