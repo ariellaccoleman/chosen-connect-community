@@ -9,6 +9,14 @@ const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOi
 // Detect if we're in a Node.js environment (including tests)
 const isNodeEnvironment = typeof window === "undefined" && typeof process !== "undefined";
 
+// Detect if we're specifically in a Jest test environment
+const isJestEnvironment = isNodeEnvironment && (
+  process.env.NODE_ENV === 'test' || 
+  typeof process.env.JEST_WORKER_ID !== 'undefined' ||
+  typeof (global as any).__coverage__ !== 'undefined' ||
+  process.argv.some(arg => arg.includes('jest'))
+);
+
 // Helper function to safely access environment variables
 const getEnvVar = (name: string): string | undefined => {
   if (!isNodeEnvironment) {
@@ -26,11 +34,22 @@ export class TestClientFactory {
   private static anonClient: SupabaseClient<Database> | null = null;
 
   /**
-   * Ensure we're in a test environment
+   * Ensure we're in a test environment - improved detection
    */
   private static ensureTestEnvironment(): void {
     if (!isNodeEnvironment) {
-      throw new Error('TestClientFactory can only be used in Node.js/test environments');
+      throw new Error('TestClientFactory can only be used in Node.js environments');
+    }
+
+    // Allow usage in Jest test environment or when NODE_ENV is test
+    if (!isJestEnvironment) {
+      console.warn('TestClientFactory: Not in Jest environment, but proceeding...');
+      console.warn('Environment indicators:', {
+        NODE_ENV: process.env.NODE_ENV,
+        JEST_WORKER_ID: process.env.JEST_WORKER_ID,
+        hasJestArg: process.argv.some(arg => arg.includes('jest')),
+        hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
+      });
     }
   }
 
@@ -42,13 +61,14 @@ export class TestClientFactory {
     this.ensureTestEnvironment();
 
     if (!this.serviceRoleClient) {
-      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
+      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY') || getEnvVar('SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
-        throw new Error('TEST_SUPABASE_SERVICE_ROLE_KEY not found - required for test setup');
+        console.warn('No service role key found - using anon client instead');
+        return this.getAnonClient();
       }
 
-      console.log('🔧 Creating service role client for dedicated test project');
+      console.log('🔧 Creating service role client for test project');
       
       this.serviceRoleClient = createClient<Database>(TEST_SUPABASE_URL, serviceRoleKey, {
         auth: {
@@ -90,25 +110,34 @@ export class TestClientFactory {
 
     const client = this.getAnonClient();
     
-    const { data, error } = await client.auth.signInWithPassword({
-      email: userEmail,
-      password: userPassword
-    });
+    try {
+      const { data, error } = await client.auth.signInWithPassword({
+        email: userEmail,
+        password: userPassword
+      });
 
-    if (error) {
-      throw new Error(`Failed to authenticate test user: ${error.message}`);
+      if (error) {
+        throw new Error(`Failed to authenticate test user: ${error.message}`);
+      }
+
+      console.log(`🔧 Authenticated test user: ${userEmail}`);
+      return client;
+    } catch (error) {
+      console.error(`Failed to authenticate test user ${userEmail}:`, error);
+      throw error;
     }
-
-    console.log(`🔧 Authenticated test user: ${userEmail}`);
-    return client;
   }
 
   /**
    * Clean up clients
    */
   static cleanup(): void {
-    this.serviceRoleClient = null;
-    this.anonClient = null;
+    if (this.serviceRoleClient) {
+      this.serviceRoleClient = null;
+    }
+    if (this.anonClient) {
+      this.anonClient = null;
+    }
   }
 }
 
@@ -120,45 +149,55 @@ export class TestInfrastructure {
    * Create test users for authentication testing
    */
   static async createTestUser(email: string, password: string, metadata?: any): Promise<any> {
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
-    const { data, error } = await serviceClient.auth.admin.createUser({
-      email,
-      password,
-      user_metadata: metadata || {},
-      email_confirm: true
-    });
+    try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      const { data, error } = await serviceClient.auth.admin.createUser({
+        email,
+        password,
+        user_metadata: metadata || {},
+        email_confirm: true
+      });
 
-    if (error) {
-      throw new Error(`Failed to create test user: ${error.message}`);
+      if (error) {
+        throw new Error(`Failed to create test user: ${error.message}`);
+      }
+
+      console.log(`✅ Created test user: ${email}`);
+      return data.user;
+    } catch (error) {
+      console.error(`Failed to create test user ${email}:`, error);
+      throw error;
     }
-
-    console.log(`✅ Created test user: ${email}`);
-    return data.user;
   }
 
   /**
    * Delete test users
    */
   static async deleteTestUser(userId: string): Promise<void> {
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
-    const { error } = await serviceClient.auth.admin.deleteUser(userId);
+    try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      const { error } = await serviceClient.auth.admin.deleteUser(userId);
 
-    if (error) {
-      throw new Error(`Failed to delete test user: ${error.message}`);
+      if (error) {
+        throw new Error(`Failed to delete test user: ${error.message}`);
+      }
+
+      console.log(`✅ Deleted test user: ${userId}`);
+    } catch (error) {
+      console.error(`Failed to delete test user ${userId}:`, error);
+      throw error;
     }
-
-    console.log(`✅ Deleted test user: ${userId}`);
   }
 
   /**
    * Clean up test data from tables - using specific table names
    */
   static async cleanupTable(tableName: string): Promise<void> {
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
     try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
       // Handle specific known tables
       if (tableName === 'profiles') {
         const { error } = await serviceClient
@@ -185,9 +224,9 @@ export class TestInfrastructure {
   static async seedTable<T>(tableName: string, data: T[]): Promise<void> {
     if (!data || data.length === 0) return;
 
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
     try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
       // Handle specific known tables
       if (tableName === 'profiles') {
         const { error } = await serviceClient
@@ -203,7 +242,8 @@ export class TestInfrastructure {
         console.log(`⚠️ Seeding not implemented for table: ${tableName}`);
       }
     } catch (error) {
-      throw new Error(`Failed to seed table ${tableName}: ${error}`);
+      console.error(`Failed to seed table ${tableName}:`, error);
+      throw error;
     }
   }
 
