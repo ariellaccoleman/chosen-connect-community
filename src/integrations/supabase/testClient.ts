@@ -299,7 +299,7 @@ export class TestClientFactory {
 
   /**
    * Get service role client for test data setup and cleanup
-   * Throws an error if no service role key is available - no fallback
+   * Service role key is now REQUIRED for all test operations
    */
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
@@ -308,9 +308,11 @@ export class TestClientFactory {
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
+        console.error('❌ TEST_SUPABASE_SERVICE_ROLE_KEY is missing from environment variables');
+        console.error('❌ Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
         throw new Error(
-          'TEST_SUPABASE_SERVICE_ROLE_KEY is required for service role operations. ' +
-          'Please set this environment variable to run tests that require database setup/cleanup.'
+          'TEST_SUPABASE_SERVICE_ROLE_KEY is required for all test operations. ' +
+          'This should have been validated during test setup. Please check your test runner configuration.'
         );
       }
 

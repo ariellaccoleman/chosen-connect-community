@@ -27,7 +27,7 @@ let TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, TEST_SUPABASE_SERVICE_ROLE_KEY;
 try {
   TEST_SUPABASE_URL = getRequiredEnvVar('TEST_SUPABASE_URL', 'test database connection');
   TEST_SUPABASE_ANON_KEY = getRequiredEnvVar('TEST_SUPABASE_ANON_KEY', 'test database authentication');
-  TEST_SUPABASE_SERVICE_ROLE_KEY = getOptionalEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
+  TEST_SUPABASE_SERVICE_ROLE_KEY = getRequiredEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY', 'test data setup and cleanup operations');
 } catch (error) {
   console.error('');
   console.error('🚨 TEST ENVIRONMENT SETUP REQUIRED:');
@@ -179,15 +179,11 @@ async function createTestRun() {
     TEST_RUN_ID: testRunId,
     NODE_ENV: 'test',
     TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY,
-    // Test project configuration (REQUIRED)
+    // Test project configuration (ALL REQUIRED)
     TEST_SUPABASE_URL: TEST_SUPABASE_URL,
-    TEST_SUPABASE_ANON_KEY: TEST_SUPABASE_ANON_KEY
+    TEST_SUPABASE_ANON_KEY: TEST_SUPABASE_ANON_KEY,
+    TEST_SUPABASE_SERVICE_ROLE_KEY: TEST_SUPABASE_SERVICE_ROLE_KEY
   };
-
-  // Add service role key if available
-  if (TEST_SUPABASE_SERVICE_ROLE_KEY) {
-    testEnv.TEST_SUPABASE_SERVICE_ROLE_KEY = TEST_SUPABASE_SERVICE_ROLE_KEY;
-  }
 
   // Add production project variables for test reporting (if available)
   if (PROD_SUPABASE_URL && PROD_SUPABASE_ANON_KEY) {
@@ -199,7 +195,7 @@ async function createTestRun() {
   console.log(`- Test Project: ${TEST_SUPABASE_URL}`);
   console.log(`- Production Project: ${PROD_SUPABASE_URL || '[NOT CONFIGURED]'}`);
   console.log(`- Test Anon Key: [SET - ${TEST_SUPABASE_ANON_KEY.length} chars]`);
-  console.log(`- Test Service Key: ${TEST_SUPABASE_SERVICE_ROLE_KEY ? '[SET - ' + TEST_SUPABASE_SERVICE_ROLE_KEY.length + ' chars]' : '[NOT SET]'}`);
+  console.log(`- Test Service Key: [SET - ${TEST_SUPABASE_SERVICE_ROLE_KEY.length} chars]`);
   console.log(`- TEST_RUN_ID: ${testRunId}`);
   console.log(`- NODE_ENV: ${testEnv.NODE_ENV}`);
   console.log('==================================================================');
