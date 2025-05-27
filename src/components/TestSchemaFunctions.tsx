@@ -60,7 +60,7 @@ export function TestSchemaFunctions() {
 
       // Test 2: Client factory functionality
       const test2 = await runTest('Client factory test', async () => {
-        const anonClient = TestClientFactory.getAnonClient();
+        const anonClient = await TestClientFactory.getAnonClient();
         const serviceClient = TestClientFactory.getServiceRoleClient();
         
         // Test basic connectivity with anon client
