@@ -1,56 +1,40 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PERSISTENT_TEST_USERS } from './persistentTestUsers';
 
 /**
- * Test utility to manage authentication context for the main Supabase client
- * This allows tests to use the same code path as production while ensuring proper authentication
+ * Test utility to manage authentication context using the test Supabase client
+ * This ensures we authenticate against the test project, not production
  */
 export class TestAuthUtils {
-  private static originalSession: any = null;
+  private static testClient: any = null;
 
   /**
-   * Set up authentication for a test user on the main Supabase client
-   * This temporarily authenticates the main client as a test user
+   * Set up authentication for a test user using the test Supabase client
    */
   static async setupTestAuth(userKey: keyof typeof PERSISTENT_TEST_USERS = 'user1'): Promise<void> {
     try {
-      // Get the current session to restore later
-      const { data: { session } } = await supabase.auth.getSession();
-      this.originalSession = session;
-
-      // First, sign out any existing session to start fresh
-      await supabase.auth.signOut();
-
       // Get test user credentials
       const testUser = PERSISTENT_TEST_USERS[userKey];
       if (!testUser) {
         throw new Error(`Test user '${userKey}' not found in PERSISTENT_TEST_USERS`);
       }
 
-      console.log(`🔐 Signing in test user: ${testUser.email}`);
+      console.log(`🔐 Signing in test user: ${testUser.email} on test project`);
       
-      // Sign in with email/password to get a fresh, valid session
-      const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
-        email: testUser.email,
-        password: testUser.password
-      });
+      // Use the test client factory to get an authenticated client
+      this.testClient = await TestClientFactory.createAuthenticatedClient(
+        testUser.email, 
+        testUser.password
+      );
 
-      if (signInError) {
-        throw new Error(`Failed to sign in test user: ${signInError.message}`);
-      }
-
-      if (!signInData.session) {
-        throw new Error('No session returned from sign in');
-      }
-
-      // Verify the session was set correctly
-      const { data: { session: verifySession }, error: verifyError } = await supabase.auth.getSession();
+      // Verify the session was set correctly on the test client
+      const { data: { session: verifySession }, error: verifyError } = await this.testClient.auth.getSession();
       if (verifyError || !verifySession) {
-        throw new Error(`Session verification failed: ${verifyError?.message || 'No session found'}`);
+        throw new Error(`Session verification failed on test client: ${verifyError?.message || 'No session found'}`);
       }
 
-      console.log(`✅ Test auth setup complete for ${userKey} - User ID: ${verifySession.user.id}`);
+      console.log(`✅ Test auth setup complete for ${userKey} on test project - User ID: ${verifySession.user.id}`);
     } catch (error) {
       console.error('❌ Failed to setup test auth:', error);
       throw error;
@@ -58,27 +42,14 @@ export class TestAuthUtils {
   }
 
   /**
-   * Clean up test authentication and restore original state
+   * Clean up test authentication
    */
   static async cleanupTestAuth(): Promise<void> {
     try {
-      // Always sign out the test user first
-      await supabase.auth.signOut();
-
-      // If there was an original session, try to restore it
-      if (this.originalSession) {
-        try {
-          await supabase.auth.setSession({
-            access_token: this.originalSession.access_token,
-            refresh_token: this.originalSession.refresh_token
-          });
-        } catch (restoreError) {
-          console.warn('Could not restore original session:', restoreError);
-          // Don't throw here as it might mask test failures
-        }
+      if (this.testClient) {
+        await this.testClient.auth.signOut();
+        this.testClient = null;
       }
-
-      this.originalSession = null;
       console.log('✅ Test auth cleanup complete');
     } catch (error) {
       console.error('❌ Failed to cleanup test auth:', error);
@@ -87,29 +58,43 @@ export class TestAuthUtils {
   }
 
   /**
-   * Get the current authenticated user from the main client
+   * Get the current authenticated user from the test client
    */
   static async getCurrentTestUser() {
-    // First verify we have a session
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (!this.testClient) {
+      throw new Error('Test client not initialized - call setupTestAuth first');
+    }
+
+    // First verify we have a session on the test client
+    const { data: { session }, error: sessionError } = await this.testClient.auth.getSession();
     if (sessionError) {
-      throw new Error(`Failed to get session: ${sessionError.message}`);
+      throw new Error(`Failed to get session from test client: ${sessionError.message}`);
     }
     
     if (!session) {
-      throw new Error('Auth session missing!');
+      throw new Error('Auth session missing on test client!');
     }
 
-    // Then get the user
-    const { data: { user }, error } = await supabase.auth.getUser();
+    // Then get the user from the test client
+    const { data: { user }, error } = await this.testClient.auth.getUser();
     if (error) {
-      throw new Error(`Failed to get current user: ${error.message}`);
+      throw new Error(`Failed to get current user from test client: ${error.message}`);
     }
     
     if (!user) {
-      throw new Error('User not found in session!');
+      throw new Error('User not found in test client session!');
     }
     
     return user;
+  }
+
+  /**
+   * Get the test client instance (for advanced use cases)
+   */
+  static getTestClient() {
+    if (!this.testClient) {
+      throw new Error('Test client not initialized - call setupTestAuth first');
+    }
+    return this.testClient;
   }
 }
