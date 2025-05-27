@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -75,24 +74,11 @@ export class TestClientFactory {
     if (!this.sharedTestClient) {
       console.log(`🔧 Creating shared test client (ID: ${this.clientInstanceId})`);
       
+      // Create a simple client without complex session management for now
       this.sharedTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
         auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          storage: {
-            getItem: (key: string) => {
-              const storageKey = `supabase.auth.token.test.${key}`;
-              return localStorage.getItem(storageKey);
-            },
-            setItem: (key: string, value: string) => {
-              const storageKey = `supabase.auth.token.test.${key}`;
-              localStorage.setItem(storageKey, value);
-            },
-            removeItem: (key: string) => {
-              const storageKey = `supabase.auth.token.test.${key}`;
-              localStorage.removeItem(storageKey);
-            }
-          }
+          persistSession: false, // Disable persistence to avoid session conflicts
+          autoRefreshToken: false, // Disable auto-refresh during tests
         }
       });
       
@@ -112,13 +98,13 @@ export class TestClientFactory {
 
     const client = this.getSharedTestClient();
     
-    // If already authenticated as this user, return the client
+    // If already authenticated as this user, verify session is still valid
     if (this.currentAuthenticatedUser === userEmail) {
       console.log(`🔐 Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
       
-      // Verify session is still valid
+      // Quick session check
       const { data: { session }, error } = await client.auth.getSession();
-      if (session && !error) {
+      if (session && !error && session.user?.email === userEmail) {
         console.log(`✅ Session verified for ${userEmail}`);
         return client;
       } else {
@@ -153,13 +139,14 @@ export class TestClientFactory {
       this.currentAuthenticatedUser = userEmail;
       console.log(`✅ Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
       
-      // Verify session persistence
+      // Immediate session verification
       const { data: { session: verifySession }, error: verifyError } = await client.auth.getSession();
       if (verifyError || !verifySession) {
+        console.error('Session verification failed immediately after auth:', verifyError);
         throw new Error(`Session verification failed: ${verifyError?.message || 'No session found'}`);
       }
       
-      console.log(`🔐 Session verified and persisted for ${userEmail}`);
+      console.log(`🔐 Session verified and active for ${userEmail}`);
       return client;
     } catch (error) {
       console.error(`❌ Failed to authenticate shared client as ${userEmail}:`, error);
@@ -174,25 +161,22 @@ export class TestClientFactory {
   static async getCurrentAuthenticatedUser() {
     const client = this.getSharedTestClient();
     
+    console.log(`🔍 Getting current user from shared client (ID: ${this.clientInstanceId})`);
+    
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     if (sessionError) {
+      console.error('Session error:', sessionError);
       throw new Error(`Failed to get session from shared client: ${sessionError.message}`);
     }
     
     if (!session) {
+      console.error('No active session found on shared client');
+      console.log('Current authenticated user tracking:', this.currentAuthenticatedUser);
       throw new Error('No active session on shared client');
     }
 
-    const { data: { user }, error } = await client.auth.getUser();
-    if (error) {
-      throw new Error(`Failed to get current user from shared client: ${error.message}`);
-    }
-    
-    if (!user) {
-      throw new Error('User not found in shared client session');
-    }
-    
-    return user;
+    console.log(`✅ Found active session for user: ${session.user.email}`);
+    return session.user;
   }
 
   /**
