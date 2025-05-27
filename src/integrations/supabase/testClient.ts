@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -36,12 +37,16 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Test Client Factory with Single Shared Client Pattern
- * Uses one Supabase client instance shared across all test operations
+ * Global singleton client instance to prevent multiple GoTrueClient instances
+ */
+let globalTestClient: SupabaseClient<Database> | null = null;
+let globalServiceRoleClient: SupabaseClient<Database> | null = null;
+
+/**
+ * Test Client Factory with True Singleton Pattern
+ * Uses a single global Supabase client instance to prevent multiple GoTrueClient warnings
  */
 export class TestClientFactory {
-  private static serviceRoleClient: SupabaseClient<Database> | null = null;
-  private static sharedTestClient: SupabaseClient<Database> | null = null;
   private static currentAuthenticatedUser: string | null = null;
   private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
 
@@ -66,28 +71,28 @@ export class TestClientFactory {
   }
 
   /**
-   * Get the single shared test client (creates it if needed)
+   * Get the single shared test client (creates it only once globally)
    */
   static getSharedTestClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
-    if (!this.sharedTestClient) {
-      console.log(`🔧 Creating shared test client (ID: ${this.clientInstanceId})`);
+    if (!globalTestClient) {
+      console.log(`🔧 Creating GLOBAL shared test client (ID: ${this.clientInstanceId})`);
       
-      // Create a simple client without complex session management for now
-      this.sharedTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
+      // Create client only once globally to prevent multiple GoTrueClient instances
+      globalTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
         auth: {
           persistSession: false, // Disable persistence to avoid session conflicts
           autoRefreshToken: false, // Disable auto-refresh during tests
         }
       });
       
-      console.log(`✅ Shared test client created (ID: ${this.clientInstanceId})`);
+      console.log(`✅ Global shared test client created (ID: ${this.clientInstanceId})`);
     } else {
-      console.log(`🔄 Using existing shared test client (ID: ${this.clientInstanceId})`);
+      console.log(`🔄 Using existing global shared test client (ID: ${this.clientInstanceId})`);
     }
     
-    return this.sharedTestClient;
+    return globalTestClient;
   }
 
   /**
@@ -183,14 +188,14 @@ export class TestClientFactory {
    * Sign out the current user from the shared client
    */
   static async signOutSharedClient(): Promise<void> {
-    if (!this.sharedTestClient) {
+    if (!globalTestClient) {
       console.log('🔐 No shared client to sign out from');
       return;
     }
 
     try {
       console.log(`🚪 Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
-      await this.sharedTestClient.auth.signOut();
+      await globalTestClient.auth.signOut();
       this.currentAuthenticatedUser = null;
       console.log('✅ Signed out from shared client');
     } catch (error) {
@@ -205,7 +210,7 @@ export class TestClientFactory {
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
-    if (!this.serviceRoleClient) {
+    if (!globalServiceRoleClient) {
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
@@ -215,7 +220,7 @@ export class TestClientFactory {
 
       console.log('🔧 Creating service role client for test project');
       
-      this.serviceRoleClient = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
+      globalServiceRoleClient = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -223,7 +228,7 @@ export class TestClientFactory {
       });
     }
     
-    return this.serviceRoleClient;
+    return globalServiceRoleClient;
   }
 
   /**
@@ -245,13 +250,15 @@ export class TestClientFactory {
       console.warn('Cleanup warning during signout:', error);
     }
 
-    if (this.serviceRoleClient) {
-      this.serviceRoleClient = null;
+    // Reset global instances to null but don't create new ones
+    if (globalServiceRoleClient) {
+      console.log('🧹 Clearing global service role client');
+      globalServiceRoleClient = null;
     }
     
-    if (this.sharedTestClient) {
-      console.log(`🧹 Clearing shared test client (ID: ${this.clientInstanceId})`);
-      this.sharedTestClient = null;
+    if (globalTestClient) {
+      console.log(`🧹 Clearing global shared test client (ID: ${this.clientInstanceId})`);
+      globalTestClient = null;
     }
     
     this.currentAuthenticatedUser = null;
@@ -281,8 +288,8 @@ export class TestClientFactory {
   static getDebugInfo() {
     return {
       clientInstanceId: this.clientInstanceId,
-      hasSharedClient: !!this.sharedTestClient,
-      hasServiceRoleClient: !!this.serviceRoleClient,
+      hasSharedClient: !!globalTestClient,
+      hasServiceRoleClient: !!globalServiceRoleClient,
       currentAuthenticatedUser: this.currentAuthenticatedUser
     };
   }
