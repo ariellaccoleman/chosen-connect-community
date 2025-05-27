@@ -22,12 +22,12 @@ class TestReporter {
       reportedTests: new Set()
     };
     
-    // Console log capture - start immediately
+    // Global console logs for run-level debugging (kept for compatibility)
     this.consoleLogs = [];
     this.originalConsole = {};
     
-    // Set up console capture immediately in constructor
-    this.setupConsoleCapture();
+    // Set up minimal console capture for run-level logs
+    this.setupGlobalConsoleCapture();
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to PRODUCTION PROJECT: ${this.reportingUrl}`);
@@ -35,41 +35,100 @@ class TestReporter {
   }
 
   /**
-   * Set up console log capturing - enhanced to capture more details
+   * Set up minimal global console capture for run-level logs only
    */
-  setupConsoleCapture() {
+  setupGlobalConsoleCapture() {
     const logLevels = ['log', 'info', 'warn', 'error', 'debug'];
     
     logLevels.forEach(level => {
       this.originalConsole[level] = console[level];
       console[level] = (...args) => {
-        // Store the log entry with enhanced context
-        const logEntry = {
-          timestamp: new Date().toISOString(),
-          level,
-          source: 'test-reporter',
-          message: args.map(arg => {
-            if (typeof arg === 'object') {
-              try {
-                return JSON.stringify(arg, null, 2);
-              } catch (e) {
-                return String(arg);
+        // Only capture run-level logs (setup/teardown), not test-specific logs
+        if (!this.isInTestExecution()) {
+          const logEntry = {
+            timestamp: new Date().toISOString(),
+            level,
+            source: 'test-runner',
+            message: args.map(arg => {
+              if (typeof arg === 'object') {
+                try {
+                  return JSON.stringify(arg, null, 2);
+                } catch (e) {
+                  return String(arg);
+                }
               }
-            }
-            return String(arg);
-          }).join(' '),
-          // Add stack trace for errors to help with debugging
-          stack: level === 'error' && args[0] instanceof Error ? args[0].stack : null
-        };
-        
-        this.consoleLogs.push(logEntry);
+              return String(arg);
+            }).join(' '),
+            stack: level === 'error' && args[0] instanceof Error ? args[0].stack : null
+          };
+          
+          this.consoleLogs.push(logEntry);
+        }
         
         // Call original console method
         this.originalConsole[level](...args);
       };
     });
     
-    console.log('📝 Console capture started - all logs will be recorded');
+    console.log('📝 Global console capture started for run-level logs');
+  }
+
+  /**
+   * Simple heuristic to detect if we're currently executing tests
+   * This is not perfect but helps reduce noise in global logs
+   */
+  isInTestExecution() {
+    // Check if we're likely in a test by looking at the call stack
+    const stack = new Error().stack || '';
+    return stack.includes('jest') || stack.includes('test') || stack.includes('spec');
+  }
+
+  /**
+   * Process Jest's per-test console output and format it properly
+   */
+  formatTestConsoleOutput(testConsoleEntries) {
+    if (!testConsoleEntries || testConsoleEntries.length === 0) {
+      return null;
+    }
+
+    const formattedEntries = testConsoleEntries.map(entry => {
+      // Jest console entries have: { type, message, origin }
+      const timestamp = new Date().toISOString();
+      const level = entry.type || 'log';
+      const message = entry.message || '';
+      const origin = entry.origin || '';
+
+      return `[${timestamp}] [${level.toUpperCase()}] ${message}${origin ? ` (${origin})` : ''}`;
+    });
+
+    return formattedEntries.join('\n');
+  }
+
+  /**
+   * Extract error-related console entries from Jest's console output
+   */
+  extractErrorConsoleOutput(testConsoleEntries) {
+    if (!testConsoleEntries || testConsoleEntries.length === 0) {
+      return null;
+    }
+
+    // Filter for error and warn level entries
+    const errorEntries = testConsoleEntries.filter(entry => {
+      const type = entry.type || '';
+      const message = entry.message || '';
+      
+      return type === 'error' || 
+             type === 'warn' || 
+             message.toLowerCase().includes('error') ||
+             message.toLowerCase().includes('failed') ||
+             message.toLowerCase().includes('warning');
+    });
+
+    if (errorEntries.length === 0) {
+      return null;
+    }
+
+    return this.formatTestConsoleOutput(errorEntries);
   }
 
   /**
@@ -87,20 +146,12 @@ class TestReporter {
    */
   async sendConsoleLogs() {
     if (!this.testRunId || this.consoleLogs.length === 0) {
-      console.log('📝 No logs to send or no test run ID');
+      console.log('📝 No run-level logs to send or no test run ID');
       return;
     }
 
     try {
-      console.log(`📝 Sending ${this.consoleLogs.length} console log entries to production database...`);
-      
-      // Group logs by level for better reporting
-      const logStats = this.consoleLogs.reduce((acc, log) => {
-        acc[log.level] = (acc[log.level] || 0) + 1;
-        return acc;
-      }, {});
-      
-      console.log('📊 Log statistics:', logStats);
+      console.log(`📝 Sending ${this.consoleLogs.length} run-level console log entries to production database...`);
       
       const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-logs`, {
         method: 'POST',
@@ -116,7 +167,7 @@ class TestReporter {
 
       if (response.ok) {
         const data = await response.json();
-        console.log(`✅ Successfully sent ${data.total_logs || this.consoleLogs.length} console logs to production database`);
+        console.log(`✅ Successfully sent ${data.total_logs || this.consoleLogs.length} run-level logs to production database`);
       } else {
         const errorText = await response.text();
         console.error(`❌ Failed to send console logs: ${errorText}`);
@@ -172,7 +223,7 @@ class TestReporter {
   async onRunStart() {
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to production project: ${this.reportingUrl}`);
-    console.log(`Console capture active: ${Object.keys(this.originalConsole).length > 0 ? 'YES' : 'NO'}`);
+    console.log(`Console capture active for run-level logs only`);
     
     // Validate required environment variables
     if (!this.reportingUrl) {
@@ -298,7 +349,7 @@ class TestReporter {
   }
 
   /**
-   * Process individual test results and send them to the API
+   * Process individual test results with enhanced console output handling
    */
   async processTestResults(testResult, suite) {
     if (!testResult || !suite) {
@@ -356,7 +407,7 @@ class TestReporter {
       this.results.failed++;
     }
     
-    // Process each test and send individually to production
+    // Process each test and send individually to production with enhanced console handling
     for (const result of testResult.testResults || []) {
       if (!result) {
         console.warn('Skipping undefined test result');
@@ -401,14 +452,48 @@ class TestReporter {
       
       console.log(`- Test: "${testName}", Status: ${testStatus}, Suite: ${suite.name} (ID: ${suite.id}) -> PRODUCTION`);
       
-      // Safely handle possibly undefined properties
+      // Enhanced console output handling using Jest's per-test console data
+      let consoleOutput = null;
+      let errorConsoleOutput = null;
+      
+      if (result.console && result.console.length > 0) {
+        // Format all console output for this specific test
+        consoleOutput = this.formatTestConsoleOutput(result.console);
+        
+        // Extract error-related console output
+        errorConsoleOutput = this.extractErrorConsoleOutput(result.console);
+        
+        console.log(`  📝 Test "${testName}" generated ${result.console.length} console entries`);
+        if (errorConsoleOutput) {
+          console.log(`  ⚠️ Test "${testName}" had error console output`);
+        }
+      }
+      
+      // Combine error message with error console output for failed tests
       const failureMessages = result.failureMessages || [];
-      const consoleOutput = result.console && result.console.length > 0 
-        ? result.console.map(c => `[${c.type}] ${c.message}`).join('\n') 
-        : null;
+      let combinedErrorMessage = null;
+      
+      if (testStatus === 'failed') {
+        const parts = [];
+        
+        // Add original failure message
+        if (failureMessages.length > 0) {
+          parts.push('Test Failure:');
+          parts.push(failureMessages[0]);
+        }
+        
+        // Add error console output if available
+        if (errorConsoleOutput) {
+          parts.push('');
+          parts.push('Console Errors During Test:');
+          parts.push(errorConsoleOutput);
+        }
+        
+        combinedErrorMessage = parts.length > 0 ? parts.join('\n') : null;
+      }
       
       try {
-        // Submit individual test result to production
+        // Submit individual test result to production with enhanced error info
         const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-result`, {
           method: 'POST',
           headers: {
@@ -422,7 +507,7 @@ class TestReporter {
             test_name: testName,
             status: testStatus,
             duration_ms: result.duration || 0,
-            error_message: failureMessages.length > 0 ? failureMessages[0] : null,
+            error_message: combinedErrorMessage || (failureMessages.length > 0 ? failureMessages[0] : null),
             stack_trace: failureMessages.length > 0 ? failureMessages.join('\n') : null,
             console_output: consoleOutput
           })
@@ -534,7 +619,7 @@ class TestReporter {
     
     console.log(`Test run complete. Updating test run ${this.testRunId} with final summary results -> PRODUCTION.`);
     console.log(`Final counts: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped, total: ${this.results.total}`);
-    console.log(`Total console logs captured: ${this.consoleLogs.length}`);
+    console.log(`Total run-level console logs captured: ${this.consoleLogs.length}`);
     
     // Determine final status
     const status = this.results.failed > 0 ? 'failure' : 'success';
@@ -569,7 +654,7 @@ class TestReporter {
         console.error('Response status:', response.status);
       }
       
-      // Send console logs to production database
+      // Send run-level console logs to production database
       await this.sendConsoleLogs();
       
     } catch (error) {
