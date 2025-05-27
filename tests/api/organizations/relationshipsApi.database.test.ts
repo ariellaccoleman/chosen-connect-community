@@ -1,3 +1,4 @@
+
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -29,22 +30,43 @@ describe('Organization Relationships API - Database Tests', () => {
       console.log('🔐 Setting up test authentication...');
       await TestAuthUtils.setupTestAuth('user1');
       
-      // Wait a moment for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for auth to settle
+      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Get the authenticated user
       console.log('👤 Getting current test user...');
       testUser = await TestAuthUtils.getCurrentTestUser();
-      console.log('✅ Test user authenticated:', testUser.id, testUser.email);
       
-      // Verify authentication is working
-      const client = await TestClientFactory.getSharedTestClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
+      if (!testUser) {
+        throw new Error('Failed to get test user');
       }
       
-      // Create a test organization using service client (for setup only)
+      console.log('✅ Test user authenticated:', testUser.id, testUser.email);
+      
+      // Verify authentication is working with retries
+      let authVerified = false;
+      for (let i = 0; i < 3; i++) {
+        try {
+          const client = await TestClientFactory.getSharedTestClient();
+          const { data: { session } } = await client.auth.getSession();
+          if (session) {
+            authVerified = true;
+            console.log('✅ Authentication verified');
+            break;
+          }
+          console.log(`⏳ Auth verification attempt ${i + 1} failed, retrying...`);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          console.log(`⏳ Auth verification attempt ${i + 1} error:`, error);
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+      
+      if (!authVerified) {
+        throw new Error('Authentication verification failed after retries');
+      }
+      
+      // Create a test organization using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
       // Ensure profile exists first - use service client to bypass RLS
@@ -280,6 +302,13 @@ describe('Organization Relationships API - Database Tests', () => {
     test('should create a new relationship successfully', async () => {
       console.log('🧪 Testing addOrganizationRelationship');
       
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for relationship creation');
+      }
+      
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: testOrganization.id,
@@ -343,6 +372,13 @@ describe('Organization Relationships API - Database Tests', () => {
     test('should handle non-existent organization', async () => {
       console.log('🧪 Testing addOrganizationRelationship with non-existent organization');
       
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for non-existent org test');
+      }
+      
       const relationshipData = {
         profile_id: testUser.id,
         organization_id: uuidv4(),
@@ -382,6 +418,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should update relationship successfully', async () => {
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for relationship update');
+      }
+      
       const updateData = {
         connection_type: 'former' as const,
         department: 'Marketing',
@@ -414,6 +457,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent relationship gracefully', async () => {
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for non-existent relationship test');
+      }
+      
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         nonExistentId,
@@ -451,6 +501,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should delete relationship successfully', async () => {
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for relationship deletion');
+      }
+      
       // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId);
       
@@ -473,6 +530,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent relationship gracefully', async () => {
+      // Verify authentication before making the request
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated for non-existent relationship deletion');
+      }
+      
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(nonExistentId);
       
