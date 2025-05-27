@@ -30,47 +30,47 @@ export interface TagOperations<T extends Tag = Tag> {
   /**
    * Get all tags
    */
-  getAll(): Promise<T[]>;
+  getAll(providedClient?: any): Promise<T[]>;
   
   /**
    * Get tag by ID
    */
-  getById(id: string): Promise<T | null>;
+  getById(id: string, providedClient?: any): Promise<T | null>;
   
   /**
    * Find tag by name
    */
-  findByName(name: string): Promise<T | null>;
+  findByName(name: string, providedClient?: any): Promise<T | null>;
 
   /**
    * Search tags by name (partial match)
    */
-  searchByName(query: string): Promise<T[]>;
+  searchByName(query: string, providedClient?: any): Promise<T[]>;
   
   /**
    * Create a new tag
    */
-  create(data: Partial<T>): Promise<T>;
+  create(data: Partial<T>, providedClient?: any): Promise<T>;
   
   /**
    * Update a tag
    */
-  update(id: string, data: Partial<T>): Promise<T>;
+  update(id: string, data: Partial<T>, providedClient?: any): Promise<T>;
   
   /**
    * Delete a tag
    */
-  delete(id: string): Promise<boolean>;
+  delete(id: string, providedClient?: any): Promise<boolean>;
   
   /**
    * Find or create a tag by name
    */
-  findOrCreate(data: Partial<T>, entityType?: EntityType): Promise<T>;
+  findOrCreate(data: Partial<T>, entityType?: EntityType, providedClient?: any): Promise<T>;
   
   /**
    * Get tags by entity type
    */
-  getByEntityType(entityType: EntityType): Promise<T[]>;
+  getByEntityType(entityType: EntityType, providedClient?: any): Promise<T[]>;
 }
 
 /**
@@ -80,35 +80,35 @@ export interface TagAssignmentOperations {
   /**
    * Get tag assignments for an entity
    */
-  getForEntity(entityId: string, entityType: EntityType): Promise<TagAssignment[]>;
+  getForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment[]>;
   
   /**
    * Get entities by tag ID
    */
-  getEntitiesByTagId(tagId: string, entityType?: EntityType): Promise<TagAssignment[]>;
+  getEntitiesByTagId(tagId: string, entityType?: EntityType, providedClient?: any): Promise<TagAssignment[]>;
   
   /**
    * Create a tag assignment
    */
-  create(tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment>;
+  create(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment>;
   
   /**
    * Delete a tag assignment by ID
    */
-  delete(assignmentId: string): Promise<boolean>;
+  delete(assignmentId: string, providedClient?: any): Promise<boolean>;
   
   /**
    * Delete tag assignment by tag and entity
    */
-  deleteByTagAndEntity(tagId: string, entityId: string, entityType: EntityType): Promise<boolean>;
+  deleteByTagAndEntity(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<boolean>;
 
   /**
    * Delete all tag assignments for an entity
    */
-  deleteForEntity(entityId: string, entityType: EntityType): Promise<boolean>;
+  deleteForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<boolean>;
   
   /**
    * Check if a tag is assigned to an entity
    */
-  isTagAssigned(tagId: string, entityId: string, entityType: EntityType): Promise<boolean>;
+  isTagAssigned(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<boolean>;
 }

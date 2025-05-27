@@ -1,35 +1,25 @@
 
-/**
- * Tag Repositories Export Module
- * Exports all tag-related repository classes and factory functions
- */
-
-// Export the repositories
-export * from './TagRepository';
-export * from './TagAssignmentRepository';
-export * from './TagEntityTypeRepository';
-
-// Export a factory function that creates all repositories
-import { createTagRepository, TagRepository } from './TagRepository';
-import { createTagAssignmentRepository, TagAssignmentRepository } from './TagAssignmentRepository';
-import { createTagEntityTypeRepository, TagEntityTypeRepository } from './TagEntityTypeRepository';
+import { TagRepository } from './TagRepository';
+import { TagAssignmentRepository } from './TagAssignmentRepository';
+import { TagEntityTypeRepository } from './TagEntityTypeRepository';
 
 /**
- * Repository bundle containing all tag-related repositories
+ * Create a tag repository instance
  */
-export interface TagRepositoryBundle {
-  tagRepo: TagRepository;
-  tagAssignmentRepo: TagAssignmentRepository;
-  tagEntityTypeRepo: TagEntityTypeRepository;
+export function createTagRepository(providedClient?: any): TagRepository {
+  return new TagRepository(providedClient);
 }
 
 /**
- * Factory function to create all tag-related repositories at once
+ * Create a tag assignment repository instance
  */
-export function createTagRepositories(): TagRepositoryBundle {
-  return {
-    tagRepo: createTagRepository(),
-    tagAssignmentRepo: createTagAssignmentRepository(),
-    tagEntityTypeRepo: createTagEntityTypeRepository()
-  };
+export function createTagAssignmentRepository(providedClient?: any): TagAssignmentRepository {
+  return new TagAssignmentRepository(providedClient);
+}
+
+/**
+ * Create a tag entity type repository instance
+ */
+export function createTagEntityTypeRepository(providedClient?: any): TagEntityTypeRepository {
+  return new TagEntityTypeRepository(providedClient);
 }
