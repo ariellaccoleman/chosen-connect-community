@@ -30,10 +30,7 @@ export const organizationRelationshipsApi = {
     // Validate UUID format
     if (!isValidUUID(profileId)) {
       logger.error(`Invalid UUID format for profileId: ${profileId}`);
-      return createErrorResponse({
-        code: 'INVALID_UUID',
-        message: 'Invalid profile ID format'
-      });
+      return createErrorResponse(new Error('Invalid profile ID format'));
     }
     
     return apiClient.query(async (client) => {

@@ -25,18 +25,24 @@ describe('Organization Relationships API - Database Tests', () => {
       // Clean up any existing test data first
       await cleanupTestData();
       
-      // Reset tracking arrays AFTER cleanup
-      createdRelationshipIds = [];
-      createdOrganizationIds = [];
-      
       // Set up authentication for the main client
       console.log('🔐 Setting up test authentication...');
       await TestAuthUtils.setupTestAuth('user1');
+      
+      // Wait a moment for auth to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Get the authenticated user
       console.log('👤 Getting current test user...');
       testUser = await TestAuthUtils.getCurrentTestUser();
       console.log('✅ Test user authenticated:', testUser.id, testUser.email);
+      
+      // Verify authentication is working
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication failed - no session established');
+      }
       
       // Create a test organization using service client (for setup only)
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -76,6 +82,9 @@ describe('Organization Relationships API - Database Tests', () => {
       testOrganization = orgData;
       createdOrganizationIds.push(orgData.id);
       console.log('✅ Test setup complete with unique organization:', testOrgName);
+      
+      // Reset tracking arrays AFTER successful setup
+      createdRelationshipIds = [];
     } catch (error) {
       console.error('❌ Test setup failed:', error);
       throw error;
