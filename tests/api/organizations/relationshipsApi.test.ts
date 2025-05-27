@@ -1,4 +1,3 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -43,15 +42,26 @@ describe('Organization Relationships API - Integration Tests', () => {
     createdRelationshipIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication using the robust TestAuthUtils pattern
+    // Set up authentication using the database test pattern
     try {
       console.log('🔐 Setting up test authentication...');
       await TestAuthUtils.setupTestAuth('user1');
+      
+      // Wait a moment for auth to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Get the authenticated user
       console.log('👤 Getting current test user...');
       testUser = await TestAuthUtils.getCurrentTestUser();
       console.log(`✅ Test user authenticated: ${testUser?.email}`);
+      
+      // Verify authentication is working
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication failed - no session established');
+      }
+      console.log('✅ Session verified for API operations');
     } catch (error) {
       console.warn('Could not get test user, using mock ID:', error);
       testUser = { 
@@ -232,34 +242,21 @@ describe('Organization Relationships API - Integration Tests', () => {
       return;
     }
 
-    // Verify authentication is still valid before proceeding
-    const authState = await TestAuthUtils.verifyAuthState();
-    if (!authState.isAuthenticated) {
-      console.error('❌ User not authenticated before test operations');
-      throw new Error('Authentication lost before test operations');
-    }
-
     // 1. Start with no relationships
     console.log('🧪 Fetching initial relationships...');
-    let result = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id),
-      'fetch initial relationships'
-    );
+    let result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
 
     // 2. Create a relationship
     console.log('🧪 Creating relationship...');
-    const createResult = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.addOrganizationRelationship({
-        profile_id: testUser.id,
-        organization_id: testOrganization.id,
-        connection_type: 'current',
-        department: 'Engineering',
-        notes: 'Full stack developer'
-      }),
-      'create relationship'
-    );
+    const createResult = await organizationRelationshipsApi.addOrganizationRelationship({
+      profile_id: testUser.id,
+      organization_id: testOrganization.id,
+      connection_type: 'current',
+      department: 'Engineering',
+      notes: 'Full stack developer'
+    });
     
     console.log('🔍 CREATE RESULT:', {
       status: createResult.status,
@@ -271,10 +268,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 3. Verify relationship exists
     console.log('🧪 Verifying relationship exists...');
-    result = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id),
-      'verify relationship exists'
-    );
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
     
     console.log('🔍 VERIFY RESULT:', {
       status: result.status,
@@ -295,16 +289,13 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 4. Update the relationship
     console.log('🧪 Updating relationship...');
-    const updateResult = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.updateOrganizationRelationship(
-        relationship.id,
-        {
-          connection_type: 'former',
-          department: 'Product',
-          notes: 'Moved to different role'
-        }
-      ),
-      'update relationship'
+    const updateResult = await organizationRelationshipsApi.updateOrganizationRelationship(
+      relationship.id,
+      {
+        connection_type: 'former',
+        department: 'Product',
+        notes: 'Moved to different role'
+      }
     );
     
     console.log('🔍 UPDATE RESULT:', {
@@ -317,10 +308,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 5. Verify the update
     console.log('🧪 Verifying update...');
-    result = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id),
-      'verify update'
-    );
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
     
     console.log('🔍 VERIFICATION RESULT:', {
       status: result.status,
@@ -335,17 +323,11 @@ describe('Organization Relationships API - Integration Tests', () => {
     expect(result.data[0].department).toBe('Product');
 
     // 6. Delete the relationship
-    const deleteResult = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id),
-      'delete relationship'
-    );
+    const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id);
     expect(deleteResult.status).toBe('success');
 
     // 7. Verify deletion
-    result = await TestAuthUtils.executeWithAuth(
-      () => organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id),
-      'verify deletion'
-    );
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
   }, 30000); // Increased timeout for debugging
