@@ -93,6 +93,7 @@ export class PersistentTestUserHelper {
 
   /**
    * Verify that persistent test users are set up correctly
+   * RUNTIME environment variable access
    */
   static async verifyTestUsersSetup(): Promise<boolean> {
     try {

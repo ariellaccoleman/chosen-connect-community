@@ -27,6 +27,7 @@ export class SimplifiedTestContext<T> {
   async setup(setupOptions: TestSetupOptions = {}): Promise<void> {
     logger.info(`Setting up test context for table: ${this.tableName}`);
     
+    // Access project info at runtime
     const projectInfo = TestInfrastructure.getTestProjectInfo();
     if (projectInfo.usingDedicatedProject) {
       logger.info(`✅ Using dedicated test project: ${projectInfo.url}`);

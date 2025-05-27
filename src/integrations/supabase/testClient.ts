@@ -86,7 +86,7 @@ export class TestClientFactory {
 
     if (!this.serviceRoleClient) {
       const { url } = getTestProjectConfig();
-      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY') || getEnvVar('SUPABASE_SERVICE_ROLE_KEY');
+      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
         console.warn('No service role key found - using anon client instead');
