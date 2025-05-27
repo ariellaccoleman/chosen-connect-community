@@ -1,7 +1,6 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -17,6 +16,7 @@ describe('Organization Relationships API - Integration Tests', () => {
   let createdRelationshipIds: string[] = [];
   let createdOrganizationIds: string[] = [];
   let testOrgName: string;
+  const testUserEmail = PERSISTENT_TEST_USERS.user2.email;
   
   beforeAll(async () => {
     // Verify test users are set up
@@ -53,11 +53,11 @@ describe('Organization Relationships API - Integration Tests', () => {
       
       // Get the authenticated user
       console.log('👤 Getting current test user...');
-      testUser = await TestAuthUtils.getCurrentTestUser();
+      testUser = await TestAuthUtils.getCurrentTestUser(testUserEmail);
       console.log(`✅ Test user authenticated: ${testUser?.email}`);
       
       // Verify authentication is working
-      const client = await TestClientFactory.getSharedTestClient();
+      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user2.password);
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
         throw new Error('Authentication failed - no session established');
@@ -67,7 +67,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       console.warn('Could not get test user, using mock ID:', error);
       testUser = { 
         id: uuidv4(),
-        email: 'testuser2@example.com'
+        email: testUserEmail
       };
     }
     
@@ -85,7 +85,7 @@ describe('Organization Relationships API - Integration Tests', () => {
         .from('profiles')
         .upsert({ 
           id: testUser.id, 
-          email: testUser.email || 'testuser2@example.com',
+          email: testUser.email || testUserEmail,
           first_name: 'Test',
           last_name: 'User'
         });
@@ -129,7 +129,7 @@ describe('Organization Relationships API - Integration Tests', () => {
     await cleanupTestData();
     
     // Clean up authentication using TestAuthUtils
-    await TestAuthUtils.cleanupTestAuth();
+    await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
   afterAll(() => {

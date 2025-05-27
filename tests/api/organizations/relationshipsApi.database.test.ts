@@ -1,7 +1,6 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { ProfileOrganizationRelationship } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,6 +11,7 @@ describe('Organization Relationships API - Database Tests', () => {
   let createdRelationshipIds: string[] = [];
   let createdOrganizationIds: string[] = [];
   let testOrgName: string;
+  const testUserEmail = PERSISTENT_TEST_USERS.user1.email;
   
   beforeAll(async () => {
     // Verify test users are set up
@@ -35,11 +35,11 @@ describe('Organization Relationships API - Database Tests', () => {
       
       // Get the authenticated user
       console.log('👤 Getting current test user...');
-      testUser = await TestAuthUtils.getCurrentTestUser();
+      testUser = await TestAuthUtils.getCurrentTestUser(testUserEmail);
       console.log('✅ Test user authenticated:', testUser.id, testUser.email);
       
       // Verify authentication is working
-      const client = await TestClientFactory.getSharedTestClient();
+      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
         throw new Error('Authentication failed - no session established');
@@ -53,7 +53,7 @@ describe('Organization Relationships API - Database Tests', () => {
         .from('profiles')
         .upsert({ 
           id: testUser.id, 
-          email: testUser.email || 'testuser1@example.com',
+          email: testUser.email || testUserEmail,
           first_name: 'Test',
           last_name: 'User'
         }, {
@@ -97,7 +97,7 @@ describe('Organization Relationships API - Database Tests', () => {
       await cleanupTestData();
       
       // Clean up test authentication
-      await TestAuthUtils.cleanupTestAuth();
+      await TestAuthUtils.cleanupTestAuth(testUserEmail);
       console.log('✅ Test cleanup complete');
     } catch (error) {
       console.error('❌ Test cleanup failed:', error);
@@ -209,7 +209,7 @@ describe('Organization Relationships API - Database Tests', () => {
   describe('getUserOrganizationRelationships', () => {
     test('should return empty array when user has no relationships', async () => {
       // Verify authentication is still valid
-      const client = await TestClientFactory.getSharedTestClient();
+      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
         throw new Error('Test user not authenticated');
@@ -224,7 +224,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should return user relationships with organization details', async () => {
       // Verify authentication is still valid
-      const client = await TestClientFactory.getSharedTestClient();
+      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
       const { data: { session } } = await client.auth.getSession();
       if (!session) {
         throw new Error('Test user not authenticated');
