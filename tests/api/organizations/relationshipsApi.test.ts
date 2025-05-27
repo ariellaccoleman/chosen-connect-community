@@ -13,6 +13,8 @@ import { v4 as uuidv4 } from 'uuid';
 describe('Organization Relationships API - Integration Tests', () => {
   let testUser: any;
   let testOrganization: any;
+  let createdRelationshipIds: string[] = [];
+  let createdOrganizationIds: string[] = [];
   
   beforeAll(async () => {
     // Verify test users are set up
@@ -32,9 +34,12 @@ describe('Organization Relationships API - Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Reset test data
-    testUser = null;
-    testOrganization = null;
+    // Reset tracking arrays
+    createdRelationshipIds = [];
+    createdOrganizationIds = [];
+    
+    // Clean up any existing test data first
+    await cleanupTestData();
     
     // Get test user
     try {
@@ -78,12 +83,13 @@ describe('Organization Relationships API - Integration Tests', () => {
       console.warn('Profile setup error:', error);
     }
     
-    // Create a test organization
+    // Create a unique test organization
     try {
+      const orgName = `Integration Test Org ${Date.now()}`;
       const { data: orgData, error: orgError } = await serviceClient
         .from('organizations')
         .insert({
-          name: 'Integration Test Org',
+          name: orgName,
           description: 'Organization for integration testing'
         })
         .select()
@@ -94,7 +100,8 @@ describe('Organization Relationships API - Integration Tests', () => {
         testOrganization = null;
       } else {
         testOrganization = orgData;
-        console.log(`✅ Test organization created: ${testOrganization.id}`);
+        createdOrganizationIds.push(orgData.id);
+        console.log(`✅ Test organization created: ${orgName}`);
       }
     } catch (error) {
       console.error('Organization creation error:', error);
@@ -103,35 +110,50 @@ describe('Organization Relationships API - Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data with proper null checks
-    try {
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Clean up relationships if we have a test user
-      if (testUser?.id) {
-        await serviceClient
-          .from('org_relationships')
-          .delete()
-          .eq('profile_id', testUser.id);
-        console.log(`✅ Cleaned up relationships for user: ${testUser.id}`);
-      }
-      
-      // Clean up test organization if it exists
-      if (testOrganization?.id) {
-        await serviceClient
-          .from('organizations')
-          .delete()
-          .eq('id', testOrganization.id);
-        console.log(`✅ Cleaned up organization: ${testOrganization.id}`);
-      }
-    } catch (error) {
-      console.warn('Cleanup warning:', error);
-    }
+    await cleanupTestData();
   });
 
   afterAll(() => {
     TestClientFactory.cleanup();
   });
+
+  const cleanupTestData = async () => {
+    try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
+      // Clean up relationships by IDs if we have them
+      if (createdRelationshipIds.length > 0) {
+        await serviceClient
+          .from('org_relationships')
+          .delete()
+          .in('id', createdRelationshipIds);
+        console.log(`✅ Cleaned up ${createdRelationshipIds.length} relationships`);
+      }
+      
+      // Clean up organizations by IDs if we have them  
+      if (createdOrganizationIds.length > 0) {
+        await serviceClient
+          .from('organizations')
+          .delete()
+          .in('id', createdOrganizationIds);
+        console.log(`✅ Cleaned up ${createdOrganizationIds.length} organizations`);
+      }
+      
+      // Also clean up any relationships for this test user
+      if (testUser?.id) {
+        await serviceClient
+          .from('org_relationships')
+          .delete()
+          .eq('profile_id', testUser.id);
+      }
+      
+      // Reset tracking arrays
+      createdRelationshipIds = [];
+      createdOrganizationIds = [];
+    } catch (error) {
+      console.warn('Cleanup warning:', error);
+    }
+  };
 
   test('complete relationship lifecycle', async () => {
     // Skip test if setup failed
@@ -171,6 +193,9 @@ describe('Organization Relationships API - Integration Tests', () => {
     expect(relationship.connection_type).toBe('current');
     expect(relationship.department).toBe('Engineering');
     expect(relationship.notes).toBe('Full stack developer');
+    
+    // Track the relationship for cleanup
+    createdRelationshipIds.push(relationship.id);
 
     // 4. Update the relationship
     const updateResult = await organizationRelationshipsApi.updateOrganizationRelationship(
@@ -193,6 +218,9 @@ describe('Organization Relationships API - Integration Tests', () => {
     // 6. Delete the relationship
     const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id);
     expect(deleteResult.status).toBe('success');
+    
+    // Remove from tracking since it's deleted
+    createdRelationshipIds = createdRelationshipIds.filter(id => id !== relationship.id);
 
     // 7. Verify deletion
     result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
@@ -214,7 +242,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       uuidv4(),
       { connection_type: 'former' }
     );
-    // This should actually succeed but just not update anything, so we expect success
+    // This should succeed but just not update anything
     expect(result.status).toBe('success');
   });
 
