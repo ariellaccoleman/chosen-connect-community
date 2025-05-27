@@ -1,10 +1,9 @@
-
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
 } from "@/types";
 import { apiClient } from "../core/apiClient";
-import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
+import { ApiResponse, createSuccessResponse, createErrorResponse } from "../core/errorHandler";
 import { formatOrganizationRelationships } from "@/utils/organizationFormatters";
 import { logger } from "@/utils/logger";
 
@@ -31,13 +30,10 @@ export const organizationRelationshipsApi = {
     // Validate UUID format
     if (!isValidUUID(profileId)) {
       logger.error(`Invalid UUID format for profileId: ${profileId}`);
-      return {
-        status: 'error',
-        error: {
-          message: 'Invalid profile ID format',
-          code: 'INVALID_UUID'
-        }
-      };
+      return createErrorResponse({
+        code: 'INVALID_UUID',
+        message: 'Invalid profile ID format'
+      });
     }
     
     return apiClient.query(async (client) => {
