@@ -1,3 +1,4 @@
+
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
@@ -27,7 +28,7 @@ export const organizationRelationshipsApi = {
   ): Promise<ApiResponse<ProfileOrganizationRelationshipWithDetails[]>> {
     logger.info(`API call: getUserOrganizationRelationships for profileId: ${profileId}`);
     
-    // Validate UUID format
+    // Validate UUID format - return error for invalid UUIDs
     if (!isValidUUID(profileId)) {
       logger.error(`Invalid UUID format for profileId: ${profileId}`);
       return createErrorResponse(new Error('Invalid profile ID format'));
