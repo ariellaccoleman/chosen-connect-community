@@ -6,55 +6,65 @@ const { existsSync } = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 
-// Test project configuration (for test execution)
-const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL;
-const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY;
-const TEST_SUPABASE_SERVICE_ROLE_KEY = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY;
+// Runtime environment variable access - no fallbacks to production
+const getRequiredEnvVar = (name, description) => {
+  const value = process.env[name];
+  if (!value) {
+    console.error(`❌ Missing required environment variable: ${name}`);
+    console.error(`   This is needed for: ${description}`);
+    throw new Error(`Missing required environment variable: ${name}`);
+  }
+  return value;
+};
+
+const getOptionalEnvVar = (name, defaultValue = null) => {
+  return process.env[name] || defaultValue;
+};
+
+// Test project configuration (REQUIRED - no fallbacks)
+let TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, TEST_SUPABASE_SERVICE_ROLE_KEY;
+
+try {
+  TEST_SUPABASE_URL = getRequiredEnvVar('TEST_SUPABASE_URL', 'test database connection');
+  TEST_SUPABASE_ANON_KEY = getRequiredEnvVar('TEST_SUPABASE_ANON_KEY', 'test database authentication');
+  TEST_SUPABASE_SERVICE_ROLE_KEY = getOptionalEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
+} catch (error) {
+  console.error('');
+  console.error('🚨 TEST ENVIRONMENT SETUP REQUIRED:');
+  console.error('   Tests require a dedicated test Supabase project to avoid interfering with production data.');
+  console.error('   Please set the following environment variables:');
+  console.error('   - TEST_SUPABASE_URL: URL of your test Supabase project');
+  console.error('   - TEST_SUPABASE_ANON_KEY: Anonymous key for your test project');
+  console.error('   - TEST_SUPABASE_SERVICE_ROLE_KEY: Service role key for test data setup');
+  console.error('');
+  process.exit(1);
+}
 
 // Production project configuration (for test reporting)
-const PROD_SUPABASE_URL = process.env.PROD_SUPABASE_URL || process.env.SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
-const PROD_SUPABASE_ANON_KEY = process.env.PROD_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+const PROD_SUPABASE_URL = getOptionalEnvVar('PROD_SUPABASE_URL') || getOptionalEnvVar('SUPABASE_URL');
+const PROD_SUPABASE_ANON_KEY = getOptionalEnvVar('PROD_SUPABASE_ANON_KEY') || getOptionalEnvVar('SUPABASE_ANON_KEY');
+const TEST_REPORTING_API_KEY = getOptionalEnvVar('TEST_REPORTING_API_KEY', 'test-key');
 
-const TEST_REPORTING_API_KEY = process.env.TEST_REPORTING_API_KEY || "test-key";
+// Validate we have separate test and production projects
+if (TEST_SUPABASE_URL === PROD_SUPABASE_URL) {
+  console.error('');
+  console.error('🚨 INVALID CONFIGURATION:');
+  console.error('   TEST_SUPABASE_URL cannot be the same as production SUPABASE_URL');
+  console.error('   Tests must use a dedicated test project to avoid data conflicts.');
+  console.error('   Current values:');
+  console.error(`   - TEST_SUPABASE_URL: ${TEST_SUPABASE_URL}`);
+  console.error(`   - SUPABASE_URL: ${PROD_SUPABASE_URL}`);
+  console.error('');
+  process.exit(1);
+}
 
-// Determine which projects we're using
-const usingDedicatedTestProject = !!(TEST_SUPABASE_URL && TEST_SUPABASE_ANON_KEY);
-const usingDedicatedProdProject = !!(PROD_SUPABASE_URL && PROD_SUPABASE_ANON_KEY);
-
-// For test execution (use test project if available, fallback to production)
-const testExecutionUrl = TEST_SUPABASE_URL || PROD_SUPABASE_URL;
-const testExecutionAnonKey = TEST_SUPABASE_ANON_KEY || PROD_SUPABASE_ANON_KEY;
-
-// For test reporting (always use production project)
-const testReportingUrl = PROD_SUPABASE_URL;
-const testReportingAnonKey = PROD_SUPABASE_ANON_KEY;
-
-// Enhanced logging for the dual connection architecture
-console.log('🔍 Test Runner - Dual Connection Architecture Analysis:');
-console.log('- Test Execution Project:', usingDedicatedTestProject ? 'DEDICATED TEST PROJECT ✅' : 'PRODUCTION PROJECT (fallback) ⚠️');
-console.log('- Test Reporting Project:', usingDedicatedProdProject ? 'PRODUCTION PROJECT ✅' : 'FALLBACK ⚠️');
-console.log('- Test Execution URL:', testExecutionUrl);
-console.log('- Test Reporting URL:', testReportingUrl);
-console.log('- Test anon key available:', testExecutionAnonKey ? '[SET]' : '[NOT SET]');
-console.log('- Prod anon key available:', testReportingAnonKey ? '[SET]' : '[NOT SET]');
-console.log('- Test service role key:', TEST_SUPABASE_SERVICE_ROLE_KEY ? '[SET]' : '[NOT SET]');
+console.log('🔍 Test Runner - Environment Configuration:');
+console.log('- Test Project URL:', TEST_SUPABASE_URL);
+console.log('- Production Project URL:', PROD_SUPABASE_URL || '[NOT SET]');
+console.log('- Test anon key available:', !!TEST_SUPABASE_ANON_KEY);
+console.log('- Test service role key available:', !!TEST_SUPABASE_SERVICE_ROLE_KEY);
 console.log('- NODE_ENV:', process.env.NODE_ENV);
 console.log('- CI Environment:', process.env.CI || 'false');
-
-if (!usingDedicatedTestProject) {
-  console.log('');
-  console.log('⚠️  WARNING: Not using dedicated test project for execution!');
-  console.log('⚠️  Tests may interfere with production data.');
-  console.log('⚠️  Recommend setting TEST_SUPABASE_* environment variables.');
-  console.log('');
-}
-
-if (!usingDedicatedProdProject) {
-  console.log('');
-  console.log('⚠️  WARNING: Production project configuration incomplete!');
-  console.log('⚠️  Test results may not be properly reported.');
-  console.log('');
-}
 
 // Check if Jest is installed
 try {
@@ -122,9 +132,14 @@ async function createTestRun() {
     return process.env.TEST_RUN_ID;
   }
   
+  if (!PROD_SUPABASE_URL) {
+    console.log('No production project configured for test reporting - using local test run ID');
+    return uuidv4();
+  }
+  
   try {
-    console.log(`Creating new test run via ${testReportingUrl}/functions/v1/report-test-results/create-run (PRODUCTION PROJECT)`);
-    const response = await fetch(`${testReportingUrl}/functions/v1/report-test-results/create-run`, {
+    console.log(`Creating new test run via ${PROD_SUPABASE_URL}/functions/v1/report-test-results/create-run`);
+    const response = await fetch(`${PROD_SUPABASE_URL}/functions/v1/report-test-results/create-run`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -144,7 +159,7 @@ async function createTestRun() {
     }
     
     const data = await response.json();
-    console.log(`Created test run with ID: ${data.test_run_id} (in PRODUCTION PROJECT)`);
+    console.log(`Created test run with ID: ${data.test_run_id}`);
     return data.test_run_id;
   } catch (error) {
     console.error('Error creating test run:', error);
@@ -154,53 +169,39 @@ async function createTestRun() {
 
 // Make this an async function to use await
 (async () => {
-  // Create or get the test run ID (always in production project)
+  // Create or get the test run ID (only if production project is configured)
   const testRunId = await createTestRun();
   console.log('Test Run ID:', testRunId);
   
-  // Set up environment variables with dual connection support
+  // Set up environment variables - all required vars validated above
   const testEnv = {
     ...process.env,
     TEST_RUN_ID: testRunId,
     NODE_ENV: 'test',
-    TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY
+    TEST_REPORTING_API_KEY: TEST_REPORTING_API_KEY,
+    // Test project configuration (REQUIRED)
+    TEST_SUPABASE_URL: TEST_SUPABASE_URL,
+    TEST_SUPABASE_ANON_KEY: TEST_SUPABASE_ANON_KEY
   };
 
-  // Use dedicated test project for test execution if available
-  if (usingDedicatedTestProject) {
-    testEnv.TEST_SUPABASE_URL = TEST_SUPABASE_URL;
-    testEnv.TEST_SUPABASE_ANON_KEY = TEST_SUPABASE_ANON_KEY;
-    if (TEST_SUPABASE_SERVICE_ROLE_KEY) {
-      testEnv.TEST_SUPABASE_SERVICE_ROLE_KEY = TEST_SUPABASE_SERVICE_ROLE_KEY;
-    }
-    console.log('✅ Using dedicated test project for test execution');
-  } else {
-    // Fallback to production project for test execution (not recommended)
-    testEnv.SUPABASE_URL = testExecutionUrl;
-    testEnv.SUPABASE_ANON_KEY = testExecutionAnonKey;
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      testEnv.SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    }
-    console.log('⚠️ Using production project for test execution (fallback)');
+  // Add service role key if available
+  if (TEST_SUPABASE_SERVICE_ROLE_KEY) {
+    testEnv.TEST_SUPABASE_SERVICE_ROLE_KEY = TEST_SUPABASE_SERVICE_ROLE_KEY;
   }
 
-  // Always set production project variables for test reporting
-  testEnv.PROD_SUPABASE_URL = testReportingUrl;
-  testEnv.PROD_SUPABASE_ANON_KEY = testReportingAnonKey;
-  console.log('✅ Using production project for test reporting');
+  // Add production project variables for test reporting (if available)
+  if (PROD_SUPABASE_URL && PROD_SUPABASE_ANON_KEY) {
+    testEnv.PROD_SUPABASE_URL = PROD_SUPABASE_URL;
+    testEnv.PROD_SUPABASE_ANON_KEY = PROD_SUPABASE_ANON_KEY;
+  }
 
-  // Enhanced environment logging
-  console.log('================= Dual Connection Test Environment =================');
-  console.log(`- Test Execution Project: ${usingDedicatedTestProject ? 'DEDICATED' : 'PRODUCTION (fallback)'}`);
-  console.log(`- Test Reporting Project: PRODUCTION`);
-  console.log(`- Test Execution URL: ${testExecutionUrl}`);
-  console.log(`- Test Reporting URL: ${testReportingUrl}`);
-  console.log(`- Test Execution Anon Key: ${testExecutionAnonKey ? '[SET - ' + testExecutionAnonKey.length + ' chars]' : '[NOT SET]'}`);
-  console.log(`- Test Reporting Anon Key: ${testReportingAnonKey ? '[SET - ' + testReportingAnonKey.length + ' chars]' : '[NOT SET]'}`);
+  console.log('================= Test Environment Configuration =================');
+  console.log(`- Test Project: ${TEST_SUPABASE_URL}`);
+  console.log(`- Production Project: ${PROD_SUPABASE_URL || '[NOT CONFIGURED]'}`);
+  console.log(`- Test Anon Key: [SET - ${TEST_SUPABASE_ANON_KEY.length} chars]`);
   console.log(`- Test Service Key: ${TEST_SUPABASE_SERVICE_ROLE_KEY ? '[SET - ' + TEST_SUPABASE_SERVICE_ROLE_KEY.length + ' chars]' : '[NOT SET]'}`);
   console.log(`- TEST_RUN_ID: ${testRunId}`);
   console.log(`- NODE_ENV: ${testEnv.NODE_ENV}`);
-  console.log(`- CI: ${process.env.CI || '[NOT SET]'}`);
   console.log('==================================================================');
 
   // Create a test to verify if API keys are set correctly and report to the API
@@ -245,8 +246,8 @@ async function createTestRun() {
   const testPathPattern = process.argv[2] || '';
   try {
     console.log(`Running tests${testPathPattern ? ` matching pattern: ${testPathPattern}` : ''}...`);
-    console.log(`Test run ID: ${testRunId} (reporting to PRODUCTION PROJECT)`);
-    console.log(`Test execution on: ${usingDedicatedTestProject ? 'DEDICATED TEST PROJECT' : 'PRODUCTION PROJECT (fallback)'}`);
+    console.log(`Test execution on: DEDICATED TEST PROJECT (${TEST_SUPABASE_URL})`);
+    console.log(`Test reporting to: ${PROD_SUPABASE_URL || 'LOCAL ONLY'}`);
     
     // Add verbose flag for more detailed test output
     execSync(

@@ -1,9 +1,6 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
-
-// Use dedicated test project URLs and keys
-const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
-const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
 
 /**
  * Runtime function to detect test environment with comprehensive checks
@@ -34,8 +31,27 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Simplified Test Client Factory for dedicated test project
- * Focused on database-based testing with real Supabase behavior
+ * Get test project environment variables at runtime
+ */
+const getTestProjectConfig = () => {
+  const testUrl = getEnvVar('TEST_SUPABASE_URL');
+  const testAnonKey = getEnvVar('TEST_SUPABASE_ANON_KEY');
+  
+  if (!testUrl || !testAnonKey) {
+    throw new Error(
+      'Missing required test environment variables: TEST_SUPABASE_URL and TEST_SUPABASE_ANON_KEY must be set'
+    );
+  }
+  
+  return {
+    url: testUrl,
+    anonKey: testAnonKey
+  };
+};
+
+/**
+ * Test Client Factory for dedicated test project
+ * All environment variables are accessed at runtime, not instantiation
  */
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
@@ -56,9 +72,6 @@ export class TestClientFactory {
       console.warn('- TEST_RUN_ID:', process.env.TEST_RUN_ID);
       console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
       console.warn('⚠️ Proceeding with caution - ensure this is intentional');
-      
-      // Don't throw an error - just warn and proceed
-      // This allows tests to run even if environment detection isn't perfect
     } else {
       console.log('✅ TestClientFactory: Test environment detected successfully');
     }
@@ -66,12 +79,13 @@ export class TestClientFactory {
 
   /**
    * Get service role client for test data setup and cleanup
-   * Uses the dedicated test project - no security concerns!
+   * Environment variables accessed at runtime
    */
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.serviceRoleClient) {
+      const { url } = getTestProjectConfig();
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY') || getEnvVar('SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
@@ -81,7 +95,7 @@ export class TestClientFactory {
 
       console.log('🔧 Creating service role client for test project');
       
-      this.serviceRoleClient = createClient<Database>(TEST_SUPABASE_URL, serviceRoleKey, {
+      this.serviceRoleClient = createClient<Database>(url, serviceRoleKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -94,15 +108,17 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
-   * Uses the dedicated test project with real database behavior
+   * Environment variables accessed at runtime
    */
   static getAnonClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.anonClient) {
+      const { url, anonKey } = getTestProjectConfig();
+      
       console.log('🔧 Creating anonymous client for test project');
       
-      this.anonClient = createClient<Database>(TEST_SUPABASE_URL, TEST_SUPABASE_ANON_KEY, {
+      this.anonClient = createClient<Database>(url, anonKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -152,27 +168,31 @@ export class TestClientFactory {
   }
 
   /**
-   * Get test project info
+   * Get test project info - accessed at runtime
    */
   static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    const testUrl = process.env.TEST_SUPABASE_URL;
-    const prodUrl = process.env.SUPABASE_URL;
+    const testUrl = getEnvVar('TEST_SUPABASE_URL');
+    const prodUrl = getEnvVar('SUPABASE_URL');
 
     console.log('🔍 TestProjectInfo env:', {
-      TEST_SUPABASE_URL: testUrl,
-      SUPABASE_URL: prodUrl,
+      TEST_SUPABASE_URL: testUrl ? '[SET]' : '[NOT SET]',
+      SUPABASE_URL: prodUrl ? '[SET]' : '[NOT SET]',
     });
 
+    if (!testUrl) {
+      throw new Error('TEST_SUPABASE_URL environment variable is required for tests');
+    }
+
     return {
-      url: testUrl || TEST_SUPABASE_URL,  // fallback hardcoded
-      usingDedicatedProject:
-        !!testUrl && !!prodUrl && testUrl.trim() !== prodUrl.trim()
+      url: testUrl,
+      usingDedicatedProject: !!testUrl && !!prodUrl && testUrl.trim() !== prodUrl.trim()
     };
   }
 }
 
 /**
- * Simplified Test Infrastructure for database-based testing
+ * Test Infrastructure for database-based testing
+ * All environment variable access at runtime
  */
 export class TestInfrastructure {
   /**
