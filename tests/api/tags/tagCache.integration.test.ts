@@ -1,3 +1,4 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -6,7 +7,7 @@ import { updateTagCache, invalidateTagCache as utilsInvalidateCache } from '@/ut
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Cache Integration Tests', () => {
-  let testUser: any;
+  let testSetup: any;
   let createdCacheEntries: string[] = [];
 
   beforeAll(async () => {
@@ -33,30 +34,11 @@ describe('Tag Cache Integration Tests', () => {
     // Reset tracking arrays AFTER cleanup
     createdCacheEntries = [];
     
-    // Set up authentication for user6 (Tag Cache tests) - STRICT MODE
+    // Set up authentication for user6 (Tag Cache tests) using new pattern
     console.log('🔐 Setting up test authentication for user6...');
-    await TestAuthUtils.setupTestAuth('user6');
+    testSetup = await TestAuthUtils.setupTestAuth('user6');
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
-    console.log(`✅ Test user authenticated: ${testUser.email}`);
-    
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
+    console.log(`✅ Test user authenticated: ${testSetup.user.email}`);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -64,7 +46,9 @@ describe('Tag Cache Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    if (testSetup?.user?.email) {
+      await TestAuthUtils.cleanupTestAuth(testSetup.user.email);
+    }
   });
 
   afterAll(() => {
@@ -100,7 +84,7 @@ describe('Tag Cache Integration Tests', () => {
 
   const setupTestData = async () => {
     // Only proceed if we have a valid authenticated user
-    if (!testUser?.id) {
+    if (!testSetup?.user?.id) {
       throw new Error('❌ Cannot setup test data - no authenticated user');
     }
     
@@ -110,8 +94,8 @@ describe('Tag Cache Integration Tests', () => {
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testUser.id, 
-        email: testUser.email,
+        id: testSetup.user.id, 
+        email: testSetup.user.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -172,7 +156,7 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should invalidate specific entity type cache', async () => {
-      if (!testUser?.id) {
+      if (!testSetup?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;
@@ -199,7 +183,7 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should invalidate all tag caches when no entity type specified', async () => {
-      if (!testUser?.id) {
+      if (!testSetup?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;
@@ -242,7 +226,7 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should use API invalidateTagCache function', async () => {
-      if (!testUser?.id) {
+      if (!testSetup?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;

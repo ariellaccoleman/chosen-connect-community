@@ -6,7 +6,7 @@ import { createTagEntityTypeRepository } from '@/api/tags/repository/TagEntityTy
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Entity Type Repository Integration Tests', () => {
-  let testUser: any;
+  let testSetup: any;
   let tagEntityTypeRepo: any;
   let createdTagIds: string[] = [];
   let createdTagEntityTypeIds: string[] = [];
@@ -36,33 +36,14 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     createdTagIds = [];
     createdTagEntityTypeIds = [];
     
-    // Set up authentication for user3 (Tag Entity Type tests) - STRICT MODE
+    // Set up authentication for user3 (Tag Entity Type tests) using new pattern
     console.log('🔐 Setting up test authentication for user3...');
-    await TestAuthUtils.setupTestAuth('user3');
+    testSetup = await TestAuthUtils.setupTestAuth('user3');
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log(`✅ Test user authenticated: ${testSetup.user.email}`);
     
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
-    console.log(`✅ Test user authenticated: ${testUser.email}`);
-    
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
-    
-    // Initialize repository
-    tagEntityTypeRepo = createTagEntityTypeRepository();
+    // Initialize repository with the authenticated client
+    tagEntityTypeRepo = createTagEntityTypeRepository(testSetup.client);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -70,7 +51,9 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    if (testSetup?.user?.email) {
+      await TestAuthUtils.cleanupTestAuth(testSetup.user.email);
+    }
   });
 
   afterAll(() => {
@@ -106,11 +89,11 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       }
       
       // Fallback cleanup by user ID (only if we have a valid user)
-      if (testUser?.id) {
+      if (testSetup?.user?.id) {
         await serviceClient
           .from('tags')
           .delete()
-          .eq('created_by', testUser.id);
+          .eq('created_by', testSetup.user.id);
       }
       
     } catch (error) {
@@ -120,7 +103,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   const setupTestData = async () => {
     // Only proceed if we have a valid authenticated user
-    if (!testUser?.id) {
+    if (!testSetup?.user?.id) {
       throw new Error('❌ Cannot setup test data - no authenticated user');
     }
     
@@ -130,8 +113,8 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testUser.id, 
-        email: testUser.email,
+        id: testSetup.user.id, 
+        email: testSetup.user.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -142,7 +125,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   };
 
   const createTestTag = async (name: string) => {
-    if (!testUser?.id) {
+    if (!testSetup?.user?.id) {
       throw new Error('❌ Cannot create test tag - no authenticated user');
     }
     
@@ -153,7 +136,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       .insert({
         name: `${name} ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for entity type testing',
-        created_by: testUser.id
+        created_by: testSetup.user.id
       })
       .select()
       .single();
