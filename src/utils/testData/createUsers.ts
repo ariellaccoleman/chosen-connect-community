@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { faker } from "@faker-js/faker";
+import { TEST_USER_CONFIG } from "../../../tests/utils/persistentTestUsers";
 
 /**
  * Creates random test users with profiles in the database
@@ -17,7 +18,8 @@ export const createUsers = async (count: number) => {
     const firstName = faker.person.firstName();
     const lastName = faker.person.lastName();
     const email = faker.internet.email({ firstName, lastName }).toLowerCase();
-    const password = "Password123!"; // Simple password for test accounts
+    // Use centralized test password configuration
+    const password = TEST_USER_CONFIG.password;
     
     userCredentials.push({ email, password });
 

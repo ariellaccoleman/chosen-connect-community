@@ -1,7 +1,7 @@
-
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { logger } from '@/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { TEST_USER_CONFIG } from '../../../../tests/utils/persistentTestUsers';
 
 /**
  * Secure Test Context Manager (Legacy)
@@ -162,7 +162,7 @@ export class TestUserFactory {
     
     return {
       email: `${prefix}_${timestamp}_${random}@legacy.example.com`,
-      password: 'TestPassword123!',
+      password: TEST_USER_CONFIG.password, // Use centralized password
       metadata: {
         first_name: 'Secure Test',
         last_name: 'User',
@@ -174,5 +174,12 @@ export class TestUserFactory {
 
   static createMultipleTestUsers(count: number, prefix = 'secure_test') {
     return Array(count).fill(null).map(() => this.createTestUser(prefix));
+  }
+
+  /**
+   * Get the standard test password for all test users
+   */
+  static getStandardTestPassword(): string {
+    return TEST_USER_CONFIG.password;
   }
 }

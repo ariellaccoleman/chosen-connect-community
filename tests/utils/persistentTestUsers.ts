@@ -2,28 +2,49 @@
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 
 /**
+ * Centralized test user credentials configuration
+ */
+export const TEST_USER_CONFIG = {
+  password: 'TestPass123!',
+  emailDomain: '@example.com',
+  role: 'basic_user'
+} as const;
+
+/**
+ * Test user email addresses
+ */
+export const TEST_USER_EMAILS = {
+  user1: 'testuser4@example.com',
+  user2: 'testuser5@example.com', 
+  user3: 'testuser6@example.com'
+} as const;
+
+/**
  * Persistent Test Users Configuration
  * 
  * These users should be manually created in your test Supabase project:
  * 1. Go to your test Supabase project Authentication > Users
  * 2. Create these users with email confirmation enabled
- * 3. Set their passwords as specified below
+ * 3. Set their passwords as specified in TEST_USER_CONFIG
  */
 export const PERSISTENT_TEST_USERS = {
   user1: {
-    email: 'testuser1@example.com',
-    password: 'TestPass123!',
-    role: 'basic_user'
+    email: TEST_USER_EMAILS.user1,
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User4'
   },
   user2: {
-    email: 'testuser2@example.com', 
-    password: 'TestPass123!',
-    role: 'basic_user'
+    email: TEST_USER_EMAILS.user2,
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User5'
   },
   user3: {
-    email: 'testuser3@example.com',
-    password: 'TestPass123!',
-    role: 'admin_user'
+    email: TEST_USER_EMAILS.user3,
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User6'
   }
 } as const;
 
@@ -33,7 +54,7 @@ export const PERSISTENT_TEST_USERS = {
 export class PersistentTestUserHelper {
   
   /**
-   * Get authenticated client for test user 1
+   * Get authenticated client for test user 1 (Test User4)
    */
   static async getUser1Client() {
     return TestClientFactory.createAuthenticatedClient(
@@ -43,7 +64,7 @@ export class PersistentTestUserHelper {
   }
 
   /**
-   * Get authenticated client for test user 2
+   * Get authenticated client for test user 2 (Test User5)
    */
   static async getUser2Client() {
     return TestClientFactory.createAuthenticatedClient(
@@ -53,7 +74,7 @@ export class PersistentTestUserHelper {
   }
 
   /**
-   * Get authenticated client for test user 3 (admin)
+   * Get authenticated client for test user 3 (Test User6)
    */
   static async getUser3Client() {
     return TestClientFactory.createAuthenticatedClient(
@@ -85,7 +106,7 @@ export class PersistentTestUserHelper {
           return false;
         }
         
-        console.log(`✅ Test user ${key} (${user.email}) authenticated successfully`);
+        console.log(`✅ Test user ${key} (${user.displayName} - ${user.email}) authenticated successfully`);
       }
       
       return true;
@@ -93,5 +114,19 @@ export class PersistentTestUserHelper {
       console.error('❌ Error verifying test users setup:', error);
       return false;
     }
+  }
+
+  /**
+   * Get all test user emails for bulk operations
+   */
+  static getAllTestUserEmails(): string[] {
+    return Object.values(TEST_USER_EMAILS);
+  }
+
+  /**
+   * Get the standard test password
+   */
+  static getTestPassword(): string {
+    return TEST_USER_CONFIG.password;
   }
 }
