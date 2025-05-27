@@ -1,4 +1,3 @@
-
 /**
  * Tag Entity Type Repository
  * Repository implementation for managing tag entity types
@@ -67,10 +66,12 @@ export interface TagEntityTypeRepository {
 
 /**
  * Create a tag entity type repository
+ * @param providedClient - Optional Supabase client instance
  * @returns TagEntityTypeRepository instance
  */
-export function createTagEntityTypeRepository(): TagEntityTypeRepository {
-  const repository = createSupabaseRepository<TagEntityType>("tag_entity_types", supabase);
+export function createTagEntityTypeRepository(providedClient?: any): TagEntityTypeRepository {
+  const client = providedClient || supabase;
+  const repository = createSupabaseRepository<TagEntityType>("tag_entity_types", client);
   
   return {
     async getAllTagEntityTypes(): Promise<TagEntityType[]> {

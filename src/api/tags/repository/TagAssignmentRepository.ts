@@ -1,4 +1,3 @@
-
 /**
  * Tag Assignment Repository
  * Repository implementation for managing tag assignments
@@ -67,10 +66,12 @@ export interface TagAssignmentRepository {
 
 /**
  * Create a tag assignment repository
+ * @param providedClient - Optional Supabase client instance
  * @returns TagAssignmentRepository instance
  */
-export function createTagAssignmentRepository(): TagAssignmentRepository {
-  const repository = createSupabaseRepository<TagAssignment>("tag_assignments", supabase);
+export function createTagAssignmentRepository(providedClient?: any): TagAssignmentRepository {
+  const client = providedClient || supabase;
+  const repository = createSupabaseRepository<TagAssignment>("tag_assignments", client);
   
   return {
     async getAllTagAssignments(): Promise<TagAssignment[]> {

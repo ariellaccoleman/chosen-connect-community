@@ -1,4 +1,3 @@
-
 /**
  * Tag Repository
  * Repository implementation for managing tags
@@ -67,10 +66,12 @@ export interface TagRepository {
 
 /**
  * Create a tag repository
+ * @param providedClient - Optional Supabase client instance
  * @returns TagRepository instance
  */
-export function createTagRepository(): TagRepository {
-  const repository = createSupabaseRepository<Tag>("tags", supabase);
+export function createTagRepository(providedClient?: any): TagRepository {
+  const client = providedClient || supabase;
+  const repository = createSupabaseRepository<Tag>("tags", client);
   
   return {
     async getAllTags(): Promise<ApiResponse<Tag[]>> {
@@ -218,7 +219,7 @@ export function createTagRepository(): TagRepository {
       try {
         // Import the TagEntityTypeRepository dynamically to avoid circular dependencies
         const { createTagEntityTypeRepository } = await import('./index');
-        const tagEntityTypeRepo = createTagEntityTypeRepository();
+        const tagEntityTypeRepo = createTagEntityTypeRepository(client);
         
         // Associate the tag with the entity type
         await tagEntityTypeRepo.associateTagWithEntityType(tagId, entityType);
