@@ -1,6 +1,7 @@
 
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PERSISTENT_TEST_USERS } from './persistentTestUsers';
+import { createTestApiClient } from '@/api/core/apiClient';
 
 /**
  * Helper function to add delays between operations to avoid rate limiting
@@ -8,14 +9,18 @@ import { PERSISTENT_TEST_USERS } from './persistentTestUsers';
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * Test utility to manage authentication context using the shared test client
- * This ensures we authenticate against the test project with a single client instance
+ * Test utility to manage authentication context using per-user test clients
+ * This ensures we authenticate against the test project with dedicated client instances per user
  */
 export class TestAuthUtils {
   /**
-   * Set up authentication for a test user using the shared test client
+   * Set up authentication for a test user using per-user client pattern
    */
-  static async setupTestAuth(userKey: keyof typeof PERSISTENT_TEST_USERS = 'user1'): Promise<void> {
+  static async setupTestAuth(userKey: keyof typeof PERSISTENT_TEST_USERS = 'user1'): Promise<{ 
+    client: any; 
+    apiClient: any; 
+    user: any; 
+  }> {
     try {
       // Get test user credentials
       const testUser = PERSISTENT_TEST_USERS[userKey];
@@ -23,13 +28,13 @@ export class TestAuthUtils {
         throw new Error(`Test user '${userKey}' not found in PERSISTENT_TEST_USERS`);
       }
 
-      console.log(`🔐 Setting up test auth for: ${testUser.email} using shared client`);
+      console.log(`🔐 Setting up test auth for: ${testUser.email} using per-user client`);
       
       // Add delay before authentication to avoid rate limiting
       await delay(1000);
       
-      // Authenticate the shared client
-      const authenticatedClient = await TestClientFactory.authenticateSharedClient(
+      // Get authenticated client for this specific user
+      const authenticatedClient = await TestClientFactory.getUserClient(
         testUser.email, 
         testUser.password
       );
@@ -37,7 +42,19 @@ export class TestAuthUtils {
       // Verify the session was set correctly with retries and delays
       await this.verifySessionWithRetries(authenticatedClient, testUser.email);
 
+      // Get the current user from the authenticated client
+      const currentUser = await TestClientFactory.getCurrentAuthenticatedUser(testUser.email);
+
+      // Create test API client for this user
+      const testApiClient = createTestApiClient(authenticatedClient);
+
       console.log(`✅ Test auth setup complete for ${userKey} - ready for API operations`);
+      
+      return {
+        client: authenticatedClient,
+        apiClient: testApiClient,
+        user: currentUser
+      };
     } catch (error) {
       console.error('❌ Failed to setup test auth:', error);
       throw error;
@@ -93,13 +110,13 @@ export class TestAuthUtils {
   /**
    * Verify current authentication state before API operations
    */
-  static async verifyAuthState(): Promise<{ isAuthenticated: boolean; user: any | null; session: any | null }> {
+  static async verifyAuthState(client?: any): Promise<{ isAuthenticated: boolean; user: any | null; session: any | null }> {
     try {
       // Add small delay before auth state check
       await delay(100);
       
-      const client = TestClientFactory.getSharedTestClient();
-      const { data: { session }, error } = await client.auth.getSession();
+      const supabaseClient = client || await TestClientFactory.getSharedTestClient();
+      const { data: { session }, error } = await supabaseClient.auth.getSession();
       
       if (error) {
         console.error('❌ Auth state verification error:', error);
@@ -123,12 +140,17 @@ export class TestAuthUtils {
   }
 
   /**
-   * Clean up test authentication
+   * Clean up test authentication for specific user
    */
-  static async cleanupTestAuth(): Promise<void> {
+  static async cleanupTestAuth(userEmail?: string): Promise<void> {
     try {
-      console.log('🧹 Starting test auth cleanup...');
-      await TestClientFactory.signOutSharedClient();
+      if (userEmail) {
+        console.log(`🧹 Starting test auth cleanup for user: ${userEmail}...`);
+        await TestClientFactory.removeUserClient(userEmail);
+      } else {
+        console.log('🧹 Starting test auth cleanup for all users...');
+        await TestClientFactory.clearAllUserClients();
+      }
       console.log('✅ Test auth cleanup complete');
     } catch (error) {
       console.error('❌ Failed to cleanup test auth:', error);
@@ -137,28 +159,38 @@ export class TestAuthUtils {
   }
 
   /**
-   * Get the current authenticated user from the shared test client
+   * Get the current authenticated user from a specific user's client
+   * @deprecated Use the user returned from setupTestAuth instead
    */
-  static async getCurrentTestUser() {
+  static async getCurrentTestUser(userEmail?: string) {
     try {
-      return await TestClientFactory.getCurrentAuthenticatedUser();
+      if (!userEmail) {
+        throw new Error('userEmail is required for getCurrentTestUser in the new per-user client pattern');
+      }
+      return await TestClientFactory.getCurrentAuthenticatedUser(userEmail);
     } catch (error) {
       throw new Error(`Failed to get current test user: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
   /**
-   * Get the shared test client instance
+   * Get a test client instance
+   * @deprecated Use the client returned from setupTestAuth instead
    */
   static getTestClient() {
+    console.warn('⚠️ getTestClient() is deprecated. Use the client returned from setupTestAuth() instead.');
     return TestClientFactory.getSharedTestClient();
   }
 
   /**
    * Execute operation with authentication verification
    */
-  static async executeWithAuth<T>(operation: () => Promise<T>, description?: string): Promise<T> {
-    const authState = await this.verifyAuthState();
+  static async executeWithAuth<T>(
+    operation: () => Promise<T>, 
+    description?: string,
+    client?: any
+  ): Promise<T> {
+    const authState = await this.verifyAuthState(client);
     
     if (!authState.isAuthenticated) {
       throw new Error(`Operation "${description || 'unknown'}" requires authentication but user is not authenticated`);
@@ -192,7 +224,7 @@ export class TestAuthUtils {
   static getDebugInfo() {
     return {
       testClientDebug: TestClientFactory.getDebugInfo(),
-      sharedClient: !!TestClientFactory.getSharedTestClient()
+      deprecationWarning: 'Some methods are deprecated in favor of per-user client pattern'
     };
   }
 }

@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { TestClientFactory } from "@/integrations/supabase/testClient";
 import { handleApiError } from "./errorHandler";
@@ -61,8 +62,15 @@ const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100):
 
 /**
  * Get the appropriate Supabase client based on environment
+ * Now accepts an optional client parameter for testing with specific users
  */
-const getSupabaseClient = async () => {
+const getSupabaseClient = async (providedClient?: any) => {
+  // If a client is provided (for testing), use it
+  if (providedClient) {
+    console.log('🧪 Using provided test client for API operations');
+    return providedClient;
+  }
+
   if (isTestEnvironment()) {
     console.log('🧪 Using shared test Supabase client for API operations');
     return await TestClientFactory.getSharedTestClient();
@@ -118,13 +126,13 @@ const executeWithSessionVerification = async (client: any, callback: (client: an
 
 /**
  * Core API client that wraps Supabase client with error handling
- * Automatically uses shared test client in test environment with session verification
+ * Now supports optional client parameter for per-user testing
  */
 export const apiClient = {
   // Database operations with error handling and session verification
-  async query(callback: (client: any) => any) {
+  async query(callback: (client: any) => any, providedClient?: any) {
     try {
-      const client = await getSupabaseClient();
+      const client = await getSupabaseClient(providedClient);
       return await executeWithSessionVerification(client, callback);
     } catch (error) {
       return handleApiError(error);
@@ -132,9 +140,9 @@ export const apiClient = {
   },
   
   // Auth operations with error handling
-  async authQuery(callback: (auth: any) => any) {
+  async authQuery(callback: (auth: any) => any, providedClient?: any) {
     try {
-      const client = await getSupabaseClient();
+      const client = await getSupabaseClient(providedClient);
       return await callback(client.auth);
     } catch (error) {
       return handleApiError(error);
@@ -142,9 +150,9 @@ export const apiClient = {
   },
   
   // Storage operations with error handling
-  async storageQuery(callback: (storage: any) => any) {
+  async storageQuery(callback: (storage: any) => any, providedClient?: any) {
     try {
-      const client = await getSupabaseClient();
+      const client = await getSupabaseClient(providedClient);
       return await executeWithSessionVerification(client, (c) => callback(c.storage));
     } catch (error) {
       return handleApiError(error);
@@ -152,12 +160,23 @@ export const apiClient = {
   },
   
   // Edge function calls with error handling
-  async functionQuery(callback: (functions: any) => any) {
+  async functionQuery(callback: (functions: any) => any, providedClient?: any) {
     try {
-      const client = await getSupabaseClient();
+      const client = await getSupabaseClient(providedClient);
       return await executeWithSessionVerification(client, (c) => callback(c.functions));
     } catch (error) {
       return handleApiError(error);
     }
   }
 };
+
+/**
+ * Create a client-aware API client for testing with specific users
+ * This allows tests to use per-user clients while maintaining the same API
+ */
+export const createTestApiClient = (testClient: any) => ({
+  query: (callback: (client: any) => any) => apiClient.query(callback, testClient),
+  authQuery: (callback: (auth: any) => any) => apiClient.authQuery(callback, testClient),
+  storageQuery: (callback: (storage: any) => any) => apiClient.storageQuery(callback, testClient),
+  functionQuery: (callback: (functions: any) => any) => apiClient.functionQuery(callback, testClient)
+});

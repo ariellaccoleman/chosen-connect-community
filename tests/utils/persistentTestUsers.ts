@@ -75,16 +75,16 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Helper functions for getting authenticated clients for persistent test users
- * Uses the shared test client from TestClientFactory
+ * Now uses the new per-user client pattern from TestClientFactory
  */
 export class PersistentTestUserHelper {
   /**
    * Get authenticated client for test user 1 (Test User4)
-   * Uses shared client pattern - authenticates the shared client
+   * Uses new per-user client pattern
    */
   static async getUser1Client(): Promise<SupabaseClient<Database>> {
     await delay(1000); // Add 1 second delay to avoid rate limiting
-    return TestClientFactory.authenticateSharedClient(
+    return TestClientFactory.getUserClient(
       PERSISTENT_TEST_USERS.user1.email,
       PERSISTENT_TEST_USERS.user1.password
     );
@@ -92,11 +92,11 @@ export class PersistentTestUserHelper {
 
   /**
    * Get authenticated client for test user 2 (Test User5)
-   * Uses shared client pattern - authenticates the shared client
+   * Uses new per-user client pattern
    */
   static async getUser2Client(): Promise<SupabaseClient<Database>> {
     await delay(1000); // Add 1 second delay to avoid rate limiting
-    return TestClientFactory.authenticateSharedClient(
+    return TestClientFactory.getUserClient(
       PERSISTENT_TEST_USERS.user2.email,
       PERSISTENT_TEST_USERS.user2.password
     );
@@ -104,11 +104,11 @@ export class PersistentTestUserHelper {
 
   /**
    * Get authenticated client for test user 3 (Test User6)
-   * Uses shared client pattern - authenticates the shared client
+   * Uses new per-user client pattern
    */
   static async getUser3Client(): Promise<SupabaseClient<Database>> {
     await delay(1000); // Add 1 second delay to avoid rate limiting
-    return TestClientFactory.authenticateSharedClient(
+    return TestClientFactory.getUserClient(
       PERSISTENT_TEST_USERS.user3.email,
       PERSISTENT_TEST_USERS.user3.password
     );
@@ -124,7 +124,7 @@ export class PersistentTestUserHelper {
     }
 
     await delay(1500); // Add 1.5 second delay to avoid rate limiting
-    return TestClientFactory.authenticateSharedClient(
+    return TestClientFactory.getUserClient(
       userConfig.email,
       userConfig.password
     );
@@ -149,7 +149,7 @@ export class PersistentTestUserHelper {
     // COMMENTED OUT - Uncomment only when needed for debugging
     /*
     try {
-      // Try to authenticate as each user using the shared client
+      // Try to authenticate as each user using per-user clients
       for (const [key] of Object.entries(PERSISTENT_TEST_USERS)) {
         console.log(`🔍 Verifying test user ${key}...`);
         
@@ -196,7 +196,8 @@ export class PersistentTestUserHelper {
   static getDebugInfo() {
     return {
       availableUsers: Object.keys(PERSISTENT_TEST_USERS),
-      testClientDebug: TestClientFactory.getDebugInfo()
+      testClientDebug: TestClientFactory.getDebugInfo(),
+      usingPerUserPattern: true
     };
   }
 }
