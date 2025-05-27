@@ -10,7 +10,7 @@ import { TestAuthUtils } from '../utils/testAuthUtils';
  * These tests run against a real Supabase auth system to ensure the API works correctly
  * with actual authentication flows, sessions, and error conditions.
  * 
- * Uses user3 to avoid interference with other test suites.
+ * Uses fresh clients to test the authentication process itself.
  */
 describe('Authentication API - Integration Tests', () => {
   let testUser: any;
@@ -131,10 +131,10 @@ describe('Authentication API - Integration Tests', () => {
       expect(result.data?.user).toBeNull();
     });
 
-    test('returns valid session when authenticated', async () => {
-      console.log('🧪 Testing getSession when authenticated...');
+    test('returns valid session when authenticated via fresh client', async () => {
+      console.log('🧪 Testing getSession after fresh login...');
       
-      // First login using the auth API (which uses the shared client)
+      // First login to establish session on the fresh client
       const loginResult = await authApi.login({
         email: testUser.email,
         password: testUser.password
@@ -142,7 +142,7 @@ describe('Authentication API - Integration Tests', () => {
       
       expect(loginResult.status).toBe('success');
       
-      // Then check session
+      // Then check session - this should work since both use fresh clients
       const sessionResult = await authApi.getSession();
       
       console.log('🔍 AUTHENTICATED SESSION RESULT:', {
@@ -243,7 +243,7 @@ describe('Authentication API - Integration Tests', () => {
     test('successfully updates password for authenticated user', async () => {
       console.log('🧪 Testing password update...');
       
-      // First login using auth API
+      // First login to establish authenticated session
       const loginResult = await authApi.login({
         email: testUser.email,
         password: testUser.password

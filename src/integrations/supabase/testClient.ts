@@ -1,263 +1,197 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from './types';
+import { Database } from './types';
 
-// Hardcoded test project configuration (not secrets)
-const TEST_PROJECT_CONFIG = {
-  url: 'https://sqrjmydkggtcsxvrdmrz.supabase.co',
-  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcmpteWRrZ2d0Y3N4dnJkbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTU2MTIsImV4cCI6MjA2Mzc3MTYxMn0.CXVBUniHzEXTQh6nH_h-l6gJ8nLlzbV6VkkbOhh4F5Y'
+// Test configuration
+const TEST_USER_CONFIG = {
+  password: 'TestPass123!'
 };
 
-/**
- * Runtime function to detect test environment with comprehensive checks
- * Safe for both browser and Node.js environments
- */
-const isTestEnvironment = (): boolean => {
-  // First check if we're in a Node.js environment
-  if (typeof process === "undefined") {
-    return false;
+// Get environment variables with better error handling
+const getTestEnvVar = (name: string): string => {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing required test environment variable: ${name}. Ensure your test environment is properly configured.`);
   }
-
-  const checks = {
-    NODE_ENV: process.env.NODE_ENV === 'test',
-    JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
-    TEST_RUN_ID: typeof process.env.TEST_RUN_ID !== 'undefined',
-    CI: process.env.CI === 'true',
-    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS === 'true',
-    hasJestArg: process.argv.some(arg => arg.includes('jest')),
-    hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
-  };
-
-  // Return true if any test environment indicator is present
-  const isTest = Object.values(checks).some(check => check === true);
-  
-  return isTest;
-};
-
-// Helper function to safely access environment variables with consistent test environment detection
-const getEnvVar = (name: string): string | undefined => {
-  // Use the same test environment detection as the rest of the TestClientFactory
-  if (!isTestEnvironment() || typeof process === "undefined") {
-    return undefined;
-  }
-  return process.env[name];
+  return value;
 };
 
 /**
- * Global singleton client instance to prevent multiple GoTrueClient instances
- * Using a Map to store clients per worker with proper locking
- */
-const workerClients = new Map<string, SupabaseClient<Database>>();
-const workerServiceRoleClients = new Map<string, SupabaseClient<Database>>();
-const clientCreationLocks = new Map<string, Promise<void>>();
-
-/**
- * Test Client Factory with True Singleton Pattern
- * Uses a single global Supabase client instance per worker to prevent multiple GoTrueClient warnings
+ * Test Client Factory for managing Supabase clients in test environments
+ * 
+ * This factory provides different types of clients for various testing scenarios:
+ * - Shared Test Client: Authenticated client for most integration tests
+ * - Fresh Test Client: Clean client for authentication testing
+ * - Service Role Client: Admin client for test setup/cleanup
  */
 export class TestClientFactory {
-  private static currentAuthenticatedUser: string | null = null;
-  private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
-  private static workerId: string = getEnvVar('JEST_WORKER_ID') || 'main';
-  private static sessionEstablished: boolean = false;
-  private static sessionEstablishedAt: number = 0;
-  private static readonly SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+  private static sharedTestClient: SupabaseClient<Database> | null = null;
+  private static serviceRoleClient: SupabaseClient<Database> | null = null;
+  private static isInitialized = false;
 
   /**
-   * Ensure we're in a test environment - improved runtime detection
+   * Initialize the test environment
    */
-  private static ensureTestEnvironment(): void {
-    const isTest = isTestEnvironment();
-    
-    if (!isTest) {
-      console.warn('🔍 TestClientFactory: Environment detection results:');
-      console.warn('- Not in an obvious test environment');
-      if (typeof process !== "undefined") {
-        console.warn('- NODE_ENV:', process.env.NODE_ENV);
-        console.warn('- CI:', process.env.CI);
-        console.warn('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
-        console.warn('- TEST_RUN_ID:', process.env.TEST_RUN_ID);
-        console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
-      } else {
-        console.warn('- Running in browser environment (process not available)');
-      }
-      console.warn('⚠️ Proceeding with caution - ensure this is intentional');
-    } else {
-      console.log(`✅ TestClientFactory: Test environment detected successfully (Worker: ${this.workerId})`);
-    }
-  }
+  private static async initialize(): Promise<void> {
+    if (this.isInitialized) return;
 
-  /**
-   * Wait for session to be fully established with timeout
-   */
-  private static async waitForSessionEstablished(client: SupabaseClient<Database>, maxAttempts = 10): Promise<boolean> {
-    const startTime = Date.now();
-    
-    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-      try {
-        const { data: { session }, error } = await client.auth.getSession();
-        
-        if (error) {
-          console.warn(`🔍 Worker ${this.workerId}: Session check ${attempt}/${maxAttempts} failed:`, error.message);
-          await new Promise(resolve => setTimeout(resolve, 100));
-          continue;
-        }
-        
-        if (session && session.user && session.access_token) {
-          console.log(`✅ Worker ${this.workerId}: Session established on attempt ${attempt}/${maxAttempts} - User: ${session.user.email}`);
-          this.sessionEstablished = true;
-          this.sessionEstablishedAt = Date.now();
-          return true;
-        }
-        
-        console.warn(`⚠️ Worker ${this.workerId}: Session not ready ${attempt}/${maxAttempts} - missing session or token`);
-        await new Promise(resolve => setTimeout(resolve, 100));
-      } catch (error) {
-        console.error(`❌ Worker ${this.workerId}: Session check error ${attempt}/${maxAttempts}:`, error);
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+    try {
+      const testUrl = getTestEnvVar('VITE_SUPABASE_URL');
+      const testKey = getTestEnvVar('VITE_SUPABASE_ANON_KEY');
       
-      // Check for timeout
-      if (Date.now() - startTime > this.SESSION_TIMEOUT_MS) {
-        console.error(`❌ Worker ${this.workerId}: Session establishment timed out after ${this.SESSION_TIMEOUT_MS}ms`);
-        this.sessionEstablished = false;
-        return false;
-      }
+      console.log('🔧 Initializing test clients...');
+      console.log(`📍 Test URL: ${testUrl}`);
+      console.log(`🔑 Test Key: ${testKey.substring(0, 20)}...`);
+
+      // Create shared test client
+      this.sharedTestClient = createClient<Database>(testUrl, testKey, {
+        auth: {
+          storage: {
+            getItem: (key) => null, // Start fresh
+            setItem: (key, value) => {},
+            removeItem: (key) => {}
+          },
+          persistSession: false, // Don't persist for tests
+          autoRefreshToken: true,
+        }
+      });
+
+      // Create service role client for admin operations
+      const serviceRoleKey = getTestEnvVar('SUPABASE_SERVICE_ROLE_KEY');
+      this.serviceRoleClient = createClient<Database>(testUrl, serviceRoleKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+        }
+      });
+
+      this.isInitialized = true;
+      console.log('✅ Test clients initialized successfully');
+    } catch (error) {
+      console.error('❌ Failed to initialize test clients:', error);
+      throw error;
     }
-    
-    console.error(`❌ Worker ${this.workerId}: Session establishment failed after ${maxAttempts} attempts`);
-    this.sessionEstablished = false;
-    return false;
   }
 
   /**
-   * Get the single shared test client for this worker (creates it only once per worker)
-   * Uses a lock to prevent race conditions during client creation
+   * Get a fresh, unauthenticated test client for authentication testing
+   * This client has no existing session and can be used to test login/signup flows
+   */
+  static getFreshTestClient(): SupabaseClient<Database> {
+    const testUrl = getTestEnvVar('VITE_SUPABASE_URL');
+    const testKey = getTestEnvVar('VITE_SUPABASE_ANON_KEY');
+
+    console.log('🆕 Creating fresh test client for authentication testing');
+    
+    return createClient<Database>(testUrl, testKey, {
+      auth: {
+        storage: {
+          getItem: (key) => null, // Always start fresh
+          setItem: (key, value) => {},
+          removeItem: (key) => {}
+        },
+        persistSession: false,
+        autoRefreshToken: true,
+      }
+    });
+  }
+
+  /**
+   * Get the shared test client (creates if needed)
    */
   static async getSharedTestClient(): Promise<SupabaseClient<Database>> {
-    this.ensureTestEnvironment();
+    await this.initialize();
+    if (!this.sharedTestClient) {
+      throw new Error('Shared test client not initialized');
+    }
+    return this.sharedTestClient;
+  }
 
-    // Check if we already have a client
-    if (workerClients.has(this.workerId)) {
-      // Verify session is still valid
-      const client = workerClients.get(this.workerId)!;
-      const { data: { session } } = await client.auth.getSession();
+  /**
+   * Get client synchronously (for contexts where async is not possible)
+   */
+  static getSharedTestClient(): SupabaseClient<Database> {
+    if (!this.sharedTestClient) {
+      // Initialize synchronously for immediate access
+      const testUrl = getTestEnvVar('VITE_SUPABASE_URL');
+      const testKey = getTestEnvVar('VITE_SUPABASE_ANON_KEY');
       
-      if (session && session.user && session.access_token) {
-        // Check if session is too old
-        if (Date.now() - this.sessionEstablishedAt > this.SESSION_TIMEOUT_MS) {
-          console.log(`⚠️ Worker ${this.workerId}: Session expired, recreating client`);
-          await this.cleanup();
-        } else {
-          console.log(`🔄 Worker ${this.workerId}: Using existing worker-specific test client (ID: ${this.clientInstanceId})`);
-          return client;
+      this.sharedTestClient = createClient<Database>(testUrl, testKey, {
+        auth: {
+          storage: {
+            getItem: (key) => null,
+            setItem: (key, value) => {},
+            removeItem: (key) => {}
+          },
+          persistSession: false,
+          autoRefreshToken: true,
         }
-      } else {
-        console.log(`⚠️ Worker ${this.workerId}: Invalid session, recreating client`);
-        await this.cleanup();
+      });
+    }
+    return this.sharedTestClient;
+  }
+
+  /**
+   * Get the service role client for admin operations
+   */
+  static getServiceRoleClient(): SupabaseClient<Database> {
+    try {
+      if (!this.serviceRoleClient) {
+        const testUrl = getTestEnvVar('VITE_SUPABASE_URL');
+        const serviceRoleKey = getTestEnvVar('SUPABASE_SERVICE_ROLE_KEY');
+        
+        this.serviceRoleClient = createClient<Database>(testUrl, serviceRoleKey, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+          }
+        });
       }
+      return this.serviceRoleClient;
+    } catch (error) {
+      console.error('❌ Failed to get service role client:', error);
+      throw error;
     }
+  }
 
-    // Create a lock for this worker if one doesn't exist
-    if (!clientCreationLocks.has(this.workerId)) {
-      clientCreationLocks.set(this.workerId, new Promise<void>(async (resolve) => {
-        try {
-          console.log(`🔧 Worker ${this.workerId}: Creating worker-specific test client (ID: ${this.clientInstanceId})`);
-          
-          // Create client only once per worker to prevent multiple GoTrueClient instances
-          const client = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
-            auth: {
-              persistSession: true, // Enable persistence within the same worker
-              autoRefreshToken: true, // Enable auto-refresh within the same worker
-              storageKey: `test_auth_${this.workerId}`, // Unique storage key per worker
-            }
-          });
-          
-          workerClients.set(this.workerId, client);
-          console.log(`✅ Worker ${this.workerId}: Worker-specific test client created (ID: ${this.clientInstanceId})`);
-        } finally {
-          resolve();
-        }
-      }));
-    }
-
-    // Wait for the lock to be released
-    await clientCreationLocks.get(this.workerId);
+  /**
+   * Authenticate the shared test client with specific user credentials
+   */
+  static async authenticateSharedClient(email: string, password: string): Promise<SupabaseClient<Database>> {
+    console.log(`🔐 Authenticating shared client: ${email}`);
     
-    // Get the client after creation is complete
-    const client = workerClients.get(this.workerId);
-    if (!client) {
-      throw new Error(`Failed to create test client for worker ${this.workerId}`);
+    const client = this.getSharedTestClient();
+    
+    // Clear any existing session first
+    await client.auth.signOut();
+    
+    // Sign in with provided credentials
+    const { data, error } = await client.auth.signInWithPassword({
+      email,
+      password
+    });
+    
+    if (error) {
+      console.error(`❌ Authentication failed for ${email}:`, error);
+      throw new Error(`Authentication failed: ${error.message}`);
     }
     
+    if (!data.session) {
+      throw new Error('Authentication succeeded but no session was created');
+    }
+    
+    console.log(`✅ Shared client authenticated: ${email}`);
     return client;
   }
 
   /**
-   * Authenticate the shared client with specific user credentials
+   * Sign out the shared test client
    */
-  static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
-    this.ensureTestEnvironment();
-
-    const client = await this.getSharedTestClient();
-    
-    // If already authenticated as this user and session is established, verify it's still valid
-    if (this.currentAuthenticatedUser === userEmail && this.sessionEstablished) {
-      console.log(`🔐 Worker ${this.workerId}: Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
-      
-      // Quick session check
-      const { data: { session }, error } = await client.auth.getSession();
-      if (session && !error && session.user?.email === userEmail && session.access_token) {
-        console.log(`✅ Worker ${this.workerId}: Session verified for ${userEmail}`);
-        return client;
-      } else {
-        console.log(`⚠️ Worker ${this.workerId}: Session invalid for ${userEmail}, re-authenticating...`);
-        this.currentAuthenticatedUser = null;
-        this.sessionEstablished = false;
-      }
-    }
-    
-    try {
-      // Sign out current user if different
-      if (this.currentAuthenticatedUser && this.currentAuthenticatedUser !== userEmail) {
-        console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser} before authenticating ${userEmail}`);
-        await client.auth.signOut();
-        this.currentAuthenticatedUser = null;
-        this.sessionEstablished = false;
-        // Give some time for signout to process
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      console.log(`🔐 Worker ${this.workerId}: Authenticating shared client as ${userEmail} (ID: ${this.clientInstanceId})`);
-      
-      const { data, error } = await client.auth.signInWithPassword({
-        email: userEmail,
-        password: userPassword
-      });
-
-      if (error) {
-        throw new Error(`Failed to authenticate shared client: ${error.message}`);
-      }
-
-      if (!data.session || !data.user) {
-        throw new Error('Authentication succeeded but no session/user returned');
-      }
-
-      this.currentAuthenticatedUser = userEmail;
-      console.log(`✅ Worker ${this.workerId}: Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
-      
-      // Wait for session to be fully established
-      const sessionReady = await this.waitForSessionEstablished(client);
-      if (!sessionReady) {
-        throw new Error(`Session establishment failed for ${userEmail}`);
-      }
-      
-      console.log(`🔐 Worker ${this.workerId}: Session established and verified for ${userEmail}`);
-      return client;
-    } catch (error) {
-      console.error(`❌ Worker ${this.workerId}: Failed to authenticate shared client as ${userEmail}:`, error);
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
-      throw error;
+  static async signOutSharedClient(): Promise<void> {
+    if (this.sharedTestClient) {
+      console.log('🚪 Signing out shared test client...');
+      await this.sharedTestClient.auth.signOut();
+      console.log('✅ Shared test client signed out');
     }
   }
 
@@ -265,283 +199,53 @@ export class TestClientFactory {
    * Get the current authenticated user from the shared client
    */
   static async getCurrentAuthenticatedUser() {
-    const client = await this.getSharedTestClient();
+    const client = this.getSharedTestClient();
+    const { data: { session }, error } = await client.auth.getSession();
     
-    console.log(`🔍 Worker ${this.workerId}: Getting current user from shared client (ID: ${this.clientInstanceId})`);
-    
-    const { data: { session }, error: sessionError } = await client.auth.getSession();
-    if (sessionError) {
-      console.error('Session error:', sessionError);
-      throw new Error(`Failed to get session from shared client: ${sessionError.message}`);
+    if (error) {
+      throw new Error(`Failed to get session: ${error.message}`);
     }
     
-    if (!session) {
-      console.error('No active session found on shared client');
-      console.log('Current authenticated user tracking:', this.currentAuthenticatedUser);
-      console.log('Session established flag:', this.sessionEstablished);
-      throw new Error('No active session on shared client');
+    if (!session?.user) {
+      throw new Error('No authenticated user found');
     }
-
-    console.log(`✅ Worker ${this.workerId}: Found active session for user: ${session.user.email}`);
+    
     return session.user;
   }
 
   /**
-   * Sign out the current user from the shared client
+   * Clean up all test clients
    */
-  static async signOutSharedClient(): Promise<void> {
-    if (!workerClients.has(this.workerId)) {
-      console.log(`🔐 Worker ${this.workerId}: No shared client to sign out from`);
-      return;
+  static cleanup(): void {
+    console.log('🧹 Cleaning up test clients...');
+    
+    if (this.sharedTestClient) {
+      // Sign out shared client
+      this.sharedTestClient.auth.signOut().catch(console.warn);
+      this.sharedTestClient = null;
     }
-
-    try {
-      console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
-      await workerClients.get(this.workerId)!.auth.signOut();
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
-      console.log(`✅ Worker ${this.workerId}: Signed out from shared client`);
-    } catch (error) {
-      console.error(`❌ Worker ${this.workerId}: Failed to sign out from shared client:`, error);
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
+    
+    if (this.serviceRoleClient) {
+      this.serviceRoleClient = null;
     }
+    
+    this.isInitialized = false;
+    console.log('✅ Test clients cleaned up');
   }
 
   /**
-   * Get service role client for test data setup and cleanup
-   * Service role key is now REQUIRED for all test operations
-   */
-  static getServiceRoleClient(): SupabaseClient<Database> {
-    this.ensureTestEnvironment();
-
-    if (!workerServiceRoleClients.has(this.workerId)) {
-      // Use direct process.env access instead of getEnvVar() to avoid environment detection issues
-      const serviceRoleKey = typeof process !== "undefined" ? process.env.TEST_SUPABASE_SERVICE_ROLE_KEY : undefined;
-      
-      if (!serviceRoleKey) {
-        console.error('❌ TEST_SUPABASE_SERVICE_ROLE_KEY is missing from environment variables');
-        if (typeof process !== "undefined") {
-          console.error('❌ Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
-          console.error('❌ Direct process.env check:', typeof process.env.TEST_SUPABASE_SERVICE_ROLE_KEY);
-        } else {
-          console.error('❌ Running in browser environment - process not available');
-        }
-        throw new Error(
-          'TEST_SUPABASE_SERVICE_ROLE_KEY is required for all test operations. ' +
-          'This should have been validated during test setup. Please check your test runner configuration.'
-        );
-      }
-
-      console.log(`🔧 Worker ${this.workerId}: Creating worker-specific service role client`);
-      
-      const client = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          storageKey: `test_service_${this.workerId}`, // Unique storage key per worker
-        }
-      });
-
-      workerServiceRoleClients.set(this.workerId, client);
-    }
-    
-    return workerServiceRoleClients.get(this.workerId)!;
-  }
-
-  /**
-   * Get anonymous client for testing application logic
-   * Creates a simple anon client without authentication complexity
-   */
-  static getAnonClient(): SupabaseClient<Database> {
-    this.ensureTestEnvironment();
-    console.log('🔄 getAnonClient() creating simple anon client for testing');
-    
-    // Return a simple anon client for testing application logic
-    return createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        storageKey: `test_anon_${this.workerId}`,
-      }
-    });
-  }
-
-  /**
-   * Clean up clients and auth state for this worker
-   */
-  static async cleanup(): Promise<void> {
-    try {
-      await this.signOutSharedClient();
-    } catch (error) {
-      console.warn('Cleanup warning during signout:', error);
-    }
-
-    // Clear service role client for this worker
-    if (workerServiceRoleClients.has(this.workerId)) {
-      console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific service role client`);
-      workerServiceRoleClients.delete(this.workerId);
-    }
-    
-    // Clear shared client for this worker
-    if (workerClients.has(this.workerId)) {
-      console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific test client`);
-      workerClients.delete(this.workerId);
-    }
-    
-    // Clear creation lock
-    clientCreationLocks.delete(this.workerId);
-    
-    // Reset auth state tracking
-    this.currentAuthenticatedUser = null;
-    this.sessionEstablished = false;
-    this.sessionEstablishedAt = 0;
-    
-    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete`);
-  }
-
-  /**
-   * Get test project info
-   */
-  static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    const prodUrl = getEnvVar('SUPABASE_URL');
-
-    console.log('🔍 TestProjectInfo:', {
-      testUrl: TEST_PROJECT_CONFIG.url,
-      prodUrl: prodUrl ? '[SET]' : '[NOT SET]',
-    });
-
-    return {
-      url: TEST_PROJECT_CONFIG.url,
-      usingDedicatedProject: !!prodUrl && TEST_PROJECT_CONFIG.url.trim() !== prodUrl.trim()
-    };
-  }
-
-  /**
-   * Get debug info about the current client state
+   * Get debug information about the current state
    */
   static getDebugInfo() {
     return {
-      workerId: this.workerId,
-      clientInstanceId: this.clientInstanceId,
-      hasSharedClient: workerClients.has(this.workerId),
-      hasServiceRoleClient: workerServiceRoleClients.has(this.workerId),
-      currentAuthenticatedUser: this.currentAuthenticatedUser,
-      sessionEstablished: this.sessionEstablished
+      isInitialized: this.isInitialized,
+      hasSharedClient: !!this.sharedTestClient,
+      hasServiceClient: !!this.serviceRoleClient,
+      testConfig: {
+        hasUrl: !!process.env.VITE_SUPABASE_URL,
+        hasAnonKey: !!process.env.VITE_SUPABASE_ANON_KEY,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+      }
     };
-  }
-}
-
-/**
- * Test Infrastructure for database-based testing
- */
-export class TestInfrastructure {
-  /**
-   * Create test users for authentication testing
-   */
-  static async createTestUser(email: string, password: string, metadata?: any): Promise<any> {
-    try {
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      const { data, error } = await serviceClient.auth.admin.createUser({
-        email,
-        password,
-        user_metadata: metadata || {},
-        email_confirm: true
-      });
-
-      if (error) {
-        throw new Error(`Failed to create test user: ${error.message}`);
-      }
-
-      console.log(`✅ Created test user: ${email}`);
-      return data.user;
-    } catch (error) {
-      console.error(`Failed to create test user ${email}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete test users
-   */
-  static async deleteTestUser(userId: string): Promise<void> {
-    try {
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      const { error } = await serviceClient.auth.admin.deleteUser(userId);
-
-      if (error) {
-        throw new Error(`Failed to delete test user: ${error.message}`);
-      }
-
-      console.log(`✅ Deleted test user: ${userId}`);
-    } catch (error) {
-      console.error(`Failed to delete test user ${userId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Clean up test data from tables - using specific table names
-   */
-  static async cleanupTable(tableName: string): Promise<void> {
-    try {
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Handle specific known tables
-      if (tableName === 'profiles') {
-        const { error } = await serviceClient
-          .from('profiles')
-          .delete()
-          .neq('id', '00000000-0000-0000-0000-000000000000');
-        
-        if (error) {
-          console.warn(`Warning: Could not clean up table ${tableName}:`, error.message);
-        } else {
-          console.log(`✅ Cleaned up table: ${tableName}`);
-        }
-      } else {
-        console.log(`⚠️ Cleanup not implemented for table: ${tableName}`);
-      }
-    } catch (error) {
-      console.warn(`Warning: Could not clean up table ${tableName}:`, error);
-    }
-  }
-
-  /**
-   * Seed test data into a table - using specific table names
-   */
-  static async seedTable<T>(tableName: string, data: T[]): Promise<void> {
-    if (!data || data.length === 0) return;
-
-    try {
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      
-      // Handle specific known tables
-      if (tableName === 'profiles') {
-        const { error } = await serviceClient
-          .from('profiles')
-          .insert(data);
-
-        if (error) {
-          throw new Error(`Failed to seed table ${tableName}: ${error.message}`);
-        }
-
-        console.log(`✅ Seeded ${data.length} records into ${tableName}`);
-      } else {
-        console.log(`⚠️ Seeding not implemented for table: ${tableName}`);
-      }
-    } catch (error) {
-      console.error(`Failed to seed table ${tableName}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get test project info
-   */
-  static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    return TestClientFactory.getTestProjectInfo();
   }
 }
