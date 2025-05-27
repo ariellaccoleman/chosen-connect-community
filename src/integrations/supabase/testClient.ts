@@ -9,8 +9,14 @@ const TEST_PROJECT_CONFIG = {
 
 /**
  * Runtime function to detect test environment with comprehensive checks
+ * Safe for both browser and Node.js environments
  */
 const isTestEnvironment = (): boolean => {
+  // First check if we're in a Node.js environment
+  if (typeof process === "undefined") {
+    return false;
+  }
+
   const checks = {
     NODE_ENV: process.env.NODE_ENV === 'test',
     JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
@@ -65,11 +71,15 @@ export class TestClientFactory {
     if (!isTest) {
       console.warn('🔍 TestClientFactory: Environment detection results:');
       console.warn('- Not in an obvious test environment');
-      console.warn('- NODE_ENV:', process.env.NODE_ENV);
-      console.warn('- CI:', process.env.CI);
-      console.warn('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
-      console.warn('- TEST_RUN_ID:', process.env.TEST_RUN_ID);
-      console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
+      if (typeof process !== "undefined") {
+        console.warn('- NODE_ENV:', process.env.NODE_ENV);
+        console.warn('- CI:', process.env.CI);
+        console.warn('- GITHUB_ACTIONS:', process.env.GITHUB_ACTIONS);
+        console.warn('- TEST_RUN_ID:', process.env.TEST_RUN_ID);
+        console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
+      } else {
+        console.warn('- Running in browser environment (process not available)');
+      }
       console.warn('⚠️ Proceeding with caution - ensure this is intentional');
     } else {
       console.log(`✅ TestClientFactory: Test environment detected successfully (Worker: ${this.workerId})`);
@@ -307,12 +317,16 @@ export class TestClientFactory {
 
     if (!workerServiceRoleClients.has(this.workerId)) {
       // Use direct process.env access instead of getEnvVar() to avoid environment detection issues
-      const serviceRoleKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY;
+      const serviceRoleKey = typeof process !== "undefined" ? process.env.TEST_SUPABASE_SERVICE_ROLE_KEY : undefined;
       
       if (!serviceRoleKey) {
         console.error('❌ TEST_SUPABASE_SERVICE_ROLE_KEY is missing from environment variables');
-        console.error('❌ Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
-        console.error('❌ Direct process.env check:', typeof process.env.TEST_SUPABASE_SERVICE_ROLE_KEY);
+        if (typeof process !== "undefined") {
+          console.error('❌ Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
+          console.error('❌ Direct process.env check:', typeof process.env.TEST_SUPABASE_SERVICE_ROLE_KEY);
+        } else {
+          console.error('❌ Running in browser environment - process not available');
+        }
         throw new Error(
           'TEST_SUPABASE_SERVICE_ROLE_KEY is required for all test operations. ' +
           'This should have been validated during test setup. Please check your test runner configuration.'
