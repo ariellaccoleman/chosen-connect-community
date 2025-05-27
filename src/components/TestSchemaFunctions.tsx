@@ -61,7 +61,16 @@ export function TestSchemaFunctions() {
       // Test 2: Client factory functionality
       const test2 = await runTest('Client factory test', async () => {
         const anonClient = await TestClientFactory.getAnonClient();
-        const serviceClient = TestClientFactory.getServiceRoleClient();
+        
+        // Try to get service client, but handle gracefully if not available
+        let serviceClientExists = false;
+        let serviceClientError = null;
+        try {
+          const serviceClient = TestClientFactory.getServiceRoleClient();
+          serviceClientExists = !!serviceClient;
+        } catch (error) {
+          serviceClientError = error instanceof Error ? error.message : 'Unknown error';
+        }
         
         // Test basic connectivity with anon client
         const { data, error } = await anonClient
@@ -71,14 +80,25 @@ export function TestSchemaFunctions() {
         
         return {
           anonClientWorks: !error,
-          serviceClientExists: !!serviceClient,
+          serviceClientExists,
+          serviceClientError,
           queryError: error?.message || null
         };
       });
       testResults.push(test2);
 
-      // Test 3: User management
+      // Test 3: User management (only if service role key is available)
       const test3 = await runTest('User management test', async () => {
+        // Check if service role key is available
+        const hasServiceKey = !!(process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+        
+        if (!hasServiceKey) {
+          return {
+            skipped: true,
+            reason: 'Service role key not available - this test requires TEST_SUPABASE_SERVICE_ROLE_KEY'
+          };
+        }
+
         const testUser = {
           email: `test_${Date.now()}@testproject.example`,
           password: 'TestPassword123!',
@@ -110,8 +130,17 @@ export function TestSchemaFunctions() {
       });
       testResults.push(test3);
 
-      // Test 4: Table cleanup test
+      // Test 4: Table cleanup test (only if service role key is available)
       const test4 = await runTest('Table cleanup test', async () => {
+        const hasServiceKey = !!(process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+        
+        if (!hasServiceKey) {
+          return {
+            skipped: true,
+            reason: 'Service role key not available - this test requires TEST_SUPABASE_SERVICE_ROLE_KEY'
+          };
+        }
+
         await TestInfrastructure.cleanupTable('profiles');
         return {
           message: 'Table cleanup completed (check console for details)'
@@ -198,6 +227,11 @@ export function TestSchemaFunctions() {
             <li>✅ Easy cleanup and seeding</li>
             <li>✅ Type-safe database operations</li>
           </ul>
+          
+          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
+            <strong>Note:</strong> Some tests require the TEST_SUPABASE_SERVICE_ROLE_KEY environment variable. 
+            Tests that require this key will be skipped if it's not available, but basic connectivity tests will still run.
+          </div>
         </div>
       </CardContent>
     </Card>
