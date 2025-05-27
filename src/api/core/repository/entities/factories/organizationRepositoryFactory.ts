@@ -3,8 +3,6 @@ import { EntityRepositoryFactoryBase } from './EntityRepositoryFactoryBase';
 import { EntityType } from '@/types/entityTypes';
 import { Organization } from '@/types/organization';
 import { EntityRepository } from '../../EntityRepository';
-import { createOrganizationRepository } from '../OrganizationRepository';
-import { SupabaseRepository } from '../../SupabaseRepository';
 
 /**
  * Factory for creating organization repositories
@@ -22,25 +20,6 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactoryBase<O
    */
   getEntityType(): EntityType {
     return EntityType.ORGANIZATION;
-  }
-
-  /**
-   * Override createRepository to pass the client through
-   */
-  createRepository(options: {
-    schema?: string;
-    initialData?: Organization[];
-    client?: any;
-  } = {}): EntityRepository<Organization> {
-    // Create the base repository using SupabaseRepository
-    const baseRepo = new SupabaseRepository<Organization>(
-      this.getTableName(),
-      options.schema || 'public',
-      options.client
-    );
-    
-    // Create and return the organization repository
-    return createOrganizationRepository(baseRepo, options.client);
   }
 }
 
@@ -60,7 +39,6 @@ export function createOrganizationRepositoryFactory(): OrganizationRepositoryFac
 export function createOrganizationRepository(options: {
   schema?: string;
   initialData?: Organization[];
-  client?: any;
 } = {}): EntityRepository<Organization> {
   return new OrganizationRepositoryFactory().createRepository(options);
 }
@@ -69,13 +47,8 @@ export function createOrganizationRepository(options: {
  * Create an organization repository for testing
  * 
  * @param initialData Optional initial data
- * @param client Optional test client
  * @returns Organization repository instance configured for testing
  */
-export function createTestingOrganizationRepository(
-  initialData?: Organization[], 
-  client?: any
-): EntityRepository<Organization> {
-  const factory = new OrganizationRepositoryFactory();
-  return factory.createRepository({ initialData, client });
+export function createTestingOrganizationRepository(initialData?: Organization[]): EntityRepository<Organization> {
+  return new OrganizationRepositoryFactory().createTestingRepository(initialData);
 }

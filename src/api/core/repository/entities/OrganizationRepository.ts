@@ -6,22 +6,17 @@ import { RepositoryResponse } from '../DataRepository';
 import { BaseRepository } from '../BaseRepository';
 import { createSuccessResponse } from '../repositoryUtils';
 import { logger } from '@/utils/logger';
-import { apiClient } from '@/api/core/apiClient';
 
 /**
  * Repository for managing Organization entities
  */
 export class OrganizationRepository extends EntityRepository<Organization> {
-  private providedClient?: any;
-  
   /**
    * Creates a new OrganizationRepository
    * @param baseRepository The base repository to use for database operations
-   * @param providedClient Optional Supabase client instance for testing
    */
-  constructor(baseRepository: BaseRepository<Organization>, providedClient?: any) {
+  constructor(baseRepository: BaseRepository<Organization>) {
     super('organizations', EntityType.ORGANIZATION, baseRepository);
-    this.providedClient = providedClient;
   }
 
   /**
@@ -77,17 +72,17 @@ export class OrganizationRepository extends EntityRepository<Organization> {
    */
   async findByName(name: string): Promise<RepositoryResponse<Organization[]>> {
     try {
-      return await apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from('organizations')
-          .select('*')
-          .ilike('name', `%${name}%`);
-        
-        if (error) throw error;
-        
-        const organizations = (data || []).map(record => this.convertToEntity(record));
-        return createSuccessResponse(organizations);
-      }, this.providedClient);
+      const result = await this.baseRepository.select()
+        .ilike('name', `%${name}%`)
+        .execute();
+      
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
+      }
+      
+      return result as RepositoryResponse<Organization[]>;
     } catch (error) {
       this.handleError('findByName', error, { name });
       return {
@@ -109,17 +104,17 @@ export class OrganizationRepository extends EntityRepository<Organization> {
    */
   async getVerifiedOrganizations(): Promise<RepositoryResponse<Organization[]>> {
     try {
-      return await apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from('organizations')
-          .select('*')
-          .eq('is_verified', true);
-        
-        if (error) throw error;
-        
-        const organizations = (data || []).map(record => this.convertToEntity(record));
-        return createSuccessResponse(organizations);
-      }, this.providedClient);
+      const result = await this.baseRepository.select()
+        .eq('is_verified', true)
+        .execute();
+      
+      if (result.isSuccess() && result.data) {
+        return createSuccessResponse(
+          result.data.map(record => this.convertToEntity(record))
+        );
+      }
+      
+      return result as RepositoryResponse<Organization[]>;
     } catch (error) {
       this.handleError('getVerifiedOrganizations', error);
       return {
@@ -135,95 +130,18 @@ export class OrganizationRepository extends EntityRepository<Organization> {
       };
     }
   }
-
-  /**
-   * Override the base findById to use apiClient.query
-   */
-  async findById(id: string): Promise<RepositoryResponse<Organization | null>> {
-    try {
-      return await apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from('organizations')
-          .select(`
-            *,
-            location:locations(*)
-          `)
-          .eq('id', id)
-          .maybeSingle();
-        
-        if (error) throw error;
-        
-        if (data) {
-          const organization = this.convertToEntity(data);
-          return createSuccessResponse(organization);
-        } else {
-          return createSuccessResponse(null);
-        }
-      }, this.providedClient);
-    } catch (error) {
-      this.handleError('findById', error, { id });
-      return {
-        data: null,
-        error: {
-          code: 'query_error',
-          message: `Failed to find organization by id: ${id}`,
-          original: error
-        },
-        isSuccess: () => false,
-        isError: () => true,
-        getErrorMessage: () => `Failed to find organization by id: ${id}`
-      };
-    }
-  }
-
-  /**
-   * Override the base findAll to use apiClient.query
-   */
-  async findAll(): Promise<RepositoryResponse<Organization[]>> {
-    try {
-      return await apiClient.query(async (client) => {
-        const { data, error } = await client
-          .from('organizations')
-          .select(`
-            *,
-            location:locations(*)
-          `)
-          .order('name', { ascending: true });
-        
-        if (error) throw error;
-        
-        const organizations = (data || []).map(record => this.convertToEntity(record));
-        return createSuccessResponse(organizations);
-      }, this.providedClient);
-    } catch (error) {
-      this.handleError('findAll', error);
-      return {
-        data: null,
-        error: {
-          code: 'query_error',
-          message: 'Failed to get all organizations',
-          original: error
-        },
-        isSuccess: () => false,
-        isError: () => true,
-        getErrorMessage: () => 'Failed to get all organizations'
-      };
-    }
-  }
 }
 
 /**
  * Create an organization repository instance
  * @param baseRepository Base repository to use for database operations
- * @param providedClient Optional Supabase client instance for testing
  * @returns Organization repository instance
  */
 export function createOrganizationRepository(
-  baseRepository: BaseRepository<Organization>,
-  providedClient?: any
+  baseRepository: BaseRepository<Organization>
 ): OrganizationRepository {
   try {
-    return new OrganizationRepository(baseRepository, providedClient);
+    return new OrganizationRepository(baseRepository);
   } catch (error) {
     logger.error('Failed to create organization repository', error);
     throw error;
