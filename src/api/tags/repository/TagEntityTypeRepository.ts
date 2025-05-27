@@ -1,9 +1,9 @@
+
 /**
  * Tag Entity Type Repository
  * Repository implementation for managing tag entity types
  */
-import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
-import { supabase } from "@/integrations/supabase/client";
+import { apiClient } from "@/api/core/apiClient";
 import { TagEntityType } from "@/utils/tags/types";
 import { logger } from "@/utils/logger";
 import { EntityType } from "@/types/entityTypes";
@@ -70,14 +70,18 @@ export interface TagEntityTypeRepository {
  * @returns TagEntityTypeRepository instance
  */
 export function createTagEntityTypeRepository(providedClient?: any): TagEntityTypeRepository {
-  const client = providedClient || supabase;
-  const repository = createSupabaseRepository<TagEntityType>("tag_entity_types", client);
   
   return {
     async getAllTagEntityTypes(): Promise<TagEntityType[]> {
       try {
-        const result = await repository.getAll();
-        return result || [];
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from('tag_entity_types')
+            .select('*');
+          
+          if (error) throw error;
+          return data || [];
+        }, providedClient);
       } catch (err) {
         logger.error("Error fetching all tag entity types:", err);
         return [];
@@ -86,10 +90,15 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async getTagEntityTypesByTagId(tagId: string): Promise<TagEntityType[]> {
       try {
-        const result = await repository.select()
-                                     .eq('tag_id', tagId)
-                                     .execute();
-        return result.data || [];
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from('tag_entity_types')
+            .select('*')
+            .eq('tag_id', tagId);
+          
+          if (error) throw error;
+          return data || [];
+        }, providedClient);
       } catch (err) {
         logger.error(`Error fetching entity types for tag ${tagId}:`, err);
         return [];
@@ -103,16 +112,21 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
           return createSuccessResponse([]);
         }
         
-        const result = await repository.select('entity_type')
-                                     .eq('tag_id', tagId)
-                                     .execute();
-        
-        if (!result.data) {
-          return createSuccessResponse([]);
-        }
-        
-        const entityTypes = result.data.map(item => item.entity_type);
-        return createSuccessResponse(entityTypes);
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from('tag_entity_types')
+            .select('entity_type')
+            .eq('tag_id', tagId);
+          
+          if (error) throw error;
+          
+          if (!data) {
+            return createSuccessResponse([]);
+          }
+          
+          const entityTypes = data.map(item => item.entity_type);
+          return createSuccessResponse(entityTypes);
+        }, providedClient);
       } catch (err) {
         logger.error(`Error fetching entity types for tag ${tagId}:`, err);
         return createErrorResponse('Failed to get entity types');
@@ -121,16 +135,21 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async getTagEntityTypesByEntityType(entityType: EntityType): Promise<TagEntityType[]> {
       try {
-        const result = await repository.select()
-                                     .eq('entity_type', entityType)
-                                     .execute();
-        
-        if (!result.data) {
-          logger.warn(`No tag entity types found for entity type ${entityType}`);
-          return [];
-        }
-        
-        return result.data;
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from('tag_entity_types')
+            .select('*')
+            .eq('entity_type', entityType);
+          
+          if (error) throw error;
+          
+          if (!data) {
+            logger.warn(`No tag entity types found for entity type ${entityType}`);
+            return [];
+          }
+          
+          return data;
+        }, providedClient);
       } catch (err) {
         logger.error(`Error fetching tag entity types for entity type ${entityType}:`, err);
         return [];
@@ -139,13 +158,18 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async isTagAllowedForEntityType(tagId: string, entityType: EntityType): Promise<boolean> {
       try {
-        const result = await repository.select()
-                                      .eq('tag_id', tagId)
-                                      .eq('entity_type', entityType)
-                                      .execute();
-        
-        // If we find a record, the tag is allowed for this entity type
-        return result.data?.length > 0;
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from('tag_entity_types')
+            .select('*')
+            .eq('tag_id', tagId)
+            .eq('entity_type', entityType);
+          
+          if (error) throw error;
+          
+          // If we find a record, the tag is allowed for this entity type
+          return data?.length > 0;
+        }, providedClient);
       } catch (err) {
         logger.error(`Error checking if tag ${tagId} is allowed for entity type ${entityType}:`, err);
         return false;
@@ -154,13 +178,18 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async createTagEntityType(data: Partial<TagEntityType>): Promise<TagEntityType> {
       try {
-        const result = await repository.insert(data).execute();
-        
-        if (!result.data || result.data.length === 0) {
-          throw new Error("Failed to create tag entity type");
-        }
-        
-        return result.data[0];
+        return await apiClient.query(async (client) => {
+          const { data: result, error } = await client
+            .from('tag_entity_types')
+            .insert(data)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          if (!result) throw new Error("Failed to create tag entity type");
+          
+          return result;
+        }, providedClient);
       } catch (err) {
         logger.error("Error creating tag entity type:", err);
         throw err;
@@ -169,7 +198,14 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async deleteTagEntityType(id: string): Promise<void> {
       try {
-        await repository.delete().eq('id', id).execute();
+        await apiClient.query(async (client) => {
+          const { error } = await client
+            .from('tag_entity_types')
+            .delete()
+            .eq('id', id);
+          
+          if (error) throw error;
+        }, providedClient);
       } catch (err) {
         logger.error(`Error deleting tag entity type ${id}:`, err);
         throw err;
@@ -178,7 +214,14 @@ export function createTagEntityTypeRepository(providedClient?: any): TagEntityTy
     
     async deleteEntityTypesForTag(tagId: string): Promise<void> {
       try {
-        await repository.delete().eq('tag_id', tagId).execute();
+        await apiClient.query(async (client) => {
+          const { error } = await client
+            .from('tag_entity_types')
+            .delete()
+            .eq('tag_id', tagId);
+          
+          if (error) throw error;
+        }, providedClient);
       } catch (err) {
         logger.error(`Error deleting entity types for tag ${tagId}:`, err);
         throw err;
