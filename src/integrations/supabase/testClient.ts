@@ -299,6 +299,7 @@ export class TestClientFactory {
 
   /**
    * Get service role client for test data setup and cleanup
+   * Throws an error if no service role key is available - no fallback
    */
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
@@ -307,8 +308,10 @@ export class TestClientFactory {
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
-        console.warn('No service role key found - using shared test client instead');
-        return this.getSharedTestClient();
+        throw new Error(
+          'TEST_SUPABASE_SERVICE_ROLE_KEY is required for service role operations. ' +
+          'Please set this environment variable to run tests that require database setup/cleanup.'
+        );
       }
 
       console.log(`🔧 Worker ${this.workerId}: Creating worker-specific service role client`);

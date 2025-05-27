@@ -20,6 +20,15 @@ describe('Organization Relationships API - Integration Tests', () => {
     if (!isSetup) {
       console.warn('⚠️ Persistent test users not set up - some tests may fail');
     }
+
+    // Verify service role key is available
+    try {
+      TestClientFactory.getServiceRoleClient();
+      console.log('✅ Service role client available for tests');
+    } catch (error) {
+      console.error('❌ Service role client not available:', error);
+      throw error;
+    }
   });
 
   beforeEach(async () => {
@@ -95,9 +104,9 @@ describe('Organization Relationships API - Integration Tests', () => {
 
   afterEach(async () => {
     // Clean up test data with proper null checks
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
     try {
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      
       // Clean up relationships if we have a test user
       if (testUser?.id) {
         await serviceClient
