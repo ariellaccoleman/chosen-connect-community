@@ -1,3 +1,4 @@
+
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -42,10 +43,10 @@ describe('Organization Relationships API - Integration Tests', () => {
     createdRelationshipIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication using the database test pattern
+    // Set up authentication using user2 to avoid interference with database tests
     try {
-      console.log('🔐 Setting up test authentication...');
-      await TestAuthUtils.setupTestAuth('user1');
+      console.log('🔐 Setting up test authentication for user2...');
+      await TestAuthUtils.setupTestAuth('user2');
       
       // Wait a moment for auth to settle
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -66,7 +67,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       console.warn('Could not get test user, using mock ID:', error);
       testUser = { 
         id: uuidv4(),
-        email: 'testuser1@example.com'
+        email: 'testuser2@example.com'
       };
     }
     
@@ -84,7 +85,7 @@ describe('Organization Relationships API - Integration Tests', () => {
         .from('profiles')
         .upsert({ 
           id: testUser.id, 
-          email: testUser.email || 'testuser1@example.com',
+          email: testUser.email || 'testuser2@example.com',
           first_name: 'Test',
           last_name: 'User'
         });
