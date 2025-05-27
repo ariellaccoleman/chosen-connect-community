@@ -1,4 +1,3 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -95,12 +94,20 @@ describe('Organization Relationships API - Database Tests', () => {
     }
   });
 
-  afterAll(() => {
-    TestClientFactory.cleanup();
+  afterAll(async () => {
+    // Ensure we clean up all clients
+    await TestClientFactory.cleanup();
   });
 
   describe('getUserOrganizationRelationships', () => {
     test('should return empty array when user has no relationships', async () => {
+      // Verify authentication is still valid
+      const client = TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated');
+      }
+
       console.log('🧪 Testing getUserOrganizationRelationships with no relationships');
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
       
@@ -109,6 +116,13 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should return user relationships with organization details', async () => {
+      // Verify authentication is still valid
+      const client = TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Test user not authenticated');
+      }
+
       console.log('🧪 Testing getUserOrganizationRelationships with existing relationship');
       
       // Create a test relationship directly in database using service client

@@ -37,19 +37,23 @@ const getEnvVar = (name: string): string | undefined => {
 
 /**
  * Global singleton client instance to prevent multiple GoTrueClient instances
+ * Using a Map to store clients per worker with proper locking
  */
-let globalTestClient: SupabaseClient<Database> | null = null;
-let globalServiceRoleClient: SupabaseClient<Database> | null = null;
+const workerClients = new Map<string, SupabaseClient<Database>>();
+const workerServiceRoleClients = new Map<string, SupabaseClient<Database>>();
+const clientCreationLocks = new Map<string, Promise<void>>();
 
 /**
  * Test Client Factory with True Singleton Pattern
- * Uses a single global Supabase client instance to prevent multiple GoTrueClient warnings
+ * Uses a single global Supabase client instance per worker to prevent multiple GoTrueClient warnings
  */
 export class TestClientFactory {
   private static currentAuthenticatedUser: string | null = null;
   private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
   private static workerId: string = getEnvVar('JEST_WORKER_ID') || 'main';
   private static sessionEstablished: boolean = false;
+  private static sessionEstablishedAt: number = 0;
+  private static readonly SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
   /**
    * Ensure we're in a test environment - improved runtime detection
@@ -72,9 +76,11 @@ export class TestClientFactory {
   }
 
   /**
-   * Wait for session to be fully established
+   * Wait for session to be fully established with timeout
    */
   private static async waitForSessionEstablished(client: SupabaseClient<Database>, maxAttempts = 10): Promise<boolean> {
+    const startTime = Date.now();
+    
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const { data: { session }, error } = await client.auth.getSession();
@@ -88,6 +94,7 @@ export class TestClientFactory {
         if (session && session.user && session.access_token) {
           console.log(`✅ Worker ${this.workerId}: Session established on attempt ${attempt}/${maxAttempts} - User: ${session.user.email}`);
           this.sessionEstablished = true;
+          this.sessionEstablishedAt = Date.now();
           return true;
         }
         
@@ -97,6 +104,13 @@ export class TestClientFactory {
         console.error(`❌ Worker ${this.workerId}: Session check error ${attempt}/${maxAttempts}:`, error);
         await new Promise(resolve => setTimeout(resolve, 100));
       }
+      
+      // Check for timeout
+      if (Date.now() - startTime > this.SESSION_TIMEOUT_MS) {
+        console.error(`❌ Worker ${this.workerId}: Session establishment timed out after ${this.SESSION_TIMEOUT_MS}ms`);
+        this.sessionEstablished = false;
+        return false;
+      }
     }
     
     console.error(`❌ Worker ${this.workerId}: Session establishment failed after ${maxAttempts} attempts`);
@@ -105,28 +119,66 @@ export class TestClientFactory {
   }
 
   /**
-   * Get the single shared test client (creates it only once globally)
+   * Get the single shared test client for this worker (creates it only once per worker)
+   * Uses a lock to prevent race conditions during client creation
    */
-  static getSharedTestClient(): SupabaseClient<Database> {
+  static async getSharedTestClient(): Promise<SupabaseClient<Database>> {
     this.ensureTestEnvironment();
 
-    if (!globalTestClient) {
-      console.log(`🔧 Worker ${this.workerId}: Creating GLOBAL shared test client (ID: ${this.clientInstanceId})`);
+    // Check if we already have a client
+    if (workerClients.has(this.workerId)) {
+      // Verify session is still valid
+      const client = workerClients.get(this.workerId)!;
+      const { data: { session } } = await client.auth.getSession();
       
-      // Create client only once globally to prevent multiple GoTrueClient instances
-      globalTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
-        auth: {
-          persistSession: false, // Disable persistence to avoid session conflicts
-          autoRefreshToken: false, // Disable auto-refresh during tests
+      if (session && session.user && session.access_token) {
+        // Check if session is too old
+        if (Date.now() - this.sessionEstablishedAt > this.SESSION_TIMEOUT_MS) {
+          console.log(`⚠️ Worker ${this.workerId}: Session expired, recreating client`);
+          await this.cleanup();
+        } else {
+          console.log(`🔄 Worker ${this.workerId}: Using existing worker-specific test client (ID: ${this.clientInstanceId})`);
+          return client;
         }
-      });
-      
-      console.log(`✅ Worker ${this.workerId}: Global shared test client created (ID: ${this.clientInstanceId})`);
-    } else {
-      console.log(`🔄 Worker ${this.workerId}: Using existing global shared test client (ID: ${this.clientInstanceId})`);
+      } else {
+        console.log(`⚠️ Worker ${this.workerId}: Invalid session, recreating client`);
+        await this.cleanup();
+      }
+    }
+
+    // Create a lock for this worker if one doesn't exist
+    if (!clientCreationLocks.has(this.workerId)) {
+      clientCreationLocks.set(this.workerId, new Promise<void>(async (resolve) => {
+        try {
+          console.log(`🔧 Worker ${this.workerId}: Creating worker-specific test client (ID: ${this.clientInstanceId})`);
+          
+          // Create client only once per worker to prevent multiple GoTrueClient instances
+          const client = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
+            auth: {
+              persistSession: true, // Enable persistence within the same worker
+              autoRefreshToken: true, // Enable auto-refresh within the same worker
+              storageKey: `test_auth_${this.workerId}`, // Unique storage key per worker
+            }
+          });
+          
+          workerClients.set(this.workerId, client);
+          console.log(`✅ Worker ${this.workerId}: Worker-specific test client created (ID: ${this.clientInstanceId})`);
+        } finally {
+          resolve();
+        }
+      }));
+    }
+
+    // Wait for the lock to be released
+    await clientCreationLocks.get(this.workerId);
+    
+    // Get the client after creation is complete
+    const client = workerClients.get(this.workerId);
+    if (!client) {
+      throw new Error(`Failed to create test client for worker ${this.workerId}`);
     }
     
-    return globalTestClient;
+    return client;
   }
 
   /**
@@ -135,7 +187,7 @@ export class TestClientFactory {
   static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
     this.ensureTestEnvironment();
 
-    const client = this.getSharedTestClient();
+    const client = await this.getSharedTestClient();
     
     // If already authenticated as this user and session is established, verify it's still valid
     if (this.currentAuthenticatedUser === userEmail && this.sessionEstablished) {
@@ -202,7 +254,7 @@ export class TestClientFactory {
    * Get the current authenticated user from the shared client
    */
   static async getCurrentAuthenticatedUser() {
-    const client = this.getSharedTestClient();
+    const client = await this.getSharedTestClient();
     
     console.log(`🔍 Worker ${this.workerId}: Getting current user from shared client (ID: ${this.clientInstanceId})`);
     
@@ -227,14 +279,14 @@ export class TestClientFactory {
    * Sign out the current user from the shared client
    */
   static async signOutSharedClient(): Promise<void> {
-    if (!globalTestClient) {
+    if (!workerClients.has(this.workerId)) {
       console.log(`🔐 Worker ${this.workerId}: No shared client to sign out from`);
       return;
     }
 
     try {
       console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
-      await globalTestClient.auth.signOut();
+      await workerClients.get(this.workerId)!.auth.signOut();
       this.currentAuthenticatedUser = null;
       this.sessionEstablished = false;
       console.log(`✅ Worker ${this.workerId}: Signed out from shared client`);
@@ -251,7 +303,7 @@ export class TestClientFactory {
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
-    if (!globalServiceRoleClient) {
+    if (!workerServiceRoleClients.has(this.workerId)) {
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
@@ -259,17 +311,20 @@ export class TestClientFactory {
         return this.getSharedTestClient();
       }
 
-      console.log('🔧 Creating service role client for test project');
+      console.log(`🔧 Worker ${this.workerId}: Creating worker-specific service role client`);
       
-      globalServiceRoleClient = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
+      const client = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
         auth: {
-          persistSession: false,
-          autoRefreshToken: false,
+          persistSession: true,
+          autoRefreshToken: true,
+          storageKey: `test_service_${this.workerId}`, // Unique storage key per worker
         }
       });
+
+      workerServiceRoleClients.set(this.workerId, client);
     }
     
-    return globalServiceRoleClient;
+    return workerServiceRoleClients.get(this.workerId)!;
   }
 
   /**
@@ -282,7 +337,7 @@ export class TestClientFactory {
   }
 
   /**
-   * Clean up clients and auth state - PRESERVES shared client instance
+   * Clean up clients and auth state for this worker
    */
   static async cleanup(): Promise<void> {
     try {
@@ -291,19 +346,27 @@ export class TestClientFactory {
       console.warn('Cleanup warning during signout:', error);
     }
 
-    // Clear service role client but PRESERVE the shared test client
-    if (globalServiceRoleClient) {
-      console.log('🧹 Clearing global service role client');
-      globalServiceRoleClient = null;
+    // Clear service role client for this worker
+    if (workerServiceRoleClients.has(this.workerId)) {
+      console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific service role client`);
+      workerServiceRoleClients.delete(this.workerId);
     }
     
-    // DO NOT reset globalTestClient to preserve singleton pattern
-    // This prevents "Multiple GoTrueClient instances" warnings between test files
-    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete (shared client preserved)`);
+    // Clear shared client for this worker
+    if (workerClients.has(this.workerId)) {
+      console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific test client`);
+      workerClients.delete(this.workerId);
+    }
+    
+    // Clear creation lock
+    clientCreationLocks.delete(this.workerId);
     
     // Reset auth state tracking
     this.currentAuthenticatedUser = null;
     this.sessionEstablished = false;
+    this.sessionEstablishedAt = 0;
+    
+    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete`);
   }
 
   /**
@@ -330,8 +393,8 @@ export class TestClientFactory {
     return {
       workerId: this.workerId,
       clientInstanceId: this.clientInstanceId,
-      hasSharedClient: !!globalTestClient,
-      hasServiceRoleClient: !!globalServiceRoleClient,
+      hasSharedClient: workerClients.has(this.workerId),
+      hasServiceRoleClient: workerServiceRoleClients.has(this.workerId),
       currentAuthenticatedUser: this.currentAuthenticatedUser,
       sessionEstablished: this.sessionEstablished
     };
