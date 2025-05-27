@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TestClientFactory } from "@/integrations/supabase/testClient";
 import { handleApiError } from "./errorHandler";
@@ -63,15 +62,10 @@ const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100):
 /**
  * Get the appropriate Supabase client based on environment
  */
-const getSupabaseClient = async (useFreshClient = false) => {
+const getSupabaseClient = async () => {
   if (isTestEnvironment()) {
-    if (useFreshClient) {
-      console.log('🧪 Using fresh test Supabase client for authentication testing');
-      return TestClientFactory.getFreshTestClient();
-    } else {
-      console.log('🧪 Using shared test Supabase client for API operations');
-      return await TestClientFactory.getSharedTestClient();
-    }
+    console.log('🧪 Using shared test Supabase client for API operations');
+    return await TestClientFactory.getSharedTestClient();
   }
   
   return supabase;
@@ -80,9 +74,9 @@ const getSupabaseClient = async (useFreshClient = false) => {
 /**
  * Execute operation with session verification in test mode
  */
-const executeWithSessionVerification = async (client: any, callback: (client: any) => any, skipSessionCheck = false) => {
-  if (!isTestEnvironment() || skipSessionCheck) {
-    // In production or when skipping session check, execute directly
+const executeWithSessionVerification = async (client: any, callback: (client: any) => any) => {
+  if (!isTestEnvironment()) {
+    // In production, execute directly
     return await callback(client);
   }
   
@@ -138,11 +132,10 @@ export const apiClient = {
   },
   
   // Auth operations with error handling
-  async authQuery(callback: (auth: any) => any, useFreshClient = false) {
+  async authQuery(callback: (auth: any) => any) {
     try {
-      const client = await getSupabaseClient(useFreshClient);
-      // Skip session verification for auth operations when using fresh client
-      return await executeWithSessionVerification(client, (c) => callback(c.auth), useFreshClient);
+      const client = await getSupabaseClient();
+      return await callback(client.auth);
     } catch (error) {
       return handleApiError(error);
     }

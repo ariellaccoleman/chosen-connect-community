@@ -25,7 +25,6 @@ interface AuthUpdatePasswordData {
 
 /**
  * API module for authentication operations
- * Uses fresh clients for auth testing to avoid interference with existing sessions
  */
 export const authApi = {
   /**
@@ -48,7 +47,7 @@ export const authApi = {
       if (error) throw error;
       
       return createSuccessResponse({ user: authData.user });
-    }, true); // Use fresh client for auth operations
+    });
   },
   
   /**
@@ -64,7 +63,7 @@ export const authApi = {
       if (error) throw error;
       
       return createSuccessResponse({ user: authData.user });
-    }, true); // Use fresh client for auth operations
+    });
   },
   
   /**
@@ -89,7 +88,7 @@ export const authApi = {
         console.error("Sign out exception:", err);
         throw err;
       }
-    }, true); // Use fresh client for auth operations
+    });
   },
   
   /**
@@ -102,7 +101,7 @@ export const authApi = {
       if (error) throw error;
       
       return createSuccessResponse({ user: session?.user || null });
-    }, true); // Use fresh client for auth operations
+    });
   },
   
   /**
@@ -117,7 +116,7 @@ export const authApi = {
       if (error) throw error;
       
       return createSuccessResponse(true);
-    }, true); // Use fresh client for auth operations
+    });
   },
   
   /**
@@ -132,6 +131,6 @@ export const authApi = {
       if (error) throw error;
       
       return createSuccessResponse(true);
-    }, true); // Use fresh client for auth operations
+    });
   }
 };
