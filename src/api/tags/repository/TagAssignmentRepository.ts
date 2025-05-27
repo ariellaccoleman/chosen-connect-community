@@ -1,3 +1,4 @@
+
 /**
  * Tag Assignment Repository
  * Repository implementation for managing tag assignments
@@ -5,8 +6,8 @@
 import { createSupabaseRepository } from "@/api/core/repository/repositoryFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { TagAssignment } from "@/utils/tags/types";
-import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
+import { EntityType } from "@/types/entityTypes";
 import { ApiResponse, createSuccessResponse, createErrorResponse } from "@/api/core/errorHandler";
 
 /**
@@ -14,9 +15,19 @@ import { ApiResponse, createSuccessResponse, createErrorResponse } from "@/api/c
  */
 export interface TagAssignmentRepository {
   /**
-   * Get tag assignments for an entity
+   * Get all tag assignments
    */
-  getTagAssignmentsForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>>;
+  getAllTagAssignments(): Promise<TagAssignment[]>;
+  
+  /**
+   * Get tag assignments by tag ID
+   */
+  getTagAssignmentsByTagId(tagId: string): Promise<TagAssignment[]>;
+  
+  /**
+   * Get tag assignments for a specific entity
+   */
+  getTagAssignmentsForEntity(entityId?: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>>;
   
   /**
    * Get entities with a specific tag
@@ -24,128 +35,236 @@ export interface TagAssignmentRepository {
   getEntitiesWithTag(tagId: string, entityType?: EntityType): Promise<TagAssignment[]>;
   
   /**
-   * Create a new tag assignment
+   * Create a tag assignment
    */
   createTagAssignment(data: Partial<TagAssignment>): Promise<ApiResponse<TagAssignment>>;
   
   /**
    * Delete a tag assignment
    */
-  deleteTagAssignment(assignmentId: string): Promise<ApiResponse<boolean>>;
+  deleteTagAssignment(id?: string): Promise<ApiResponse<boolean>>;
   
   /**
-   * Delete all tag assignments for an entity
+   * Delete tag assignments for a tag
+   */
+  deleteTagAssignmentsForTag(tagId: string): Promise<void>;
+  
+  /**
+   * Delete tag assignments for an entity
    */
   deleteTagAssignmentsForEntity(entityId: string, entityType: EntityType): Promise<void>;
+  
+  /**
+   * Get tags for an entity
+   */
+  getTagsForEntity(entityId?: string, entityType?: EntityType): Promise<ApiResponse<any[]>>;
+  
+  /**
+   * Find a tag assignment
+   */
+  findTagAssignment(tagId?: string, targetId?: string, targetType?: EntityType): Promise<ApiResponse<TagAssignment | null>>;
 }
 
 /**
  * Create a tag assignment repository
  * @returns TagAssignmentRepository instance
  */
-export function createTagAssignmentRepository(providedClient?: any): TagAssignmentRepository {
-  const client = providedClient || supabase;
-  const repository = createSupabaseRepository<TagAssignment>("tag_assignments", client);
+export function createTagAssignmentRepository(): TagAssignmentRepository {
+  const repository = createSupabaseRepository<TagAssignment>("tag_assignments", supabase);
   
   return {
-    async getTagAssignmentsForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>> {
+    async getAllTagAssignments(): Promise<TagAssignment[]> {
       try {
-        if (!isValidEntityType(entityType)) {
-          return createErrorResponse(`Invalid entity type: ${entityType}`);
-        }
-        
-        const { data, error } = await client
-          .from('tag_assignments')
-          .select('*')
-          .eq('target_id', entityId)
-          .eq('target_type', entityType);
-        
-        if (error) {
-          logger.error(`Error fetching tag assignments for entity ${entityId}:`, error);
-          return createErrorResponse(error);
-        }
-        
-        return createSuccessResponse(data || []);
-      } catch (error) {
-        logger.error(`Error in getTagAssignmentsForEntity:`, error);
-        return createErrorResponse(error);
-      }
-    },
-    
-    async getEntitiesWithTag(tagId: string, entityType?: EntityType): Promise<TagAssignment[]> {
-      try {
-        let query = client
-          .from('tag_assignments')
-          .select('*')
-          .eq('tag_id', tagId);
-        
-        if (entityType && isValidEntityType(entityType)) {
-          query = query.eq('target_type', entityType);
-        }
-        
-        const { data, error } = await query;
-        
-        if (error) {
-          logger.error(`Error fetching entities with tag ${tagId}:`, error);
-          return [];
-        }
-        
-        return data || [];
-      } catch (error) {
-        logger.error(`Error in getEntitiesWithTag:`, error);
+        const result = await repository.getAll();
+        return result || [];
+      } catch (err) {
+        logger.error("Error fetching all tag assignments:", err);
         return [];
       }
     },
     
-    async createTagAssignment(data: Partial<TagAssignment>): Promise<ApiResponse<TagAssignment>> {
+    async getTagAssignmentsByTagId(tagId: string): Promise<TagAssignment[]> {
       try {
-        const { data: assignment, error } = await client
-          .from('tag_assignments')
-          .insert(data)
-          .select()
-          .single();
-        
-        if (error) {
-          logger.error(`Error creating tag assignment:`, error);
-          return createErrorResponse(error);
-        }
-        
-        return createSuccessResponse(assignment);
-      } catch (error) {
-        logger.error(`Error in createTagAssignment:`, error);
-        return createErrorResponse(error);
+        const query = repository.select()
+                               .eq('tag_id', tagId);
+        const result = await query.execute();
+        return result.data || [];
+      } catch (err) {
+        logger.error(`Error fetching tag assignments for tag ${tagId}:`, err);
+        return [];
       }
     },
     
-    async deleteTagAssignment(assignmentId: string): Promise<ApiResponse<boolean>> {
+    async getTagAssignmentsForEntity(
+      entityId?: string, 
+      entityType?: EntityType
+    ): Promise<ApiResponse<TagAssignment[]>> {
       try {
-        const { error } = await client
-          .from('tag_assignments')
-          .delete()
-          .eq('id', assignmentId);
-        
-        if (error) {
-          logger.error(`Error deleting tag assignment ${assignmentId}:`, error);
-          return createErrorResponse(error);
+        // Handle undefined parameters
+        if (!entityId || !entityType) {
+          return createSuccessResponse([]);
         }
         
+        const query = repository.select(`*, tag:tags(*)`)
+                               .eq('target_id', entityId)
+                               .eq('target_type', entityType);
+        const result = await query.execute();
+        return createSuccessResponse(result.data || []);
+      } catch (err) {
+        logger.error(`Error fetching tag assignments for entity ${entityId}:`, err);
+        return createErrorResponse(`Failed to get tag assignments: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+    
+    async getEntitiesWithTag(
+      tagId: string, 
+      entityType?: EntityType
+    ): Promise<TagAssignment[]> {
+      try {
+        let query = repository.select().eq('tag_id', tagId);
+        
+        if (entityType) {
+          query = query.eq('target_type', entityType);
+        }
+        
+        const result = await query.execute();
+        
+        if (!result.data) {
+          logger.warn(`No entities found with tag ${tagId}`);
+          return [];
+        }
+        
+        return result.data;
+      } catch (err) {
+        logger.error(`Error fetching entities with tag ${tagId}:`, err);
+        return [];
+      }
+    },
+    
+    async createTagAssignment(
+      data: Partial<TagAssignment>
+    ): Promise<ApiResponse<TagAssignment>> {
+      try {
+        // Validate required fields
+        if (!data.tag_id || !data.target_id || !data.target_type) {
+          return createErrorResponse({ message: 'Missing required fields' });
+        }
+        
+        const result = await repository.insert(data).execute();
+        
+        if (!result.data) {
+          return createErrorResponse({ message: "Failed to create tag assignment" });
+        }
+        
+        return createSuccessResponse(result.data[0]);
+      } catch (err) {
+        logger.error("Error creating tag assignment:", err);
+        return createErrorResponse(`Failed to create tag assignment: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+    
+    async deleteTagAssignment(id?: string): Promise<ApiResponse<boolean>> {
+      try {
+        // Validate id
+        if (!id) {
+          return createErrorResponse({ message: 'Assignment ID is required' });
+        }
+        
+        await repository.delete().eq('id', id).execute();
         return createSuccessResponse(true);
-      } catch (error) {
-        logger.error(`Error in deleteTagAssignment:`, error);
-        return createErrorResponse(error);
+      } catch (err) {
+        logger.error(`Error deleting tag assignment ${id}:`, err);
+        return createErrorResponse(`Failed to delete tag assignment: ${err instanceof Error ? err.message : String(err)}`);
       }
     },
     
-    async deleteTagAssignmentsForEntity(entityId: string, entityType: EntityType): Promise<void> {
+    async deleteTagAssignmentsForTag(tagId: string): Promise<void> {
       try {
-        await client
-          .from('tag_assignments')
-          .delete()
-          .eq('target_id', entityId)
-          .eq('target_type', entityType);
-      } catch (error) {
-        logger.error(`Error deleting tag assignments for entity ${entityId}:`, error);
-        throw error;
+        await repository.delete().eq('tag_id', tagId).execute();
+      } catch (err) {
+        logger.error(`Error deleting assignments for tag ${tagId}:`, err);
+        throw err;
+      }
+    },
+    
+    async deleteTagAssignmentsForEntity(
+      entityId: string, 
+      entityType: EntityType
+    ): Promise<void> {
+      try {
+        await repository.delete()
+                      .eq('target_id', entityId)
+                      .eq('target_type', entityType)
+                      .execute();
+      } catch (err) {
+        logger.error(`Error deleting tag assignments for entity ${entityId}:`, err);
+        throw err;
+      }
+    },
+    
+    async getTagsForEntity(
+      entityId?: string, 
+      entityType?: EntityType
+    ): Promise<ApiResponse<any[]>> {
+      try {
+        // Handle undefined parameters
+        if (!entityId || !entityType) {
+          return createSuccessResponse([]);
+        }
+        
+        const query = repository.select(`
+          tag:tags(*),
+          id
+        `)
+        .eq('target_id', entityId)
+        .eq('target_type', entityType);
+        
+        const result = await query.execute();
+        
+        if (!result.data) {
+          return createSuccessResponse([]);
+        }
+        
+        // Transform the data to flatten the structure
+        // Extract the 'tag' property from each item and add the assignment_id
+        const tags = result.data.map(item => ({
+          ...((item.tag && typeof item.tag === 'object') ? item.tag : {}),
+          assignment_id: item.id
+        }));
+        
+        return createSuccessResponse(tags);
+      } catch (err) {
+        logger.error(`Error fetching tags for entity ${entityId}:`, err);
+        return createErrorResponse(`Failed to get tags: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    },
+    
+    async findTagAssignment(
+      tagId?: string, 
+      targetId?: string, 
+      targetType?: EntityType
+    ): Promise<ApiResponse<TagAssignment | null>> {
+      try {
+        // Handle undefined parameters
+        if (!tagId || !targetId || !targetType) {
+          return createSuccessResponse(null);
+        }
+        
+        const query = repository.select()
+                               .eq('tag_id', tagId)
+                               .eq('target_id', targetId)
+                               .eq('target_type', targetType);
+        
+        const result = await query.execute();
+        
+        if (!result.data || result.data.length === 0) {
+          return createSuccessResponse(null);
+        }
+        
+        return createSuccessResponse(result.data[0]);
+      } catch (err) {
+        logger.error(`Error finding tag assignment:`, err);
+        return createErrorResponse(`Failed to find tag assignment: ${err instanceof Error ? err.message : String(err)}`);
       }
     }
   };

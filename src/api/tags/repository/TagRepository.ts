@@ -69,9 +69,8 @@ export interface TagRepository {
  * Create a tag repository
  * @returns TagRepository instance
  */
-export function createTagRepository(providedClient?: any): TagRepository {
-  const client = providedClient || supabase;
-  const repository = createSupabaseRepository<Tag>("tags", client);
+export function createTagRepository(): TagRepository {
+  const repository = createSupabaseRepository<Tag>("tags", supabase);
   
   return {
     async getAllTags(): Promise<ApiResponse<Tag[]>> {
