@@ -1,5 +1,6 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { createTagAssignmentRepository } from '@/api/tags/repository/TagAssignmentRepository';
 import { EntityType } from '@/types/entityTypes';
@@ -7,16 +8,18 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe('Tag Assignment Repository Integration Tests', () => {
   let testUser: any;
+  let authenticatedClient: any;
   let tagAssignmentRepo: any;
   let createdTagIds: string[] = [];
   let createdAssignmentIds: string[] = [];
   let createdOrganizationIds: string[] = [];
+  const testUserEmail = PERSISTENT_TEST_USERS.user4.email;
 
   beforeAll(async () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      throw new Error('❌ Persistent test users not set up - cannot run tests');
+      console.warn('⚠️ Persistent test users not set up - some tests may fail');
     }
 
     // Verify service role key is available
@@ -38,33 +41,16 @@ describe('Tag Assignment Repository Integration Tests', () => {
     createdAssignmentIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication for user4 (Tag Assignment tests) - STRICT MODE
+    // Set up authentication for user4 (Tag Assignment tests)
     console.log('🔐 Setting up test authentication for user4...');
-    await TestAuthUtils.setupTestAuth('user4');
+    const authResult = await TestAuthUtils.setupTestAuth('user4');
+    testUser = authResult.user;
+    authenticatedClient = authResult.client;
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
     console.log(`✅ Test user authenticated: ${testUser.email}`);
     
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
-    
-    // Initialize repository
-    tagAssignmentRepo = createTagAssignmentRepository();
+    // Initialize repository with the authenticated client
+    tagAssignmentRepo = createTagAssignmentRepository(authenticatedClient);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -72,11 +58,11 @@ describe('Tag Assignment Repository Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
-  afterAll(() => {
-    TestClientFactory.cleanup();
+  afterAll(async () => {
+    await TestClientFactory.cleanup();
   });
 
   const cleanupTestData = async () => {
@@ -212,12 +198,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     });
 
     test('should get tag assignments for entity', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag1 = await createTestTag('Assignment1');
       const testTag2 = await createTestTag('Assignment2');
       const testOrg = await createTestOrganization('TestOrgAssignments');
@@ -249,12 +229,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     });
 
     test('should get entities with specific tag', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('EntitySearch');
       const testOrg1 = await createTestOrganization('TestOrg1');
       const testOrg2 = await createTestOrganization('TestOrg2');
@@ -285,12 +259,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     });
 
     test('should get tags for entity', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag1 = await createTestTag('EntityTag1');
       const testTag2 = await createTestTag('EntityTag2');
       const testOrg = await createTestOrganization('TestOrgTags');
@@ -322,12 +290,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     });
 
     test('should delete tag assignment', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('DeleteTest');
       const testOrg = await createTestOrganization('TestOrgDelete');
       
@@ -359,12 +321,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     });
 
     test('should find specific tag assignment', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('FindTest');
       const testOrg = await createTestOrganization('TestOrgFind');
       

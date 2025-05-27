@@ -1,5 +1,6 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { tagApi, tagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
 import { EntityType } from '@/types/entityTypes';
@@ -7,15 +8,17 @@ import { v4 as uuidv4 } from 'uuid';
 
 describe('Tag Operations API Integration Tests', () => {
   let testUser: any;
+  let authenticatedClient: any;
   let createdTagIds: string[] = [];
   let createdAssignmentIds: string[] = [];
   let createdOrganizationIds: string[] = [];
+  const testUserEmail = PERSISTENT_TEST_USERS.user5.email;
 
   beforeAll(async () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      throw new Error('❌ Persistent test users not set up - cannot run tests');
+      console.warn('⚠️ Persistent test users not set up - some tests may fail');
     }
 
     // Verify service role key is available
@@ -37,30 +40,13 @@ describe('Tag Operations API Integration Tests', () => {
     createdAssignmentIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication for user5 (Tag Operations API tests) - STRICT MODE
+    // Set up authentication using user5 for Tag Operations API tests
     console.log('🔐 Setting up test authentication for user5...');
-    await TestAuthUtils.setupTestAuth('user5');
+    const authResult = await TestAuthUtils.setupTestAuth('user5');
+    testUser = authResult.user;
+    authenticatedClient = authResult.client;
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
     console.log(`✅ Test user authenticated: ${testUser.email}`);
-    
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -68,7 +54,7 @@ describe('Tag Operations API Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
   afterAll(() => {
@@ -171,7 +157,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: tagName,
         description: 'Test tag created via API',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       expect(tag).toBeDefined();
       expect(tag.name).toBe(tagName);
@@ -181,22 +167,16 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should get all tags', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       // Create a test tag first
       const tag = await tagApi.create({
         name: `GetAll Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getAll operation',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
-      const tags = await tagApi.getAll();
+      const tags = await tagApi.getAll(authenticatedClient);
       
       expect(Array.isArray(tags)).toBe(true);
       expect(tags.length).toBeGreaterThan(0);
@@ -204,21 +184,15 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should get tag by ID', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tag = await tagApi.create({
         name: `GetByID Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getById operation',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
-      const foundTag = await tagApi.getById(tag.id);
+      const foundTag = await tagApi.getById(tag.id, authenticatedClient);
       
       expect(foundTag).toBeDefined();
       expect(foundTag.id).toBe(tag.id);
@@ -226,52 +200,40 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should find tag by name', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tagName = `FindByName Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const tag = await tagApi.create({
         name: tagName,
         description: 'Test tag for findByName operation',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
-      const foundTag = await tagApi.findByName(tagName);
+      const foundTag = await tagApi.findByName(tagName, authenticatedClient);
       
       expect(foundTag).toBeDefined();
       expect(foundTag.name).toBe(tagName);
     });
 
     test('should search tags', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const uniqueSearchTerm = `SearchTest${Date.now()}`;
       
       const tag1 = await tagApi.create({
         name: `${uniqueSearchTerm} Tag 1`,
         description: 'First search test tag',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       const tag2 = await tagApi.create({
         name: `${uniqueSearchTerm} Tag 2`,
         description: 'Second search test tag',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       createdTagIds.push(tag1.id, tag2.id);
       
-      const searchResults = await tagApi.search(uniqueSearchTerm);
+      const searchResults = await tagApi.search(uniqueSearchTerm, authenticatedClient);
       
       expect(Array.isArray(searchResults)).toBe(true);
       expect(searchResults.length).toBeGreaterThanOrEqual(2);
@@ -280,16 +242,10 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should find or create tag', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tagName = `FindOrCreate Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // First call should create the tag
-      const tag1 = await tagApi.findOrCreate(tagName);
+      const tag1 = await tagApi.findOrCreate(tagName, authenticatedClient);
       
       expect(tag1).toBeDefined();
       expect(tag1.name).toBe(tagName);
@@ -297,7 +253,7 @@ describe('Tag Operations API Integration Tests', () => {
       createdTagIds.push(tag1.id);
       
       // Second call should find the existing tag
-      const tag2 = await tagApi.findOrCreate(tagName);
+      const tag2 = await tagApi.findOrCreate(tagName, authenticatedClient);
       
       expect(tag2).toBeDefined();
       expect(tag2.id).toBe(tag1.id);
@@ -305,23 +261,17 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should update tag', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tag = await tagApi.create({
         name: `Update Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Original description',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
       const updatedTag = await tagApi.update(tag.id, {
         description: 'Updated description'
-      });
+      }, authenticatedClient);
       
       expect(updatedTag).toBeDefined();
       expect(updatedTag.id).toBe(tag.id);
@@ -333,14 +283,14 @@ describe('Tag Operations API Integration Tests', () => {
         name: `Delete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Tag to be deleted',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
-      const deleteResult = await tagApi.delete(tag.id);
+      const deleteResult = await tagApi.delete(tag.id, authenticatedClient);
       
       expect(deleteResult).toBe(true);
       
       // Verify tag is deleted
-      const deletedTag = await tagApi.getById(tag.id);
+      const deletedTag = await tagApi.getById(tag.id, authenticatedClient);
       expect(deletedTag).toBeNull();
     });
   });
@@ -351,7 +301,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `Assignment Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for assignment',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       const org = await createTestOrganization('TestOrgAssignment');
       
@@ -362,14 +312,15 @@ describe('Tag Operations API Integration Tests', () => {
         tag_id: tag.id,
         target_id: org.id,
         target_type: EntityType.ORGANIZATION
-      });
+      }, authenticatedClient);
       
       createdAssignmentIds.push(assignment.id);
       
       // Get assignments for entity
       const assignments = await tagAssignmentApi.getAssignmentsForEntity(
         org.id, 
-        EntityType.ORGANIZATION
+        EntityType.ORGANIZATION,
+        authenticatedClient
       );
       
       expect(Array.isArray(assignments)).toBe(true);
@@ -383,7 +334,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `CreateDelete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for create/delete assignment',
         created_by: testUser.id
-      });
+      }, authenticatedClient);
       
       const org = await createTestOrganization('TestOrgCreateDelete');
       
@@ -394,7 +345,7 @@ describe('Tag Operations API Integration Tests', () => {
         tag_id: tag.id,
         target_id: org.id,
         target_type: EntityType.ORGANIZATION
-      });
+      }, authenticatedClient);
       
       expect(assignment).toBeDefined();
       expect(assignment.tag_id).toBe(tag.id);
@@ -403,18 +354,20 @@ describe('Tag Operations API Integration Tests', () => {
       // Verify assignment exists
       let assignments = await tagAssignmentApi.getAssignmentsForEntity(
         org.id, 
-        EntityType.ORGANIZATION
+        EntityType.ORGANIZATION,
+        authenticatedClient
       );
       expect(assignments.length).toBe(1);
       
       // Delete assignment
-      const deleteResult = await tagAssignmentApi.deleteAssignment(assignment.id);
+      const deleteResult = await tagAssignmentApi.deleteAssignment(assignment.id, authenticatedClient);
       expect(deleteResult).toBe(true);
       
       // Verify assignment is deleted
       assignments = await tagAssignmentApi.getAssignmentsForEntity(
         org.id, 
-        EntityType.ORGANIZATION
+        EntityType.ORGANIZATION,
+        authenticatedClient
       );
       expect(assignments.length).toBe(0);
     });
