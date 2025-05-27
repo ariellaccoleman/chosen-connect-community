@@ -4,10 +4,11 @@ import { handleApiError } from "./errorHandler";
 
 /**
  * Runtime function to detect test environment with comprehensive checks
+ * Safe for both browser and Node.js environments
  */
 const isTestEnvironment = (): boolean => {
-  // Check if we're in Node.js environment first
-  if (typeof window !== "undefined" || typeof process === "undefined") {
+  // First check if we're in a Node.js environment
+  if (typeof process === "undefined") {
     return false;
   }
 
@@ -22,7 +23,9 @@ const isTestEnvironment = (): boolean => {
   };
 
   // Return true if any test environment indicator is present
-  return Object.values(checks).some(check => check === true);
+  const isTest = Object.values(checks).some(check => check === true);
+  
+  return isTest;
 };
 
 /**
