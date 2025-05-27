@@ -1,25 +1,12 @@
 
-import { TagRepository } from './TagRepository';
-import { TagAssignmentRepository } from './TagAssignmentRepository';
-import { TagEntityTypeRepository } from './TagEntityTypeRepository';
+import { createTagRepository } from './TagRepository';
+import { createTagAssignmentRepository } from './TagAssignmentRepository';
+import { createTagEntityTypeRepository } from './TagEntityTypeRepository';
 
-/**
- * Create a tag repository instance
- */
-export function createTagRepository(providedClient?: any): TagRepository {
-  return new TagRepository(providedClient);
-}
+// Export the factory functions
+export { createTagRepository, createTagAssignmentRepository, createTagEntityTypeRepository };
 
-/**
- * Create a tag assignment repository instance
- */
-export function createTagAssignmentRepository(providedClient?: any): TagAssignmentRepository {
-  return new TagAssignmentRepository(providedClient);
-}
-
-/**
- * Create a tag entity type repository instance
- */
-export function createTagEntityTypeRepository(providedClient?: any): TagEntityTypeRepository {
-  return new TagEntityTypeRepository(providedClient);
-}
+// Export the interfaces for type checking
+export type { TagRepository } from './TagRepository';
+export type { TagAssignmentRepository } from './TagAssignmentRepository';
+export type { TagEntityTypeRepository } from './TagEntityTypeRepository';
