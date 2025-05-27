@@ -1,3 +1,4 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -43,23 +44,20 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Global singleton client instance to prevent multiple GoTrueClient instances
- * Using a Map to store clients per worker with proper locking
+ * Per-user client instances to prevent multiple GoTrueClient instances
+ * Using separate Maps for different client types per worker
  */
-const workerClients = new Map<string, SupabaseClient<Database>>();
+const userClients = new Map<string, Map<string, SupabaseClient<Database>>>();
 const workerServiceRoleClients = new Map<string, SupabaseClient<Database>>();
-const clientCreationLocks = new Map<string, Promise<void>>();
+const userClientCreationLocks = new Map<string, Promise<void>>();
+const userAuthenticationStatus = new Map<string, { isAuthenticated: boolean; authenticatedAt: number }>();
 
 /**
- * Test Client Factory with True Singleton Pattern
- * Uses a single global Supabase client instance per worker to prevent multiple GoTrueClient warnings
+ * Test Client Factory with Per-User Singleton Pattern
+ * Each user gets their own dedicated Supabase client instance per worker
  */
 export class TestClientFactory {
-  private static currentAuthenticatedUser: string | null = null;
-  private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
   private static workerId: string = getEnvVar('JEST_WORKER_ID') || 'main';
-  private static sessionEstablished: boolean = false;
-  private static sessionEstablishedAt: number = 0;
   private static readonly SESSION_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
   /**
@@ -87,9 +85,26 @@ export class TestClientFactory {
   }
 
   /**
+   * Get the user client key for a given email
+   */
+  private static getUserClientKey(userEmail: string): string {
+    return `${this.workerId}_${userEmail}`;
+  }
+
+  /**
+   * Initialize worker-specific user client map if it doesn't exist
+   */
+  private static ensureWorkerClientMap(): Map<string, SupabaseClient<Database>> {
+    if (!userClients.has(this.workerId)) {
+      userClients.set(this.workerId, new Map<string, SupabaseClient<Database>>());
+    }
+    return userClients.get(this.workerId)!;
+  }
+
+  /**
    * Wait for session to be fully established with timeout
    */
-  private static async waitForSessionEstablished(client: SupabaseClient<Database>, maxAttempts = 10): Promise<boolean> {
+  private static async waitForSessionEstablished(client: SupabaseClient<Database>, userEmail: string, maxAttempts = 10): Promise<boolean> {
     const startTime = Date.now();
     
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -97,83 +112,114 @@ export class TestClientFactory {
         const { data: { session }, error } = await client.auth.getSession();
         
         if (error) {
-          console.warn(`🔍 Worker ${this.workerId}: Session check ${attempt}/${maxAttempts} failed:`, error.message);
+          console.warn(`🔍 Worker ${this.workerId}: Session check ${attempt}/${maxAttempts} failed for ${userEmail}:`, error.message);
           await new Promise(resolve => setTimeout(resolve, 100));
           continue;
         }
         
-        if (session && session.user && session.access_token) {
-          console.log(`✅ Worker ${this.workerId}: Session established on attempt ${attempt}/${maxAttempts} - User: ${session.user.email}`);
-          this.sessionEstablished = true;
-          this.sessionEstablishedAt = Date.now();
+        if (session && session.user && session.access_token && session.user.email === userEmail) {
+          console.log(`✅ Worker ${this.workerId}: Session established for ${userEmail} on attempt ${attempt}/${maxAttempts}`);
           return true;
         }
         
-        console.warn(`⚠️ Worker ${this.workerId}: Session not ready ${attempt}/${maxAttempts} - missing session or token`);
+        console.warn(`⚠️ Worker ${this.workerId}: Session not ready for ${userEmail} ${attempt}/${maxAttempts} - missing session or token or email mismatch`);
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
-        console.error(`❌ Worker ${this.workerId}: Session check error ${attempt}/${maxAttempts}:`, error);
+        console.error(`❌ Worker ${this.workerId}: Session check error for ${userEmail} ${attempt}/${maxAttempts}:`, error);
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       // Check for timeout
       if (Date.now() - startTime > this.SESSION_TIMEOUT_MS) {
-        console.error(`❌ Worker ${this.workerId}: Session establishment timed out after ${this.SESSION_TIMEOUT_MS}ms`);
-        this.sessionEstablished = false;
+        console.error(`❌ Worker ${this.workerId}: Session establishment timed out for ${userEmail} after ${this.SESSION_TIMEOUT_MS}ms`);
         return false;
       }
     }
     
-    console.error(`❌ Worker ${this.workerId}: Session establishment failed after ${maxAttempts} attempts`);
-    this.sessionEstablished = false;
+    console.error(`❌ Worker ${this.workerId}: Session establishment failed for ${userEmail} after ${maxAttempts} attempts`);
     return false;
   }
 
   /**
-   * Get the single shared test client for this worker (creates it only once per worker)
-   * Uses a lock to prevent race conditions during client creation
+   * Get or create a dedicated client for a specific user
+   * Each user gets their own client instance that persists for the worker lifecycle
    */
-  static async getSharedTestClient(): Promise<SupabaseClient<Database>> {
+  static async getUserClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
     this.ensureTestEnvironment();
 
-    // Check if we already have a client
-    if (workerClients.has(this.workerId)) {
-      // Verify session is still valid
-      const client = workerClients.get(this.workerId)!;
-      const { data: { session } } = await client.auth.getSession();
+    const userClientKey = this.getUserClientKey(userEmail);
+    const workerClientMap = this.ensureWorkerClientMap();
+    
+    // Check if we already have an authenticated client for this user
+    if (workerClientMap.has(userEmail)) {
+      const existingClient = workerClientMap.get(userEmail)!;
+      const authStatus = userAuthenticationStatus.get(userClientKey);
       
-      if (session && session.user && session.access_token) {
+      // Verify session is still valid
+      const { data: { session } } = await existingClient.auth.getSession();
+      
+      if (session && session.user && session.access_token && session.user.email === userEmail) {
         // Check if session is too old
-        if (Date.now() - this.sessionEstablishedAt > this.SESSION_TIMEOUT_MS) {
-          console.log(`⚠️ Worker ${this.workerId}: Session expired, recreating client`);
-          await this.cleanup();
+        if (authStatus && Date.now() - authStatus.authenticatedAt > this.SESSION_TIMEOUT_MS) {
+          console.log(`⚠️ Worker ${this.workerId}: Session expired for ${userEmail}, recreating client`);
+          await this.removeUserClient(userEmail);
         } else {
-          console.log(`🔄 Worker ${this.workerId}: Using existing worker-specific test client (ID: ${this.clientInstanceId})`);
-          return client;
+          console.log(`🔄 Worker ${this.workerId}: Using existing authenticated client for ${userEmail}`);
+          return existingClient;
         }
       } else {
-        console.log(`⚠️ Worker ${this.workerId}: Invalid session, recreating client`);
-        await this.cleanup();
+        console.log(`⚠️ Worker ${this.workerId}: Invalid session for ${userEmail}, recreating client`);
+        await this.removeUserClient(userEmail);
       }
     }
 
-    // Create a lock for this worker if one doesn't exist
-    if (!clientCreationLocks.has(this.workerId)) {
-      clientCreationLocks.set(this.workerId, new Promise<void>(async (resolve) => {
+    // Create a lock for this user if one doesn't exist
+    if (!userClientCreationLocks.has(userClientKey)) {
+      userClientCreationLocks.set(userClientKey, new Promise<void>(async (resolve) => {
         try {
-          console.log(`🔧 Worker ${this.workerId}: Creating worker-specific test client (ID: ${this.clientInstanceId})`);
+          console.log(`🔧 Worker ${this.workerId}: Creating dedicated client for ${userEmail}`);
           
-          // Create client only once per worker to prevent multiple GoTrueClient instances
+          // Create client with user-specific storage key
           const client = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
             auth: {
-              persistSession: true, // Enable persistence within the same worker
-              autoRefreshToken: true, // Enable auto-refresh within the same worker
-              storageKey: `test_auth_${this.workerId}`, // Unique storage key per worker
+              persistSession: true,
+              autoRefreshToken: true,
+              storageKey: `test_auth_${this.workerId}_${userEmail}`,
             }
           });
           
-          workerClients.set(this.workerId, client);
-          console.log(`✅ Worker ${this.workerId}: Worker-specific test client created (ID: ${this.clientInstanceId})`);
+          // Authenticate the client
+          console.log(`🔐 Worker ${this.workerId}: Authenticating client for ${userEmail}`);
+          
+          const { data, error } = await client.auth.signInWithPassword({
+            email: userEmail,
+            password: userPassword
+          });
+
+          if (error) {
+            throw new Error(`Failed to authenticate client for ${userEmail}: ${error.message}`);
+          }
+
+          if (!data.session || !data.user) {
+            throw new Error(`Authentication succeeded but no session/user returned for ${userEmail}`);
+          }
+
+          console.log(`✅ Worker ${this.workerId}: Client authenticated for ${userEmail} (User ID: ${data.user.id})`);
+          
+          // Wait for session to be fully established
+          const sessionReady = await this.waitForSessionEstablished(client, userEmail);
+          if (!sessionReady) {
+            throw new Error(`Session establishment failed for ${userEmail}`);
+          }
+          
+          // Store the authenticated client
+          workerClientMap.set(userEmail, client);
+          userAuthenticationStatus.set(userClientKey, {
+            isAuthenticated: true,
+            authenticatedAt: Date.now()
+          });
+          
+          console.log(`🔐 Worker ${this.workerId}: Session established and verified for ${userEmail}`);
         } finally {
           resolve();
         }
@@ -181,131 +227,123 @@ export class TestClientFactory {
     }
 
     // Wait for the lock to be released
-    await clientCreationLocks.get(this.workerId);
+    await userClientCreationLocks.get(userClientKey);
     
     // Get the client after creation is complete
-    const client = workerClients.get(this.workerId);
+    const client = workerClientMap.get(userEmail);
     if (!client) {
-      throw new Error(`Failed to create test client for worker ${this.workerId}`);
+      throw new Error(`Failed to create client for user ${userEmail} in worker ${this.workerId}`);
     }
     
     return client;
   }
 
   /**
-   * Authenticate the shared client with specific user credentials
+   * Check if a user client exists and is authenticated
    */
-  static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
-    this.ensureTestEnvironment();
+  static hasUserClient(userEmail: string): boolean {
+    const workerClientMap = userClients.get(this.workerId);
+    if (!workerClientMap) return false;
+    
+    const userClientKey = this.getUserClientKey(userEmail);
+    const authStatus = userAuthenticationStatus.get(userClientKey);
+    
+    return workerClientMap.has(userEmail) && authStatus?.isAuthenticated === true;
+  }
 
-    const client = await this.getSharedTestClient();
+  /**
+   * Remove a specific user's client
+   */
+  static async removeUserClient(userEmail: string): Promise<void> {
+    const workerClientMap = userClients.get(this.workerId);
+    if (!workerClientMap) return;
     
-    // If already authenticated as this user and session is established, verify it's still valid
-    if (this.currentAuthenticatedUser === userEmail && this.sessionEstablished) {
-      console.log(`🔐 Worker ${this.workerId}: Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
-      
-      // Quick session check
-      const { data: { session }, error } = await client.auth.getSession();
-      if (session && !error && session.user?.email === userEmail && session.access_token) {
-        console.log(`✅ Worker ${this.workerId}: Session verified for ${userEmail}`);
-        return client;
-      } else {
-        console.log(`⚠️ Worker ${this.workerId}: Session invalid for ${userEmail}, re-authenticating...`);
-        this.currentAuthenticatedUser = null;
-        this.sessionEstablished = false;
-      }
-    }
+    const userClientKey = this.getUserClientKey(userEmail);
     
-    try {
-      // Sign out current user if different
-      if (this.currentAuthenticatedUser && this.currentAuthenticatedUser !== userEmail) {
-        console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser} before authenticating ${userEmail}`);
+    if (workerClientMap.has(userEmail)) {
+      try {
+        const client = workerClientMap.get(userEmail)!;
+        console.log(`🚪 Worker ${this.workerId}: Signing out and removing client for ${userEmail}`);
         await client.auth.signOut();
-        this.currentAuthenticatedUser = null;
-        this.sessionEstablished = false;
-        // Give some time for signout to process
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-
-      console.log(`🔐 Worker ${this.workerId}: Authenticating shared client as ${userEmail} (ID: ${this.clientInstanceId})`);
-      
-      const { data, error } = await client.auth.signInWithPassword({
-        email: userEmail,
-        password: userPassword
-      });
-
-      if (error) {
-        throw new Error(`Failed to authenticate shared client: ${error.message}`);
-      }
-
-      if (!data.session || !data.user) {
-        throw new Error('Authentication succeeded but no session/user returned');
-      }
-
-      this.currentAuthenticatedUser = userEmail;
-      console.log(`✅ Worker ${this.workerId}: Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
-      
-      // Wait for session to be fully established
-      const sessionReady = await this.waitForSessionEstablished(client);
-      if (!sessionReady) {
-        throw new Error(`Session establishment failed for ${userEmail}`);
+      } catch (error) {
+        console.warn(`Warning during signout for ${userEmail}:`, error);
       }
       
-      console.log(`🔐 Worker ${this.workerId}: Session established and verified for ${userEmail}`);
-      return client;
-    } catch (error) {
-      console.error(`❌ Worker ${this.workerId}: Failed to authenticate shared client as ${userEmail}:`, error);
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
-      throw error;
+      workerClientMap.delete(userEmail);
+      userAuthenticationStatus.delete(userClientKey);
+      userClientCreationLocks.delete(userClientKey);
+      console.log(`✅ Worker ${this.workerId}: Removed client for ${userEmail}`);
     }
   }
 
   /**
-   * Get the current authenticated user from the shared client
+   * Clear all user clients for this worker
    */
-  static async getCurrentAuthenticatedUser() {
-    const client = await this.getSharedTestClient();
+  static async clearAllUserClients(): Promise<void> {
+    const workerClientMap = userClients.get(this.workerId);
+    if (!workerClientMap) return;
     
-    console.log(`🔍 Worker ${this.workerId}: Getting current user from shared client (ID: ${this.clientInstanceId})`);
+    console.log(`🧹 Worker ${this.workerId}: Clearing all user clients`);
+    
+    const userEmails = Array.from(workerClientMap.keys());
+    await Promise.all(userEmails.map(email => this.removeUserClient(email)));
+    
+    userClients.delete(this.workerId);
+    console.log(`✅ Worker ${this.workerId}: All user clients cleared`);
+  }
+
+  /**
+   * Get the current authenticated user from a specific user's client
+   */
+  static async getCurrentAuthenticatedUser(userEmail: string): Promise<any> {
+    const workerClientMap = userClients.get(this.workerId);
+    if (!workerClientMap || !workerClientMap.has(userEmail)) {
+      throw new Error(`No authenticated client found for user ${userEmail} in worker ${this.workerId}`);
+    }
+    
+    const client = workerClientMap.get(userEmail)!;
+    
+    console.log(`🔍 Worker ${this.workerId}: Getting current user from client for ${userEmail}`);
     
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     if (sessionError) {
       console.error('Session error:', sessionError);
-      throw new Error(`Failed to get session from shared client: ${sessionError.message}`);
+      throw new Error(`Failed to get session from client for ${userEmail}: ${sessionError.message}`);
     }
     
     if (!session) {
-      console.error('No active session found on shared client');
-      console.log('Current authenticated user tracking:', this.currentAuthenticatedUser);
-      console.log('Session established flag:', this.sessionEstablished);
-      throw new Error('No active session on shared client');
+      console.error(`No active session found for ${userEmail}`);
+      throw new Error(`No active session for ${userEmail}`);
     }
 
     console.log(`✅ Worker ${this.workerId}: Found active session for user: ${session.user.email}`);
     return session.user;
   }
 
+  // Legacy methods for backward compatibility during migration
+  
   /**
-   * Sign out the current user from the shared client
+   * @deprecated Use getUserClient() instead. This method will be removed after migration.
+   */
+  static async getSharedTestClient(): Promise<SupabaseClient<Database>> {
+    console.warn('⚠️ getSharedTestClient() is deprecated. Use getUserClient() with specific user credentials.');
+    // Return a basic anon client for backward compatibility
+    return this.getAnonClient();
+  }
+
+  /**
+   * @deprecated Use getUserClient() instead. This method will be removed after migration.
+   */
+  static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
+    console.warn('⚠️ authenticateSharedClient() is deprecated. Use getUserClient() instead.');
+    return this.getUserClient(userEmail, userPassword);
+  }
+
+  /**
+   * @deprecated Use removeUserClient() or clearAllUserClients() instead.
    */
   static async signOutSharedClient(): Promise<void> {
-    if (!workerClients.has(this.workerId)) {
-      console.log(`🔐 Worker ${this.workerId}: No shared client to sign out from`);
-      return;
-    }
-
-    try {
-      console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
-      await workerClients.get(this.workerId)!.auth.signOut();
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
-      console.log(`✅ Worker ${this.workerId}: Signed out from shared client`);
-    } catch (error) {
-      console.error(`❌ Worker ${this.workerId}: Failed to sign out from shared client:`, error);
-      this.currentAuthenticatedUser = null;
-      this.sessionEstablished = false;
-    }
+    console.warn('⚠️ signOutSharedClient() is deprecated. Use removeUserClient() or clearAllUserClients() instead.');
   }
 
   /**
@@ -339,7 +377,7 @@ export class TestClientFactory {
         auth: {
           persistSession: true,
           autoRefreshToken: true,
-          storageKey: `test_service_${this.workerId}`, // Unique storage key per worker
+          storageKey: `test_service_${this.workerId}`,
         }
       });
 
@@ -372,9 +410,9 @@ export class TestClientFactory {
    */
   static async cleanup(): Promise<void> {
     try {
-      await this.signOutSharedClient();
+      await this.clearAllUserClients();
     } catch (error) {
-      console.warn('Cleanup warning during signout:', error);
+      console.warn('Cleanup warning during user clients cleanup:', error);
     }
 
     // Clear service role client for this worker
@@ -382,20 +420,6 @@ export class TestClientFactory {
       console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific service role client`);
       workerServiceRoleClients.delete(this.workerId);
     }
-    
-    // Clear shared client for this worker
-    if (workerClients.has(this.workerId)) {
-      console.log(`🧹 Worker ${this.workerId}: Clearing worker-specific test client`);
-      workerClients.delete(this.workerId);
-    }
-    
-    // Clear creation lock
-    clientCreationLocks.delete(this.workerId);
-    
-    // Reset auth state tracking
-    this.currentAuthenticatedUser = null;
-    this.sessionEstablished = false;
-    this.sessionEstablishedAt = 0;
     
     console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete`);
   }
@@ -421,13 +445,17 @@ export class TestClientFactory {
    * Get debug info about the current client state
    */
   static getDebugInfo() {
+    const workerClientMap = userClients.get(this.workerId);
+    const userClientCount = workerClientMap ? workerClientMap.size : 0;
+    const authenticatedUsers = Array.from(userAuthenticationStatus.entries())
+      .filter(([key, status]) => key.startsWith(`${this.workerId}_`) && status.isAuthenticated)
+      .map(([key]) => key.replace(`${this.workerId}_`, ''));
+
     return {
       workerId: this.workerId,
-      clientInstanceId: this.clientInstanceId,
-      hasSharedClient: workerClients.has(this.workerId),
+      userClientCount,
+      authenticatedUsers,
       hasServiceRoleClient: workerServiceRoleClients.has(this.workerId),
-      currentAuthenticatedUser: this.currentAuthenticatedUser,
-      sessionEstablished: this.sessionEstablished
     };
   }
 }
