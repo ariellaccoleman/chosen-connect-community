@@ -1,3 +1,4 @@
+
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -413,17 +414,16 @@ describe('Organization Relationships API - Database Tests', () => {
       });
     });
 
-    test('should handle non-existent relationship gracefully', async () => {
+    test('should handle non-existent relationship update gracefully', async () => {
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         nonExistentId,
         { connection_type: 'former' }
       );
       
-      // Update operations on non-existent rows typically succeed but affect 0 rows
-      // The API should handle this gracefully and return success
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
+      // Should return an error for non-existent relationships
+      expect(result.status).toBe('error');
+      expect(result.error).toBeDefined();
     });
   });
 
@@ -472,7 +472,7 @@ describe('Organization Relationships API - Database Tests', () => {
       createdRelationshipIds = createdRelationshipIds.filter(id => id !== testRelationshipId);
     });
 
-    test('should handle non-existent relationship gracefully', async () => {
+    test('should handle non-existent relationship deletion gracefully', async () => {
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(nonExistentId);
       
