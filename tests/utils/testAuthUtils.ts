@@ -3,6 +3,11 @@ import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PERSISTENT_TEST_USERS } from './persistentTestUsers';
 
 /**
+ * Helper function to add delays between operations to avoid rate limiting
+ */
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
  * Test utility to manage authentication context using the shared test client
  * This ensures we authenticate against the test project with a single client instance
  */
@@ -20,13 +25,16 @@ export class TestAuthUtils {
 
       console.log(`🔐 Setting up test auth for: ${testUser.email} using shared client`);
       
+      // Add delay before authentication to avoid rate limiting
+      await delay(1000);
+      
       // Authenticate the shared client
       const authenticatedClient = await TestClientFactory.authenticateSharedClient(
         testUser.email, 
         testUser.password
       );
 
-      // Verify the session was set correctly with retries
+      // Verify the session was set correctly with retries and delays
       await this.verifySessionWithRetries(authenticatedClient, testUser.email);
 
       console.log(`✅ Test auth setup complete for ${userKey} - ready for API operations`);
@@ -37,34 +45,34 @@ export class TestAuthUtils {
   }
 
   /**
-   * Verify session is ready with retries
+   * Verify session is ready with retries and delays
    */
-  private static async verifySessionWithRetries(client: any, userEmail: string, maxAttempts = 5): Promise<void> {
+  private static async verifySessionWithRetries(client: any, userEmail: string, maxAttempts = 3): Promise<void> {
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
         const { data: { session }, error: sessionError } = await client.auth.getSession();
         
         if (sessionError) {
           console.warn(`⚠️ Session verification attempt ${attempt}/${maxAttempts} failed:`, sessionError.message);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await delay(2000); // Longer delay on error
           continue;
         }
         
         if (!session) {
           console.warn(`⚠️ No session found on attempt ${attempt}/${maxAttempts}`);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await delay(1500);
           continue;
         }
         
         if (!session.user || session.user.email !== userEmail) {
           console.warn(`⚠️ Session user mismatch on attempt ${attempt}/${maxAttempts}. Expected: ${userEmail}, Got: ${session.user?.email}`);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await delay(1500);
           continue;
         }
         
         if (!session.access_token) {
           console.warn(`⚠️ No access token on attempt ${attempt}/${maxAttempts}`);
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await delay(1500);
           continue;
         }
         
@@ -75,7 +83,7 @@ export class TestAuthUtils {
         if (attempt === maxAttempts) {
           throw new Error(`Session verification failed after ${maxAttempts} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await delay(2000); // Longer delay on error
       }
     }
     
@@ -87,6 +95,9 @@ export class TestAuthUtils {
    */
   static async verifyAuthState(): Promise<{ isAuthenticated: boolean; user: any | null; session: any | null }> {
     try {
+      // Add small delay before auth state check
+      await delay(100);
+      
       const client = TestClientFactory.getSharedTestClient();
       const { data: { session }, error } = await client.auth.getSession();
       
