@@ -13,8 +13,7 @@ import { TestAuthUtils } from '../utils/testAuthUtils';
  * Uses user3 to avoid interference with other test suites.
  */
 describe('Authentication API - Integration Tests', () => {
-  let testUserEmail: string;
-  let testUserPassword: string;
+  let testUser: any;
   
   beforeAll(async () => {
     // Verify test users are set up
@@ -37,11 +36,13 @@ describe('Authentication API - Integration Tests', () => {
     // Clean up any existing authentication state first
     await TestAuthUtils.cleanupTestAuth();
     
-    // Set up test user credentials (using user3 for auth tests)
-    testUserEmail = 'testuser6@example.com'; // user3 maps to testuser6
-    testUserPassword = 'password123'; // From TEST_USER_CONFIG
+    // Get test user credentials for user3 (auth tests)
+    testUser = {
+      email: 'testuser6@example.com', // user3 maps to testuser6
+      password: 'TestPass123!' // From persistent test users config
+    };
     
-    console.log(`🔐 Prepared auth test credentials: ${testUserEmail}`);
+    console.log(`🔐 Prepared auth test credentials: ${testUser.email}`);
   });
 
   afterEach(async () => {
@@ -57,8 +58,8 @@ describe('Authentication API - Integration Tests', () => {
       console.log('🧪 Testing successful login...');
       
       const loginData = {
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       };
       
       const result = await authApi.login(loginData);
@@ -72,14 +73,14 @@ describe('Authentication API - Integration Tests', () => {
       
       expect(result.status).toBe('success');
       expect(result.data?.user).toBeTruthy();
-      expect(result.data?.user?.email).toBe(testUserEmail);
+      expect(result.data?.user?.email).toBe(testUser.email);
     });
 
     test('handles login with invalid credentials', async () => {
       console.log('🧪 Testing login with invalid credentials...');
       
       const loginData = {
-        email: testUserEmail,
+        email: testUser.email,
         password: 'wrongpassword'
       };
       
@@ -99,7 +100,7 @@ describe('Authentication API - Integration Tests', () => {
       
       const loginData = {
         email: 'nonexistent@example.com',
-        password: testUserPassword
+        password: testUser.password
       };
       
       const result = await authApi.login(loginData);
@@ -133,10 +134,10 @@ describe('Authentication API - Integration Tests', () => {
     test('returns valid session when authenticated', async () => {
       console.log('🧪 Testing getSession when authenticated...');
       
-      // First login
+      // First login using the auth API (which uses the shared client)
       const loginResult = await authApi.login({
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       });
       
       expect(loginResult.status).toBe('success');
@@ -153,7 +154,7 @@ describe('Authentication API - Integration Tests', () => {
       
       expect(sessionResult.status).toBe('success');
       expect(sessionResult.data?.user).toBeTruthy();
-      expect(sessionResult.data?.user?.email).toBe(testUserEmail);
+      expect(sessionResult.data?.user?.email).toBe(testUser.email);
     });
   });
 
@@ -163,8 +164,8 @@ describe('Authentication API - Integration Tests', () => {
       
       // First login
       const loginResult = await authApi.login({
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       });
       
       expect(loginResult.status).toBe('success');
@@ -207,7 +208,7 @@ describe('Authentication API - Integration Tests', () => {
       console.log('🧪 Testing password reset request...');
       
       const result = await authApi.resetPasswordRequest({ 
-        email: testUserEmail 
+        email: testUser.email 
       });
       
       console.log('🔍 PASSWORD RESET RESULT:', {
@@ -242,10 +243,10 @@ describe('Authentication API - Integration Tests', () => {
     test('successfully updates password for authenticated user', async () => {
       console.log('🧪 Testing password update...');
       
-      // First login
+      // First login using auth API
       const loginResult = await authApi.login({
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       });
       
       expect(loginResult.status).toBe('success');
@@ -292,15 +293,15 @@ describe('Authentication API - Integration Tests', () => {
       
       // 2. Login
       const loginResult = await authApi.login({
-        email: testUserEmail,
-        password: testUserPassword
+        email: testUser.email,
+        password: testUser.password
       });
       expect(loginResult.status).toBe('success');
       
       // 3. Verify session exists
       sessionResult = await authApi.getSession();
       expect(sessionResult.data?.user).toBeTruthy();
-      expect(sessionResult.data?.user?.email).toBe(testUserEmail);
+      expect(sessionResult.data?.user?.email).toBe(testUser.email);
       
       // 4. Logout
       const logoutResult = await authApi.logout();
