@@ -2,6 +2,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
+// Hardcoded test project configuration (not secrets)
+const TEST_PROJECT_CONFIG = {
+  url: 'https://sqrjmydkggtcsxvrdmrz.supabase.co',
+  anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNxcmpteWRrZ2d0Y3N4dnJkbXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgxOTU2MTIsImV4cCI6MjA2Mzc3MTYxMn0.CXVBUniHzEXTQh6nH_h-l6gJ8nLlzbV6VkkbOhh4F5Y'
+};
+
 /**
  * Runtime function to detect test environment with comprehensive checks
  */
@@ -31,27 +37,8 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Get test project environment variables at runtime
- */
-const getTestProjectConfig = () => {
-  const testUrl = getEnvVar('TEST_SUPABASE_URL');
-  const testAnonKey = getEnvVar('TEST_SUPABASE_ANON_KEY');
-  
-  if (!testUrl || !testAnonKey) {
-    throw new Error(
-      'Missing required test environment variables: TEST_SUPABASE_URL and TEST_SUPABASE_ANON_KEY must be set'
-    );
-  }
-  
-  return {
-    url: testUrl,
-    anonKey: testAnonKey
-  };
-};
-
-/**
  * Test Client Factory for dedicated test project
- * All environment variables are accessed at runtime, not instantiation
+ * Uses hardcoded test project configuration for reliability
  */
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
@@ -79,13 +66,11 @@ export class TestClientFactory {
 
   /**
    * Get service role client for test data setup and cleanup
-   * Environment variables accessed at runtime
    */
   static getServiceRoleClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.serviceRoleClient) {
-      const { url } = getTestProjectConfig();
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
@@ -95,7 +80,7 @@ export class TestClientFactory {
 
       console.log('🔧 Creating service role client for test project');
       
-      this.serviceRoleClient = createClient<Database>(url, serviceRoleKey, {
+      this.serviceRoleClient = createClient<Database>(TEST_PROJECT_CONFIG.url, serviceRoleKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -108,17 +93,14 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
-   * Environment variables accessed at runtime
    */
   static getAnonClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
 
     if (!this.anonClient) {
-      const { url, anonKey } = getTestProjectConfig();
-      
       console.log('🔧 Creating anonymous client for test project');
       
-      this.anonClient = createClient<Database>(url, anonKey, {
+      this.anonClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
         auth: {
           persistSession: false,
           autoRefreshToken: false,
@@ -168,31 +150,25 @@ export class TestClientFactory {
   }
 
   /**
-   * Get test project info - accessed at runtime
+   * Get test project info
    */
   static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
-    const testUrl = getEnvVar('TEST_SUPABASE_URL');
     const prodUrl = getEnvVar('SUPABASE_URL');
 
-    console.log('🔍 TestProjectInfo env:', {
-      TEST_SUPABASE_URL: testUrl ? '[SET]' : '[NOT SET]',
-      SUPABASE_URL: prodUrl ? '[SET]' : '[NOT SET]',
+    console.log('🔍 TestProjectInfo:', {
+      testUrl: TEST_PROJECT_CONFIG.url,
+      prodUrl: prodUrl ? '[SET]' : '[NOT SET]',
     });
 
-    if (!testUrl) {
-      throw new Error('TEST_SUPABASE_URL environment variable is required for tests');
-    }
-
     return {
-      url: testUrl,
-      usingDedicatedProject: !!testUrl && !!prodUrl && testUrl.trim() !== prodUrl.trim()
+      url: TEST_PROJECT_CONFIG.url,
+      usingDedicatedProject: !!prodUrl && TEST_PROJECT_CONFIG.url.trim() !== prodUrl.trim()
     };
   }
 }
 
 /**
  * Test Infrastructure for database-based testing
- * All environment variable access at runtime
  */
 export class TestInfrastructure {
   /**
