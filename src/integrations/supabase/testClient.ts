@@ -27,9 +27,10 @@ const isTestEnvironment = (): boolean => {
   return isTest;
 };
 
-// Helper function to safely access environment variables
+// Helper function to safely access environment variables with consistent test environment detection
 const getEnvVar = (name: string): string | undefined => {
-  if (typeof window !== "undefined" || typeof process === "undefined") {
+  // Use the same test environment detection as the rest of the TestClientFactory
+  if (!isTestEnvironment() || typeof process === "undefined") {
     return undefined;
   }
   return process.env[name];
@@ -305,11 +306,13 @@ export class TestClientFactory {
     this.ensureTestEnvironment();
 
     if (!workerServiceRoleClients.has(this.workerId)) {
-      const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
+      // Use direct process.env access instead of getEnvVar() to avoid environment detection issues
+      const serviceRoleKey = process.env.TEST_SUPABASE_SERVICE_ROLE_KEY;
       
       if (!serviceRoleKey) {
         console.error('❌ TEST_SUPABASE_SERVICE_ROLE_KEY is missing from environment variables');
         console.error('❌ Available environment variables:', Object.keys(process.env).filter(key => key.includes('SUPABASE')));
+        console.error('❌ Direct process.env check:', typeof process.env.TEST_SUPABASE_SERVICE_ROLE_KEY);
         throw new Error(
           'TEST_SUPABASE_SERVICE_ROLE_KEY is required for all test operations. ' +
           'This should have been validated during test setup. Please check your test runner configuration.'
