@@ -1,11 +1,9 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { invalidateTagCache } from '@/api/tags/cacheApi';
 import { updateTagCache, invalidateTagCache as utilsInvalidateCache } from '@/utils/tags/cacheUtils';
 import { EntityType } from '@/types/entityTypes';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('Tag Cache Integration Tests', () => {
   let testUser: any;
@@ -15,7 +13,7 @@ describe('Tag Cache Integration Tests', () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      console.warn('⚠️ Persistent test users not set up - some tests may fail');
+      throw new Error('❌ Persistent test users not set up - cannot run tests');
     }
 
     // Verify service role key is available
@@ -35,33 +33,32 @@ describe('Tag Cache Integration Tests', () => {
     // Reset tracking arrays AFTER cleanup
     createdCacheEntries = [];
     
-    // Set up authentication for user6 (Tag Cache tests)
-    try {
-      console.log('🔐 Setting up test authentication for user6...');
-      await TestAuthUtils.setupTestAuth('user6');
-      
-      // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      testUser = await TestAuthUtils.getCurrentTestUser();
-      console.log(`✅ Test user authenticated: ${testUser?.email}`);
-      
-      // Verify session is established
-      const client = await TestClientFactory.getSharedTestClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
-    } catch (error) {
-      console.warn('Could not get test user, using mock ID:', error);
-      testUser = { 
-        id: uuidv4(),
-        email: 'testuser3@example.com'
-      };
+    // Set up authentication for user6 (Tag Cache tests) - STRICT MODE
+    console.log('🔐 Setting up test authentication for user6...');
+    await TestAuthUtils.setupTestAuth('user6');
+    
+    // Wait for auth to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Get the authenticated user - NO FALLBACK
+    testUser = await TestAuthUtils.getCurrentTestUser();
+    if (!testUser?.id) {
+      throw new Error('❌ Authentication failed - no valid test user available');
+    }
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
+    
+    // Verify session is established - STRICT VERIFICATION
+    const client = await TestClientFactory.getSharedTestClient();
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error || !session || !session.user || !session.access_token) {
+      throw new Error('❌ Authentication failed - no valid session established');
     }
     
-    // Set up test data
+    if (session.user.id !== testUser.id) {
+      throw new Error('❌ Session user mismatch - authentication inconsistent');
+    }
+    
+    // Set up test data ONLY after confirmed authentication
     await setupTestData();
   });
 
@@ -102,11 +99,14 @@ describe('Tag Cache Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    if (!testUser?.id) return;
+    // Only proceed if we have a valid authenticated user
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot setup test data - no authenticated user');
+    }
     
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
-    // Ensure profile exists
+    // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
@@ -140,12 +140,6 @@ describe('Tag Cache Integration Tests', () => {
 
   describe('Tag Cache Operations', () => {
     test('should update tag cache for entity type', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testData = [
         { id: '1', name: 'Test Tag 1', description: 'First test tag' },
         { id: '2', name: 'Test Tag 2', description: 'Second test tag' }

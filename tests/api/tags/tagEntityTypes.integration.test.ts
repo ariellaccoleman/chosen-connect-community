@@ -4,7 +4,6 @@ import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { createTagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
 import { EntityType } from '@/types/entityTypes';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('Tag Entity Type Repository Integration Tests', () => {
   let testUser: any;
@@ -16,7 +15,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      console.warn('⚠️ Persistent test users not set up - some tests may fail');
+      throw new Error('❌ Persistent test users not set up - cannot run tests');
     }
 
     // Verify service role key is available
@@ -37,36 +36,35 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     createdTagIds = [];
     createdTagEntityTypeIds = [];
     
-    // Set up authentication for user3 (Tag Entity Type tests)
-    try {
-      console.log('🔐 Setting up test authentication for user3...');
-      await TestAuthUtils.setupTestAuth('user3');
-      
-      // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      testUser = await TestAuthUtils.getCurrentTestUser();
-      console.log(`✅ Test user authenticated: ${testUser?.email}`);
-      
-      // Verify session is established
-      const client = await TestClientFactory.getSharedTestClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
-    } catch (error) {
-      console.warn('Could not get test user, using mock ID:', error);
-      testUser = { 
-        id: uuidv4(),
-        email: 'testuser6@example.com'
-      };
+    // Set up authentication for user3 (Tag Entity Type tests) - STRICT MODE
+    console.log('🔐 Setting up test authentication for user3...');
+    await TestAuthUtils.setupTestAuth('user3');
+    
+    // Wait for auth to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Get the authenticated user - NO FALLBACK
+    testUser = await TestAuthUtils.getCurrentTestUser();
+    if (!testUser?.id) {
+      throw new Error('❌ Authentication failed - no valid test user available');
+    }
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
+    
+    // Verify session is established - STRICT VERIFICATION
+    const client = await TestClientFactory.getSharedTestClient();
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error || !session || !session.user || !session.access_token) {
+      throw new Error('❌ Authentication failed - no valid session established');
+    }
+    
+    if (session.user.id !== testUser.id) {
+      throw new Error('❌ Session user mismatch - authentication inconsistent');
     }
     
     // Initialize repository
     tagEntityTypeRepo = createTagEntityTypeRepository();
     
-    // Set up test data
+    // Set up test data ONLY after confirmed authentication
     await setupTestData();
   });
 
@@ -107,7 +105,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
         }
       }
       
-      // Fallback cleanup by user ID
+      // Fallback cleanup by user ID (only if we have a valid user)
       if (testUser?.id) {
         await serviceClient
           .from('tags')
@@ -121,11 +119,14 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    if (!testUser?.id) return;
+    // Only proceed if we have a valid authenticated user
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot setup test data - no authenticated user');
+    }
     
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
-    // Ensure profile exists
+    // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
@@ -141,6 +142,10 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   };
 
   const createTestTag = async (name: string) => {
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot create test tag - no authenticated user');
+    }
+    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     const { data: tagData, error: tagError } = await serviceClient
@@ -163,12 +168,6 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   describe('Tag Entity Type CRUD Operations', () => {
     test('should create tag entity type association', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('EntityTypeTest');
       
       const result = await tagEntityTypeRepo.associateTagWithEntityType(
@@ -188,12 +187,6 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     });
 
     test('should get entity types by tag ID', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('GetEntityTypesTest');
       
       // Create multiple entity type associations
@@ -213,12 +206,6 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     });
 
     test('should check if tag is allowed for entity type', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('AllowedTest');
       
       // Initially should not be allowed
@@ -244,12 +231,6 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     });
 
     test('should remove tag entity type association', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('RemoveAssociationTest');
       
       // Create association

@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -17,7 +16,7 @@ describe('Tag Assignment Repository Integration Tests', () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      console.warn('⚠️ Persistent test users not set up - some tests may fail');
+      throw new Error('❌ Persistent test users not set up - cannot run tests');
     }
 
     // Verify service role key is available
@@ -39,36 +38,35 @@ describe('Tag Assignment Repository Integration Tests', () => {
     createdAssignmentIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication for user4 (Tag Assignment tests)
-    try {
-      console.log('🔐 Setting up test authentication for user4...');
-      await TestAuthUtils.setupTestAuth('user4');
-      
-      // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      testUser = await TestAuthUtils.getCurrentTestUser();
-      console.log(`✅ Test user authenticated: ${testUser?.email}`);
-      
-      // Verify session is established
-      const client = await TestClientFactory.getSharedTestClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
-    } catch (error) {
-      console.warn('Could not get test user, using mock ID:', error);
-      testUser = { 
-        id: uuidv4(),
-        email: 'testuser1@example.com'
-      };
+    // Set up authentication for user4 (Tag Assignment tests) - STRICT MODE
+    console.log('🔐 Setting up test authentication for user4...');
+    await TestAuthUtils.setupTestAuth('user4');
+    
+    // Wait for auth to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Get the authenticated user - NO FALLBACK
+    testUser = await TestAuthUtils.getCurrentTestUser();
+    if (!testUser?.id) {
+      throw new Error('❌ Authentication failed - no valid test user available');
+    }
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
+    
+    // Verify session is established - STRICT VERIFICATION
+    const client = await TestClientFactory.getSharedTestClient();
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error || !session || !session.user || !session.access_token) {
+      throw new Error('❌ Authentication failed - no valid session established');
+    }
+    
+    if (session.user.id !== testUser.id) {
+      throw new Error('❌ Session user mismatch - authentication inconsistent');
     }
     
     // Initialize repository
     tagAssignmentRepo = createTagAssignmentRepository();
     
-    // Set up test data
+    // Set up test data ONLY after confirmed authentication
     await setupTestData();
   });
 
@@ -127,11 +125,14 @@ describe('Tag Assignment Repository Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    if (!testUser?.id) return;
+    // Only proceed if we have a valid authenticated user
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot setup test data - no authenticated user');
+    }
     
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
-    // Ensure profile exists
+    // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
@@ -147,6 +148,10 @@ describe('Tag Assignment Repository Integration Tests', () => {
   };
 
   const createTestTag = async (name: string) => {
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot create test tag - no authenticated user');
+    }
+    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     const { data: tagData, error: tagError } = await serviceClient
@@ -189,12 +194,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
 
   describe('Tag Assignment CRUD Operations', () => {
     test('should create tag assignment', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const testTag = await createTestTag('AssignmentTest');
       const testOrg = await createTestOrganization('TestOrg');
       

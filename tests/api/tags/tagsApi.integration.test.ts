@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -16,7 +15,7 @@ describe('Tag Operations API Integration Tests', () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      console.warn('⚠️ Persistent test users not set up - some tests may fail');
+      throw new Error('❌ Persistent test users not set up - cannot run tests');
     }
 
     // Verify service role key is available
@@ -38,33 +37,32 @@ describe('Tag Operations API Integration Tests', () => {
     createdAssignmentIds = [];
     createdOrganizationIds = [];
     
-    // Set up authentication for user5 (Tag Operations API tests)
-    try {
-      console.log('🔐 Setting up test authentication for user5...');
-      await TestAuthUtils.setupTestAuth('user5');
-      
-      // Wait for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      testUser = await TestAuthUtils.getCurrentTestUser();
-      console.log(`✅ Test user authenticated: ${testUser?.email}`);
-      
-      // Verify session is established
-      const client = await TestClientFactory.getSharedTestClient();
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
-    } catch (error) {
-      console.warn('Could not get test user, using mock ID:', error);
-      testUser = { 
-        id: uuidv4(),
-        email: 'testuser2@example.com'
-      };
+    // Set up authentication for user5 (Tag Operations API tests) - STRICT MODE
+    console.log('🔐 Setting up test authentication for user5...');
+    await TestAuthUtils.setupTestAuth('user5');
+    
+    // Wait for auth to settle
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    // Get the authenticated user - NO FALLBACK
+    testUser = await TestAuthUtils.getCurrentTestUser();
+    if (!testUser?.id) {
+      throw new Error('❌ Authentication failed - no valid test user available');
+    }
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
+    
+    // Verify session is established - STRICT VERIFICATION
+    const client = await TestClientFactory.getSharedTestClient();
+    const { data: { session }, error } = await client.auth.getSession();
+    if (error || !session || !session.user || !session.access_token) {
+      throw new Error('❌ Authentication failed - no valid session established');
     }
     
-    // Set up test data
+    if (session.user.id !== testUser.id) {
+      throw new Error('❌ Session user mismatch - authentication inconsistent');
+    }
+    
+    // Set up test data ONLY after confirmed authentication
     await setupTestData();
   });
 
@@ -123,11 +121,14 @@ describe('Tag Operations API Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    if (!testUser?.id) return;
+    // Only proceed if we have a valid authenticated user
+    if (!testUser?.id) {
+      throw new Error('❌ Cannot setup test data - no authenticated user');
+    }
     
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
-    // Ensure profile exists
+    // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
@@ -164,12 +165,6 @@ describe('Tag Operations API Integration Tests', () => {
 
   describe('Tag API Operations', () => {
     test('should create a new tag', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tagName = `API Test Tag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const tag = await tagApi.create({
@@ -334,12 +329,6 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should delete tag', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tag = await tagApi.create({
         name: `Delete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Tag to be deleted',
@@ -358,12 +347,6 @@ describe('Tag Operations API Integration Tests', () => {
 
   describe('Tag Assignment API Operations', () => {
     test('should get tag assignments for entity', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tag = await tagApi.create({
         name: `Assignment Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for assignment',
@@ -396,12 +379,6 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should create and delete tag assignment', async () => {
-      if (!testUser?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       const tag = await tagApi.create({
         name: `CreateDelete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for create/delete assignment',

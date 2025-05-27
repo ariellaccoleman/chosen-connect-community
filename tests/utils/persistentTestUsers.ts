@@ -47,6 +47,24 @@ export const PERSISTENT_TEST_USERS = {
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
     displayName: 'Test User6'
+  },
+  user4: {
+    email: 'testuser1@example.com',
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User1'
+  },
+  user5: {
+    email: 'testuser2@example.com', 
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User2'
+  },
+  user6: {
+    email: 'testuser3@example.com',
+    password: TEST_USER_CONFIG.password,
+    role: TEST_USER_CONFIG.role,
+    displayName: 'Test User3'
   }
 } as const;
 
