@@ -282,7 +282,7 @@ export class TestClientFactory {
   }
 
   /**
-   * Clean up clients and auth state
+   * Clean up clients and auth state - PRESERVES shared client instance
    */
   static async cleanup(): Promise<void> {
     try {
@@ -291,20 +291,19 @@ export class TestClientFactory {
       console.warn('Cleanup warning during signout:', error);
     }
 
-    // Reset global instances to null but don't create new ones
+    // Clear service role client but PRESERVE the shared test client
     if (globalServiceRoleClient) {
       console.log('🧹 Clearing global service role client');
       globalServiceRoleClient = null;
     }
     
-    if (globalTestClient) {
-      console.log(`🧹 Worker ${this.workerId}: Clearing global shared test client (ID: ${this.clientInstanceId})`);
-      globalTestClient = null;
-    }
+    // DO NOT reset globalTestClient to preserve singleton pattern
+    // This prevents "Multiple GoTrueClient instances" warnings between test files
+    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete (shared client preserved)`);
     
+    // Reset auth state tracking
     this.currentAuthenticatedUser = null;
     this.sessionEstablished = false;
-    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete`);
   }
 
   /**
