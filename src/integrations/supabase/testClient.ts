@@ -1,14 +1,29 @@
+
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Use dedicated test project URLs and keys
-const TEST_SUPABASE_URL = process.env.TEST_SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co";
-const TEST_SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4";
+// Early browser detection to prevent execution
+const isBrowser = typeof window !== "undefined";
+const isNode = typeof process !== "undefined";
+
+// If we're in a browser, don't execute any of this test infrastructure
+if (isBrowser) {
+  console.warn('🚫 TestClient: Test infrastructure is not available in browser environment');
+}
+
+// Use dedicated test project URLs and keys (only in Node.js)
+const TEST_SUPABASE_URL = isNode ? (process.env.TEST_SUPABASE_URL || "https://nvaqqkffmfuxdnwnqhxo.supabase.co") : "";
+const TEST_SUPABASE_ANON_KEY = isNode ? (process.env.TEST_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im52YXFxa2ZmbWZ1eGRud25xaHhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYyNDgxODYsImV4cCI6MjA2MTgyNDE4Nn0.rUwLwOr8QSzhJi3J2Mi_D94Zy-zLWykw7_mXY29UmP4") : "";
 
 /**
  * Runtime function to detect test environment with comprehensive checks
  */
 const isTestEnvironment = (): boolean => {
+  // Return false immediately if in browser
+  if (isBrowser || !isNode) {
+    return false;
+  }
+
   const checks = {
     NODE_ENV: process.env.NODE_ENV === 'test',
     JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
@@ -27,7 +42,7 @@ const isTestEnvironment = (): boolean => {
 
 // Helper function to safely access environment variables
 const getEnvVar = (name: string): string | undefined => {
-  if (typeof window !== "undefined" || typeof process === "undefined") {
+  if (isBrowser || !isNode) {
     return undefined;
   }
   return process.env[name];
@@ -45,6 +60,10 @@ export class TestClientFactory {
    * Ensure we're in a test environment - improved runtime detection
    */
   private static ensureTestEnvironment(): void {
+    if (isBrowser) {
+      throw new Error('🚫 TestClientFactory: Cannot be used in browser environment');
+    }
+
     const isTest = isTestEnvironment();
     
     if (!isTest) {
@@ -155,6 +174,13 @@ export class TestClientFactory {
    * Get test project info
    */
   static getTestProjectInfo(): { url: string; usingDedicatedProject: boolean } {
+    if (isBrowser) {
+      return {
+        url: '',
+        usingDedicatedProject: false
+      };
+    }
+
     const testUrl = process.env.TEST_SUPABASE_URL;
     const prodUrl = process.env.SUPABASE_URL;
 
@@ -179,6 +205,10 @@ export class TestInfrastructure {
    * Create test users for authentication testing
    */
   static async createTestUser(email: string, password: string, metadata?: any): Promise<any> {
+    if (isBrowser) {
+      throw new Error('🚫 TestInfrastructure: Cannot be used in browser environment');
+    }
+
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
@@ -205,6 +235,10 @@ export class TestInfrastructure {
    * Delete test users
    */
   static async deleteTestUser(userId: string): Promise<void> {
+    if (isBrowser) {
+      throw new Error('🚫 TestInfrastructure: Cannot be used in browser environment');
+    }
+
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
@@ -225,6 +259,10 @@ export class TestInfrastructure {
    * Clean up test data from tables - using specific table names
    */
   static async cleanupTable(tableName: string): Promise<void> {
+    if (isBrowser) {
+      throw new Error('🚫 TestInfrastructure: Cannot be used in browser environment');
+    }
+
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
@@ -252,6 +290,10 @@ export class TestInfrastructure {
    * Seed test data into a table - using specific table names
    */
   static async seedTable<T>(tableName: string, data: T[]): Promise<void> {
+    if (isBrowser) {
+      throw new Error('🚫 TestInfrastructure: Cannot be used in browser environment');
+    }
+
     if (!data || data.length === 0) return;
 
     try {
