@@ -238,11 +238,11 @@ describe('Organization Relationships API - Integration Tests', () => {
     expect(result.status).toBe('error');
 
     // Test updating non-existent relationship with valid UUID
+    // This should succeed because UPDATE operations on non-existent rows don't fail in SQL
     result = await organizationRelationshipsApi.updateOrganizationRelationship(
       uuidv4(),
       { connection_type: 'former' }
     );
-    // This should succeed but just not update anything
     expect(result.status).toBe('success');
   });
 
@@ -279,7 +279,11 @@ describe('Organization Relationships API - Integration Tests', () => {
       connection_type: 'current'
     });
     
-    // Should handle this gracefully - either create profile or return error
-    expect(['success', 'error']).toContain(result.status);
+    // This should fail because the profile doesn't exist
+    // The API should handle this gracefully and return an error
+    expect(result.status).toBe('error');
+    if (result.status === 'error') {
+      expect(result.error).toBeDefined();
+    }
   });
 });
