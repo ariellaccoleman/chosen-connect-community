@@ -1,4 +1,3 @@
-
 # Test Setup Guide
 
 This guide explains how to set up integration and database tests using our authentication patterns and test utilities.
@@ -7,16 +6,32 @@ This guide explains how to set up integration and database tests using our authe
 
 Our test infrastructure provides a reliable way to test API operations with proper authentication and data isolation. We use persistent test users and dedicated test utilities to ensure tests don't interfere with each other.
 
+**🚨 MIGRATION IN PROGRESS**: We are migrating from mock-based testing to database integration testing. See `TEST_MIGRATION_PLAN.md` for details.
+
+## Testing Approaches
+
+### 1. Database Integration Tests (PREFERRED)
+- Test against real Supabase database
+- Use actual authentication and RLS policies
+- Validate database constraints and relationships
+- Located in `*.integration.test.ts` files
+
+### 2. Mock Tests (BEING DEPRECATED)
+- Use in-memory mocks
+- Faster execution but less realistic
+- Being replaced by integration tests
+- Located in `*.test.ts` files
+
 ## Available Test Users
 
 We have 6 persistent test users available for testing:
 
-- `user1` → `testuser4@example.com`
-- `user2` → `testuser5@example.com` 
-- `user3` → `testuser6@example.com`
-- `user4` → `testuser1@example.com`
-- `user5` → `testuser2@example.com`
-- `user6` → `testuser3@example.com`
+- `user1` → `testuser4@example.com` - **Database tests** (direct database operations)
+- `user2` → `testuser5@example.com` - **Integration tests** (API calls) 
+- `user3` → `testuser6@example.com` - **Authentication tests**
+- `user4` → `testuser1@example.com` - **Tag system tests**
+- `user5` → `testuser2@example.com` - **Chat system tests**
+- `user6` → `testuser3@example.com` - **Social features tests**
 
 All users share the same password defined in `TEST_USER_CONFIG.password`.
 
@@ -24,9 +39,14 @@ All users share the same password defined in `TEST_USER_CONFIG.password`.
 
 To prevent test interference, assign different users to different test suites that might access the same database tables:
 
-- **Database tests** (direct database operations): Use `user1`
-- **Integration tests** (API calls): Use `user2`
-- **Additional test suites**: Use `user3`, `user4`, etc.
+| User | Test Suite | Purpose | Status |
+|------|------------|---------|--------|
+| user1 | Database operations | Organizations, Profiles | ✅ Active |
+| user2 | Organization Relationships | API integration tests | ✅ Active |
+| user3 | Authentication | Auth API operations | ✅ Active |
+| user4 | Tag system | Tags, Assignments, Entity Types | 📋 Planned |
+| user5 | Chat system | Channels, Messages | 📋 Planned |
+| user6 | Social features | Posts, Comments, Likes | 📋 Planned |
 
 ## Basic Test Setup Pattern
 

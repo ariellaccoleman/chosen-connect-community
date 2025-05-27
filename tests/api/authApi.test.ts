@@ -16,7 +16,15 @@ jest.mock('@/api/core/apiClient', () => ({
   }
 }));
 
-describe('Auth API', () => {
+/**
+ * @deprecated This test suite uses mocks and will be replaced by authApi.integration.test.ts
+ * 
+ * MIGRATION STATUS: These tests are being replaced by database integration tests.
+ * See: tests/api/authApi.integration.test.ts
+ * 
+ * This file will be removed once the integration tests are validated.
+ */
+describe('Auth API (Mock Tests - DEPRECATED)', () => {
   beforeEach(() => {
     resetSupabaseMocks();
   });
