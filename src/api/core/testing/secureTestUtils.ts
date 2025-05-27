@@ -60,11 +60,12 @@ export class SecureTestContext<T> {
    */
   getClient(authenticated = false, userEmail?: string, userPassword?: string) {
     if (authenticated && userEmail && userPassword) {
-      return TestClientFactory.createAuthenticatedClient(userEmail, userPassword);
+      // Use the shared client pattern - authenticate the shared client
+      return TestClientFactory.authenticateSharedClient(userEmail, userPassword);
     }
     
-    // Use anon client for most application logic testing
-    return TestClientFactory.getAnonClient();
+    // Use shared client for most application logic testing
+    return TestClientFactory.getSharedTestClient();
   }
 
   /**
@@ -72,8 +73,8 @@ export class SecureTestContext<T> {
    */
   private async seedData(data: T[], authenticatedUser?: { email: string; password: string }): Promise<void> {
     const client = authenticatedUser 
-      ? await TestClientFactory.createAuthenticatedClient(authenticatedUser.email, authenticatedUser.password)
-      : TestClientFactory.getAnonClient();
+      ? await TestClientFactory.authenticateSharedClient(authenticatedUser.email, authenticatedUser.password)
+      : TestClientFactory.getSharedTestClient();
 
     try {
       // Use the simplified seeding approach

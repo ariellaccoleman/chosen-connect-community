@@ -70,10 +70,11 @@ export class SimplifiedTestContext<T> {
    */
   getClient(authenticated = false, userEmail?: string, userPassword?: string) {
     if (authenticated && userEmail && userPassword) {
-      return TestClientFactory.createAuthenticatedClient(userEmail, userPassword);
+      // Use the shared client pattern - authenticate the shared client
+      return TestClientFactory.authenticateSharedClient(userEmail, userPassword);
     }
     
-    return TestClientFactory.getAnonClient();
+    return TestClientFactory.getSharedTestClient();
   }
 
   /**
