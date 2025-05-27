@@ -21,6 +21,21 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactoryBase<O
   getEntityType(): EntityType {
     return EntityType.ORGANIZATION;
   }
+
+  /**
+   * Override createRepository to pass the client through
+   */
+  createRepository(options: {
+    schema?: string;
+    initialData?: Organization[];
+    client?: any;
+  } = {}): EntityRepository<Organization> {
+    const baseRepo = this.createBaseRepository(options);
+    
+    // Import dynamically to avoid circular dependencies
+    const { createOrganizationRepository } = require('../OrganizationRepository');
+    return createOrganizationRepository(baseRepo, options.client);
+  }
 }
 
 /**
@@ -39,6 +54,7 @@ export function createOrganizationRepositoryFactory(): OrganizationRepositoryFac
 export function createOrganizationRepository(options: {
   schema?: string;
   initialData?: Organization[];
+  client?: any;
 } = {}): EntityRepository<Organization> {
   return new OrganizationRepositoryFactory().createRepository(options);
 }
@@ -47,8 +63,12 @@ export function createOrganizationRepository(options: {
  * Create an organization repository for testing
  * 
  * @param initialData Optional initial data
+ * @param client Optional test client
  * @returns Organization repository instance configured for testing
  */
-export function createTestingOrganizationRepository(initialData?: Organization[]): EntityRepository<Organization> {
-  return new OrganizationRepositoryFactory().createTestingRepository(initialData);
+export function createTestingOrganizationRepository(
+  initialData?: Organization[], 
+  client?: any
+): EntityRepository<Organization> {
+  return new OrganizationRepositoryFactory().createTestingRepository(initialData, client);
 }
