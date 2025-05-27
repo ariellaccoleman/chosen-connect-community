@@ -51,6 +51,16 @@ interface TestRunUpdateRequest {
   status: 'success' | 'failure' | 'in_progress'
 }
 
+interface TestRunLogRequest {
+  test_run_id: string
+  logs: Array<{
+    timestamp: string
+    level: 'log' | 'info' | 'warn' | 'error' | 'debug'
+    source?: string
+    message: string
+  }>
+}
+
 serve(async (req) => {
   console.log(`[report-test-results] Received ${req.method} request`)
   
@@ -131,12 +141,15 @@ serve(async (req) => {
     } else if (action === 'update-run') {
       // Update an existing test run with final results
       return await handleUpdateTestRun(requestData, corsHeaders)
+    } else if (action === 'record-logs') {
+      // Record console logs for a test run
+      return await handleRecordLogs(requestData, corsHeaders)
     } else {
       // Default/legacy handler for backward compatibility
       console.log('[report-test-results] No specific action specified, using legacy handler')
       return new Response(JSON.stringify({ 
         error: 'Invalid endpoint', 
-        message: 'Please use one of the specific endpoints: create-run, record-suite, record-result, or update-run'
+        message: 'Please use one of the specific endpoints: create-run, record-suite, record-result, update-run, or record-logs'
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -150,6 +163,112 @@ serve(async (req) => {
     })
   }
 })
+
+/**
+ * Records console logs for a test run
+ */
+async function handleRecordLogs(
+  requestData: TestRunLogRequest,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
+  const { test_run_id: testRunId, logs } = requestData;
+
+  if (!testRunId) {
+    return new Response(JSON.stringify({ 
+      error: 'Missing test run ID', 
+      message: 'A valid test_run_id is required'
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  if (!logs || !Array.isArray(logs) || logs.length === 0) {
+    return new Response(JSON.stringify({ 
+      error: 'Missing logs', 
+      message: 'A valid logs array is required'
+    }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
+  console.log(`[record-logs] Recording ${logs.length} log entries for test run: ${testRunId}`);
+  
+  try {
+    // Verify the test run exists
+    const { data: testRun, error: checkError } = await supabase
+      .from('test_runs')
+      .select('id')
+      .eq('id', testRunId)
+      .maybeSingle()
+    
+    if (checkError || !testRun) {
+      console.error('[record-logs] Test run not found:', checkError || 'No test run with that ID')
+      return new Response(JSON.stringify({ 
+        error: 'Test run not found', 
+        message: `No test run found with ID: ${testRunId}`
+      }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // Prepare log entries for insertion
+    const logEntries = logs.map(log => ({
+      test_run_id: testRunId,
+      timestamp: log.timestamp,
+      level: log.level,
+      source: log.source || null,
+      message: log.message
+    }));
+
+    // Insert logs in batches to avoid hitting limits
+    const batchSize = 100;
+    let totalInserted = 0;
+
+    for (let i = 0; i < logEntries.length; i += batchSize) {
+      const batch = logEntries.slice(i, i + batchSize);
+      
+      const { error: insertError } = await supabase
+        .from('test_run_logs')
+        .insert(batch);
+
+      if (insertError) {
+        console.error(`[record-logs] Error inserting batch ${Math.floor(i / batchSize) + 1}:`, insertError);
+        return new Response(JSON.stringify({ 
+          error: 'Failed to record logs', 
+          details: insertError.message,
+          batch: Math.floor(i / batchSize) + 1
+        }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      totalInserted += batch.length;
+      console.log(`[record-logs] Successfully inserted batch ${Math.floor(i / batchSize) + 1} (${batch.length} logs)`);
+    }
+
+    console.log(`[record-logs] Successfully recorded ${totalInserted} log entries for test run ${testRunId}`);
+    return new Response(JSON.stringify({ 
+      message: 'Logs recorded successfully',
+      total_logs: totalInserted
+    }), {
+      status: 201,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error) {
+    console.error('[record-logs] Exception recording logs:', error);
+    return new Response(JSON.stringify({ 
+      error: 'Failed to record logs', 
+      details: error.message
+    }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+}
 
 /**
  * Creates a new test run

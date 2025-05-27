@@ -1231,6 +1231,44 @@ export type Database = {
           },
         ]
       }
+      test_run_logs: {
+        Row: {
+          created_at: string
+          id: string
+          level: string
+          message: string
+          source: string | null
+          test_run_id: string
+          timestamp: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          level: string
+          message: string
+          source?: string | null
+          test_run_id: string
+          timestamp?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          level?: string
+          message?: string
+          source?: string | null
+          test_run_id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_run_logs_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: false
+            referencedRelation: "test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       test_runs: {
         Row: {
           created_at: string | null

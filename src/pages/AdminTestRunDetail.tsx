@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
@@ -7,6 +6,7 @@ import {
   useTestSuites,
   groupTestResultsBySuite 
 } from '@/hooks/tests/useTestReports';
+import { useTestRunLogs } from '@/hooks/tests/useTestRunLogs';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import {
@@ -273,11 +273,17 @@ const AdminTestRunDetail = () => {
     error: suitesError
   } = useTestSuites(testRunId);
 
-  if (runError || resultsError || suitesError) {
+  const {
+    data: testRunLogs,
+    isLoading: isLoadingLogs,
+    error: logsError
+  } = useTestRunLogs(testRunId);
+
+  if (runError || resultsError || suitesError || logsError) {
     toast.error("Failed to load test run details");
   }
 
-  const isLoading = isLoadingRun || isLoadingResults || isLoadingSuites;
+  const isLoading = isLoadingRun || isLoadingResults || isLoadingSuites || isLoadingLogs;
 
   // Group test results by suite
   const resultsBySuite = React.useMemo(() => {
@@ -325,6 +331,22 @@ const AdminTestRunDetail = () => {
         return [];
     }
   }, [testSuites, activeTab]);
+
+  // Filter logs based on level
+  const filteredLogs = React.useMemo(() => {
+    if (!testRunLogs) return [];
+    
+    switch (activeTab) {
+      case 'error-logs':
+        return testRunLogs.filter(log => log.level === 'error');
+      case 'warn-logs':
+        return testRunLogs.filter(log => log.level === 'warn');
+      case 'console-logs':
+        return testRunLogs;
+      default:
+        return [];
+    }
+  }, [testRunLogs, activeTab]);
 
   const renderStatusIcon = (status: string) => {
     switch (status) {
@@ -427,27 +449,17 @@ const AdminTestRunDetail = () => {
           </div>
           
           <Card className="mb-8">
-            <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-              <div className="p-4 border-b">
-                <TabsList>
-                  <TabsTrigger value="all">
-                    All Tests ({testResults?.data?.length || 0})
-                  </TabsTrigger>
-                  <TabsTrigger value="suites">
-                    Suites ({testSuites?.data?.length || 0})
-                  </TabsTrigger>
-                  <TabsTrigger value="failed-suites">
-                    Failed Suites ({testSuites?.data?.filter(s => s.status === 'failure')?.length || 0})
-                  </TabsTrigger>
-                  <TabsTrigger value="failed">
-                    Failed Tests ({testResults?.data?.filter(r => r.status === 'failed')?.length || 0})
-                  </TabsTrigger>
-                  <TabsTrigger value="passed">
-                    Passed Tests ({testResults?.data?.filter(r => r.status === 'passed')?.length || 0})
-                  </TabsTrigger>
-                </TabsList>
-              </div>
-              
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-7">
+                <TabsTrigger value="all">All Tests</TabsTrigger>
+                <TabsTrigger value="failed">Failed</TabsTrigger>
+                <TabsTrigger value="passed">Passed</TabsTrigger>
+                <TabsTrigger value="skipped">Skipped</TabsTrigger>
+                <TabsTrigger value="suites">Test Suites</TabsTrigger>
+                <TabsTrigger value="console-logs">Console Logs</TabsTrigger>
+                <TabsTrigger value="error-logs">Error Logs</TabsTrigger>
+              </TabsList>
+
               <TabsContent value={activeTab} className="p-0 m-0">
                 {(activeTab === 'suites' || activeTab === 'failed-suites') ? (
                   <div className="p-4">

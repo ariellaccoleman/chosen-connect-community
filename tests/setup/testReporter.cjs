@@ -22,9 +22,82 @@ class TestReporter {
       reportedTests: new Set()
     };
     
+    // Console log capture
+    this.consoleLogs = [];
+    this.originalConsole = {};
+    
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to PRODUCTION PROJECT: ${this.reportingUrl}`);
     console.log(`TEST_REPORTING_API_KEY: ${this.reportingApiKey ? '[SET]' : '[NOT SET]'}`);
+  }
+
+  /**
+   * Set up console log capturing
+   */
+  setupConsoleCapture() {
+    const logLevels = ['log', 'info', 'warn', 'error', 'debug'];
+    
+    logLevels.forEach(level => {
+      this.originalConsole[level] = console[level];
+      console[level] = (...args) => {
+        // Store the log entry
+        this.consoleLogs.push({
+          timestamp: new Date().toISOString(),
+          level,
+          source: 'test-reporter',
+          message: args.map(arg => 
+            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+          ).join(' ')
+        });
+        
+        // Call original console method
+        this.originalConsole[level](...args);
+      };
+    });
+  }
+
+  /**
+   * Restore original console methods
+   */
+  restoreConsole() {
+    Object.keys(this.originalConsole).forEach(level => {
+      console[level] = this.originalConsole[level];
+    });
+  }
+
+  /**
+   * Send console logs to the server
+   */
+  async sendConsoleLogs() {
+    if (!this.testRunId || this.consoleLogs.length === 0) {
+      return;
+    }
+
+    try {
+      console.log(`📝 Sending ${this.consoleLogs.length} console log entries to production database...`);
+      
+      const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-logs`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': this.reportingApiKey
+        },
+        body: JSON.stringify({
+          test_run_id: this.testRunId,
+          logs: this.consoleLogs
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log(`✅ Successfully sent ${data.total_logs || this.consoleLogs.length} console logs to production database`);
+      } else {
+        const errorText = await response.text();
+        console.error(`❌ Failed to send console logs: ${errorText}`);
+      }
+    } catch (error) {
+      console.error('❌ Error sending console logs:', error);
+    }
   }
 
   /**
@@ -71,6 +144,9 @@ class TestReporter {
    * Called when Jest starts the test run
    */
   async onRunStart() {
+    // Set up console capturing
+    this.setupConsoleCapture();
+    
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to production project: ${this.reportingUrl}`);
     
@@ -467,8 +543,15 @@ class TestReporter {
         console.error('Failed to update test run via edge function:', errorText);
         console.error('Response status:', response.status);
       }
+      
+      // Send console logs to production database
+      await this.sendConsoleLogs();
+      
     } catch (error) {
       console.error('Error updating test run:', error);
+    } finally {
+      // Restore original console methods
+      this.restoreConsole();
     }
   }
 }

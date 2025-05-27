@@ -1,4 +1,3 @@
-
 import { logger } from '@/utils/logger';
 import { Tables } from '@/integrations/supabase/types';
 import { createClient } from '@supabase/supabase-js';
@@ -403,5 +402,65 @@ export const getRecentFailedSuites = async (limit = 20): Promise<TestSuite[]> =>
   } catch (error) {
     logger.error('Exception fetching failed suites:', error);
     return [];
+  }
+};
+
+/**
+ * Get test run logs (from production database)
+ */
+export const getTestRunLogs = async (testRunId: string): Promise<any[]> => {
+  try {
+    const supabase = getProductionClient();
+    const { data, error } = await supabase
+      .from('test_run_logs')
+      .select('*')
+      .eq('test_run_id', testRunId)
+      .order('timestamp', { ascending: true });
+    
+    if (error) {
+      logger.error('Error fetching test run logs:', error);
+      return [];
+    }
+    
+    return data || [];
+  } catch (error) {
+    logger.error('Exception fetching test run logs:', error);
+    return [];
+  }
+};
+
+/**
+ * Save test run logs (always in production)
+ */
+export const saveTestRunLogs = async (
+  testRunId: string,
+  logs: Array<{
+    timestamp: string;
+    level: 'log' | 'info' | 'warn' | 'error' | 'debug';
+    source?: string;
+    message: string;
+  }>
+): Promise<boolean> => {
+  try {
+    // Call the record-logs endpoint (always on production project)
+    const { error } = await apiClient.functionQuery((functions) => 
+      functions.invoke('report-test-results/record-logs', {
+        method: 'POST',
+        body: {
+          test_run_id: testRunId,
+          logs
+        }
+      })
+    );
+    
+    if (error) {
+      logger.error('Error saving test run logs:', error);
+      return false;
+    }
+    
+    return true;
+  } catch (error) {
+    logger.error('Exception saving test run logs:', error);
+    return false;
   }
 };
