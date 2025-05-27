@@ -308,8 +308,7 @@ export class TestClientFactory {
       
       if (!serviceRoleKey) {
         console.warn('No service role key found - using shared test client instead');
-        // Return a promise that resolves to the shared test client
-        throw new Error('Service role key not available - cannot create service role client');
+        return this.getSharedTestClient();
       }
 
       console.log(`🔧 Worker ${this.workerId}: Creating worker-specific service role client`);
@@ -332,9 +331,9 @@ export class TestClientFactory {
    * Get anonymous client for testing application logic
    * Returns the shared client (which may be authenticated)
    */
-  static async getAnonClient(): Promise<SupabaseClient<Database>> {
+  static getAnonClient(): SupabaseClient<Database> {
     console.log('🔄 getAnonClient() returning shared test client');
-    return await this.getSharedTestClient();
+    return this.getSharedTestClient();
   }
 
   /**

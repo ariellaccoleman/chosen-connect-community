@@ -11,27 +11,6 @@ interface TestResult {
   error?: string;
 }
 
-// Runtime function to detect test environment with comprehensive checks
-const isTestEnvironment = (): boolean => {
-  // Check if we're in Node.js environment first
-  if (typeof window !== "undefined" || typeof process === "undefined") {
-    return false;
-  }
-
-  const checks = {
-    NODE_ENV: process.env.NODE_ENV === 'test',
-    JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
-    TEST_RUN_ID: typeof process.env.TEST_RUN_ID !== 'undefined',
-    CI: process.env.CI === 'true',
-    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS === 'true',
-    hasJestArg: process.argv.some(arg => arg.includes('jest')),
-    hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
-  };
-
-  // Return true if any test environment indicator is present
-  return Object.values(checks).some(check => check === true);
-};
-
 export function TestSchemaFunctions() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -53,19 +32,17 @@ export function TestSchemaFunctions() {
     setIsLoading(true);
     const testResults: TestResult[] = [];
 
-    // Check if we're in a proper test environment
-    if (!isTestEnvironment()) {
+    // Check if we're in a browser environment and warn
+    if (typeof window !== "undefined") {
       testResults.push({
         test: 'Environment Check',
         success: false,
-        error: 'Test infrastructure can only run in Node.js/test environments. Environment detection failed - ensure CI=true, GITHUB_ACTIONS=true, or NODE_ENV=test is set.'
+        error: 'Test infrastructure can only run in Node.js/test environments, not in the browser'
       });
       setResults(testResults);
       setIsLoading(false);
       return;
     }
-
-    console.log('✅ Test environment detected successfully');
 
     try {
       // Dynamically import test infrastructure (only works in Node.js)
@@ -83,17 +60,8 @@ export function TestSchemaFunctions() {
 
       // Test 2: Client factory functionality
       const test2 = await runTest('Client factory test', async () => {
-        const anonClient = await TestClientFactory.getAnonClient();
-        
-        // Try to get service client, but handle gracefully if not available
-        let serviceClientExists = false;
-        let serviceClientError = null;
-        try {
-          const serviceClient = TestClientFactory.getServiceRoleClient();
-          serviceClientExists = !!serviceClient;
-        } catch (error) {
-          serviceClientError = error instanceof Error ? error.message : 'Unknown error';
-        }
+        const anonClient = TestClientFactory.getAnonClient();
+        const serviceClient = TestClientFactory.getServiceRoleClient();
         
         // Test basic connectivity with anon client
         const { data, error } = await anonClient
@@ -103,25 +71,14 @@ export function TestSchemaFunctions() {
         
         return {
           anonClientWorks: !error,
-          serviceClientExists,
-          serviceClientError,
+          serviceClientExists: !!serviceClient,
           queryError: error?.message || null
         };
       });
       testResults.push(test2);
 
-      // Test 3: User management (only if service role key is available)
+      // Test 3: User management
       const test3 = await runTest('User management test', async () => {
-        // Check if service role key is available
-        const hasServiceKey = !!(process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
-        
-        if (!hasServiceKey) {
-          return {
-            skipped: true,
-            reason: 'Service role key not available - this test requires TEST_SUPABASE_SERVICE_ROLE_KEY'
-          };
-        }
-
         const testUser = {
           email: `test_${Date.now()}@testproject.example`,
           password: 'TestPassword123!',
@@ -153,17 +110,8 @@ export function TestSchemaFunctions() {
       });
       testResults.push(test3);
 
-      // Test 4: Table cleanup test (only if service role key is available)
+      // Test 4: Table cleanup test
       const test4 = await runTest('Table cleanup test', async () => {
-        const hasServiceKey = !!(process.env.TEST_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
-        
-        if (!hasServiceKey) {
-          return {
-            skipped: true,
-            reason: 'Service role key not available - this test requires TEST_SUPABASE_SERVICE_ROLE_KEY'
-          };
-        }
-
         await TestInfrastructure.cleanupTable('profiles');
         return {
           message: 'Table cleanup completed (check console for details)'
@@ -189,9 +137,11 @@ export function TestSchemaFunctions() {
         <CardTitle>Simplified Test Infrastructure Testing</CardTitle>
         <CardDescription>
           Test the new simplified test infrastructure with dedicated test project
-          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-blue-700 dark:text-blue-300 text-sm">
-            ℹ️ Note: These tests are designed to run in CI environments (GitHub Actions) with proper environment variables set.
-          </div>
+          {typeof window !== "undefined" && (
+            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
+              ⚠️ Note: These tests are designed to run in Node.js/test environments, not in the browser.
+            </div>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -248,11 +198,6 @@ export function TestSchemaFunctions() {
             <li>✅ Easy cleanup and seeding</li>
             <li>✅ Type-safe database operations</li>
           </ul>
-          
-          <div className="mt-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
-            <strong>Note:</strong> Some tests require the TEST_SUPABASE_SERVICE_ROLE_KEY environment variable. 
-            Tests that require this key will be skipped if it's not available, but basic connectivity tests will still run.
-          </div>
         </div>
       </CardContent>
     </Card>
