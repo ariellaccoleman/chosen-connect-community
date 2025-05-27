@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TestClientFactory } from "@/integrations/supabase/testClient";
 import { handleApiError } from "./errorHandler";
@@ -60,10 +59,10 @@ const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100):
 /**
  * Get the appropriate Supabase client based on environment
  */
-const getSupabaseClient = () => {
+const getSupabaseClient = async () => {
   if (isTestEnvironment()) {
     console.log('🧪 Using shared test Supabase client for API operations');
-    return TestClientFactory.getSharedTestClient();
+    return await TestClientFactory.getSharedTestClient();
   }
   
   return supabase;
@@ -122,7 +121,7 @@ export const apiClient = {
   // Database operations with error handling and session verification
   async query(callback: (client: any) => any) {
     try {
-      const client = getSupabaseClient();
+      const client = await getSupabaseClient();
       return await executeWithSessionVerification(client, callback);
     } catch (error) {
       return handleApiError(error);
@@ -132,7 +131,7 @@ export const apiClient = {
   // Auth operations with error handling
   async authQuery(callback: (auth: any) => any) {
     try {
-      const client = getSupabaseClient();
+      const client = await getSupabaseClient();
       return await callback(client.auth);
     } catch (error) {
       return handleApiError(error);
@@ -142,7 +141,7 @@ export const apiClient = {
   // Storage operations with error handling
   async storageQuery(callback: (storage: any) => any) {
     try {
-      const client = getSupabaseClient();
+      const client = await getSupabaseClient();
       return await executeWithSessionVerification(client, (c) => callback(c.storage));
     } catch (error) {
       return handleApiError(error);
@@ -152,7 +151,7 @@ export const apiClient = {
   // Edge function calls with error handling
   async functionQuery(callback: (functions: any) => any) {
     try {
-      const client = getSupabaseClient();
+      const client = await getSupabaseClient();
       return await executeWithSessionVerification(client, (c) => callback(c.functions));
     } catch (error) {
       return handleApiError(error);

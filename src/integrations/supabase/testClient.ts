@@ -332,11 +332,20 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
-   * Returns the shared client (which may be authenticated)
+   * Creates a simple anon client without authentication complexity
    */
   static getAnonClient(): SupabaseClient<Database> {
-    console.log('🔄 getAnonClient() returning shared test client');
-    return this.getSharedTestClient();
+    this.ensureTestEnvironment();
+    console.log('🔄 getAnonClient() creating simple anon client for testing');
+    
+    // Return a simple anon client for testing application logic
+    return createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        storageKey: `test_anon_${this.workerId}`,
+      }
+    });
   }
 
   /**
