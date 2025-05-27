@@ -1,3 +1,4 @@
+
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
@@ -6,6 +7,14 @@ import { apiClient } from "../core/apiClient";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 import { formatOrganizationRelationships } from "@/utils/organizationFormatters";
 import { logger } from "@/utils/logger";
+
+/**
+ * Validate UUID format
+ */
+const isValidUUID = (uuid: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
 
 /**
  * API module for organization relationship operations
@@ -18,6 +27,18 @@ export const organizationRelationshipsApi = {
     profileId: string
   ): Promise<ApiResponse<ProfileOrganizationRelationshipWithDetails[]>> {
     logger.info(`API call: getUserOrganizationRelationships for profileId: ${profileId}`);
+    
+    // Validate UUID format
+    if (!isValidUUID(profileId)) {
+      logger.error(`Invalid UUID format for profileId: ${profileId}`);
+      return {
+        status: 'error',
+        error: {
+          message: 'Invalid profile ID format',
+          code: 'INVALID_UUID'
+        }
+      };
+    }
     
     return apiClient.query(async (client) => {
       const { data, error } = await client

@@ -15,6 +15,7 @@ describe('Organization Relationships API - Integration Tests', () => {
   let testOrganization: any;
   let createdRelationshipIds: string[] = [];
   let createdOrganizationIds: string[] = [];
+  let testOrgName: string;
   
   beforeAll(async () => {
     // Verify test users are set up
@@ -34,12 +35,12 @@ describe('Organization Relationships API - Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Reset tracking arrays
-    createdRelationshipIds = [];
-    createdOrganizationIds = [];
-    
     // Clean up any existing test data first
     await cleanupTestData();
+    
+    // Reset tracking arrays AFTER cleanup
+    createdRelationshipIds = [];
+    createdOrganizationIds = [];
     
     // Get test user
     try {
@@ -85,11 +86,11 @@ describe('Organization Relationships API - Integration Tests', () => {
     
     // Create a unique test organization
     try {
-      const orgName = `Integration Test Org ${Date.now()}`;
+      testOrgName = `Integration Test Org ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const { data: orgData, error: orgError } = await serviceClient
         .from('organizations')
         .insert({
-          name: orgName,
+          name: testOrgName,
           description: 'Organization for integration testing'
         })
         .select()
@@ -101,7 +102,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       } else {
         testOrganization = orgData;
         createdOrganizationIds.push(orgData.id);
-        console.log(`✅ Test organization created: ${orgName}`);
+        console.log(`✅ Test organization created: ${testOrgName}`);
       }
     } catch (error) {
       console.error('Organization creation error:', error);
@@ -123,35 +124,94 @@ describe('Organization Relationships API - Integration Tests', () => {
       
       // Clean up relationships by IDs if we have them
       if (createdRelationshipIds.length > 0) {
-        await serviceClient
-          .from('org_relationships')
-          .delete()
-          .in('id', createdRelationshipIds);
-        console.log(`✅ Cleaned up ${createdRelationshipIds.length} relationships`);
+        try {
+          const { error: relError } = await serviceClient
+            .from('org_relationships')
+            .delete()
+            .in('id', createdRelationshipIds);
+          
+          if (relError) {
+            console.warn('Warning cleaning up relationships by ID:', relError.message);
+          } else {
+            console.log(`✅ Cleaned up ${createdRelationshipIds.length} relationships by ID`);
+          }
+        } catch (error) {
+          console.warn('Error cleaning up relationships by ID:', error);
+        }
       }
       
       // Clean up organizations by IDs if we have them  
       if (createdOrganizationIds.length > 0) {
-        await serviceClient
+        try {
+          const { error: orgError } = await serviceClient
+            .from('organizations')
+            .delete()
+            .in('id', createdOrganizationIds);
+          
+          if (orgError) {
+            console.warn('Warning cleaning up organizations by ID:', orgError.message);
+          } else {
+            console.log(`✅ Cleaned up ${createdOrganizationIds.length} organizations by ID`);
+          }
+        } catch (error) {
+          console.warn('Error cleaning up organizations by ID:', error);
+        }
+      }
+      
+      // Fallback cleanup: Clean up any relationships for this test user
+      if (testUser?.id) {
+        try {
+          const { error: userRelError } = await serviceClient
+            .from('org_relationships')
+            .delete()
+            .eq('profile_id', testUser.id);
+          
+          if (userRelError) {
+            console.warn('Warning cleaning up user relationships:', userRelError.message);
+          } else {
+            console.log(`✅ Cleaned up relationships for user: ${testUser.id}`);
+          }
+        } catch (error) {
+          console.warn('Error cleaning up user relationships:', error);
+        }
+      }
+      
+      // Fallback cleanup: Clean up test organizations by name pattern
+      if (testOrgName) {
+        try {
+          const { error: nameOrgError } = await serviceClient
+            .from('organizations')
+            .delete()
+            .eq('name', testOrgName);
+          
+          if (nameOrgError) {
+            console.warn('Warning cleaning up organization by name:', nameOrgError.message);
+          } else {
+            console.log(`✅ Cleaned up organization by name: ${testOrgName}`);
+          }
+        } catch (error) {
+          console.warn('Error cleaning up organization by name:', error);
+        }
+      }
+      
+      // Broad cleanup: Clean up any Integration Test organizations that might be left over
+      try {
+        const { error: broadOrgError } = await serviceClient
           .from('organizations')
           .delete()
-          .in('id', createdOrganizationIds);
-        console.log(`✅ Cleaned up ${createdOrganizationIds.length} organizations`);
+          .like('name', 'Integration Test Org %');
+        
+        if (broadOrgError) {
+          console.warn('Warning in broad organization cleanup:', broadOrgError.message);
+        } else {
+          console.log('✅ Completed broad cleanup of test organizations');
+        }
+      } catch (error) {
+        console.warn('Error in broad organization cleanup:', error);
       }
       
-      // Also clean up any relationships for this test user
-      if (testUser?.id) {
-        await serviceClient
-          .from('org_relationships')
-          .delete()
-          .eq('profile_id', testUser.id);
-      }
-      
-      // Reset tracking arrays
-      createdRelationshipIds = [];
-      createdOrganizationIds = [];
     } catch (error) {
-      console.warn('Cleanup warning:', error);
+      console.warn('General cleanup warning:', error);
     }
   };
 
@@ -218,9 +278,6 @@ describe('Organization Relationships API - Integration Tests', () => {
     // 6. Delete the relationship
     const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id);
     expect(deleteResult.status).toBe('success');
-    
-    // Remove from tracking since it's deleted
-    createdRelationshipIds = createdRelationshipIds.filter(id => id !== relationship.id);
 
     // 7. Verify deletion
     result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
