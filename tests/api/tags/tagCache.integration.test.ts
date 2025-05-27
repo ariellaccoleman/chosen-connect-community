@@ -1,3 +1,4 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -6,7 +7,7 @@ import { updateTagCache, invalidateTagCache as utilsInvalidateCache } from '@/ut
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Cache Integration Tests', () => {
-  let testUser: any;
+  let testAuth: { client: any; apiClient: any; user: any };
   let createdCacheEntries: string[] = [];
 
   beforeAll(async () => {
@@ -33,30 +34,11 @@ describe('Tag Cache Integration Tests', () => {
     // Reset tracking arrays AFTER cleanup
     createdCacheEntries = [];
     
-    // Set up authentication for user6 (Tag Cache tests) - STRICT MODE
+    // Set up authentication for user6 (Tag Cache tests) using per-user client
     console.log('🔐 Setting up test authentication for user6...');
-    await TestAuthUtils.setupTestAuth('user6');
+    testAuth = await TestAuthUtils.setupTestAuth('user6');
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
-    console.log(`✅ Test user authenticated: ${testUser.email}`);
-    
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
+    console.log(`✅ Test user authenticated: ${testAuth.user.email}`);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -64,7 +46,9 @@ describe('Tag Cache Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    if (testAuth?.user?.email) {
+      await TestAuthUtils.cleanupTestAuth(testAuth.user.email);
+    }
   });
 
   afterAll(() => {
@@ -100,7 +84,7 @@ describe('Tag Cache Integration Tests', () => {
 
   const setupTestData = async () => {
     // Only proceed if we have a valid authenticated user
-    if (!testUser?.id) {
+    if (!testAuth?.user?.id) {
       throw new Error('❌ Cannot setup test data - no authenticated user');
     }
     
@@ -110,8 +94,8 @@ describe('Tag Cache Integration Tests', () => {
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testUser.id, 
-        email: testUser.email,
+        id: testAuth.user.id, 
+        email: testAuth.user.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -140,163 +124,183 @@ describe('Tag Cache Integration Tests', () => {
 
   describe('Tag Cache Operations', () => {
     test('should update tag cache for entity type', async () => {
-      const testData = [
-        { id: '1', name: 'Test Tag 1', description: 'First test tag' },
-        { id: '2', name: 'Test Tag 2', description: 'Second test tag' }
-      ];
-      
-      const result = await updateTagCache(EntityType.ORGANIZATION, testData);
-      
-      expect(result).toBe(true);
-      
-      // Verify cache was created
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      const cacheKey = `selection_tags_${EntityType.ORGANIZATION}`;
-      
-      const { data: cacheData, error } = await serviceClient
-        .from('cache')
-        .select('*')
-        .eq('key', cacheKey)
-        .maybeSingle();
-      
-      if (!error && cacheData) {
-        expect(cacheData.data).toEqual(testData);
-        createdCacheEntries.push(cacheKey);
-      }
+      await TestAuthUtils.executeWithAuth(async () => {
+        const testData = [
+          { id: '1', name: 'Test Tag 1', description: 'First test tag' },
+          { id: '2', name: 'Test Tag 2', description: 'Second test tag' }
+        ];
+        
+        const result = await updateTagCache(EntityType.ORGANIZATION, testData);
+        
+        expect(result).toBe(true);
+        
+        // Verify cache was created
+        const serviceClient = TestClientFactory.getServiceRoleClient();
+        const cacheKey = `selection_tags_${EntityType.ORGANIZATION}`;
+        
+        const { data: cacheData, error } = await serviceClient
+          .from('cache')
+          .select('*')
+          .eq('key', cacheKey)
+          .maybeSingle();
+        
+        if (!error && cacheData) {
+          expect(cacheData.data).toEqual(testData);
+          createdCacheEntries.push(cacheKey);
+        }
+      }, 'update tag cache for entity type', testAuth.client);
     });
 
     test('should handle invalid entity type in updateTagCache', async () => {
-      const result = await updateTagCache('invalid_entity_type' as EntityType, []);
-      
-      expect(result).toBe(false);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const result = await updateTagCache('invalid_entity_type' as EntityType, []);
+        
+        expect(result).toBe(false);
+      }, 'handle invalid entity type in updateTagCache', testAuth.client);
     });
 
     test('should invalidate specific entity type cache', async () => {
-      if (!testUser?.id) {
+      if (!testAuth?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;
       }
 
-      // Create a test cache entry
-      const cacheKey = `selection_tags_${EntityType.PROFILE}`;
-      await createTestCacheEntry(cacheKey, [{ id: '1', name: 'Test' }]);
-      
-      // Invalidate the cache
-      const result = await utilsInvalidateCache(EntityType.PROFILE);
-      
-      expect(result).toBe(true);
-      
-      // Verify cache was deleted
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      const { data: cacheData } = await serviceClient
-        .from('cache')
-        .select('*')
-        .eq('key', cacheKey)
-        .maybeSingle();
-      
-      expect(cacheData).toBeNull();
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Create a test cache entry
+        const cacheKey = `selection_tags_${EntityType.PROFILE}`;
+        await createTestCacheEntry(cacheKey, [{ id: '1', name: 'Test' }]);
+        
+        // Invalidate the cache
+        const result = await utilsInvalidateCache(EntityType.PROFILE);
+        
+        expect(result).toBe(true);
+        
+        // Verify cache was deleted
+        const serviceClient = TestClientFactory.getServiceRoleClient();
+        const { data: cacheData } = await serviceClient
+          .from('cache')
+          .select('*')
+          .eq('key', cacheKey)
+          .maybeSingle();
+        
+        expect(cacheData).toBeNull();
+      }, 'invalidate specific entity type cache', testAuth.client);
     });
 
     test('should invalidate all tag caches when no entity type specified', async () => {
-      if (!testUser?.id) {
+      if (!testAuth?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;
       }
 
-      // Create multiple test cache entries
-      const cacheKey1 = `selection_tags_${EntityType.ORGANIZATION}`;
-      const cacheKey2 = `selection_tags_${EntityType.PROFILE}`;
-      
-      await createTestCacheEntry(cacheKey1, [{ id: '1', name: 'Org Tag' }]);
-      await createTestCacheEntry(cacheKey2, [{ id: '2', name: 'Profile Tag' }]);
-      
-      // Invalidate all caches
-      const result = await utilsInvalidateCache();
-      
-      expect(result).toBe(true);
-      
-      // Verify both caches were deleted
-      const serviceClient = TestClientFactory.getServiceRoleClient();
-      const { data: cache1 } = await serviceClient
-        .from('cache')
-        .select('*')
-        .eq('key', cacheKey1)
-        .maybeSingle();
-      
-      const { data: cache2 } = await serviceClient
-        .from('cache')
-        .select('*')
-        .eq('key', cacheKey2)
-        .maybeSingle();
-      
-      expect(cache1).toBeNull();
-      expect(cache2).toBeNull();
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Create multiple test cache entries
+        const cacheKey1 = `selection_tags_${EntityType.ORGANIZATION}`;
+        const cacheKey2 = `selection_tags_${EntityType.PROFILE}`;
+        
+        await createTestCacheEntry(cacheKey1, [{ id: '1', name: 'Org Tag' }]);
+        await createTestCacheEntry(cacheKey2, [{ id: '2', name: 'Profile Tag' }]);
+        
+        // Invalidate all caches
+        const result = await utilsInvalidateCache();
+        
+        expect(result).toBe(true);
+        
+        // Verify both caches were deleted
+        const serviceClient = TestClientFactory.getServiceRoleClient();
+        const { data: cache1 } = await serviceClient
+          .from('cache')
+          .select('*')
+          .eq('key', cacheKey1)
+          .maybeSingle();
+        
+        const { data: cache2 } = await serviceClient
+          .from('cache')
+          .select('*')
+          .eq('key', cacheKey2)
+          .maybeSingle();
+        
+        expect(cache1).toBeNull();
+        expect(cache2).toBeNull();
+      }, 'invalidate all tag caches', testAuth.client);
     });
 
     test('should handle invalid entity type in invalidateTagCache', async () => {
-      const result = await utilsInvalidateCache('invalid_entity_type' as EntityType);
-      
-      expect(result).toBe(false);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const result = await utilsInvalidateCache('invalid_entity_type' as EntityType);
+        
+        expect(result).toBe(false);
+      }, 'handle invalid entity type in invalidateTagCache', testAuth.client);
     });
 
     test('should use API invalidateTagCache function', async () => {
-      if (!testUser?.id) {
+      if (!testAuth?.user?.id) {
         console.warn('Skipping test - test setup incomplete');
         expect(true).toBe(true);
         return;
       }
 
-      // Create a test cache entry
-      const cacheKey = `test_cache_${Date.now()}`;
-      await createTestCacheEntry(cacheKey, { test: 'data' });
-      
-      // Test the API function
-      const result = await invalidateTagCache();
-      
-      // The function should execute without error
-      // Note: We can't easily test the exact behavior since it may use different logic
-      expect(typeof result).toBe('boolean');
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Create a test cache entry
+        const cacheKey = `test_cache_${Date.now()}`;
+        await createTestCacheEntry(cacheKey, { test: 'data' });
+        
+        // Test the API function
+        const result = await invalidateTagCache();
+        
+        // The function should execute without error
+        // Note: We can't easily test the exact behavior since it may use different logic
+        expect(typeof result).toBe('boolean');
+      }, 'use API invalidateTagCache function', testAuth.client);
     });
 
     test('should handle cache operations with missing RPC functions gracefully', async () => {
-      // Test that cache operations don't break even if RPC functions are missing
-      const testData = [{ id: '1', name: 'Test' }];
-      
-      // This should not throw an error even if RPC functions are missing
-      let result;
-      try {
-        result = await updateTagCache(EntityType.EVENT, testData);
-        // Result could be true or false depending on RPC availability
-        expect(typeof result).toBe('boolean');
-      } catch (error) {
-        // If RPC functions are missing, operations should handle gracefully
-        expect(error).toBeDefined();
-      }
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Test that cache operations don't break even if RPC functions are missing
+        const testData = [{ id: '1', name: 'Test' }];
+        
+        // This should not throw an error even if RPC functions are missing
+        let result;
+        try {
+          result = await updateTagCache(EntityType.EVENT, testData);
+          // Result could be true or false depending on RPC availability
+          expect(typeof result).toBe('boolean');
+        } catch (error) {
+          // If RPC functions are missing, operations should handle gracefully
+          expect(error).toBeDefined();
+        }
+      }, 'handle cache operations with missing RPC functions gracefully', testAuth.client);
     });
 
     test('should handle empty cache data', async () => {
-      const result = await updateTagCache(EntityType.HUB, []);
-      
-      // Should handle empty arrays without error
-      expect(typeof result).toBe('boolean');
+      await TestAuthUtils.executeWithAuth(async () => {
+        const result = await updateTagCache(EntityType.HUB, []);
+        
+        // Should handle empty arrays without error
+        expect(typeof result).toBe('boolean');
+      }, 'handle empty cache data', testAuth.client);
     });
   });
 
   describe('Cache Error Handling', () => {
     test('should handle database connection errors gracefully', async () => {
-      // Test with invalid entity type to trigger error path
-      const result = await utilsInvalidateCache('nonexistent' as EntityType);
-      
-      expect(result).toBe(false);
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Test with invalid entity type to trigger error path
+        const result = await utilsInvalidateCache('nonexistent' as EntityType);
+        
+        expect(result).toBe(false);
+      }, 'handle database connection errors gracefully', testAuth.client);
     });
 
     test('should handle malformed cache data', async () => {
-      // Test updating cache with undefined data
-      const result = await updateTagCache(EntityType.LOCATION, undefined as any);
-      
-      expect(typeof result).toBe('boolean');
+      await TestAuthUtils.executeWithAuth(async () => {
+        // Test updating cache with undefined data
+        const result = await updateTagCache(EntityType.LOCATION, undefined as any);
+        
+        expect(typeof result).toBe('boolean');
+      }, 'handle malformed cache data', testAuth.client);
     });
   });
 });

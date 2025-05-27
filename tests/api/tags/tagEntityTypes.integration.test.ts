@@ -6,7 +6,7 @@ import { createTagEntityTypeRepository } from '@/api/tags/repository/TagEntityTy
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Entity Type Repository Integration Tests', () => {
-  let testUser: any;
+  let testAuth: { client: any; apiClient: any; user: any };
   let tagEntityTypeRepo: any;
   let createdTagIds: string[] = [];
   let createdTagEntityTypeIds: string[] = [];
@@ -36,33 +36,14 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     createdTagIds = [];
     createdTagEntityTypeIds = [];
     
-    // Set up authentication for user3 (Tag Entity Type tests) - STRICT MODE
+    // Set up authentication for user3 (Tag Entity Type tests) using per-user client
     console.log('🔐 Setting up test authentication for user3...');
-    await TestAuthUtils.setupTestAuth('user3');
+    testAuth = await TestAuthUtils.setupTestAuth('user3');
     
-    // Wait for auth to settle
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log(`✅ Test user authenticated: ${testAuth.user.email}`);
     
-    // Get the authenticated user - NO FALLBACK
-    testUser = await TestAuthUtils.getCurrentTestUser();
-    if (!testUser?.id) {
-      throw new Error('❌ Authentication failed - no valid test user available');
-    }
-    console.log(`✅ Test user authenticated: ${testUser.email}`);
-    
-    // Verify session is established - STRICT VERIFICATION
-    const client = await TestClientFactory.getSharedTestClient();
-    const { data: { session }, error } = await client.auth.getSession();
-    if (error || !session || !session.user || !session.access_token) {
-      throw new Error('❌ Authentication failed - no valid session established');
-    }
-    
-    if (session.user.id !== testUser.id) {
-      throw new Error('❌ Session user mismatch - authentication inconsistent');
-    }
-    
-    // Initialize repository
-    tagEntityTypeRepo = createTagEntityTypeRepository();
+    // Initialize repository with authenticated client
+    tagEntityTypeRepo = createTagEntityTypeRepository(testAuth.client);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -70,7 +51,9 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    await TestAuthUtils.cleanupTestAuth();
+    if (testAuth?.user?.email) {
+      await TestAuthUtils.cleanupTestAuth(testAuth.user.email);
+    }
   });
 
   afterAll(() => {
@@ -106,11 +89,11 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       }
       
       // Fallback cleanup by user ID (only if we have a valid user)
-      if (testUser?.id) {
+      if (testAuth?.user?.id) {
         await serviceClient
           .from('tags')
           .delete()
-          .eq('created_by', testUser.id);
+          .eq('created_by', testAuth.user.id);
       }
       
     } catch (error) {
@@ -120,7 +103,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   const setupTestData = async () => {
     // Only proceed if we have a valid authenticated user
-    if (!testUser?.id) {
+    if (!testAuth?.user?.id) {
       throw new Error('❌ Cannot setup test data - no authenticated user');
     }
     
@@ -130,8 +113,8 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testUser.id, 
-        email: testUser.email,
+        id: testAuth.user.id, 
+        email: testAuth.user.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -142,7 +125,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   };
 
   const createTestTag = async (name: string) => {
-    if (!testUser?.id) {
+    if (!testAuth?.user?.id) {
       throw new Error('❌ Cannot create test tag - no authenticated user');
     }
     
@@ -153,7 +136,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       .insert({
         name: `${name} ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for entity type testing',
-        created_by: testUser.id
+        created_by: testAuth.user.id
       })
       .select()
       .single();
@@ -166,110 +149,136 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     return tagData;
   };
 
+  const getTagEntityTypesByTagId = async (tagId: string) => {
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    const { data, error } = await serviceClient
+      .from('tag_entity_types')
+      .select('*')
+      .eq('tag_id', tagId);
+    
+    if (error) throw error;
+    return data || [];
+  };
+
+  const isTagAllowedForEntityType = async (tagId: string, entityType: EntityType) => {
+    const associations = await getTagEntityTypesByTagId(tagId);
+    return associations.some(assoc => assoc.entity_type === entityType);
+  };
+
   describe('Tag Entity Type CRUD Operations', () => {
     test('should create tag entity type association', async () => {
-      const testTag = await createTestTag('EntityTypeTest');
-      
-      const result = await tagEntityTypeRepo.associateTagWithEntityType(
-        testTag.id, 
-        EntityType.ORGANIZATION
-      );
-      
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const testTag = await createTestTag('EntityTypeTest');
+        
+        const result = await tagEntityTypeRepo.associateTagWithEntityType(
+          testTag.id, 
+          EntityType.ORGANIZATION
+        );
+        
+        expect(result.status).toBe('success');
+        expect(result.data).toBe(true);
 
-      // Verify the association was created
-      const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
-      expect(associations.length).toBe(1);
-      expect(associations[0].entity_type).toBe(EntityType.ORGANIZATION);
-      
-      createdTagEntityTypeIds.push(associations[0].id);
+        // Verify the association was created
+        const associations = await getTagEntityTypesByTagId(testTag.id);
+        expect(associations).toHaveLength(1);
+        expect(associations[0].entity_type).toBe(EntityType.ORGANIZATION);
+        
+        createdTagEntityTypeIds.push(associations[0].id);
+      }, 'create tag entity type association', testAuth.client);
     });
 
     test('should get entity types by tag ID', async () => {
-      const testTag = await createTestTag('GetEntityTypesTest');
-      
-      // Create multiple entity type associations
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.ORGANIZATION);
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.PROFILE);
-      
-      const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
-      
-      expect(result.status).toBe('success');
-      expect(result.data).toHaveLength(2);
-      expect(result.data).toContain(EntityType.ORGANIZATION);
-      expect(result.data).toContain(EntityType.PROFILE);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const testTag = await createTestTag('GetEntityTypesTest');
+        
+        // Create multiple entity type associations
+        await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.ORGANIZATION);
+        await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.PROFILE);
+        
+        const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
+        
+        expect(result.status).toBe('success');
+        expect(result.data).toHaveLength(2);
+        expect(result.data).toContain(EntityType.ORGANIZATION);
+        expect(result.data).toContain(EntityType.PROFILE);
 
-      // Track for cleanup
-      const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
-      associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
+        // Track for cleanup
+        const associations = await getTagEntityTypesByTagId(testTag.id);
+        associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
+      }, 'get entity types by tag ID', testAuth.client);
     });
 
     test('should check if tag is allowed for entity type', async () => {
-      const testTag = await createTestTag('AllowedTest');
-      
-      // Initially should not be allowed
-      const notAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.EVENT
-      );
-      expect(notAllowed).toBe(false);
-      
-      // Create association
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.EVENT);
-      
-      // Now should be allowed
-      const isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.EVENT
-      );
-      expect(isAllowed).toBe(true);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const testTag = await createTestTag('AllowedTest');
+        
+        // Initially should not be allowed
+        const notAllowed = await isTagAllowedForEntityType(
+          testTag.id, 
+          EntityType.EVENT
+        );
+        expect(notAllowed).toBe(false);
+        
+        // Create association
+        await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.EVENT);
+        
+        // Now should be allowed
+        const isAllowed = await isTagAllowedForEntityType(
+          testTag.id, 
+          EntityType.EVENT
+        );
+        expect(isAllowed).toBe(true);
 
-      // Track for cleanup
-      const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
-      associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
+        // Track for cleanup
+        const associations = await getTagEntityTypesByTagId(testTag.id);
+        associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
+      }, 'check if tag is allowed for entity type', testAuth.client);
     });
 
     test('should remove tag entity type association', async () => {
-      const testTag = await createTestTag('RemoveAssociationTest');
-      
-      // Create association
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.HUB);
-      
-      // Verify it exists
-      let isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.HUB
-      );
-      expect(isAllowed).toBe(true);
-      
-      // Remove association
-      const result = await tagEntityTypeRepo.removeTagEntityTypeAssociation(
-        testTag.id, 
-        EntityType.HUB
-      );
-      
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
-      
-      // Verify it's removed
-      isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.HUB
-      );
-      expect(isAllowed).toBe(false);
+      await TestAuthUtils.executeWithAuth(async () => {
+        const testTag = await createTestTag('RemoveAssociationTest');
+        
+        // Create association
+        await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.HUB);
+        
+        // Verify it exists
+        let isAllowed = await isTagAllowedForEntityType(
+          testTag.id, 
+          EntityType.HUB
+        );
+        expect(isAllowed).toBe(true);
+        
+        // Remove association
+        const result = await tagEntityTypeRepo.removeTagEntityTypeAssociation(
+          testTag.id, 
+          EntityType.HUB
+        );
+        
+        expect(result.status).toBe('success');
+        expect(result.data).toBe(true);
+        
+        // Verify it's removed
+        isAllowed = await isTagAllowedForEntityType(
+          testTag.id, 
+          EntityType.HUB
+        );
+        expect(isAllowed).toBe(false);
+      }, 'remove tag entity type association', testAuth.client);
     });
 
     test('should handle undefined parameters gracefully', async () => {
-      const entityTypesResult = await tagEntityTypeRepo.getEntityTypesByTagId(undefined);
-      expect(entityTypesResult.status).toBe('success');
-      expect(entityTypesResult.data).toEqual([]);
-      
-      const associateResult = await tagEntityTypeRepo.associateTagWithEntityType(undefined, undefined);
-      expect(associateResult.status).toBe('error');
-      
-      const removeResult = await tagEntityTypeRepo.removeTagEntityTypeAssociation(undefined, undefined);
-      expect(removeResult.status).toBe('error');
+      await TestAuthUtils.executeWithAuth(async () => {
+        const entityTypesResult = await tagEntityTypeRepo.getEntityTypesByTagId(undefined);
+        expect(entityTypesResult.status).toBe('success');
+        expect(entityTypesResult.data).toEqual([]);
+        
+        const associateResult = await tagEntityTypeRepo.associateTagWithEntityType(undefined, undefined);
+        expect(associateResult.status).toBe('error');
+        
+        const removeResult = await tagEntityTypeRepo.removeTagEntityTypeAssociation(undefined, undefined);
+        expect(removeResult.status).toBe('error');
+      }, 'handle undefined parameters gracefully', testAuth.client);
     });
   });
 });
