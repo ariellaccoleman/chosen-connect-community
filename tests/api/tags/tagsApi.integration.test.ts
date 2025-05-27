@@ -46,6 +46,10 @@ describe('Tag Operations API Integration Tests', () => {
     testUser = authResult.user;
     authenticatedClient = authResult.client;
     
+    if (!testUser?.id) {
+      throw new Error('❌ Test user setup failed - no user returned');
+    }
+    
     console.log(`✅ Test user authenticated: ${testUser.email}`);
     
     // Set up test data ONLY after confirmed authentication
@@ -233,7 +237,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       createdTagIds.push(tag1.id, tag2.id);
       
-      const searchResults = await tagApi.search(uniqueSearchTerm, authenticatedClient);
+      const searchResults = await tagApi.searchByName(uniqueSearchTerm, authenticatedClient);
       
       expect(Array.isArray(searchResults)).toBe(true);
       expect(searchResults.length).toBeGreaterThanOrEqual(2);
@@ -245,7 +249,10 @@ describe('Tag Operations API Integration Tests', () => {
       const tagName = `FindOrCreate Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       // First call should create the tag
-      const tag1 = await tagApi.findOrCreate(tagName, authenticatedClient);
+      const tag1 = await tagApi.findOrCreate({
+        name: tagName,
+        created_by: testUser.id
+      }, undefined, authenticatedClient);
       
       expect(tag1).toBeDefined();
       expect(tag1.name).toBe(tagName);
@@ -253,7 +260,10 @@ describe('Tag Operations API Integration Tests', () => {
       createdTagIds.push(tag1.id);
       
       // Second call should find the existing tag
-      const tag2 = await tagApi.findOrCreate(tagName, authenticatedClient);
+      const tag2 = await tagApi.findOrCreate({
+        name: tagName,
+        created_by: testUser.id
+      }, undefined, authenticatedClient);
       
       expect(tag2).toBeDefined();
       expect(tag2.id).toBe(tag1.id);
@@ -308,20 +318,12 @@ describe('Tag Operations API Integration Tests', () => {
       createdTagIds.push(tag.id);
       
       // Create assignment
-      const assignment = await tagAssignmentApi.createAssignment({
-        tag_id: tag.id,
-        target_id: org.id,
-        target_type: EntityType.ORGANIZATION
-      }, authenticatedClient);
+      const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment.id);
       
       // Get assignments for entity
-      const assignments = await tagAssignmentApi.getAssignmentsForEntity(
-        org.id, 
-        EntityType.ORGANIZATION,
-        authenticatedClient
-      );
+      const assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(Array.isArray(assignments)).toBe(true);
       expect(assignments.length).toBe(1);
@@ -341,34 +343,22 @@ describe('Tag Operations API Integration Tests', () => {
       createdTagIds.push(tag.id);
       
       // Create assignment
-      const assignment = await tagAssignmentApi.createAssignment({
-        tag_id: tag.id,
-        target_id: org.id,
-        target_type: EntityType.ORGANIZATION
-      }, authenticatedClient);
+      const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(assignment).toBeDefined();
       expect(assignment.tag_id).toBe(tag.id);
       expect(assignment.target_id).toBe(org.id);
       
       // Verify assignment exists
-      let assignments = await tagAssignmentApi.getAssignmentsForEntity(
-        org.id, 
-        EntityType.ORGANIZATION,
-        authenticatedClient
-      );
+      let assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       expect(assignments.length).toBe(1);
       
       // Delete assignment
-      const deleteResult = await tagAssignmentApi.deleteAssignment(assignment.id, authenticatedClient);
+      const deleteResult = await tagAssignmentApi.delete(assignment.id, authenticatedClient);
       expect(deleteResult).toBe(true);
       
       // Verify assignment is deleted
-      assignments = await tagAssignmentApi.getAssignmentsForEntity(
-        org.id, 
-        EntityType.ORGANIZATION,
-        authenticatedClient
-      );
+      assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       expect(assignments.length).toBe(0);
     });
   });

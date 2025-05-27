@@ -47,6 +47,10 @@ describe('Tag Assignment Repository Integration Tests', () => {
     testUser = authResult.user;
     authenticatedClient = authResult.client;
     
+    if (!testUser?.id) {
+      throw new Error('❌ Test user setup failed - no user returned');
+    }
+    
     console.log(`✅ Test user authenticated: ${testUser.email}`);
     
     // Initialize repository with the authenticated client

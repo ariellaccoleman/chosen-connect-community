@@ -16,7 +16,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Get all tags
      */
-    async getAll(): Promise<T[]> {
+    async getAll(providedClient?: any): Promise<T[]> {
       logger.debug('TagOperations.getAll: Fetching all tags');
       
       const { data, error } = await apiClient.query(async (client) => {
@@ -24,7 +24,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .from('tags')
           .select('*')
           .order('name');
-      });
+      }, providedClient);
       
       if (error) {
         logger.error('Error fetching tags:', error);
@@ -37,7 +37,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Get tag by ID
      */
-    async getById(id: string): Promise<T | null> {
+    async getById(id: string, providedClient?: any): Promise<T | null> {
       logger.debug(`TagOperations.getById: Fetching tag with ID ${id}`);
       
       const { data, error } = await apiClient.query(async (client) => {
@@ -46,7 +46,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .select('*')
           .eq('id', id)
           .single();
-      });
+      }, providedClient);
       
       if (error) {
         logger.error(`Error fetching tag with ID ${id}:`, error);
@@ -59,7 +59,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Find tag by exact name match
      */
-    async findByName(name: string): Promise<T | null> {
+    async findByName(name: string, providedClient?: any): Promise<T | null> {
       logger.debug(`TagOperations.findByName: Finding tag with name ${name}`);
       
       const { data, error } = await apiClient.query(async (client) => {
@@ -68,7 +68,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .select('*')
           .ilike('name', name)
           .single();
-      });
+      }, providedClient);
       
       if (error) {
         // Not found errors are expected and should not be logged as errors
@@ -84,7 +84,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Search tags by partial name match
      */
-    async searchByName(query: string): Promise<T[]> {
+    async searchByName(query: string, providedClient?: any): Promise<T[]> {
       logger.debug(`TagOperations.searchByName: Searching tags with query ${query}`);
       
       const { data, error } = await apiClient.query(async (client) => {
@@ -94,7 +94,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .ilike('name', `%${query}%`)
           .order('name')
           .limit(20);
-      });
+      }, providedClient);
       
       if (error) {
         logger.error(`Error searching tags with query ${query}:`, error);
@@ -107,7 +107,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Create a new tag
      */
-    async create(data: Partial<T>): Promise<T> {
+    async create(data: Partial<T>, providedClient?: any): Promise<T> {
       logger.debug(`TagOperations.create: Creating new tag with name ${data.name}`);
       
       // Validate required fields
@@ -118,10 +118,10 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       const { data: createdTag, error } = await apiClient.query(async (client) => {
         return client
           .from('tags')
-          .insert(data as any) // Using type assertion as a workaround
+          .insert(data as any)
           .select()
           .single();
-      });
+      }, providedClient);
       
       if (error) {
         logger.error(`Error creating tag:`, error);
@@ -134,7 +134,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Update a tag
      */
-    async update(id: string, data: Partial<T>): Promise<T> {
+    async update(id: string, data: Partial<T>, providedClient?: any): Promise<T> {
       logger.debug(`TagOperations.update: Updating tag with ID ${id}`);
       
       const { data: updatedTag, error } = await apiClient.query(async (client) => {
@@ -144,7 +144,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .eq('id', id)
           .select()
           .single();
-      });
+      }, providedClient);
       
       if (error) {
         logger.error(`Error updating tag with ID ${id}:`, error);
@@ -157,7 +157,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Delete a tag
      */
-    async delete(id: string): Promise<boolean> {
+    async delete(id: string, providedClient?: any): Promise<boolean> {
       logger.debug(`TagOperations.delete: Deleting tag with ID ${id}`);
       
       const { error } = await apiClient.query(async (client) => {
@@ -165,7 +165,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .from('tags')
           .delete()
           .eq('id', id);
-      });
+      }, providedClient);
       
       if (error) {
         logger.error(`Error deleting tag with ID ${id}:`, error);
@@ -178,7 +178,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Find or create a tag
      */
-    async findOrCreate(data: Partial<T>, entityType?: EntityType): Promise<T> {
+    async findOrCreate(data: Partial<T>, entityType?: EntityType, providedClient?: any): Promise<T> {
       logger.debug(`TagOperations.findOrCreate: Finding or creating tag with name ${data.name}`);
       
       // Validate required fields
@@ -187,7 +187,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       }
       
       // Try to find the tag first
-      const existingTag = await this.findByName(data.name);
+      const existingTag = await this.findByName(data.name, providedClient);
       
       if (existingTag) {
         logger.debug(`Found existing tag with name ${data.name}`);
@@ -196,7 +196,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       
       // If not found, create new tag
       logger.debug(`Creating new tag with name ${data.name}`);
-      const newTag = await this.create(data);
+      const newTag = await this.create(data, providedClient);
       
       // If entityType is provided, associate the tag with it
       if (entityType && isValidEntityType(entityType)) {
@@ -215,7 +215,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     /**
      * Get tags by entity type
      */
-    async getByEntityType(entityType: EntityType): Promise<T[]> {
+    async getByEntityType(entityType: EntityType, providedClient?: any): Promise<T[]> {
       logger.debug(`TagOperations.getByEntityType: Getting tags for entity type ${entityType}`);
       
       if (!isValidEntityType(entityType)) {
@@ -229,7 +229,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
             .from('tag_entity_types')
             .select(`tag:tags(*)`)
             .eq('entity_type', entityType);
-        });
+        }, providedClient);
         
         if (error) {
           logger.error(`Error fetching tags for entity type ${entityType}:`, error);

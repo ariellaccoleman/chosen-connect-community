@@ -26,51 +26,51 @@ export const tagApi = createTagApiFactory();
 export const tagAssignmentApi = createTagAssignmentApiFactory();
 
 // Export standard functions that match the original API
-export const getAllTags = async (): Promise<Tag[]> => {
-  return await tagApi.getAll();
+export const getAllTags = async (providedClient?: any): Promise<Tag[]> => {
+  return await tagApi.getAll(providedClient);
 };
 
-export const getTagById = async (id: string): Promise<Tag | null> => {
-  return await tagApi.getById(id);
+export const getTagById = async (id: string, providedClient?: any): Promise<Tag | null> => {
+  return await tagApi.getById(id, providedClient);
 };
 
-export const findTagByName = async (name: string): Promise<Tag | null> => {
-  return await tagApi.findByName(name);
+export const findTagByName = async (name: string, providedClient?: any): Promise<Tag | null> => {
+  return await tagApi.findByName(name, providedClient);
 };
 
-export const searchTags = async (query: string): Promise<Tag[]> => {
-  return await tagApi.searchByName(query);
+export const searchTags = async (query: string, providedClient?: any): Promise<Tag[]> => {
+  return await tagApi.searchByName(query, providedClient);
 };
 
-export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
-  return await tagApi.create(data);
+export const createTag = async (data: Partial<Tag>, providedClient?: any): Promise<Tag> => {
+  return await tagApi.create(data, providedClient);
 };
 
-export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
-  return await tagApi.update(id, data);
+export const updateTag = async (id: string, data: Partial<Tag>, providedClient?: any): Promise<Tag> => {
+  return await tagApi.update(id, data, providedClient);
 };
 
-export const deleteTag = async (id: string): Promise<boolean> => {
-  return await tagApi.delete(id);
+export const deleteTag = async (id: string, providedClient?: any): Promise<boolean> => {
+  return await tagApi.delete(id, providedClient);
 };
 
-export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
-  return await tagApi.findOrCreate(data, entityType);
+export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<Tag> => {
+  return await tagApi.findOrCreate(data, entityType, providedClient);
 };
 
-export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
-  return await tagApi.getByEntityType(entityType);
+export const getTagsByEntityType = async (entityType: EntityType, providedClient?: any): Promise<Tag[]> => {
+  return await tagApi.getByEntityType(entityType, providedClient);
 };
 
 // For tag assignments
-export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
-  return await tagAssignmentApi.getForEntity(entityId, entityType);
+export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment[]> => {
+  return await tagAssignmentApi.getForEntity(entityId, entityType, providedClient);
 };
 
-export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
-  return await tagAssignmentApi.create(tagId, entityId, entityType);
+export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment> => {
+  return await tagAssignmentApi.create(tagId, entityId, entityType, providedClient);
 };
 
-export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
-  return await tagAssignmentApi.delete(assignmentId);
+export const deleteTagAssignment = async (assignmentId: string, providedClient?: any): Promise<boolean> => {
+  return await tagAssignmentApi.delete(assignmentId, providedClient);
 };
