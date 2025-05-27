@@ -22,9 +22,12 @@ class TestReporter {
       reportedTests: new Set()
     };
     
-    // Console log capture
+    // Console log capture - start immediately
     this.consoleLogs = [];
     this.originalConsole = {};
+    
+    // Set up console capture immediately in constructor
+    this.setupConsoleCapture();
     
     console.log(`TestReporter initialized with TEST_RUN_ID: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to PRODUCTION PROJECT: ${this.reportingUrl}`);
@@ -32,7 +35,7 @@ class TestReporter {
   }
 
   /**
-   * Set up console log capturing
+   * Set up console log capturing - enhanced to capture more details
    */
   setupConsoleCapture() {
     const logLevels = ['log', 'info', 'warn', 'error', 'debug'];
@@ -40,20 +43,33 @@ class TestReporter {
     logLevels.forEach(level => {
       this.originalConsole[level] = console[level];
       console[level] = (...args) => {
-        // Store the log entry
-        this.consoleLogs.push({
+        // Store the log entry with enhanced context
+        const logEntry = {
           timestamp: new Date().toISOString(),
           level,
           source: 'test-reporter',
-          message: args.map(arg => 
-            typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
-          ).join(' ')
-        });
+          message: args.map(arg => {
+            if (typeof arg === 'object') {
+              try {
+                return JSON.stringify(arg, null, 2);
+              } catch (e) {
+                return String(arg);
+              }
+            }
+            return String(arg);
+          }).join(' '),
+          // Add stack trace for errors to help with debugging
+          stack: level === 'error' && args[0] instanceof Error ? args[0].stack : null
+        };
+        
+        this.consoleLogs.push(logEntry);
         
         // Call original console method
         this.originalConsole[level](...args);
       };
     });
+    
+    console.log('📝 Console capture started - all logs will be recorded');
   }
 
   /**
@@ -63,18 +79,28 @@ class TestReporter {
     Object.keys(this.originalConsole).forEach(level => {
       console[level] = this.originalConsole[level];
     });
+    console.log('📝 Console capture restored');
   }
 
   /**
-   * Send console logs to the server
+   * Send console logs to the server with enhanced error handling
    */
   async sendConsoleLogs() {
     if (!this.testRunId || this.consoleLogs.length === 0) {
+      console.log('📝 No logs to send or no test run ID');
       return;
     }
 
     try {
       console.log(`📝 Sending ${this.consoleLogs.length} console log entries to production database...`);
+      
+      // Group logs by level for better reporting
+      const logStats = this.consoleLogs.reduce((acc, log) => {
+        acc[log.level] = (acc[log.level] || 0) + 1;
+        return acc;
+      }, {});
+      
+      console.log('📊 Log statistics:', logStats);
       
       const response = await fetch(`${this.reportingUrl}/functions/v1/report-test-results/record-logs`, {
         method: 'POST',
@@ -144,11 +170,9 @@ class TestReporter {
    * Called when Jest starts the test run
    */
   async onRunStart() {
-    // Set up console capturing
-    this.setupConsoleCapture();
-    
     console.log(`onRunStart called, testRunId: ${this.testRunId || 'not set'}`);
     console.log(`Reporting to production project: ${this.reportingUrl}`);
+    console.log(`Console capture active: ${Object.keys(this.originalConsole).length > 0 ? 'YES' : 'NO'}`);
     
     // Validate required environment variables
     if (!this.reportingUrl) {
@@ -510,6 +534,7 @@ class TestReporter {
     
     console.log(`Test run complete. Updating test run ${this.testRunId} with final summary results -> PRODUCTION.`);
     console.log(`Final counts: ${this.results.passed} passed, ${this.results.failed} failed, ${this.results.skipped} skipped, total: ${this.results.total}`);
+    console.log(`Total console logs captured: ${this.consoleLogs.length}`);
     
     // Determine final status
     const status = this.results.failed > 0 ? 'failure' : 'success';

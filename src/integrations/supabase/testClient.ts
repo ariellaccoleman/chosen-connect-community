@@ -1,4 +1,3 @@
-
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
@@ -49,6 +48,8 @@ let globalServiceRoleClient: SupabaseClient<Database> | null = null;
 export class TestClientFactory {
   private static currentAuthenticatedUser: string | null = null;
   private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
+  private static workerId: string = getEnvVar('JEST_WORKER_ID') || 'main';
+  private static sessionEstablished: boolean = false;
 
   /**
    * Ensure we're in a test environment - improved runtime detection
@@ -66,8 +67,41 @@ export class TestClientFactory {
       console.warn('- JEST_WORKER_ID:', process.env.JEST_WORKER_ID);
       console.warn('⚠️ Proceeding with caution - ensure this is intentional');
     } else {
-      console.log('✅ TestClientFactory: Test environment detected successfully');
+      console.log(`✅ TestClientFactory: Test environment detected successfully (Worker: ${this.workerId})`);
     }
+  }
+
+  /**
+   * Wait for session to be fully established
+   */
+  private static async waitForSessionEstablished(client: SupabaseClient<Database>, maxAttempts = 10): Promise<boolean> {
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const { data: { session }, error } = await client.auth.getSession();
+        
+        if (error) {
+          console.warn(`🔍 Worker ${this.workerId}: Session check ${attempt}/${maxAttempts} failed:`, error.message);
+          await new Promise(resolve => setTimeout(resolve, 100));
+          continue;
+        }
+        
+        if (session && session.user && session.access_token) {
+          console.log(`✅ Worker ${this.workerId}: Session established on attempt ${attempt}/${maxAttempts} - User: ${session.user.email}`);
+          this.sessionEstablished = true;
+          return true;
+        }
+        
+        console.warn(`⚠️ Worker ${this.workerId}: Session not ready ${attempt}/${maxAttempts} - missing session or token`);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      } catch (error) {
+        console.error(`❌ Worker ${this.workerId}: Session check error ${attempt}/${maxAttempts}:`, error);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+    
+    console.error(`❌ Worker ${this.workerId}: Session establishment failed after ${maxAttempts} attempts`);
+    this.sessionEstablished = false;
+    return false;
   }
 
   /**
@@ -77,7 +111,7 @@ export class TestClientFactory {
     this.ensureTestEnvironment();
 
     if (!globalTestClient) {
-      console.log(`🔧 Creating GLOBAL shared test client (ID: ${this.clientInstanceId})`);
+      console.log(`🔧 Worker ${this.workerId}: Creating GLOBAL shared test client (ID: ${this.clientInstanceId})`);
       
       // Create client only once globally to prevent multiple GoTrueClient instances
       globalTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
@@ -87,9 +121,9 @@ export class TestClientFactory {
         }
       });
       
-      console.log(`✅ Global shared test client created (ID: ${this.clientInstanceId})`);
+      console.log(`✅ Worker ${this.workerId}: Global shared test client created (ID: ${this.clientInstanceId})`);
     } else {
-      console.log(`🔄 Using existing global shared test client (ID: ${this.clientInstanceId})`);
+      console.log(`🔄 Worker ${this.workerId}: Using existing global shared test client (ID: ${this.clientInstanceId})`);
     }
     
     return globalTestClient;
@@ -103,30 +137,34 @@ export class TestClientFactory {
 
     const client = this.getSharedTestClient();
     
-    // If already authenticated as this user, verify session is still valid
-    if (this.currentAuthenticatedUser === userEmail) {
-      console.log(`🔐 Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
+    // If already authenticated as this user and session is established, verify it's still valid
+    if (this.currentAuthenticatedUser === userEmail && this.sessionEstablished) {
+      console.log(`🔐 Worker ${this.workerId}: Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
       
       // Quick session check
       const { data: { session }, error } = await client.auth.getSession();
-      if (session && !error && session.user?.email === userEmail) {
-        console.log(`✅ Session verified for ${userEmail}`);
+      if (session && !error && session.user?.email === userEmail && session.access_token) {
+        console.log(`✅ Worker ${this.workerId}: Session verified for ${userEmail}`);
         return client;
       } else {
-        console.log(`⚠️ Session invalid for ${userEmail}, re-authenticating...`);
+        console.log(`⚠️ Worker ${this.workerId}: Session invalid for ${userEmail}, re-authenticating...`);
         this.currentAuthenticatedUser = null;
+        this.sessionEstablished = false;
       }
     }
     
     try {
       // Sign out current user if different
       if (this.currentAuthenticatedUser && this.currentAuthenticatedUser !== userEmail) {
-        console.log(`🚪 Signing out ${this.currentAuthenticatedUser} before authenticating ${userEmail}`);
+        console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser} before authenticating ${userEmail}`);
         await client.auth.signOut();
         this.currentAuthenticatedUser = null;
+        this.sessionEstablished = false;
+        // Give some time for signout to process
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
-      console.log(`🔐 Authenticating shared client as ${userEmail} (ID: ${this.clientInstanceId})`);
+      console.log(`🔐 Worker ${this.workerId}: Authenticating shared client as ${userEmail} (ID: ${this.clientInstanceId})`);
       
       const { data, error } = await client.auth.signInWithPassword({
         email: userEmail,
@@ -142,20 +180,20 @@ export class TestClientFactory {
       }
 
       this.currentAuthenticatedUser = userEmail;
-      console.log(`✅ Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
+      console.log(`✅ Worker ${this.workerId}: Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
       
-      // Immediate session verification
-      const { data: { session: verifySession }, error: verifyError } = await client.auth.getSession();
-      if (verifyError || !verifySession) {
-        console.error('Session verification failed immediately after auth:', verifyError);
-        throw new Error(`Session verification failed: ${verifyError?.message || 'No session found'}`);
+      // Wait for session to be fully established
+      const sessionReady = await this.waitForSessionEstablished(client);
+      if (!sessionReady) {
+        throw new Error(`Session establishment failed for ${userEmail}`);
       }
       
-      console.log(`🔐 Session verified and active for ${userEmail}`);
+      console.log(`🔐 Worker ${this.workerId}: Session established and verified for ${userEmail}`);
       return client;
     } catch (error) {
-      console.error(`❌ Failed to authenticate shared client as ${userEmail}:`, error);
+      console.error(`❌ Worker ${this.workerId}: Failed to authenticate shared client as ${userEmail}:`, error);
       this.currentAuthenticatedUser = null;
+      this.sessionEstablished = false;
       throw error;
     }
   }
@@ -166,7 +204,7 @@ export class TestClientFactory {
   static async getCurrentAuthenticatedUser() {
     const client = this.getSharedTestClient();
     
-    console.log(`🔍 Getting current user from shared client (ID: ${this.clientInstanceId})`);
+    console.log(`🔍 Worker ${this.workerId}: Getting current user from shared client (ID: ${this.clientInstanceId})`);
     
     const { data: { session }, error: sessionError } = await client.auth.getSession();
     if (sessionError) {
@@ -177,10 +215,11 @@ export class TestClientFactory {
     if (!session) {
       console.error('No active session found on shared client');
       console.log('Current authenticated user tracking:', this.currentAuthenticatedUser);
+      console.log('Session established flag:', this.sessionEstablished);
       throw new Error('No active session on shared client');
     }
 
-    console.log(`✅ Found active session for user: ${session.user.email}`);
+    console.log(`✅ Worker ${this.workerId}: Found active session for user: ${session.user.email}`);
     return session.user;
   }
 
@@ -189,18 +228,20 @@ export class TestClientFactory {
    */
   static async signOutSharedClient(): Promise<void> {
     if (!globalTestClient) {
-      console.log('🔐 No shared client to sign out from');
+      console.log(`🔐 Worker ${this.workerId}: No shared client to sign out from`);
       return;
     }
 
     try {
-      console.log(`🚪 Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
+      console.log(`🚪 Worker ${this.workerId}: Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
       await globalTestClient.auth.signOut();
       this.currentAuthenticatedUser = null;
-      console.log('✅ Signed out from shared client');
+      this.sessionEstablished = false;
+      console.log(`✅ Worker ${this.workerId}: Signed out from shared client`);
     } catch (error) {
-      console.error('❌ Failed to sign out from shared client:', error);
+      console.error(`❌ Worker ${this.workerId}: Failed to sign out from shared client:`, error);
       this.currentAuthenticatedUser = null;
+      this.sessionEstablished = false;
     }
   }
 
@@ -257,12 +298,13 @@ export class TestClientFactory {
     }
     
     if (globalTestClient) {
-      console.log(`🧹 Clearing global shared test client (ID: ${this.clientInstanceId})`);
+      console.log(`🧹 Worker ${this.workerId}: Clearing global shared test client (ID: ${this.clientInstanceId})`);
       globalTestClient = null;
     }
     
     this.currentAuthenticatedUser = null;
-    console.log('✅ TestClientFactory cleanup complete');
+    this.sessionEstablished = false;
+    console.log(`✅ Worker ${this.workerId}: TestClientFactory cleanup complete`);
   }
 
   /**
@@ -287,10 +329,12 @@ export class TestClientFactory {
    */
   static getDebugInfo() {
     return {
+      workerId: this.workerId,
       clientInstanceId: this.clientInstanceId,
       hasSharedClient: !!globalTestClient,
       hasServiceRoleClient: !!globalServiceRoleClient,
-      currentAuthenticatedUser: this.currentAuthenticatedUser
+      currentAuthenticatedUser: this.currentAuthenticatedUser,
+      sessionEstablished: this.sessionEstablished
     };
   }
 }

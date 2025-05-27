@@ -27,6 +27,37 @@ const isTestEnvironment = (): boolean => {
 };
 
 /**
+ * Wait for session to be established and verified
+ */
+const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100): Promise<boolean> => {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const { data: { session }, error } = await client.auth.getSession();
+      
+      if (error) {
+        console.warn(`🔍 Session check attempt ${attempt}/${maxAttempts} failed:`, error.message);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+        continue;
+      }
+      
+      if (session && session.user && session.access_token) {
+        console.log(`✅ Session verified on attempt ${attempt}/${maxAttempts} - User: ${session.user.email}`);
+        return true;
+      }
+      
+      console.warn(`⚠️ Session not ready on attempt ${attempt}/${maxAttempts} - missing session or token`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    } catch (error) {
+      console.error(`❌ Session verification error on attempt ${attempt}/${maxAttempts}:`, error);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  
+  console.error(`❌ Session verification failed after ${maxAttempts} attempts`);
+  return false;
+};
+
+/**
  * Get the appropriate Supabase client based on environment
  */
 const getSupabaseClient = () => {
@@ -39,15 +70,60 @@ const getSupabaseClient = () => {
 };
 
 /**
+ * Execute operation with session verification in test mode
+ */
+const executeWithSessionVerification = async (client: any, callback: (client: any) => any) => {
+  if (!isTestEnvironment()) {
+    // In production, execute directly
+    return await callback(client);
+  }
+  
+  // In test mode, verify session first
+  const sessionReady = await waitForSessionReady(client);
+  
+  if (!sessionReady) {
+    console.error('❌ Cannot execute operation - session not ready');
+    throw new Error('Session not ready for API operation');
+  }
+  
+  try {
+    const result = await callback(client);
+    
+    // Check if we got an RLS violation and retry once
+    if (result?.error?.message?.includes('row-level security') || 
+        result?.error?.code === 'PGRST301') {
+      console.warn('⚠️ RLS violation detected, retrying with fresh session check...');
+      
+      // Wait a bit and verify session again
+      await new Promise(resolve => setTimeout(resolve, 50));
+      const retrySessionReady = await waitForSessionReady(client, 3, 50);
+      
+      if (retrySessionReady) {
+        console.log('🔄 Retrying operation after session verification...');
+        return await callback(client);
+      } else {
+        console.error('❌ Retry failed - session still not ready');
+        throw new Error('Authentication failed - session not established');
+      }
+    }
+    
+    return result;
+  } catch (error) {
+    console.error('❌ Operation failed:', error);
+    throw error;
+  }
+};
+
+/**
  * Core API client that wraps Supabase client with error handling
- * Automatically uses shared test client in test environment
+ * Automatically uses shared test client in test environment with session verification
  */
 export const apiClient = {
-  // Database operations with error handling
+  // Database operations with error handling and session verification
   async query(callback: (client: any) => any) {
     try {
       const client = getSupabaseClient();
-      return await callback(client);
+      return await executeWithSessionVerification(client, callback);
     } catch (error) {
       return handleApiError(error);
     }
@@ -67,7 +143,7 @@ export const apiClient = {
   async storageQuery(callback: (storage: any) => any) {
     try {
       const client = getSupabaseClient();
-      return await callback(client.storage);
+      return await executeWithSessionVerification(client, (c) => callback(c.storage));
     } catch (error) {
       return handleApiError(error);
     }
@@ -77,7 +153,7 @@ export const apiClient = {
   async functionQuery(callback: (functions: any) => any) {
     try {
       const client = getSupabaseClient();
-      return await callback(client.functions);
+      return await executeWithSessionVerification(client, (c) => callback(c.functions));
     } catch (error) {
       return handleApiError(error);
     }
