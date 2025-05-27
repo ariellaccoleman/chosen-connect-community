@@ -30,7 +30,7 @@ const isTestEnvironment = (): boolean => {
 };
 
 /**
- * Wait for session to be established and verified
+ * Wait for session to be established and verified (TEST ENVIRONMENT ONLY)
  */
 const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100): Promise<boolean> => {
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -80,11 +80,12 @@ const getSupabaseClient = async (providedClient?: any) => {
 };
 
 /**
- * Execute operation with session verification in test mode
+ * Execute operation with session verification in test mode ONLY
+ * In production, execute directly without interference
  */
 const executeWithSessionVerification = async (client: any, callback: (client: any) => any) => {
   if (!isTestEnvironment()) {
-    // In production, execute directly
+    // In production, execute directly without session verification or retry logic
     return await callback(client);
   }
   
@@ -99,7 +100,7 @@ const executeWithSessionVerification = async (client: any, callback: (client: an
   try {
     const result = await callback(client);
     
-    // Check if we got an RLS violation and retry once
+    // Check if we got an RLS violation and retry once (TEST MODE ONLY)
     if (result?.error?.message?.includes('row-level security') || 
         result?.error?.code === 'PGRST301') {
       console.warn('⚠️ RLS violation detected, retrying with fresh session check...');
