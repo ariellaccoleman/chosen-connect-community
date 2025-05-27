@@ -1,4 +1,3 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -295,12 +294,13 @@ describe('Organization Relationships API - Integration Tests', () => {
     expect(result.status).toBe('error');
 
     // Test updating non-existent relationship with valid UUID
-    // This should succeed because UPDATE operations on non-existent rows don't fail in SQL
+    // This SHOULD fail because the relationship doesn't exist
     result = await organizationRelationshipsApi.updateOrganizationRelationship(
       uuidv4(),
       { connection_type: 'former' }
     );
-    expect(result.status).toBe('success');
+    expect(result.status).toBe('error');
+    expect(result.error).toBeDefined();
   });
 
   test('respects database constraints and relationships', async () => {

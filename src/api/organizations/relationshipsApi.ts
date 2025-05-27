@@ -1,3 +1,4 @@
+
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
@@ -100,6 +101,23 @@ export const organizationRelationshipsApi = {
     logger.info(`API call: updateOrganizationRelationship for ID: ${relationshipId}`, relationshipData);
     
     return apiClient.query(async (client) => {
+      // First, check if the relationship exists
+      const { data: existingRelationship, error: checkError } = await client
+        .from('org_relationships')
+        .select('id')
+        .eq('id', relationshipId)
+        .maybeSingle();
+      
+      if (checkError) {
+        logger.error(`Error checking for existing relationship ${relationshipId}:`, checkError);
+        throw checkError;
+      }
+      
+      if (!existingRelationship) {
+        logger.error(`Relationship ${relationshipId} does not exist`);
+        throw new Error(`Relationship with ID ${relationshipId} not found`);
+      }
+      
       const { error } = await client
         .from('org_relationships')
         .update({
