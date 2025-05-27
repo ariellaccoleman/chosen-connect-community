@@ -3,6 +3,8 @@ import { EntityRepositoryFactoryBase } from './EntityRepositoryFactoryBase';
 import { EntityType } from '@/types/entityTypes';
 import { Organization } from '@/types/organization';
 import { EntityRepository } from '../../EntityRepository';
+import { createOrganizationRepository } from '../OrganizationRepository';
+import { SupabaseRepository } from '../../SupabaseRepository';
 
 /**
  * Factory for creating organization repositories
@@ -30,10 +32,14 @@ export class OrganizationRepositoryFactory extends EntityRepositoryFactoryBase<O
     initialData?: Organization[];
     client?: any;
   } = {}): EntityRepository<Organization> {
-    const baseRepo = this.createBaseRepository(options);
+    // Create the base repository using SupabaseRepository
+    const baseRepo = new SupabaseRepository<Organization>(
+      this.getTableName(),
+      options.schema || 'public',
+      options.client
+    );
     
-    // Import dynamically to avoid circular dependencies
-    const { createOrganizationRepository } = require('../OrganizationRepository');
+    // Create and return the organization repository
     return createOrganizationRepository(baseRepo, options.client);
   }
 }
@@ -70,5 +76,6 @@ export function createTestingOrganizationRepository(
   initialData?: Organization[], 
   client?: any
 ): EntityRepository<Organization> {
-  return new OrganizationRepositoryFactory().createTestingRepository(initialData, client);
+  const factory = new OrganizationRepositoryFactory();
+  return factory.createRepository({ initialData, client });
 }
