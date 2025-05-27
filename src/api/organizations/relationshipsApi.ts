@@ -24,7 +24,8 @@ export const organizationRelationshipsApi = {
    * Get organization relationships for a user
    */
   async getUserOrganizationRelationships(
-    profileId: string
+    profileId: string,
+    providedClient?: any
   ): Promise<ApiResponse<ProfileOrganizationRelationshipWithDetails[]>> {
     logger.info(`API call: getUserOrganizationRelationships for profileId: ${profileId}`);
     
@@ -55,14 +56,15 @@ export const organizationRelationshipsApi = {
       
       const formattedRelationships = formatOrganizationRelationships(data || []);
       return createSuccessResponse(formattedRelationships);
-    });
+    }, providedClient);
   },
   
   /**
    * Add an organization relationship
    */
   async addOrganizationRelationship(
-    relationship: Partial<ProfileOrganizationRelationship>
+    relationship: Partial<ProfileOrganizationRelationship>,
+    providedClient?: any
   ): Promise<ApiResponse<boolean>> {
     logger.info(`API call: addOrganizationRelationship`, relationship);
     
@@ -88,7 +90,7 @@ export const organizationRelationshipsApi = {
       
       logger.info(`Successfully created organization relationship`);
       return createSuccessResponse(true);
-    });
+    }, providedClient);
   },
   
   /**
@@ -96,7 +98,8 @@ export const organizationRelationshipsApi = {
    */
   async updateOrganizationRelationship(
     relationshipId: string,
-    relationshipData: Partial<ProfileOrganizationRelationship>
+    relationshipData: Partial<ProfileOrganizationRelationship>,
+    providedClient?: any
   ): Promise<ApiResponse<boolean>> {
     logger.info(`API call: updateOrganizationRelationship for ID: ${relationshipId}`, relationshipData);
     
@@ -134,13 +137,16 @@ export const organizationRelationshipsApi = {
       
       logger.info(`Successfully updated organization relationship ${relationshipId}`);
       return createSuccessResponse(true);
-    });
+    }, providedClient);
   },
   
   /**
    * Delete an organization relationship
    */
-  async deleteOrganizationRelationship(relationshipId: string): Promise<ApiResponse<boolean>> {
+  async deleteOrganizationRelationship(
+    relationshipId: string, 
+    providedClient?: any
+  ): Promise<ApiResponse<boolean>> {
     logger.info(`API call: deleteOrganizationRelationship for ID: ${relationshipId}`);
     
     return apiClient.query(async (client) => {
@@ -156,6 +162,6 @@ export const organizationRelationshipsApi = {
       
       logger.info(`Successfully deleted organization relationship ${relationshipId}`);
       return createSuccessResponse(true);
-    });
+    }, providedClient);
   }
 };

@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 describe('Organization Relationships API - Database Tests', () => {
   let testUser: any;
   let testOrganization: any;
+  let authenticatedClient: any;
   let createdRelationshipIds: string[] = [];
   let createdOrganizationIds: string[] = [];
   let testOrgName: string;
@@ -28,22 +29,11 @@ describe('Organization Relationships API - Database Tests', () => {
       
       // Set up authentication for the main client
       console.log('🔐 Setting up test authentication...');
-      await TestAuthUtils.setupTestAuth('user1');
+      const authResult = await TestAuthUtils.setupTestAuth('user1');
+      testUser = authResult.user;
+      authenticatedClient = authResult.client;
       
-      // Wait a moment for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      console.log('👤 Getting current test user...');
-      testUser = await TestAuthUtils.getCurrentTestUser(testUserEmail);
       console.log('✅ Test user authenticated:', testUser.id, testUser.email);
-      
-      // Verify authentication is working
-      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
       
       // Create a test organization using service client (for setup only)
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -208,28 +198,14 @@ describe('Organization Relationships API - Database Tests', () => {
 
   describe('getUserOrganizationRelationships', () => {
     test('should return empty array when user has no relationships', async () => {
-      // Verify authentication is still valid
-      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Test user not authenticated');
-      }
-
       console.log('🧪 Testing getUserOrganizationRelationships with no relationships');
-      const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+      const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
       
       expect(result.status).toBe('success');
       expect(result.data).toEqual([]);
     });
 
     test('should return user relationships with organization details', async () => {
-      // Verify authentication is still valid
-      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user1.password);
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Test user not authenticated');
-      }
-
       console.log('🧪 Testing getUserOrganizationRelationships with existing relationship');
       
       // Create a test relationship directly in database using service client
@@ -252,8 +228,8 @@ describe('Organization Relationships API - Database Tests', () => {
         createdRelationshipIds.push(relationshipData.id);
       }
       
-      // Test the API using the authenticated main client
-      const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+      // Test the API using the authenticated client
+      const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
       
       expect(result.status).toBe('success');
       expect(result.data).toHaveLength(1);
@@ -270,7 +246,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should handle invalid UUID format gracefully', async () => {
       console.log('🧪 Testing getUserOrganizationRelationships with invalid UUID');
-      const result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid');
+      const result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid', authenticatedClient);
       
       expect(result.status).toBe('error');
       expect(result.error).toBeDefined();
@@ -291,8 +267,8 @@ describe('Organization Relationships API - Database Tests', () => {
 
       console.log('🔍 Calling addOrganizationRelationship with data:', relationshipData);
       
-      // API call will now use the authenticated main client
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      // API call using the authenticated client
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData, authenticatedClient);
       
       console.log('🔍 API Response:', {
         status: result.status,
@@ -335,7 +311,7 @@ describe('Organization Relationships API - Database Tests', () => {
         connection_type: 'current' as const
       } as any;
 
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData, authenticatedClient);
       
       expect(result.status).toBe('error');
       expect(result.error.message).toContain('Profile ID is required');
@@ -351,7 +327,7 @@ describe('Organization Relationships API - Database Tests', () => {
         department: 'Engineering'
       };
 
-      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
+      const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData, authenticatedClient);
       
       // Should fail due to foreign key constraint
       expect(result.status).toBe('error');
@@ -389,10 +365,11 @@ describe('Organization Relationships API - Database Tests', () => {
         notes: 'Updated notes'
       };
 
-      // API call will now use the authenticated main client
+      // API call using the authenticated client
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         testRelationshipId,
-        updateData
+        updateData,
+        authenticatedClient
       );
       
       expect(result.status).toBe('success');
@@ -418,7 +395,8 @@ describe('Organization Relationships API - Database Tests', () => {
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         nonExistentId,
-        { connection_type: 'former' }
+        { connection_type: 'former' },
+        authenticatedClient
       );
       
       // Should return an error for non-existent relationships
@@ -451,8 +429,8 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should delete relationship successfully', async () => {
-      // API call will now use the authenticated main client
-      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId);
+      // API call using the authenticated client
+      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId, authenticatedClient);
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
@@ -474,7 +452,7 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should handle non-existent relationship deletion gracefully', async () => {
       const nonExistentId = uuidv4();
-      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(nonExistentId);
+      const result = await organizationRelationshipsApi.deleteOrganizationRelationship(nonExistentId, authenticatedClient);
       
       // Delete operations on non-existent rows typically succeed
       expect(result.status).toBe('success');

@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 describe('Organization Relationships API - Integration Tests', () => {
   let testUser: any;
   let testOrganization: any;
+  let authenticatedClient: any;
   let createdRelationshipIds: string[] = [];
   let createdOrganizationIds: string[] = [];
   let testOrgName: string;
@@ -46,23 +47,11 @@ describe('Organization Relationships API - Integration Tests', () => {
     // Set up authentication using user2 to avoid interference with database tests
     try {
       console.log('🔐 Setting up test authentication for user2...');
-      await TestAuthUtils.setupTestAuth('user2');
+      const authResult = await TestAuthUtils.setupTestAuth('user2');
+      testUser = authResult.user;
+      authenticatedClient = authResult.client;
       
-      // Wait a moment for auth to settle
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Get the authenticated user
-      console.log('👤 Getting current test user...');
-      testUser = await TestAuthUtils.getCurrentTestUser(testUserEmail);
       console.log(`✅ Test user authenticated: ${testUser?.email}`);
-      
-      // Verify authentication is working
-      const client = await TestClientFactory.getUserClient(testUserEmail, PERSISTENT_TEST_USERS.user2.password);
-      const { data: { session } } = await client.auth.getSession();
-      if (!session) {
-        throw new Error('Authentication failed - no session established');
-      }
-      console.log('✅ Session verified for API operations');
     } catch (error) {
       console.warn('Could not get test user, using mock ID:', error);
       testUser = { 
@@ -245,7 +234,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 1. Start with no relationships
     console.log('🧪 Fetching initial relationships...');
-    let result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+    let result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
 
@@ -257,7 +246,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       connection_type: 'current',
       department: 'Engineering',
       notes: 'Full stack developer'
-    });
+    }, authenticatedClient);
     
     console.log('🔍 CREATE RESULT:', {
       status: createResult.status,
@@ -269,7 +258,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 3. Verify relationship exists
     console.log('🧪 Verifying relationship exists...');
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     
     console.log('🔍 VERIFY RESULT:', {
       status: result.status,
@@ -296,7 +285,8 @@ describe('Organization Relationships API - Integration Tests', () => {
         connection_type: 'former',
         department: 'Product',
         notes: 'Moved to different role'
-      }
+      },
+      authenticatedClient
     );
     
     console.log('🔍 UPDATE RESULT:', {
@@ -309,7 +299,7 @@ describe('Organization Relationships API - Integration Tests', () => {
 
     // 5. Verify the update
     console.log('🧪 Verifying update...');
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     
     console.log('🔍 VERIFICATION RESULT:', {
       status: result.status,
@@ -324,29 +314,30 @@ describe('Organization Relationships API - Integration Tests', () => {
     expect(result.data[0].department).toBe('Product');
 
     // 6. Delete the relationship
-    const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id);
+    const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id, authenticatedClient);
     expect(deleteResult.status).toBe('success');
 
     // 7. Verify deletion
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
+    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
   }, 30000); // Increased timeout for debugging
 
   test('handles invalid data gracefully', async () => {
     // Test with invalid UUIDs
-    let result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid');
+    let result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid', authenticatedClient);
     expect(result.status).toBe('error');
 
     // Test adding relationship without required fields
-    result = await organizationRelationshipsApi.addOrganizationRelationship({} as any);
+    result = await organizationRelationshipsApi.addOrganizationRelationship({} as any, authenticatedClient);
     expect(result.status).toBe('error');
 
     // Test updating non-existent relationship with valid UUID
     // This SHOULD fail because the relationship doesn't exist
     result = await organizationRelationshipsApi.updateOrganizationRelationship(
       uuidv4(),
-      { connection_type: 'former' }
+      { connection_type: 'former' },
+      authenticatedClient
     );
     expect(result.status).toBe('error');
     expect(result.error).toBeDefined();
@@ -364,7 +355,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       profile_id: testUser.id,
       organization_id: uuidv4(), // Non-existent org
       connection_type: 'current'
-    });
+    }, authenticatedClient);
     
     // This should fail due to foreign key constraint
     expect(result.status).toBe('error');
@@ -383,7 +374,7 @@ describe('Organization Relationships API - Integration Tests', () => {
       profile_id: nonExistentProfileId,
       organization_id: testOrganization.id,
       connection_type: 'current'
-    });
+    }, authenticatedClient);
     
     // This should fail because the profile doesn't exist
     // The API should handle this gracefully and return an error
