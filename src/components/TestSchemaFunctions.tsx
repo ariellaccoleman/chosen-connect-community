@@ -11,6 +11,27 @@ interface TestResult {
   error?: string;
 }
 
+// Runtime function to detect test environment with comprehensive checks
+const isTestEnvironment = (): boolean => {
+  // Check if we're in Node.js environment first
+  if (typeof window !== "undefined" || typeof process === "undefined") {
+    return false;
+  }
+
+  const checks = {
+    NODE_ENV: process.env.NODE_ENV === 'test',
+    JEST_WORKER_ID: typeof process.env.JEST_WORKER_ID !== 'undefined',
+    TEST_RUN_ID: typeof process.env.TEST_RUN_ID !== 'undefined',
+    CI: process.env.CI === 'true',
+    GITHUB_ACTIONS: process.env.GITHUB_ACTIONS === 'true',
+    hasJestArg: process.argv.some(arg => arg.includes('jest')),
+    hasCoverage: typeof (global as any).__coverage__ !== 'undefined'
+  };
+
+  // Return true if any test environment indicator is present
+  return Object.values(checks).some(check => check === true);
+};
+
 export function TestSchemaFunctions() {
   const [results, setResults] = useState<TestResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,17 +53,19 @@ export function TestSchemaFunctions() {
     setIsLoading(true);
     const testResults: TestResult[] = [];
 
-    // Check if we're in a browser environment and warn
-    if (typeof window !== "undefined") {
+    // Check if we're in a proper test environment
+    if (!isTestEnvironment()) {
       testResults.push({
         test: 'Environment Check',
         success: false,
-        error: 'Test infrastructure can only run in Node.js/test environments, not in the browser'
+        error: 'Test infrastructure can only run in Node.js/test environments. Environment detection failed - ensure CI=true, GITHUB_ACTIONS=true, or NODE_ENV=test is set.'
       });
       setResults(testResults);
       setIsLoading(false);
       return;
     }
+
+    console.log('✅ Test environment detected successfully');
 
     try {
       // Dynamically import test infrastructure (only works in Node.js)
@@ -166,11 +189,9 @@ export function TestSchemaFunctions() {
         <CardTitle>Simplified Test Infrastructure Testing</CardTitle>
         <CardDescription>
           Test the new simplified test infrastructure with dedicated test project
-          {typeof window !== "undefined" && (
-            <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded text-yellow-700 dark:text-yellow-300 text-sm">
-              ⚠️ Note: These tests are designed to run in Node.js/test environments, not in the browser.
-            </div>
-          )}
+          <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded text-blue-700 dark:text-blue-300 text-sm">
+            ℹ️ Note: These tests are designed to run in CI environments (GitHub Actions) with proper environment variables set.
+          </div>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
