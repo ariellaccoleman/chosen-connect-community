@@ -43,6 +43,7 @@ const getEnvVar = (name: string): string | undefined => {
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
   private static anonClient: SupabaseClient<Database> | null = null;
+  private static authenticatedTestClient: SupabaseClient<Database> | null = null;
 
   /**
    * Ensure we're in a test environment - improved runtime detection
@@ -62,6 +63,30 @@ export class TestClientFactory {
     } else {
       console.log('✅ TestClientFactory: Test environment detected successfully');
     }
+  }
+
+  /**
+   * Set the singleton authenticated test client
+   */
+  static setAuthenticatedTestClient(client: SupabaseClient<Database>): void {
+    this.ensureTestEnvironment();
+    this.authenticatedTestClient = client;
+    console.log('🔐 Set authenticated test client singleton');
+  }
+
+  /**
+   * Get the singleton authenticated test client
+   */
+  static getAuthenticatedTestClient(): SupabaseClient<Database> | null {
+    return this.authenticatedTestClient;
+  }
+
+  /**
+   * Clear the singleton authenticated test client
+   */
+  static clearAuthenticatedTestClient(): void {
+    this.authenticatedTestClient = null;
+    console.log('🔐 Cleared authenticated test client singleton');
   }
 
   /**
@@ -93,9 +118,16 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
+   * Returns authenticated singleton if available, otherwise returns anonymous client
    */
   static getAnonClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
+
+    // Return authenticated singleton if available
+    if (this.authenticatedTestClient) {
+      console.log('🔐 Using authenticated test client singleton for API operations');
+      return this.authenticatedTestClient;
+    }
 
     if (!this.anonClient) {
       console.log('🔧 Creating anonymous client for test project');
@@ -112,12 +144,17 @@ export class TestClientFactory {
   }
 
   /**
-   * Create an authenticated client for a specific test user
+   * Create an authenticated client for a specific test user and set as singleton
    */
   static async createAuthenticatedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
     this.ensureTestEnvironment();
 
-    const client = this.getAnonClient();
+    const client = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      }
+    });
     
     try {
       const { data, error } = await client.auth.signInWithPassword({
@@ -130,6 +167,10 @@ export class TestClientFactory {
       }
 
       console.log(`🔧 Authenticated test user: ${userEmail}`);
+      
+      // Set this as the singleton authenticated client
+      this.setAuthenticatedTestClient(client);
+      
       return client;
     } catch (error) {
       console.error(`Failed to authenticate test user ${userEmail}:`, error);
@@ -147,6 +188,7 @@ export class TestClientFactory {
     if (this.anonClient) {
       this.anonClient = null;
     }
+    this.clearAuthenticatedTestClient();
   }
 
   /**
