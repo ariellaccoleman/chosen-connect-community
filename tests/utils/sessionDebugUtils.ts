@@ -19,7 +19,7 @@ export class SessionDebugUtils {
     
     try {
       // Check if client exists
-      const client = TestClientFactory.getSharedTestClient();
+      const client = await TestClientFactory.getSharedTestClient();
       const hasClient = !!client;
       
       if (!hasClient) {
