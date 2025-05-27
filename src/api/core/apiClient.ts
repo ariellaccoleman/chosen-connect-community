@@ -31,8 +31,8 @@ const isTestEnvironment = (): boolean => {
  */
 const getSupabaseClient = () => {
   if (isTestEnvironment()) {
-    console.log('🧪 Using test Supabase client for API operations');
-    return TestClientFactory.getAnonClient();
+    console.log('🧪 Using shared test Supabase client for API operations');
+    return TestClientFactory.getSharedTestClient();
   }
   
   return supabase;
@@ -40,7 +40,7 @@ const getSupabaseClient = () => {
 
 /**
  * Core API client that wraps Supabase client with error handling
- * Automatically uses test client in test environment
+ * Automatically uses shared test client in test environment
  */
 export const apiClient = {
   // Database operations with error handling

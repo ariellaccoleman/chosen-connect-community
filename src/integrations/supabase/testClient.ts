@@ -37,13 +37,14 @@ const getEnvVar = (name: string): string | undefined => {
 };
 
 /**
- * Test Client Factory for dedicated test project
- * Uses hardcoded test project configuration for reliability
+ * Test Client Factory with Single Shared Client Pattern
+ * Uses one Supabase client instance shared across all test operations
  */
 export class TestClientFactory {
   private static serviceRoleClient: SupabaseClient<Database> | null = null;
-  private static anonClient: SupabaseClient<Database> | null = null;
-  private static authenticatedTestClient: SupabaseClient<Database> | null = null;
+  private static sharedTestClient: SupabaseClient<Database> | null = null;
+  private static currentAuthenticatedUser: string | null = null;
+  private static clientInstanceId: string = Math.random().toString(36).substr(2, 9);
 
   /**
    * Ensure we're in a test environment - improved runtime detection
@@ -66,27 +67,152 @@ export class TestClientFactory {
   }
 
   /**
-   * Set the singleton authenticated test client
+   * Get the single shared test client (creates it if needed)
    */
-  static setAuthenticatedTestClient(client: SupabaseClient<Database>): void {
+  static getSharedTestClient(): SupabaseClient<Database> {
     this.ensureTestEnvironment();
-    this.authenticatedTestClient = client;
-    console.log('🔐 Set authenticated test client singleton');
+
+    if (!this.sharedTestClient) {
+      console.log(`🔧 Creating shared test client (ID: ${this.clientInstanceId})`);
+      
+      this.sharedTestClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          storage: {
+            getItem: (key: string) => {
+              const storageKey = `supabase.auth.token.test.${key}`;
+              return localStorage.getItem(storageKey);
+            },
+            setItem: (key: string, value: string) => {
+              const storageKey = `supabase.auth.token.test.${key}`;
+              localStorage.setItem(storageKey, value);
+            },
+            removeItem: (key: string) => {
+              const storageKey = `supabase.auth.token.test.${key}`;
+              localStorage.removeItem(storageKey);
+            }
+          }
+        }
+      });
+      
+      console.log(`✅ Shared test client created (ID: ${this.clientInstanceId})`);
+    } else {
+      console.log(`🔄 Using existing shared test client (ID: ${this.clientInstanceId})`);
+    }
+    
+    return this.sharedTestClient;
   }
 
   /**
-   * Get the singleton authenticated test client
+   * Authenticate the shared client with specific user credentials
    */
-  static getAuthenticatedTestClient(): SupabaseClient<Database> | null {
-    return this.authenticatedTestClient;
+  static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
+    this.ensureTestEnvironment();
+
+    const client = this.getSharedTestClient();
+    
+    // If already authenticated as this user, return the client
+    if (this.currentAuthenticatedUser === userEmail) {
+      console.log(`🔐 Already authenticated as ${userEmail} on shared client (ID: ${this.clientInstanceId})`);
+      
+      // Verify session is still valid
+      const { data: { session }, error } = await client.auth.getSession();
+      if (session && !error) {
+        console.log(`✅ Session verified for ${userEmail}`);
+        return client;
+      } else {
+        console.log(`⚠️ Session invalid for ${userEmail}, re-authenticating...`);
+        this.currentAuthenticatedUser = null;
+      }
+    }
+    
+    try {
+      // Sign out current user if different
+      if (this.currentAuthenticatedUser && this.currentAuthenticatedUser !== userEmail) {
+        console.log(`🚪 Signing out ${this.currentAuthenticatedUser} before authenticating ${userEmail}`);
+        await client.auth.signOut();
+        this.currentAuthenticatedUser = null;
+      }
+
+      console.log(`🔐 Authenticating shared client as ${userEmail} (ID: ${this.clientInstanceId})`);
+      
+      const { data, error } = await client.auth.signInWithPassword({
+        email: userEmail,
+        password: userPassword
+      });
+
+      if (error) {
+        throw new Error(`Failed to authenticate shared client: ${error.message}`);
+      }
+
+      if (!data.session || !data.user) {
+        throw new Error('Authentication succeeded but no session/user returned');
+      }
+
+      this.currentAuthenticatedUser = userEmail;
+      console.log(`✅ Shared client authenticated as ${userEmail} (User ID: ${data.user.id})`);
+      
+      // Verify session persistence
+      const { data: { session: verifySession }, error: verifyError } = await client.auth.getSession();
+      if (verifyError || !verifySession) {
+        throw new Error(`Session verification failed: ${verifyError?.message || 'No session found'}`);
+      }
+      
+      console.log(`🔐 Session verified and persisted for ${userEmail}`);
+      return client;
+    } catch (error) {
+      console.error(`❌ Failed to authenticate shared client as ${userEmail}:`, error);
+      this.currentAuthenticatedUser = null;
+      throw error;
+    }
   }
 
   /**
-   * Clear the singleton authenticated test client
+   * Get the current authenticated user from the shared client
    */
-  static clearAuthenticatedTestClient(): void {
-    this.authenticatedTestClient = null;
-    console.log('🔐 Cleared authenticated test client singleton');
+  static async getCurrentAuthenticatedUser() {
+    const client = this.getSharedTestClient();
+    
+    const { data: { session }, error: sessionError } = await client.auth.getSession();
+    if (sessionError) {
+      throw new Error(`Failed to get session from shared client: ${sessionError.message}`);
+    }
+    
+    if (!session) {
+      throw new Error('No active session on shared client');
+    }
+
+    const { data: { user }, error } = await client.auth.getUser();
+    if (error) {
+      throw new Error(`Failed to get current user from shared client: ${error.message}`);
+    }
+    
+    if (!user) {
+      throw new Error('User not found in shared client session');
+    }
+    
+    return user;
+  }
+
+  /**
+   * Sign out the current user from the shared client
+   */
+  static async signOutSharedClient(): Promise<void> {
+    if (!this.sharedTestClient) {
+      console.log('🔐 No shared client to sign out from');
+      return;
+    }
+
+    try {
+      console.log(`🚪 Signing out ${this.currentAuthenticatedUser || 'current user'} from shared client`);
+      await this.sharedTestClient.auth.signOut();
+      this.currentAuthenticatedUser = null;
+      console.log('✅ Signed out from shared client');
+    } catch (error) {
+      console.error('❌ Failed to sign out from shared client:', error);
+      this.currentAuthenticatedUser = null;
+    }
   }
 
   /**
@@ -99,8 +225,8 @@ export class TestClientFactory {
       const serviceRoleKey = getEnvVar('TEST_SUPABASE_SERVICE_ROLE_KEY');
       
       if (!serviceRoleKey) {
-        console.warn('No service role key found - using anon client instead');
-        return this.getAnonClient();
+        console.warn('No service role key found - using shared test client instead');
+        return this.getSharedTestClient();
       }
 
       console.log('🔧 Creating service role client for test project');
@@ -118,77 +244,34 @@ export class TestClientFactory {
 
   /**
    * Get anonymous client for testing application logic
-   * Returns authenticated singleton if available, otherwise returns anonymous client
+   * Returns the shared client (which may be authenticated)
    */
   static getAnonClient(): SupabaseClient<Database> {
-    this.ensureTestEnvironment();
-
-    // Return authenticated singleton if available
-    if (this.authenticatedTestClient) {
-      console.log('🔐 Using authenticated test client singleton for API operations');
-      return this.authenticatedTestClient;
-    }
-
-    if (!this.anonClient) {
-      console.log('🔧 Creating anonymous client for test project');
-      
-      this.anonClient = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
-        auth: {
-          persistSession: false,
-          autoRefreshToken: false,
-        }
-      });
-    }
-    
-    return this.anonClient;
+    console.log('🔄 getAnonClient() returning shared test client');
+    return this.getSharedTestClient();
   }
 
   /**
-   * Create an authenticated client for a specific test user and set as singleton
+   * Clean up clients and auth state
    */
-  static async createAuthenticatedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
-    this.ensureTestEnvironment();
-
-    const client = createClient<Database>(TEST_PROJECT_CONFIG.url, TEST_PROJECT_CONFIG.anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-      }
-    });
-    
+  static async cleanup(): Promise<void> {
     try {
-      const { data, error } = await client.auth.signInWithPassword({
-        email: userEmail,
-        password: userPassword
-      });
-
-      if (error) {
-        throw new Error(`Failed to authenticate test user: ${error.message}`);
-      }
-
-      console.log(`🔧 Authenticated test user: ${userEmail}`);
-      
-      // Set this as the singleton authenticated client
-      this.setAuthenticatedTestClient(client);
-      
-      return client;
+      await this.signOutSharedClient();
     } catch (error) {
-      console.error(`Failed to authenticate test user ${userEmail}:`, error);
-      throw error;
+      console.warn('Cleanup warning during signout:', error);
     }
-  }
 
-  /**
-   * Clean up clients
-   */
-  static cleanup(): void {
     if (this.serviceRoleClient) {
       this.serviceRoleClient = null;
     }
-    if (this.anonClient) {
-      this.anonClient = null;
+    
+    if (this.sharedTestClient) {
+      console.log(`🧹 Clearing shared test client (ID: ${this.clientInstanceId})`);
+      this.sharedTestClient = null;
     }
-    this.clearAuthenticatedTestClient();
+    
+    this.currentAuthenticatedUser = null;
+    console.log('✅ TestClientFactory cleanup complete');
   }
 
   /**
@@ -205,6 +288,18 @@ export class TestClientFactory {
     return {
       url: TEST_PROJECT_CONFIG.url,
       usingDedicatedProject: !!prodUrl && TEST_PROJECT_CONFIG.url.trim() !== prodUrl.trim()
+    };
+  }
+
+  /**
+   * Get debug info about the current client state
+   */
+  static getDebugInfo() {
+    return {
+      clientInstanceId: this.clientInstanceId,
+      hasSharedClient: !!this.sharedTestClient,
+      hasServiceRoleClient: !!this.serviceRoleClient,
+      currentAuthenticatedUser: this.currentAuthenticatedUser
     };
   }
 }

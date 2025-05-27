@@ -52,100 +52,74 @@ export const PERSISTENT_TEST_USERS = {
 
 /**
  * Helper functions for getting authenticated clients for persistent test users
- * Implements proper singleton pattern to ensure clients are only created once
+ * Uses the shared test client from TestClientFactory
  */
 export class PersistentTestUserHelper {
-  private static user1Client: SupabaseClient<Database> | null = null;
-  private static user2Client: SupabaseClient<Database> | null = null;
-  private static user3Client: SupabaseClient<Database> | null = null;
-  
   /**
    * Get authenticated client for test user 1 (Test User4)
-   * Uses singleton pattern - creates client only once
+   * Uses shared client pattern - authenticates the shared client
    */
   static async getUser1Client(): Promise<SupabaseClient<Database>> {
-    if (!this.user1Client) {
-      this.user1Client = await TestClientFactory.createAuthenticatedClient(
-        PERSISTENT_TEST_USERS.user1.email,
-        PERSISTENT_TEST_USERS.user1.password
-      );
-      console.log(`✅ Created singleton client for user1: ${PERSISTENT_TEST_USERS.user1.email}`);
-    }
-    return this.user1Client;
+    return TestClientFactory.authenticateSharedClient(
+      PERSISTENT_TEST_USERS.user1.email,
+      PERSISTENT_TEST_USERS.user1.password
+    );
   }
 
   /**
    * Get authenticated client for test user 2 (Test User5)
-   * Uses singleton pattern - creates client only once
+   * Uses shared client pattern - authenticates the shared client
    */
   static async getUser2Client(): Promise<SupabaseClient<Database>> {
-    if (!this.user2Client) {
-      this.user2Client = await TestClientFactory.createAuthenticatedClient(
-        PERSISTENT_TEST_USERS.user2.email,
-        PERSISTENT_TEST_USERS.user2.password
-      );
-      console.log(`✅ Created singleton client for user2: ${PERSISTENT_TEST_USERS.user2.email}`);
-    }
-    return this.user2Client;
+    return TestClientFactory.authenticateSharedClient(
+      PERSISTENT_TEST_USERS.user2.email,
+      PERSISTENT_TEST_USERS.user2.password
+    );
   }
 
   /**
    * Get authenticated client for test user 3 (Test User6)
-   * Uses singleton pattern - creates client only once
+   * Uses shared client pattern - authenticates the shared client
    */
   static async getUser3Client(): Promise<SupabaseClient<Database>> {
-    if (!this.user3Client) {
-      this.user3Client = await TestClientFactory.createAuthenticatedClient(
-        PERSISTENT_TEST_USERS.user3.email,
-        PERSISTENT_TEST_USERS.user3.password
-      );
-      console.log(`✅ Created singleton client for user3: ${PERSISTENT_TEST_USERS.user3.email}`);
-    }
-    return this.user3Client;
+    return TestClientFactory.authenticateSharedClient(
+      PERSISTENT_TEST_USERS.user3.email,
+      PERSISTENT_TEST_USERS.user3.password
+    );
   }
 
   /**
    * Get authenticated client for any user by key
    */
   static async getUserClient(userKey: keyof typeof PERSISTENT_TEST_USERS): Promise<SupabaseClient<Database>> {
-    switch (userKey) {
-      case 'user1':
-        return this.getUser1Client();
-      case 'user2':
-        return this.getUser2Client();
-      case 'user3':
-        return this.getUser3Client();
-      default:
-        throw new Error(`Unknown user key: ${userKey}`);
+    const userConfig = PERSISTENT_TEST_USERS[userKey];
+    if (!userConfig) {
+      throw new Error(`Unknown user key: ${userKey}`);
     }
+
+    return TestClientFactory.authenticateSharedClient(
+      userConfig.email,
+      userConfig.password
+    );
   }
 
   /**
-   * Clear all singleton clients - useful for test cleanup
+   * Clear all clients - delegates to TestClientFactory
    */
-  static clearAllClients(): void {
-    if (this.user1Client) {
-      console.log('🧹 Clearing user1 singleton client');
-      this.user1Client = null;
-    }
-    if (this.user2Client) {
-      console.log('🧹 Clearing user2 singleton client');
-      this.user2Client = null;
-    }
-    if (this.user3Client) {
-      console.log('🧹 Clearing user3 singleton client');
-      this.user3Client = null;
-    }
+  static async clearAllClients(): Promise<void> {
+    console.log('🧹 PersistentTestUserHelper: Delegating cleanup to TestClientFactory');
+    await TestClientFactory.cleanup();
   }
 
   /**
    * Verify that persistent test users are set up correctly
-   * RUNTIME environment variable access
    */
   static async verifyTestUsersSetup(): Promise<boolean> {
     try {
-      // Try to authenticate as each user using singleton pattern
+      // Try to authenticate as each user using the shared client
       for (const [key] of Object.entries(PERSISTENT_TEST_USERS)) {
+        console.log(`🔍 Verifying test user ${key}...`);
+        
         const client = await this.getUserClient(key as keyof typeof PERSISTENT_TEST_USERS);
         const { data: { user: authUser }, error } = await client.auth.getUser();
         
@@ -177,5 +151,15 @@ export class PersistentTestUserHelper {
    */
   static getTestPassword(): string {
     return TEST_USER_CONFIG.password;
+  }
+
+  /**
+   * Get debug info about the current state
+   */
+  static getDebugInfo() {
+    return {
+      availableUsers: Object.keys(PERSISTENT_TEST_USERS),
+      testClientDebug: TestClientFactory.getDebugInfo()
+    };
   }
 }
