@@ -1,4 +1,3 @@
-
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
@@ -30,43 +29,22 @@ describe('Organization Relationships API - Database Tests', () => {
       console.log('🔐 Setting up test authentication...');
       await TestAuthUtils.setupTestAuth('user1');
       
-      // Wait longer for auth to settle and verify multiple times
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait a moment for auth to settle
+      await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Get the authenticated user with retries
+      // Get the authenticated user
       console.log('👤 Getting current test user...');
       testUser = await TestAuthUtils.getCurrentTestUser();
-      
-      if (!testUser) {
-        throw new Error('Failed to get test user');
-      }
-      
       console.log('✅ Test user authenticated:', testUser.id, testUser.email);
       
-      // Verify authentication is working with multiple retries and longer waits
-      let authVerified = false;
-      for (let i = 0; i < 5; i++) {
-        try {
-          const client = await TestClientFactory.getSharedTestClient();
-          const { data: { session } } = await client.auth.getSession();
-          if (session && session.user && session.access_token) {
-            authVerified = true;
-            console.log(`✅ Authentication verified on attempt ${i + 1} - User: ${session.user.email}, Token: [${session.access_token.substring(0, 20)}...]`);
-            break;
-          }
-          console.log(`⏳ Auth verification attempt ${i + 1} failed, retrying...`);
-          await new Promise(resolve => setTimeout(resolve, 200));
-        } catch (error) {
-          console.log(`⏳ Auth verification attempt ${i + 1} error:`, error);
-          await new Promise(resolve => setTimeout(resolve, 200));
-        }
+      // Verify authentication is working
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
+        throw new Error('Authentication failed - no session established');
       }
       
-      if (!authVerified) {
-        throw new Error('Authentication verification failed after retries');
-      }
-      
-      // Create a test organization using service client
+      // Create a test organization using service client (for setup only)
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
       // Ensure profile exists first - use service client to bypass RLS
@@ -107,13 +85,6 @@ describe('Organization Relationships API - Database Tests', () => {
       
       // Reset tracking arrays AFTER successful setup
       createdRelationshipIds = [];
-      
-      // Final auth verification before proceeding
-      const finalAuthState = await TestAuthUtils.verifyAuthState();
-      if (!finalAuthState.isAuthenticated) {
-        throw new Error('Final auth verification failed - user not authenticated');
-      }
-      
     } catch (error) {
       console.error('❌ Test setup failed:', error);
       throw error;
@@ -237,8 +208,9 @@ describe('Organization Relationships API - Database Tests', () => {
   describe('getUserOrganizationRelationships', () => {
     test('should return empty array when user has no relationships', async () => {
       // Verify authentication is still valid
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
         throw new Error('Test user not authenticated');
       }
 
@@ -251,8 +223,9 @@ describe('Organization Relationships API - Database Tests', () => {
 
     test('should return user relationships with organization details', async () => {
       // Verify authentication is still valid
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
+      const client = await TestClientFactory.getSharedTestClient();
+      const { data: { session } } = await client.auth.getSession();
+      if (!session) {
         throw new Error('Test user not authenticated');
       }
 
@@ -276,38 +249,22 @@ describe('Organization Relationships API - Database Tests', () => {
       expect(relationshipError).toBeNull();
       if (relationshipData) {
         createdRelationshipIds.push(relationshipData.id);
-        console.log('✅ Created test relationship:', relationshipData.id);
       }
-      
-      // Wait for data to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Test the API using the authenticated main client
       const result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id);
       
-      console.log('🔍 API Response:', {
-        status: result.status,
-        dataLength: result.data?.length || 0,
-        error: result.error
-      });
-      
       expect(result.status).toBe('success');
       expect(result.data).toHaveLength(1);
-      
-      // Safe array access with proper checks
-      if (result.data && result.data.length > 0) {
-        expect(result.data[0]).toMatchObject({
-          profile_id: testUser.id,
-          organization_id: testOrganization.id,
-          connection_type: 'current',
-          department: 'Engineering',
-          notes: 'Test relationship'
-        });
-        expect(result.data[0].organization).toBeDefined();
-        expect(result.data[0].organization.name).toBe(testOrganization.name);
-      } else {
-        fail('Expected relationship data but got empty array');
-      }
+      expect(result.data[0]).toMatchObject({
+        profile_id: testUser.id,
+        organization_id: testOrganization.id,
+        connection_type: 'current',
+        department: 'Engineering',
+        notes: 'Test relationship'
+      });
+      expect(result.data[0].organization).toBeDefined();
+      expect(result.data[0].organization.name).toBe(testOrganization.name);
     });
 
     test('should handle invalid UUID format gracefully', async () => {
@@ -322,12 +279,6 @@ describe('Organization Relationships API - Database Tests', () => {
   describe('addOrganizationRelationship', () => {
     test('should create a new relationship successfully', async () => {
       console.log('🧪 Testing addOrganizationRelationship');
-      
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for relationship creation');
-      }
       
       const relationshipData = {
         profile_id: testUser.id,
@@ -351,9 +302,6 @@ describe('Organization Relationships API - Database Tests', () => {
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
       
-      // Wait for data to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
-      
       // Verify the relationship was created in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: relationships, error } = await serviceClient
@@ -364,20 +312,17 @@ describe('Organization Relationships API - Database Tests', () => {
       
       expect(error).toBeNull();
       expect(relationships).toHaveLength(1);
+      expect(relationships[0]).toMatchObject({
+        profile_id: testUser.id,
+        organization_id: testOrganization.id,
+        connection_type: 'current',
+        department: 'Engineering',
+        notes: 'New relationship'
+      });
       
-      if (relationships && relationships.length > 0) {
-        expect(relationships[0]).toMatchObject({
-          profile_id: testUser.id,
-          organization_id: testOrganization.id,
-          connection_type: 'current',
-          department: 'Engineering',
-          notes: 'New relationship'
-        });
-        
-        // Track the created relationship for cleanup
+      // Track the created relationship for cleanup
+      if (relationships[0]) {
         createdRelationshipIds.push(relationships[0].id);
-      } else {
-        fail('Expected relationship to be created but none found');
       }
     });
 
@@ -392,17 +337,11 @@ describe('Organization Relationships API - Database Tests', () => {
       const result = await organizationRelationshipsApi.addOrganizationRelationship(relationshipData);
       
       expect(result.status).toBe('error');
-      expect(result.error?.message).toContain('Profile ID is required');
+      expect(result.error.message).toContain('Profile ID is required');
     });
 
     test('should handle non-existent organization', async () => {
       console.log('🧪 Testing addOrganizationRelationship with non-existent organization');
-      
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for non-existent org test');
-      }
       
       const relationshipData = {
         profile_id: testUser.id,
@@ -440,18 +379,9 @@ describe('Organization Relationships API - Database Tests', () => {
       expect(error).toBeNull();
       testRelationshipId = relationship.id;
       createdRelationshipIds.push(relationship.id);
-      
-      // Wait for data to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
     });
 
     test('should update relationship successfully', async () => {
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for relationship update');
-      }
-      
       const updateData = {
         connection_type: 'former' as const,
         department: 'Marketing',
@@ -466,9 +396,6 @@ describe('Organization Relationships API - Database Tests', () => {
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
-      
-      // Wait for update to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Verify the update in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -487,12 +414,6 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent relationship gracefully', async () => {
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for non-existent relationship test');
-      }
-      
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.updateOrganizationRelationship(
         nonExistentId,
@@ -527,26 +448,14 @@ describe('Organization Relationships API - Database Tests', () => {
       expect(error).toBeNull();
       testRelationshipId = relationship.id;
       createdRelationshipIds.push(relationship.id);
-      
-      // Wait for data to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
     });
 
     test('should delete relationship successfully', async () => {
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for relationship deletion');
-      }
-      
       // API call will now use the authenticated main client
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(testRelationshipId);
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
-      
-      // Wait for deletion to be committed
-      await new Promise(resolve => setTimeout(resolve, 200));
       
       // Verify the relationship was deleted using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -564,12 +473,6 @@ describe('Organization Relationships API - Database Tests', () => {
     });
 
     test('should handle non-existent relationship gracefully', async () => {
-      // Verify authentication before making the request
-      const authState = await TestAuthUtils.verifyAuthState();
-      if (!authState.isAuthenticated) {
-        throw new Error('Test user not authenticated for non-existent relationship deletion');
-      }
-      
       const nonExistentId = uuidv4();
       const result = await organizationRelationshipsApi.deleteOrganizationRelationship(nonExistentId);
       
