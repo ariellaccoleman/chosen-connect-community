@@ -149,21 +149,21 @@ export function createMutationOperations<
           result = await repository
             .update(updateData)
             .eq(typedIdField, id as any)
-            .select('id', { count: 'exact' })
+            .select('id')
             .execute();
         } else {
           // Hard delete
           result = await repository
             .delete()
             .eq(typedIdField, id as any)
-            .select('id', { count: 'exact' })
+            .select('id')
             .execute();
         }
         
         if (result.error) throw result.error;
         
         // Check if any rows were actually affected
-        const affectedCount = result.count || (result.data ? result.data.length : 0);
+        const affectedCount = result.data ? result.data.length : 0;
         
         return createSuccessResponse(affectedCount > 0);
       }
