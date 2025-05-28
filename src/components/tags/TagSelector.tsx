@@ -22,7 +22,7 @@ import { findOrCreateTag } from "@/utils/tags/tagOperations";
 import { assignTag } from "@/utils/tags/tagAssignments";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
-import { tagApi } from "@/api/tags";
+import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
 
 export interface TagSelectorProps {
   targetType: EntityType | string;
@@ -64,7 +64,7 @@ const TagSelector = ({
     if (currentSelectedTagId) {
       const findTag = async () => {
         try {
-          const tag = await tagApi.getById(currentSelectedTagId);
+          const tag = await extendedTagApi.getById(currentSelectedTagId);
           if (tag) {
             setSelectedTag(tag);
           }
@@ -86,10 +86,10 @@ const TagSelector = ({
       
       if (searchValue) {
         // If there's a search query, search by name
-        fetchedTags = await tagApi.searchByName(searchValue);
+        fetchedTags = await extendedTagApi.searchByName(searchValue);
       } else {
         // Otherwise get tags for entity type
-        fetchedTags = await tagApi.getByEntityType(targetType as EntityType);
+        fetchedTags = await extendedTagApi.getByEntityType(targetType as EntityType);
       }
       
       logger.debug(`TagSelector loaded ${fetchedTags.length} tags for entity type ${targetType}`);
