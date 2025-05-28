@@ -1,4 +1,3 @@
-
 /**
  * Tag Repository
  * Repository implementation for managing tags
@@ -203,13 +202,31 @@ export function createTagRepository(providedClient?: any): TagRepository {
     
     async updateTag(id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>> {
       try {
+        // Validate that we have an ID
+        if (!id) {
+          throw new Error('Tag ID is required for update');
+        }
+        
         return await apiClient.query(async (client) => {
+          // First check if the tag exists
+          const { data: existingTag, error: checkError } = await client
+            .from('tags')
+            .select('id')
+            .eq('id', id)
+            .maybeSingle();
+          
+          if (checkError) throw checkError;
+          if (!existingTag) {
+            throw new Error(`Tag with ID ${id} not found`);
+          }
+          
+          // Now perform the update
           const { data: result, error } = await client
             .from('tags')
             .update(data)
             .eq('id', id)
             .select()
-            .single();
+            .maybeSingle();
           
           if (error) throw error;
           if (!result) throw new Error("Failed to update tag");
@@ -224,7 +241,26 @@ export function createTagRepository(providedClient?: any): TagRepository {
     
     async deleteTag(id: string): Promise<ApiResponse<boolean>> {
       try {
+        // Validate that we have an ID
+        if (!id) {
+          throw new Error('Tag ID is required for delete');
+        }
+        
         return await apiClient.query(async (client) => {
+          // First check if the tag exists
+          const { data: existingTag, error: checkError } = await client
+            .from('tags')
+            .select('id')
+            .eq('id', id)
+            .maybeSingle();
+          
+          if (checkError) throw checkError;
+          if (!existingTag) {
+            logger.warn(`Tag with ID ${id} not found for deletion`);
+            return createSuccessResponse(false);
+          }
+          
+          // Now perform the delete
           const { error } = await client
             .from('tags')
             .delete()
@@ -259,12 +295,16 @@ export function createTagRepository(providedClient?: any): TagRepository {
     
     async associateTagWithEntityType(tagId: string, entityType: EntityType): Promise<void> {
       try {
-        // Import the TagEntityTypeRepository dynamically to avoid circular dependencies
-        const { createTagEntityTypeRepository } = await import('./index');
-        const tagEntityTypeRepo = createTagEntityTypeRepository(providedClient);
-        
-        // Associate the tag with the entity type
-        await tagEntityTypeRepo.associateTagWithEntityType(tagId, entityType);
+        await apiClient.query(async (client) => {
+          const { error } = await client
+            .from('tag_entity_types')
+            .upsert({
+              tag_id: tagId,
+              entity_type: entityType
+            });
+          
+          if (error) throw error;
+        }, providedClient);
       } catch (err) {
         logger.error(`Error associating tag ${tagId} with entity type ${entityType}:`, err);
         throw err;

@@ -45,7 +45,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .from('tags')
           .select('*')
           .eq('id', id)
-          .single();
+          .maybeSingle();
       }, providedClient);
       
       if (error) {
@@ -67,7 +67,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
           .from('tags')
           .select('*')
           .ilike('name', name)
-          .single();
+          .maybeSingle();
       }, providedClient);
       
       if (error) {
@@ -137,18 +137,33 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     async update(id: string, data: Partial<T>, providedClient?: any): Promise<T> {
       logger.debug(`TagOperations.update: Updating tag with ID ${id}`);
       
+      // Validate that we have an ID
+      if (!id) {
+        throw new Error('Tag ID is required for update');
+      }
+      
+      // First check if the tag exists
+      const existingTag = await this.getById(id, providedClient);
+      if (!existingTag) {
+        throw new Error(`Tag with ID ${id} not found`);
+      }
+      
       const { data: updatedTag, error } = await apiClient.query(async (client) => {
         return client
           .from('tags')
           .update(data)
           .eq('id', id)
           .select()
-          .single();
+          .maybeSingle();
       }, providedClient);
       
       if (error) {
         logger.error(`Error updating tag with ID ${id}:`, error);
         throw new Error(`Failed to update tag: ${error.message}`);
+      }
+      
+      if (!updatedTag) {
+        throw new Error(`No tag was updated with ID ${id}`);
       }
       
       return updatedTag as T;
@@ -159,6 +174,18 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
      */
     async delete(id: string, providedClient?: any): Promise<boolean> {
       logger.debug(`TagOperations.delete: Deleting tag with ID ${id}`);
+      
+      // Validate that we have an ID
+      if (!id) {
+        throw new Error('Tag ID is required for delete');
+      }
+      
+      // First check if the tag exists
+      const existingTag = await this.getById(id, providedClient);
+      if (!existingTag) {
+        logger.warn(`Tag with ID ${id} not found for deletion`);
+        return false;
+      }
       
       const { error } = await apiClient.query(async (client) => {
         return client
