@@ -1,4 +1,3 @@
-
 import { logger } from "@/utils/logger";
 import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -48,59 +47,58 @@ export function createQueryOperations<
   /**
    * Get all entities with optional filtering and pagination
    */
-  const getAll = async (params?: any, providedClient?: any): Promise<ApiResponse<T[]>> => {
+  const getAll = async (params?: any): Promise<ApiResponse<T[]>> => {
     try {
       logger.debug(`Fetching all ${entityName}`, params);
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          // Start with select query
-          let query = repository.select(defaultSelect);
-          
-          // Apply filters if provided
-          if (params?.filters) {
-            Object.entries(params.filters).forEach(([key, value]) => {
-              if (value !== undefined && value !== null) {
-                if (Array.isArray(value)) {
-                  query = query.in(key, value as any[]);
-                } else if (typeof value === 'object' && value !== null && 'ilike' in value) {
-                  query = query.ilike(key, (value as { ilike: string }).ilike);
-                } else {
-                  query = query.eq(key, value as any);
-                }
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        // Start with select query
+        let query = repository.select(defaultSelect);
+        
+        // Apply filters if provided
+        if (params?.filters) {
+          Object.entries(params.filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value as any[]);
+              } else {
+                query = query.eq(key, value as any);
               }
-            });
-          }
-          
-          // Apply search if provided
-          if (params?.search) {
-            query = query.ilike('name', `%${params.search}%`);
-          }
-          
-          // Apply pagination
-          if (params?.page !== undefined && params?.limit !== undefined) {
-            const start = (params.page - 1) * params.limit;
-            query = query.range(start, start + params.limit - 1);
-          }
-          
-          // Apply sorting
-          const sortField = params?.sortBy ? params.sortBy : typedDefaultOrderBy;
-          const sortOrder = params?.sortDirection || 'desc';
-          query = query.order(sortField, { ascending: sortOrder === 'asc' });
-          
-          // Execute the query
-          const result = await query.execute();
-          
-          if (result.error) throw result.error;
-          
-          // Transform response data
-          const transformedData = result.data ? result.data.map(transformResponse) : [];
-          
-          return createSuccessResponse(transformedData);
+            }
+          });
         }
         
-        // Legacy implementation using direct client
+        // Apply search if provided
+        if (params?.search) {
+          query = query.ilike('name', `%${params.search}%`);
+        }
+        
+        // Apply pagination
+        if (params?.page !== undefined && params?.limit !== undefined) {
+          const start = (params.page - 1) * params.limit;
+          query = query.range(start, start + params.limit - 1);
+        }
+        
+        // Apply sorting
+        const sortField = params?.sortBy ? params.sortBy : typedDefaultOrderBy;
+        const sortOrder = params?.sortDirection || 'desc';
+        query = query.order(sortField, { ascending: sortOrder === 'asc' });
+        
+        // Execute the query
+        const result = await query.execute();
+        
+        if (result.error) throw result.error;
+        
+        // Transform response data
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
+        
+        return createSuccessResponse(transformedData);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
+        // Type-safe table access
         const query = client.from(tableName);
         let selectQuery = query.select(defaultSelect);
         
@@ -110,8 +108,6 @@ export function createQueryOperations<
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
                 selectQuery = selectQuery.in(key, value as any);
-              } else if (typeof value === 'object' && value !== null && 'ilike' in value) {
-                selectQuery = selectQuery.ilike(key, (value as { ilike: string }).ilike);
               } else {
                 selectQuery = selectQuery.eq(key, value as any);
               }
@@ -144,7 +140,7 @@ export function createQueryOperations<
         // Transform response data
         const transformedData = data ? data.map(transformResponse) : [];
         return createSuccessResponse(transformedData);
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
@@ -154,27 +150,27 @@ export function createQueryOperations<
   /**
    * Get a single entity by ID
    */
-  const getById = async (id: TId, providedClient?: any): Promise<ApiResponse<T | null>> => {
+  const getById = async (id: TId): Promise<ApiResponse<T | null>> => {
     try {
       logger.debug(`Fetching ${entityName} with ID: ${String(id)}`);
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          const result = await repository
-            .select(defaultSelect)
-            .eq(typedIdField, id as any)
-            .maybeSingle();
-            
-          if (result.error) throw result.error;
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        const result = await repository
+          .select(defaultSelect)
+          .eq(typedIdField, id as any)
+          .maybeSingle();
           
-          // Return null if no entity is found
-          if (!result.data) return createSuccessResponse(null);
-          
-          return createSuccessResponse(transformResponse(result.data));
-        }
+        if (result.error) throw result.error;
         
-        // Legacy implementation using direct client
+        // Return null if no entity is found
+        if (!result.data) return createSuccessResponse(null);
+        
+        return createSuccessResponse(transformResponse(result.data));
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
@@ -187,7 +183,7 @@ export function createQueryOperations<
         if (!data) return createSuccessResponse(null);
         
         return createSuccessResponse(transformResponse(data));
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
@@ -197,7 +193,7 @@ export function createQueryOperations<
   /**
    * Get multiple entities by IDs
    */
-  const getByIds = async (ids: TId[], providedClient?: any): Promise<ApiResponse<T[]>> => {
+  const getByIds = async (ids: TId[]): Promise<ApiResponse<T[]>> => {
     try {
       logger.debug(`Fetching ${entityName} with IDs: ${ids.join(', ')}`);
       
@@ -205,22 +201,22 @@ export function createQueryOperations<
         return createSuccessResponse([]);
       }
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          const result = await repository
-            .select(defaultSelect)
-            .in(typedIdField, ids as any[])
-            .execute();
-            
-          if (result.error) throw result.error;
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        const result = await repository
+          .select(defaultSelect)
+          .in(typedIdField, ids as any[])
+          .execute();
           
-          const transformedData = result.data ? result.data.map(transformResponse) : [];
-          
-          return createSuccessResponse(transformedData);
-        }
+        if (result.error) throw result.error;
         
-        // Legacy implementation using direct client
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
+        
+        return createSuccessResponse(transformedData);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         const { data, error } = await client
           .from(tableName)
           .select(defaultSelect)
@@ -231,7 +227,7 @@ export function createQueryOperations<
         const transformedData = data ? data.map(item => transformResponse(item as any)) : [];
         
         return createSuccessResponse(transformedData);
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error fetching ${entityName} by IDs:`, error);
       return createErrorResponse(error);

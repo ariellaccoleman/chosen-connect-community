@@ -25,14 +25,57 @@ export const tagCoreOperations = createApiFactory<Tag>({
   })
 });
 
-// Extended operations for tag-specific logic
+// Extended operations for tag-specific logic with client injection support
 export const extendedTagOperations = {
   ...tagCoreOperations,
   
   async findByName(name: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
+    // If client is provided, we need to use it directly instead of the factory
+    if (providedClient) {
+      try {
+        const { data, error } = await providedClient
+          .from('tags')
+          .select('*')
+          .eq('name', name)
+          .limit(1)
+          .maybeSingle();
+        
+        if (error) {
+          return {
+            data: null,
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = data ? {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        } : null;
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: null,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    // Use factory operations for non-client calls
     const response = await tagCoreOperations.getAll({ 
-      filters: { name }
-    }, providedClient);
+      filters: { name },
+      limit: 1
+    });
     
     if (response.error) {
       return {
@@ -51,20 +94,97 @@ export const extendedTagOperations = {
   },
   
   async searchByName(searchQuery: string, providedClient?: any): Promise<ApiResponse<Tag[]>> {
+    if (providedClient) {
+      try {
+        const { data, error } = await providedClient
+          .from('tags')
+          .select('*')
+          .ilike('name', `%${searchQuery}%`)
+          .order('name');
+        
+        if (error) {
+          return {
+            data: [],
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = (data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: [],
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
     return tagCoreOperations.getAll({ 
       filters: { name: { ilike: `%${searchQuery}%` } } 
-    }, providedClient);
+    });
   },
   
   async getByEntityType(entityType: EntityType, providedClient?: any): Promise<ApiResponse<Tag[]>> {
     // This would need to join with tag_entity_types, but for now return all tags
     // The filtering will be handled at the application level
-    return tagCoreOperations.getAll({}, providedClient);
+    if (providedClient) {
+      try {
+        const { data, error } = await providedClient
+          .from('tags')
+          .select('*')
+          .order('name');
+        
+        if (error) {
+          return {
+            data: [],
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = (data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: [],
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.getAll({});
   },
   
   async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
     // First try to find existing tag
-    const existing = await extendedTagOperations.findByName(data.name!, providedClient);
+    const existing = await this.findByName(data.name!, providedClient);
     if (existing.error) {
       return {
         data: null,
@@ -82,6 +202,273 @@ export const extendedTagOperations = {
     }
     
     // Create new tag if not found
-    return tagCoreOperations.create(data, providedClient);
+    if (providedClient) {
+      try {
+        const { data: newTag, error } = await providedClient
+          .from('tags')
+          .insert(data)
+          .select()
+          .single();
+        
+        if (error) {
+          return {
+            data: null,
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = {
+          id: newTag.id,
+          name: newTag.name,
+          description: newTag.description,
+          created_by: newTag.created_by,
+          created_at: newTag.created_at,
+          updated_at: newTag.updated_at
+        };
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: null,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.create(data);
+  },
+  
+  // Override base operations to add client support
+  async getAll(options?: any, providedClient?: any): Promise<ApiResponse<Tag[]>> {
+    if (providedClient) {
+      try {
+        let query = providedClient.from('tags').select('*');
+        
+        // Apply filters if provided
+        if (options?.filters) {
+          Object.entries(options.filters).forEach(([key, value]: [string, any]) => {
+            if (typeof value === 'object' && value.ilike) {
+              query = query.ilike(key, value.ilike);
+            } else {
+              query = query.eq(key, value);
+            }
+          });
+        }
+        
+        // Apply ordering
+        if (options?.orderBy) {
+          query = query.order(options.orderBy);
+        } else {
+          query = query.order('name');
+        }
+        
+        // Apply limit
+        if (options?.limit) {
+          query = query.limit(options.limit);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) {
+          return {
+            data: [],
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = (data || []).map((item: any) => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: [],
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.getAll(options);
+  },
+  
+  async getById(id: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
+    if (providedClient) {
+      try {
+        const { data, error } = await providedClient
+          .from('tags')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (error) {
+          return {
+            data: null,
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = data ? {
+          id: data.id,
+          name: data.name,
+          description: data.description,
+          created_by: data.created_by,
+          created_at: data.created_at,
+          updated_at: data.updated_at
+        } : null;
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: null,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.getById(id);
+  },
+  
+  async create(data: Partial<Tag>, providedClient?: any): Promise<ApiResponse<Tag>> {
+    if (providedClient) {
+      try {
+        const { data: newTag, error } = await providedClient
+          .from('tags')
+          .insert(data)
+          .select()
+          .single();
+        
+        if (error) {
+          return {
+            data: null,
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = {
+          id: newTag.id,
+          name: newTag.name,
+          description: newTag.description,
+          created_by: newTag.created_by,
+          created_at: newTag.created_at,
+          updated_at: newTag.updated_at
+        };
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: null,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.create(data);
+  },
+  
+  async update(id: string, data: Partial<Tag>, providedClient?: any): Promise<ApiResponse<Tag>> {
+    if (providedClient) {
+      try {
+        const { data: updatedTag, error } = await providedClient
+          .from('tags')
+          .update(data)
+          .eq('id', id)
+          .select()
+          .single();
+        
+        if (error) {
+          return {
+            data: null,
+            error,
+            status: 'error'
+          };
+        }
+        
+        const transformedData = {
+          id: updatedTag.id,
+          name: updatedTag.name,
+          description: updatedTag.description,
+          created_by: updatedTag.created_by,
+          created_at: updatedTag.created_at,
+          updated_at: updatedTag.updated_at
+        };
+        
+        return {
+          data: transformedData,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: null,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.update(id, data);
+  },
+  
+  async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
+    if (providedClient) {
+      try {
+        const { error } = await providedClient
+          .from('tags')
+          .delete()
+          .eq('id', id);
+        
+        if (error) {
+          return {
+            data: false,
+            error,
+            status: 'error'
+          };
+        }
+        
+        return {
+          data: true,
+          error: null,
+          status: 'success'
+        };
+      } catch (error) {
+        return {
+          data: false,
+          error,
+          status: 'error'
+        };
+      }
+    }
+    
+    return tagCoreOperations.delete(id);
   }
 };

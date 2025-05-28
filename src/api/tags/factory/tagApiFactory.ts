@@ -19,9 +19,8 @@ export function createTagAssignmentApiFactory() {
   return tagAssignmentApi;
 }
 
-// Individual function exports for backward compatibility with index.ts
-// These now support providedClient parameter following the relationships API pattern
-export const getAllTags = (params?: any, providedClient?: any) => extendedTagApi.getAll(params, providedClient);
+// Individual function exports for backward compatibility with index.ts - now with client support
+export const getAllTags = (optionsOrClient?: any, providedClient?: any) => extendedTagApi.getAll(optionsOrClient, providedClient);
 export const getTagById = (id: string, providedClient?: any) => extendedTagApi.getById(id, providedClient);
 export const findTagByName = (name: string, providedClient?: any) => extendedTagApi.findByName(name, providedClient);
 export const searchTags = (searchQuery: string, providedClient?: any) => extendedTagApi.searchByName(searchQuery, providedClient);
@@ -31,10 +30,10 @@ export const deleteTag = (id: string, providedClient?: any) => extendedTagApi.de
 export const findOrCreateTag = (data: any, entityType?: any, providedClient?: any) => extendedTagApi.findOrCreate(data, entityType, providedClient);
 export const getTagsByEntityType = (entityType: any, providedClient?: any) => extendedTagApi.getByEntityType(entityType, providedClient);
 
-// Tag assignment function exports
+// Tag assignment function exports with client support
 export const getTagAssignmentsForEntity = (entityId: string, entityType: any, providedClient?: any) => tagAssignmentApi.getForEntity(entityId, entityType, providedClient);
 export const createTagAssignment = (tagId: string, entityId: string, entityType: any, providedClient?: any) => tagAssignmentApi.create(tagId, entityId, entityType, providedClient);
-export const deleteTagAssignment = (id: string, providedClient?: any) => tagAssignmentApi.delete(id, providedClient);
+export const deleteTagAssignment = (assignmentId: string, providedClient?: any) => tagAssignmentApi.delete(assignmentId, providedClient);
 
 // Re-export core operations for direct access if needed
 export { tagCoreOperations } from './tagCoreOperations';

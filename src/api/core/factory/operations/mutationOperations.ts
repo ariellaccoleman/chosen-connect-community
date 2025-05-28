@@ -51,26 +51,26 @@ export function createMutationOperations<
   /**
    * Create a new entity
    */
-  const create = async (data: TCreate, providedClient?: any): Promise<ApiResponse<T>> => {
+  const create = async (data: TCreate): Promise<ApiResponse<T>> => {
     try {
       logger.debug(`Creating new ${entityName}:`, data);
       
       const transformedData = transformRequest(data as any);
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          const result = await repository
-            .insert(transformedData)
-            .select(defaultSelect)
-            .single();
-          
-          if (result.error) throw result.error;
-          
-          return createSuccessResponse(transformResponse(result.data));
-        }
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        const result = await repository
+          .insert(transformedData)
+          .select(defaultSelect)
+          .single();
         
-        // Legacy implementation using direct client
+        if (result.error) throw result.error;
+        
+        return createSuccessResponse(transformResponse(result.data));
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         const { data: createdData, error } = await client
           .from(tableName)
           .insert(transformedData as any)
@@ -80,7 +80,7 @@ export function createMutationOperations<
         if (error) throw error;
         
         return createSuccessResponse(transformResponse(createdData));
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error creating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -90,27 +90,27 @@ export function createMutationOperations<
   /**
    * Update an existing entity
    */
-  const update = async (id: TId, data: TUpdate, providedClient?: any): Promise<ApiResponse<T>> => {
+  const update = async (id: TId, data: TUpdate): Promise<ApiResponse<T>> => {
     try {
       logger.debug(`Updating ${entityName} with ID: ${String(id)}`, data);
       
       const transformedData = transformRequest(data as any);
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          const result = await repository
-            .update(transformedData)
-            .eq(typedIdField, id as any)
-            .select(defaultSelect)
-            .single();
-          
-          if (result.error) throw result.error;
-          
-          return createSuccessResponse(transformResponse(result.data));
-        }
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        const result = await repository
+          .update(transformedData)
+          .eq(typedIdField, id as any)
+          .select(defaultSelect)
+          .single();
         
-        // Legacy implementation using direct client
+        if (result.error) throw result.error;
+        
+        return createSuccessResponse(transformResponse(result.data));
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         const { data: updatedData, error } = await client
           .from(tableName)
           .update(transformedData as any)
@@ -121,7 +121,7 @@ export function createMutationOperations<
         if (error) throw error;
         
         return createSuccessResponse(transformResponse(updatedData));
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error updating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -131,40 +131,40 @@ export function createMutationOperations<
   /**
    * Delete an entity (hard delete or soft delete)
    */
-  const deleteEntity = async (id: TId, providedClient?: any): Promise<ApiResponse<boolean>> => {
+  const deleteEntity = async (id: TId): Promise<ApiResponse<boolean>> => {
     try {
       logger.debug(`Deleting ${entityName} with ID: ${String(id)}`);
       
-      return await apiClient.query(async (client) => {
-        // Use repository if provided, otherwise use direct client
-        if (repository) {
-          let result;
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        let result;
+        
+        if (softDelete) {
+          // Soft delete - update deleted_at field
+          const updateData = { 
+            updated_at: new Date().toISOString(),
+            deleted_at: new Date().toISOString()
+          };
           
-          if (softDelete) {
-            // Soft delete - update deleted_at field
-            const updateData = { 
-              updated_at: new Date().toISOString(),
-              deleted_at: new Date().toISOString()
-            };
-            
-            result = await repository
-              .update(updateData)
-              .eq(typedIdField, id as any)
-              .execute();
-          } else {
-            // Hard delete
-            result = await repository
-              .delete()
-              .eq(typedIdField, id as any)
-              .execute();
-          }
-          
-          if (result.error) throw result.error;
-          
-          return createSuccessResponse(true);
+          result = await repository
+            .update(updateData)
+            .eq(typedIdField, id as any)
+            .execute();
+        } else {
+          // Hard delete
+          result = await repository
+            .delete()
+            .eq(typedIdField, id as any)
+            .execute();
         }
         
-        // Legacy implementation using direct client
+        if (result.error) throw result.error;
+        
+        return createSuccessResponse(true);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
         let error = null;
         
         if (softDelete) {
@@ -191,7 +191,7 @@ export function createMutationOperations<
         if (error) throw error;
         
         return createSuccessResponse(true);
-      }, providedClient);
+      });
     } catch (error) {
       logger.error(`Error deleting ${entityName}:`, error);
       return createErrorResponse(error);
