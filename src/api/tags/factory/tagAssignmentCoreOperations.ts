@@ -24,33 +24,50 @@ const tagAssignmentBase = createApiFactory<TagAssignment>({
   })
 });
 
-// Extended operations for tag assignment specific logic
+// Extended operations for tag assignment specific logic with client injection support
 export const tagAssignmentCoreOperations = {
   ...tagAssignmentBase,
   
-  async create(tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment>> {
+  async create(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment>> {
     return tagAssignmentBase.create({
       tag_id: tagId,
       target_id: entityId,
       target_type: entityType
-    });
+    }, providedClient);
   },
   
-  async getForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>> {
+  async getForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
     return tagAssignmentBase.getAll({
       filters: {
         target_id: entityId,
         target_type: entityType
       }
-    });
+    }, providedClient);
   },
   
-  async getEntitiesByTagId(tagId: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>> {
+  async getEntitiesByTagId(tagId: string, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
     const filters: any = { tag_id: tagId };
     if (entityType) {
       filters.target_type = entityType;
     }
     
-    return tagAssignmentBase.getAll({ filters });
+    return tagAssignmentBase.getAll({ filters }, providedClient);
+  },
+  
+  // Override base operations to add client support
+  async getAll(optionsOrClient?: any, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
+    return tagAssignmentBase.getAll(optionsOrClient, providedClient);
+  },
+  
+  async getById(id: string, providedClient?: any): Promise<ApiResponse<TagAssignment | null>> {
+    return tagAssignmentBase.getById(id, providedClient);
+  },
+  
+  async update(id: string, data: Partial<TagAssignment>, providedClient?: any): Promise<ApiResponse<TagAssignment>> {
+    return tagAssignmentBase.update(id, data, providedClient);
+  },
+  
+  async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
+    return tagAssignmentBase.delete(id, providedClient);
   }
 };

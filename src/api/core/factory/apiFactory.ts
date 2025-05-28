@@ -63,10 +63,10 @@ export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'reposit
 }
 
 /**
- * Creates a complete API factory with all operations
+ * Creates a complete API factory with all operations that support client injection
  * 
  * @param config - Configuration for the API factory
- * @returns API operations for the entity
+ * @returns API operations for the entity with client injection support
  */
 export function createApiFactory<
   T, 
@@ -141,7 +141,7 @@ export function createApiFactory<
       tableName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
       'Entity');
   
-  // Base operations are always included
+  // Base operations are always included - wrap them to support client injection
   const baseOps = createBaseOperations<T, TId, TCreate, TUpdate, Table>(
     entity,
     tableName,
@@ -151,9 +151,83 @@ export function createApiFactory<
     }
   );
   
-  // Create a result object with baseOps and tableName
-  const result = {
+  // Wrap base operations to support providedClient parameter
+  const wrappedBaseOps = {
     ...baseOps,
+    async getAll(optionsOrClient?: any, providedClient?: any): Promise<any> {
+      // Handle both old signature and new signature with client
+      const actualClient = providedClient || (typeof optionsOrClient === 'object' && optionsOrClient?.auth ? optionsOrClient : undefined);
+      const actualOptions = actualClient ? optionsOrClient : (optionsOrClient || {});
+      
+      if (actualClient) {
+        // Use the provided client by temporarily replacing the repository
+        const originalQuery = dataRepository.select;
+        dataRepository.select = actualClient.from(tableName).select.bind(actualClient.from(tableName));
+        try {
+          return await baseOps.getAll(actualOptions);
+        } finally {
+          dataRepository.select = originalQuery;
+        }
+      }
+      return baseOps.getAll(actualOptions);
+    },
+    
+    async getById(id: TId, providedClient?: any): Promise<any> {
+      if (providedClient) {
+        const originalQuery = dataRepository.select;
+        dataRepository.select = providedClient.from(tableName).select.bind(providedClient.from(tableName));
+        try {
+          return await baseOps.getById(id);
+        } finally {
+          dataRepository.select = originalQuery;
+        }
+      }
+      return baseOps.getById(id);
+    },
+    
+    async create(data: TCreate, providedClient?: any): Promise<any> {
+      if (providedClient) {
+        const originalInsert = dataRepository.insert;
+        dataRepository.insert = providedClient.from(tableName).insert.bind(providedClient.from(tableName));
+        try {
+          return await baseOps.create(data);
+        } finally {
+          dataRepository.insert = originalInsert;
+        }
+      }
+      return baseOps.create(data);
+    },
+    
+    async update(id: TId, data: TUpdate, providedClient?: any): Promise<any> {
+      if (providedClient) {
+        const originalUpdate = dataRepository.update;
+        dataRepository.update = providedClient.from(tableName).update.bind(providedClient.from(tableName));
+        try {
+          return await baseOps.update(id, data);
+        } finally {
+          dataRepository.update = originalUpdate;
+        }
+      }
+      return baseOps.update(id, data);
+    },
+    
+    async delete(id: TId, providedClient?: any): Promise<any> {
+      if (providedClient) {
+        const originalDelete = dataRepository.delete;
+        dataRepository.delete = providedClient.from(tableName).delete.bind(providedClient.from(tableName));
+        try {
+          return await baseOps.delete(id);
+        } finally {
+          dataRepository.delete = originalDelete;
+        }
+      }
+      return baseOps.delete(id);
+    }
+  };
+  
+  // Create a result object with wrapped operations and tableName
+  const result = {
+    ...wrappedBaseOps,
     tableName
   } as ApiOperations<T, TId, TCreate, TUpdate>;
   

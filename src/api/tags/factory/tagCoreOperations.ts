@@ -25,15 +25,15 @@ export const tagCoreOperations = createApiFactory<Tag>({
   })
 });
 
-// Extended operations for tag-specific logic
+// Extended operations for tag-specific logic with client injection support
 export const extendedTagOperations = {
   ...tagCoreOperations,
   
-  async findByName(name: string): Promise<ApiResponse<Tag | null>> {
+  async findByName(name: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
     const response = await tagCoreOperations.getAll({ 
       filters: { name },
       limit: 1
-    });
+    }, providedClient);
     
     if (response.error) {
       return {
@@ -51,21 +51,21 @@ export const extendedTagOperations = {
     };
   },
   
-  async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
+  async searchByName(searchQuery: string, providedClient?: any): Promise<ApiResponse<Tag[]>> {
     return tagCoreOperations.getAll({ 
       filters: { name: { ilike: `%${searchQuery}%` } } 
-    });
+    }, providedClient);
   },
   
-  async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
+  async getByEntityType(entityType: EntityType, providedClient?: any): Promise<ApiResponse<Tag[]>> {
     // This would need to join with tag_entity_types, but for now return all tags
     // The filtering will be handled at the application level
-    return tagCoreOperations.getAll();
+    return tagCoreOperations.getAll({}, providedClient);
   },
   
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
+  async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
     // First try to find existing tag
-    const existing = await this.findByName(data.name!);
+    const existing = await this.findByName(data.name!, providedClient);
     if (existing.error) {
       return {
         data: null,
@@ -83,6 +83,27 @@ export const extendedTagOperations = {
     }
     
     // Create new tag if not found
-    return tagCoreOperations.create(data);
+    return tagCoreOperations.create(data, providedClient);
+  },
+  
+  // Override base operations to add client support
+  async getAll(optionsOrClient?: any, providedClient?: any): Promise<ApiResponse<Tag[]>> {
+    return tagCoreOperations.getAll(optionsOrClient, providedClient);
+  },
+  
+  async getById(id: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
+    return tagCoreOperations.getById(id, providedClient);
+  },
+  
+  async create(data: Partial<Tag>, providedClient?: any): Promise<ApiResponse<Tag>> {
+    return tagCoreOperations.create(data, providedClient);
+  },
+  
+  async update(id: string, data: Partial<Tag>, providedClient?: any): Promise<ApiResponse<Tag>> {
+    return tagCoreOperations.update(id, data, providedClient);
+  },
+  
+  async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
+    return tagCoreOperations.delete(id, providedClient);
   }
 };
