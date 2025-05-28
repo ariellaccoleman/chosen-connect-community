@@ -16,7 +16,7 @@ interface EntityTagManagerProps {
   onFinishEditing?: () => void;
   onTagSuccess?: () => void;
   onTagError?: (error: Error) => void;
-  className?: string; // Added className prop
+  className?: string;
 }
 
 const EntityTagManager = ({
@@ -27,7 +27,7 @@ const EntityTagManager = ({
   onFinishEditing,
   onTagSuccess,
   onTagError,
-  className = "" // Default to empty string
+  className = ""
 }: EntityTagManagerProps) => {
   const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
@@ -121,6 +121,7 @@ const EntityTagManager = ({
               targetType={entityType}
               onTagSelected={handleAddTag}
               isAdmin={isAdmin}
+              entityId={entityId}
             />
             {isAssigning && <p className="text-sm text-muted-foreground mt-1">Adding tag...</p>}
           </div>

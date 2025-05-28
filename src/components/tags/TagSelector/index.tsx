@@ -9,13 +9,15 @@ interface TagSelectorProps {
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;
   currentSelectedTagId?: string | null;
+  entityId?: string; // Add entityId prop
 }
 
 const TagSelector = ({
   targetType, 
   onTagSelected, 
   isAdmin = false,
-  currentSelectedTagId
+  currentSelectedTagId,
+  entityId
 }: TagSelectorProps) => {
   return (
     <TagSelectorComponent
@@ -23,6 +25,7 @@ const TagSelector = ({
       onTagSelected={onTagSelected}
       isAdmin={isAdmin}
       currentSelectedTagId={currentSelectedTagId}
+      entityId={entityId}
     />
   );
 };

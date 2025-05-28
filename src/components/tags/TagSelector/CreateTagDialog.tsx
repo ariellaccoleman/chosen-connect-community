@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Tag, findOrCreateTag } from "@/utils/tags";
+import { assignTag } from "@/utils/tags/tagAssignments";
 import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 
 interface CreateTagDialogProps {
@@ -23,6 +25,7 @@ interface CreateTagDialogProps {
   targetType: EntityType;
   onTagCreated: (tag: Tag) => void;
   isAdmin?: boolean;
+  entityId?: string; // Add entityId prop
 }
 
 const CreateTagDialog = ({
@@ -31,7 +34,8 @@ const CreateTagDialog = ({
   initialValue = "",
   targetType,
   onTagCreated,
-  isAdmin = false
+  isAdmin = false,
+  entityId
 }: CreateTagDialogProps) => {
   const [name, setName] = useState(initialValue);
   const [description, setDescription] = useState("");
@@ -56,7 +60,7 @@ const CreateTagDialog = ({
     setIsCreating(true);
     
     try {
-      // Only pass the tag data - entity type associations are handled by triggers
+      // Create or find the tag
       const createdTag = await findOrCreateTag({
         name: name.trim(),
         description: description.trim() || null,
@@ -64,6 +68,23 @@ const CreateTagDialog = ({
       });
       
       if (createdTag) {
+        logger.debug(`Created/found tag: ${createdTag.name} (${createdTag.id})`);
+        
+        // If we have an entityId, immediately assign the tag to this entity
+        if (entityId) {
+          const assignmentSuccess = await assignTag(
+            createdTag.id,
+            entityId,
+            targetType
+          );
+          
+          if (assignmentSuccess) {
+            logger.debug(`Successfully assigned tag ${createdTag.id} to entity ${entityId}`);
+          } else {
+            logger.warn(`Failed to assign tag ${createdTag.id} to entity ${entityId}, but continuing`);
+          }
+        }
+        
         onTagCreated(createdTag);
         onClose();
       }

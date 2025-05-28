@@ -20,6 +20,7 @@ import { EntityType } from "@/types/entityTypes";
 import { Tag } from "@/utils/tags";
 import { useSelectionTags } from "@/hooks/tags";
 import { findOrCreateTag } from "@/utils/tags/tagOperations";
+import { assignTag } from "@/utils/tags/tagAssignments";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 import { tagApi } from "@/api/tags";
@@ -32,6 +33,7 @@ export interface TagSelectorProps {
   placeholder?: string;
   className?: string;
   currentSelectedTagId?: string | null;
+  entityId?: string; // Add entityId prop for immediate assignment
 }
 
 const TagSelector = ({
@@ -41,7 +43,8 @@ const TagSelector = ({
   disabled = false,
   placeholder = "Select a tag",
   className,
-  currentSelectedTagId
+  currentSelectedTagId,
+  entityId
 }: TagSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -116,13 +119,29 @@ const TagSelector = ({
     setIsCreatingTag(true);
     
     try {
-      // Only pass the tag data - entity type associations are handled by triggers
+      // Create or find the tag
       const newTag = await findOrCreateTag({ 
         name: searchValue.trim() 
       });
       
       if (newTag) {
         logger.debug(`Created/found tag: ${newTag.name} (${newTag.id})`);
+        
+        // If we have an entityId, immediately assign the tag to this entity
+        if (entityId) {
+          const assignmentSuccess = await assignTag(
+            newTag.id,
+            entityId,
+            targetType as EntityType
+          );
+          
+          if (assignmentSuccess) {
+            logger.debug(`Successfully assigned tag ${newTag.id} to entity ${entityId}`);
+          } else {
+            logger.warn(`Failed to assign tag ${newTag.id} to entity ${entityId}, but continuing`);
+          }
+        }
+        
         setSelectedTag(newTag);
         onTagSelected(newTag);
         setSearchValue("");

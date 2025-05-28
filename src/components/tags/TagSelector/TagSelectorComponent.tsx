@@ -17,6 +17,7 @@ interface TagSelectorComponentProps {
   onTagSelected: (tag: Tag) => void;
   isAdmin?: boolean;
   currentSelectedTagId?: string | null;
+  entityId?: string; // Add entityId prop
 }
 
 /**
@@ -26,7 +27,8 @@ const TagSelectorComponent = ({
   targetType, 
   onTagSelected, 
   isAdmin = false,
-  currentSelectedTagId
+  currentSelectedTagId,
+  entityId
 }: TagSelectorComponentProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
@@ -174,6 +176,7 @@ const TagSelectorComponent = ({
             handleOpenCreateDialog={handleOpenCreateDialog}
             user={user}
             isLoading={isLoading}
+            entityId={entityId}
           />
         </PopoverContent>
       </Popover>
@@ -185,6 +188,7 @@ const TagSelectorComponent = ({
         targetType={targetType}
         onTagCreated={handleTagCreated}
         isAdmin={isAdmin}
+        entityId={entityId}
       />
     </>
   );
