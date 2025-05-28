@@ -27,105 +27,147 @@ const tagAssignmentApiBase = createApiFactory<TagAssignment>({
   defaultSelect: '*'
 });
 
-// Extended tag API with additional methods that unwrap responses
+// Extended tag API that returns ApiResponse objects like other factories
 export const extendedTagApi = {
-  // Basic CRUD operations (unwrapping ApiResponse)
-  async getAll(): Promise<Tag[]> {
-    const response = await tagApiBase.getAll();
-    return response.data || [];
+  // Basic CRUD operations (returning ApiResponse)
+  async getAll(): Promise<ApiResponse<Tag[]>> {
+    return await tagApiBase.getAll();
   },
 
-  async getById(id: string): Promise<Tag | null> {
-    const response = await tagApiBase.getById(id);
-    return response.data || null;
+  async getById(id: string): Promise<ApiResponse<Tag | null>> {
+    return await tagApiBase.getById(id);
   },
 
-  async create(data: Partial<Tag>): Promise<Tag> {
-    const response = await tagApiBase.create(data);
-    if (!response.data) {
-      throw new Error(response.error || 'Failed to create tag');
+  async create(data: Partial<Tag>): Promise<ApiResponse<Tag>> {
+    return await tagApiBase.create(data);
+  },
+
+  async update(id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>> {
+    return await tagApiBase.update(id, data);
+  },
+
+  async delete(id: string): Promise<ApiResponse<boolean>> {
+    return await tagApiBase.delete(id);
+  },
+
+  // Additional methods that return ApiResponse
+  async findByName(name: string): Promise<ApiResponse<Tag | null>> {
+    const allTagsResponse = await this.getAll();
+    if (allTagsResponse.error) {
+      return allTagsResponse;
     }
-    return response.data;
+    
+    const allTags = allTagsResponse.data || [];
+    const foundTag = allTags.find(tag => tag.name === name) || null;
+    
+    return {
+      data: foundTag,
+      error: null,
+      status: 'success'
+    };
   },
 
-  async update(id: string, data: Partial<Tag>): Promise<Tag> {
-    const response = await tagApiBase.update(id, data);
-    if (!response.data) {
-      throw new Error(response.error || 'Failed to update tag');
+  async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
+    if (!searchQuery.trim()) {
+      return {
+        data: [],
+        error: null,
+        status: 'success'
+      };
     }
-    return response.data;
-  },
-
-  async delete(id: string): Promise<boolean> {
-    const response = await tagApiBase.delete(id);
-    return response.data === true;
-  },
-
-  // Additional methods needed by the application
-  async findByName(name: string): Promise<Tag | null> {
-    const allTags = await this.getAll();
-    return allTags.find(tag => tag.name === name) || null;
-  },
-
-  async searchByName(searchQuery: string): Promise<Tag[]> {
-    if (!searchQuery.trim()) return [];
-    const allTags = await this.getAll();
-    return allTags.filter(tag => 
+    
+    const allTagsResponse = await this.getAll();
+    if (allTagsResponse.error) {
+      return allTagsResponse;
+    }
+    
+    const allTags = allTagsResponse.data || [];
+    const filteredTags = allTags.filter(tag => 
       tag.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+    
+    return {
+      data: filteredTags,
+      error: null,
+      status: 'success'
+    };
   },
 
-  async getByEntityType(entityType: EntityType): Promise<Tag[]> {
+  async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
     // For now return all tags, TODO: Implement proper entity type filtering
     return this.getAll();
   },
 
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<Tag> {
+  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
     if (data.name) {
-      const existing = await this.findByName(data.name);
-      if (existing) {
-        return existing;
+      const existingResponse = await this.findByName(data.name);
+      if (existingResponse.error) {
+        return existingResponse;
+      }
+      
+      if (existingResponse.data) {
+        return {
+          data: existingResponse.data,
+          error: null,
+          status: 'success'
+        };
       }
     }
+    
     return this.create(data);
   }
 };
 
-// Tag assignment API with extended functionality
+// Tag assignment API that returns ApiResponse objects
 export const tagAssignmentApi = {
-  async create(tagId: string, entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<TagAssignment> {
-    const response = await tagAssignmentApiBase.create({
+  async create(tagId: string, entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment>> {
+    return await tagAssignmentApiBase.create({
       tag_id: tagId,
       target_id: entityId,
       target_type: entityType
     });
-    if (!response.data) {
-      throw new Error(response.error || 'Failed to create tag assignment');
-    }
-    return response.data;
   },
 
-  async delete(assignmentId: string, client?: SupabaseClient): Promise<boolean> {
-    const response = await tagAssignmentApiBase.delete(assignmentId);
-    return response.data === true;
+  async delete(assignmentId: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
+    return await tagAssignmentApiBase.delete(assignmentId);
   },
 
-  async getForEntity(entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<TagAssignment[]> {
+  async getForEntity(entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
     const response = await tagAssignmentApiBase.getAll();
+    if (response.error) {
+      return response;
+    }
+    
     const assignments = response.data || [];
-    return assignments.filter(assignment => 
+    const filtered = assignments.filter(assignment => 
       assignment.target_id === entityId && assignment.target_type === entityType
     );
+    
+    return {
+      data: filtered,
+      error: null,
+      status: 'success'
+    };
   },
 
-  async getEntitiesByTagId(tagId: string, entityType?: EntityType, client?: SupabaseClient): Promise<TagAssignment[]> {
+  async getEntitiesByTagId(tagId: string, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
     const response = await tagAssignmentApiBase.getAll();
+    if (response.error) {
+      return response;
+    }
+    
     const assignments = response.data || [];
-    return assignments.filter(assignment => {
+    const filtered = assignments.filter(assignment => {
       if (assignment.tag_id !== tagId) return false;
       if (entityType && assignment.target_type !== entityType) return false;
       return true;
     });
+    
+    return {
+      data: filtered,
+      error: null,
+      status: 'success'
+    };
   }
 };
 
@@ -141,16 +183,81 @@ export function createTagAssignmentApiFactory(client?: SupabaseClient) {
   return tagAssignmentApi;
 }
 
-// Export individual functions for backward compatibility
-export const getAllTags = extendedTagApi.getAll;
-export const getTagById = extendedTagApi.getById;
-export const findTagByName = extendedTagApi.findByName;
-export const searchTags = extendedTagApi.searchByName;
-export const createTag = extendedTagApi.create;
-export const updateTag = extendedTagApi.update;
-export const deleteTag = extendedTagApi.delete;
-export const findOrCreateTag = extendedTagApi.findOrCreate;
-export const getTagsByEntityType = extendedTagApi.getByEntityType;
-export const getTagAssignmentsForEntity = tagAssignmentApi.getForEntity;
-export const createTagAssignment = tagAssignmentApi.create;
-export const deleteTagAssignment = tagAssignmentApi.delete;
+// Export individual functions for backward compatibility - these need to unwrap responses
+export const getAllTags = async (): Promise<Tag[]> => {
+  const response = await extendedTagApi.getAll();
+  return response.data || [];
+};
+
+export const getTagById = async (id: string): Promise<Tag | null> => {
+  const response = await extendedTagApi.getById(id);
+  return response.data || null;
+};
+
+export const findTagByName = async (name: string): Promise<Tag | null> => {
+  const response = await extendedTagApi.findByName(name);
+  return response.data || null;
+};
+
+export const searchTags = async (searchQuery: string): Promise<Tag[]> => {
+  const response = await extendedTagApi.searchByName(searchQuery);
+  return response.data || [];
+};
+
+export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
+  const response = await extendedTagApi.create(data);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data!;
+};
+
+export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
+  const response = await extendedTagApi.update(id, data);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data!;
+};
+
+export const deleteTag = async (id: string): Promise<boolean> => {
+  const response = await extendedTagApi.delete(id);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data === true;
+};
+
+export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
+  const response = await extendedTagApi.findOrCreate(data, entityType);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data!;
+};
+
+export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
+  const response = await extendedTagApi.getByEntityType(entityType);
+  return response.data || [];
+};
+
+export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
+  const response = await tagAssignmentApi.getForEntity(entityId, entityType);
+  return response.data || [];
+};
+
+export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
+  const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data!;
+};
+
+export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
+  const response = await tagAssignmentApi.delete(assignmentId);
+  if (response.error) {
+    throw response.error;
+  }
+  return response.data === true;
+};
