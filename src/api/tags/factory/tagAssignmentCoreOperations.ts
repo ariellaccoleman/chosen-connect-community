@@ -1,4 +1,3 @@
-
 /**
  * Tag assignment operations using the API factory pattern
  */
@@ -191,7 +190,7 @@ export const tagAssignmentCoreOperations = {
           });
         }
         
-        const { data, error } = await query;
+        const { data, error, count } = await query;
         
         if (error) {
           return {
@@ -200,6 +199,9 @@ export const tagAssignmentCoreOperations = {
             status: 'error'
           };
         }
+        
+        // Check if any rows were actually deleted
+        const deletedCount = count || (data ? data.length : 0);
         
         const transformedData = (data || []).map((item: any) => ({
           id: item.id,
@@ -317,10 +319,11 @@ export const tagAssignmentCoreOperations = {
   async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
     if (providedClient) {
       try {
-        const { error } = await providedClient
+        const { data, error, count } = await providedClient
           .from('tag_assignments')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .select('id', { count: 'exact' });
         
         if (error) {
           return {
@@ -330,8 +333,11 @@ export const tagAssignmentCoreOperations = {
           };
         }
         
+        // Check if any rows were actually deleted
+        const deletedCount = count || (data ? data.length : 0);
+        
         return {
-          data: true,
+          data: deletedCount > 0,
           error: null,
           status: 'success'
         };

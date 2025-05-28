@@ -445,10 +445,11 @@ export const extendedTagOperations = {
   async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
     if (providedClient) {
       try {
-        const { error } = await providedClient
+        const { data, error, count } = await providedClient
           .from('tags')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .select('id', { count: 'exact' });
         
         if (error) {
           return {
@@ -458,8 +459,11 @@ export const extendedTagOperations = {
           };
         }
         
+        // Check if any rows were actually deleted
+        const deletedCount = count || (data ? data.length : 0);
+        
         return {
-          data: true,
+          data: deletedCount > 0,
           error: null,
           status: 'success'
         };

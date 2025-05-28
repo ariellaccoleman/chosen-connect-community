@@ -149,48 +149,54 @@ export function createMutationOperations<
           result = await repository
             .update(updateData)
             .eq(typedIdField, id as any)
+            .select('id', { count: 'exact' })
             .execute();
         } else {
           // Hard delete
           result = await repository
             .delete()
             .eq(typedIdField, id as any)
+            .select('id', { count: 'exact' })
             .execute();
         }
         
         if (result.error) throw result.error;
         
-        return createSuccessResponse(true);
+        // Check if any rows were actually affected
+        const affectedCount = result.count || (result.data ? result.data.length : 0);
+        
+        return createSuccessResponse(affectedCount > 0);
       }
       
       // Legacy implementation using apiClient
       return await apiClient.query(async (client) => {
-        let error = null;
+        let result;
         
         if (softDelete) {
           // Soft delete - update deleted_at field
           const updateData = { updated_at: new Date().toISOString() } as Record<string, any>;
           updateData.deleted_at = new Date().toISOString();
           
-          const result = await client
+          result = await client
             .from(tableName)
             .update(updateData as any)
-            .eq(typedIdField, id as any);
-          
-          error = result.error;
+            .eq(typedIdField, id as any)
+            .select('id', { count: 'exact' });
         } else {
           // Hard delete
-          const result = await client
+          result = await client
             .from(tableName)
             .delete()
-            .eq(typedIdField, id as any);
-          
-          error = result.error;
+            .eq(typedIdField, id as any)
+            .select('id', { count: 'exact' });
         }
         
-        if (error) throw error;
+        if (result.error) throw result.error;
         
-        return createSuccessResponse(true);
+        // Check if any rows were actually affected
+        const affectedCount = result.count || (result.data ? result.data.length : 0);
+        
+        return createSuccessResponse(affectedCount > 0);
       });
     } catch (error) {
       logger.error(`Error deleting ${entityName}:`, error);
