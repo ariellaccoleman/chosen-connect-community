@@ -3,7 +3,7 @@ import {
   getSelectionTags, 
   getFilterTags 
 } from "@/api/tags/getTagsApi"; 
-import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
+import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag, updateTag as apiUpdateTag, deleteTag as apiDeleteTag } from "@/api/tags/tagCrudApi"; 
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -123,43 +123,41 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   }
 };
 
-// Update an existing tag
+// Update an existing tag - now uses the proper API client
 export const updateTag = async (
   tagId: string,
   updates: Partial<Tag>
 ): Promise<Tag | null> => {
   try {
-    const response = await fetch(`/api/tags/${tagId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
+    // Call the API function that properly uses the apiClient
+    const response = await apiUpdateTag(tagId, updates);
     
-    if (!response.ok) {
-      throw new Error(`Failed to update tag: ${response.statusText}`);
+    if (response.status !== 'success' || !response.data) {
+      logger.error("Error updating tag:", response.error);
+      return null;
     }
     
-    return await response.json();
+    return response.data;
   } catch (error) {
     logger.error("Error updating tag:", error);
-    return null;
+    throw error; // Re-throw to let the mutation handler deal with it
   }
 };
 
-// Delete a tag
+// Delete a tag - now uses the proper API client
 export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
-    const response = await fetch(`/api/tags/${tagId}`, {
-      method: 'DELETE'
-    });
+    // Call the API function that properly uses the apiClient
+    const response = await apiDeleteTag(tagId);
     
-    if (!response.ok) {
-      throw new Error(`Failed to delete tag: ${response.statusText}`);
+    if (response.status !== 'success') {
+      logger.error("Error deleting tag:", response.error);
+      return false;
     }
     
-    return true;
+    return response.data || false;
   } catch (error) {
     logger.error("Error deleting tag:", error);
-    return false;
+    throw error; // Re-throw to let the mutation handler deal with it
   }
 };

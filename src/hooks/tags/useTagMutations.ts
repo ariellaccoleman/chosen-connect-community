@@ -6,7 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { tagApi } from '@/api/tags';
+import { createTag, updateTag, deleteTag, findOrCreateTag } from '@/utils/tags/tagOperations';
 import { logger } from '@/utils/logger';
 
 /**
@@ -18,9 +18,7 @@ export function useCreateTag() {
   return useMutation({
     mutationFn: (data: Partial<Tag>) => {
       logger.debug("Creating tag:", data);
-      // Remove created_by from data since trigger will handle it
-      const { created_by, ...cleanData } = data;
-      return tagApi.create(cleanData);
+      return createTag(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -37,7 +35,7 @@ export function useUpdateTag() {
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => {
       logger.debug(`Updating tag ${id}:`, data);
-      return tagApi.update(id, data);
+      return updateTag(id, data);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -55,7 +53,7 @@ export function useDeleteTag() {
   return useMutation({
     mutationFn: (id: string) => {
       logger.debug(`Deleting tag ${id}`);
-      return tagApi.delete(id);
+      return deleteTag(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -77,9 +75,7 @@ export function useFindOrCreateTag() {
       data: Partial<Tag>; 
     }) => {
       logger.debug(`Finding or creating tag:`, data);
-      // Remove created_by from data since trigger will handle it
-      const { created_by, ...cleanData } = data;
-      return tagApi.findOrCreate(cleanData);
+      return findOrCreateTag(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
