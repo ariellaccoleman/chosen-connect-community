@@ -8,7 +8,6 @@ import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ApiResponse } from '@/api/core/errorHandler';
-import { apiClient } from '@/api/core/apiClient';
 
 // Create the tag API using the core factory with proper configuration
 const tagApiBase = createApiFactory<Tag>({
@@ -33,21 +32,28 @@ export const extendedTagApi = {
   // Basic CRUD operations (returning ApiResponse)
   async getAll(client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      // When client is provided, use it directly
+      try {
         const { data, error } = await client
           .from('tags')
           .select('*');
         
         if (error) throw error;
         return { data: data || [], error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: null, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagApiBase.getAll();
   },
 
   async getById(id: string, client?: SupabaseClient): Promise<ApiResponse<Tag | null>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { data, error } = await client
           .from('tags')
           .select('*')
@@ -56,14 +62,20 @@ export const extendedTagApi = {
         
         if (error) throw error;
         return { data: data || null, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: null, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagApiBase.getById(id);
   },
 
   async create(data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { data: result, error } = await client
           .from('tags')
           .insert(data)
@@ -72,14 +84,20 @@ export const extendedTagApi = {
         
         if (error) throw error;
         return { data: result, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: null, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagApiBase.create(data);
   },
 
   async update(id: string, data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { data: result, error } = await client
           .from('tags')
           .update(data)
@@ -89,14 +107,20 @@ export const extendedTagApi = {
         
         if (error) throw error;
         return { data: result, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: null, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagApiBase.update(id, data);
   },
 
   async delete(id: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { error } = await client
           .from('tags')
           .delete()
@@ -104,7 +128,13 @@ export const extendedTagApi = {
         
         if (error) throw error;
         return { data: true, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: false, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagApiBase.delete(id);
   },
@@ -181,7 +211,7 @@ export const extendedTagApi = {
 export const tagAssignmentApi = {
   async create(tagId: string, entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { data, error } = await client
           .from('tag_assignments')
           .insert({
@@ -194,7 +224,13 @@ export const tagAssignmentApi = {
         
         if (error) throw error;
         return { data, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: null, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     
     return await tagAssignmentApiBase.create({
@@ -206,7 +242,7 @@ export const tagAssignmentApi = {
 
   async delete(assignmentId: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { error } = await client
           .from('tag_assignments')
           .delete()
@@ -214,14 +250,20 @@ export const tagAssignmentApi = {
         
         if (error) throw error;
         return { data: true, error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: false, 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     return await tagAssignmentApiBase.delete(assignmentId);
   },
 
   async getForEntity(entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         const { data, error } = await client
           .from('tag_assignments')
           .select('*')
@@ -230,7 +272,13 @@ export const tagAssignmentApi = {
         
         if (error) throw error;
         return { data: data || [], error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: [], 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     
     const response = await tagAssignmentApiBase.getAll();
@@ -252,7 +300,7 @@ export const tagAssignmentApi = {
 
   async getEntitiesByTagId(tagId: string, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
     if (client) {
-      return apiClient.query(async (supabaseClient) => {
+      try {
         let query = client
           .from('tag_assignments')
           .select('*')
@@ -266,7 +314,13 @@ export const tagAssignmentApi = {
         
         if (error) throw error;
         return { data: data || [], error: null, status: 'success' };
-      });
+      } catch (error) {
+        return { 
+          data: [], 
+          error: error instanceof Error ? error : new Error('Unknown error'), 
+          status: 'error' 
+        };
+      }
     }
     
     const response = await tagAssignmentApiBase.getAll();
