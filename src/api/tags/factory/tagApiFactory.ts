@@ -1,4 +1,3 @@
-
 /**
  * Tag API Factory
  * Creates tag-related API instances using the core API factory
@@ -7,7 +6,7 @@ import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ApiResponse } from '@/api/core/errorHandler';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 
 // Create the tag API using the core factory with proper configuration
 const tagApiBase = createApiFactory<Tag>({
@@ -39,13 +38,9 @@ export const extendedTagApi = {
           .select('*');
         
         if (error) throw error;
-        return { data: data || [], error: null, status: 'success' };
+        return createSuccessResponse(data || []);
       } catch (error) {
-        return { 
-          data: null, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagApiBase.getAll();
@@ -61,13 +56,9 @@ export const extendedTagApi = {
           .maybeSingle();
         
         if (error) throw error;
-        return { data: data || null, error: null, status: 'success' };
+        return createSuccessResponse(data || null);
       } catch (error) {
-        return { 
-          data: null, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagApiBase.getById(id);
@@ -83,13 +74,9 @@ export const extendedTagApi = {
           .single();
         
         if (error) throw error;
-        return { data: result, error: null, status: 'success' };
+        return createSuccessResponse(result);
       } catch (error) {
-        return { 
-          data: null, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagApiBase.create(data);
@@ -106,13 +93,9 @@ export const extendedTagApi = {
           .single();
         
         if (error) throw error;
-        return { data: result, error: null, status: 'success' };
+        return createSuccessResponse(result);
       } catch (error) {
-        return { 
-          data: null, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagApiBase.update(id, data);
@@ -127,13 +110,9 @@ export const extendedTagApi = {
           .eq('id', id);
         
         if (error) throw error;
-        return { data: true, error: null, status: 'success' };
+        return createSuccessResponse(true);
       } catch (error) {
-        return { 
-          data: false, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagApiBase.delete(id);
@@ -149,20 +128,12 @@ export const extendedTagApi = {
     const allTags = allTagsResponse.data || [];
     const foundTag = allTags.find(tag => tag.name === name) || null;
     
-    return {
-      data: foundTag,
-      error: null,
-      status: 'success'
-    };
+    return createSuccessResponse(foundTag);
   },
 
   async searchByName(searchQuery: string, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
     if (!searchQuery.trim()) {
-      return {
-        data: [],
-        error: null,
-        status: 'success'
-      };
+      return createSuccessResponse([]);
     }
     
     const allTagsResponse = await this.getAll(client);
@@ -175,11 +146,7 @@ export const extendedTagApi = {
       tag.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
     
-    return {
-      data: filteredTags,
-      error: null,
-      status: 'success'
-    };
+    return createSuccessResponse(filteredTags);
   },
 
   async getByEntityType(entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
@@ -195,11 +162,7 @@ export const extendedTagApi = {
       }
       
       if (existingResponse.data) {
-        return {
-          data: existingResponse.data,
-          error: null,
-          status: 'success'
-        };
+        return createSuccessResponse(existingResponse.data);
       }
     }
     
@@ -223,13 +186,9 @@ export const tagAssignmentApi = {
           .single();
         
         if (error) throw error;
-        return { data, error: null, status: 'success' };
+        return createSuccessResponse(data);
       } catch (error) {
-        return { 
-          data: null, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     
@@ -249,13 +208,9 @@ export const tagAssignmentApi = {
           .eq('id', assignmentId);
         
         if (error) throw error;
-        return { data: true, error: null, status: 'success' };
+        return createSuccessResponse(true);
       } catch (error) {
-        return { 
-          data: false, 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     return await tagAssignmentApiBase.delete(assignmentId);
@@ -271,13 +226,9 @@ export const tagAssignmentApi = {
           .eq('target_type', entityType);
         
         if (error) throw error;
-        return { data: data || [], error: null, status: 'success' };
+        return createSuccessResponse(data || []);
       } catch (error) {
-        return { 
-          data: [], 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     
@@ -291,11 +242,7 @@ export const tagAssignmentApi = {
       assignment.target_id === entityId && assignment.target_type === entityType
     );
     
-    return {
-      data: filtered,
-      error: null,
-      status: 'success'
-    };
+    return createSuccessResponse(filtered);
   },
 
   async getEntitiesByTagId(tagId: string, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
@@ -313,13 +260,9 @@ export const tagAssignmentApi = {
         const { data, error } = await query;
         
         if (error) throw error;
-        return { data: data || [], error: null, status: 'success' };
+        return createSuccessResponse(data || []);
       } catch (error) {
-        return { 
-          data: [], 
-          error: error instanceof Error ? error : new Error('Unknown error'), 
-          status: 'error' 
-        };
+        return createErrorResponse(error instanceof Error ? error : new Error('Unknown error'));
       }
     }
     
@@ -335,11 +278,7 @@ export const tagAssignmentApi = {
       return true;
     });
     
-    return {
-      data: filtered,
-      error: null,
-      status: 'success'
-    };
+    return createSuccessResponse(filtered);
   }
 };
 
