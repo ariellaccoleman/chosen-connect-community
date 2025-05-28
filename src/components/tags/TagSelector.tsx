@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,21 +126,7 @@ const TagSelector = ({
       if (newTag) {
         logger.debug(`Created/found tag: ${newTag.name} (${newTag.id})`);
         
-        // If we have an entityId, immediately assign the tag to this entity
-        if (entityId) {
-          const assignmentSuccess = await assignTag(
-            newTag.id,
-            entityId,
-            targetType as EntityType
-          );
-          
-          if (assignmentSuccess) {
-            logger.debug(`Successfully assigned tag ${newTag.id} to entity ${entityId}`);
-          } else {
-            logger.warn(`Failed to assign tag ${newTag.id} to entity ${entityId}, but continuing`);
-          }
-        }
-        
+        // Just call onTagSelected - let the parent handle assignment
         setSelectedTag(newTag);
         onTagSelected(newTag);
         setSearchValue("");
