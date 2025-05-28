@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -31,8 +30,8 @@ describe('Tag Operations API Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up any existing test data first
-    await cleanupTestData();
+    // Clean up any existing test data first (comprehensive cleanup)
+    await comprehensiveCleanup();
     
     // Reset tracking arrays AFTER cleanup
     createdTagIds = [];
@@ -56,7 +55,7 @@ describe('Tag Operations API Integration Tests', () => {
   });
 
   afterEach(async () => {
-    await cleanupTestData();
+    await comprehensiveCleanup();
     await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
@@ -64,11 +63,55 @@ describe('Tag Operations API Integration Tests', () => {
     TestClientFactory.cleanup();
   });
 
-  const cleanupTestData = async () => {
+  const comprehensiveCleanup = async () => {
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
-      // Clean up tag assignments first (triggers will clean up entity types)
+      console.log('🧹 Starting comprehensive cleanup...');
+      
+      // First, clean up tag assignments for ALL test users (not just tracked ones)
+      const testUserIds = Object.values(PERSISTENT_TEST_USERS).map(user => user.email);
+      const allTestUserProfiles = [];
+      
+      for (const email of testUserIds) {
+        try {
+          const { data: profile } = await serviceClient
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
+          if (profile) {
+            allTestUserProfiles.push(profile.id);
+          }
+        } catch (error) {
+          // Profile might not exist, continue
+        }
+      }
+      
+      // Clean up all tag assignments from test users
+      if (allTestUserProfiles.length > 0) {
+        // Get all tags created by test users
+        const { data: testUserTags } = await serviceClient
+          .from('tags')
+          .select('id')
+          .in('created_by', allTestUserProfiles);
+        
+        if (testUserTags && testUserTags.length > 0) {
+          const testTagIds = testUserTags.map(tag => tag.id);
+          
+          // Delete all assignments for these tags
+          const { error: assignmentError } = await serviceClient
+            .from('tag_assignments')
+            .delete()
+            .in('tag_id', testTagIds);
+          
+          if (!assignmentError) {
+            console.log(`✅ Cleaned up assignments for ${testTagIds.length} test user tags`);
+          }
+        }
+      }
+      
+      // Clean up tracked assignments
       if (createdAssignmentIds.length > 0) {
         const { error } = await serviceClient
           .from('tag_assignments')
@@ -76,11 +119,11 @@ describe('Tag Operations API Integration Tests', () => {
           .in('id', createdAssignmentIds);
         
         if (!error) {
-          console.log(`✅ Cleaned up ${createdAssignmentIds.length} tag assignments`);
+          console.log(`✅ Cleaned up ${createdAssignmentIds.length} tracked tag assignments`);
         }
       }
       
-      // Clean up organizations
+      // Clean up organizations (including any created during tests)
       if (createdOrganizationIds.length > 0) {
         const { error } = await serviceClient
           .from('organizations')
@@ -92,6 +135,16 @@ describe('Tag Operations API Integration Tests', () => {
         }
       }
       
+      // Clean up test organizations by name pattern (backup cleanup)
+      const { error: orgPatternError } = await serviceClient
+        .from('organizations')
+        .delete()
+        .like('name', '%Test%');
+      
+      if (!orgPatternError) {
+        console.log('✅ Cleaned up test organizations by name pattern');
+      }
+      
       // Clean up tags by tracked IDs
       if (createdTagIds.length > 0) {
         const { error } = await serviceClient
@@ -100,12 +153,40 @@ describe('Tag Operations API Integration Tests', () => {
           .in('id', createdTagIds);
         
         if (!error) {
-          console.log(`✅ Cleaned up ${createdTagIds.length} tags`);
+          console.log(`✅ Cleaned up ${createdTagIds.length} tracked tags`);
         }
       }
       
+      // Clean up all tags created by test users (comprehensive cleanup)
+      if (allTestUserProfiles.length > 0) {
+        const { error: testUserTagsError } = await serviceClient
+          .from('tags')
+          .delete()
+          .in('created_by', allTestUserProfiles);
+        
+        if (!testUserTagsError) {
+          console.log('✅ Cleaned up all tags created by test users');
+        }
+      }
+      
+      // Clean up tags by name patterns (backup cleanup for any missed tags)
+      const testPatterns = ['%API Test%', '%GetAll Test%', '%GetByID Test%', '%FindByName Test%', '%SearchTest%', '%FindOrCreate Test%', '%Update Test%', '%Delete Test%', '%Assignment Test%', '%CreateDelete Test%', '%MultiAssign%', '%EntityByTag%', '%CleanupTest%'];
+      
+      for (const pattern of testPatterns) {
+        const { error: patternError } = await serviceClient
+          .from('tags')
+          .delete()
+          .like('name', pattern);
+        
+        if (!patternError) {
+          console.log(`✅ Cleaned up tags matching pattern: ${pattern}`);
+        }
+      }
+      
+      console.log('✅ Comprehensive cleanup completed');
+      
     } catch (error) {
-      console.warn('Cleanup warning:', error);
+      console.warn('⚠️ Cleanup warning:', error);
     }
   };
 
@@ -144,6 +225,7 @@ describe('Tag Operations API Integration Tests', () => {
     }
     
     createdOrganizationIds.push(orgData.id);
+    console.log(`📝 Tracking organization for cleanup: ${orgData.id}`);
     return orgData;
   };
 
@@ -151,8 +233,6 @@ describe('Tag Operations API Integration Tests', () => {
     test('should create a new tag', async () => {
       const tagName = `API Test Tag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // No need to pass entity type - triggers will handle entity type associations
-      // when assignments are created
       const tag = await tagApi.findOrCreate({
         name: tagName,
         description: 'Test tag created via API',
@@ -164,10 +244,10 @@ describe('Tag Operations API Integration Tests', () => {
       expect(tag.description).toBe('Test tag created via API');
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
     });
 
     test('should get all tags', async () => {
-      // Create a test tag first
       const tag = await tagApi.findOrCreate({
         name: `GetAll Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getAll operation',
@@ -175,6 +255,7 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const tags = await tagApi.getAll(authenticatedClient);
       
@@ -191,6 +272,7 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const foundTag = await tagApi.getById(tag.id, authenticatedClient);
       
@@ -209,6 +291,7 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const foundTag = await tagApi.findByName(tagName, authenticatedClient);
       
@@ -232,6 +315,7 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       createdTagIds.push(tag1.id, tag2.id);
+      console.log(`📝 Tracking tags for cleanup: ${tag1.id}, ${tag2.id}`);
       
       const searchResults = await tagApi.searchByName(uniqueSearchTerm, authenticatedClient);
       
@@ -244,7 +328,6 @@ describe('Tag Operations API Integration Tests', () => {
     test('should find or create tag without entity type parameter', async () => {
       const tagName = `FindOrCreate Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // First call should create the tag (no entity type needed)
       const tag1 = await tagApi.findOrCreate({
         name: tagName,
         created_by: testUser.id
@@ -254,8 +337,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(tag1.name).toBe(tagName);
       
       createdTagIds.push(tag1.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag1.id}`);
       
-      // Second call should find the existing tag
       const tag2 = await tagApi.findOrCreate({
         name: tagName,
         created_by: testUser.id
@@ -274,6 +357,7 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const updatedTag = await tagApi.update(tag.id, {
         description: 'Updated description'
@@ -291,11 +375,13 @@ describe('Tag Operations API Integration Tests', () => {
         created_by: testUser.id
       }, undefined, authenticatedClient);
       
+      // Don't add to cleanup array since we're testing deletion
+      console.log(`🗑️ Testing deletion of tag: ${tag.id}`);
+      
       const deleteResult = await tagApi.delete(tag.id, authenticatedClient);
       
       expect(deleteResult).toBe(true);
       
-      // Verify tag is deleted
       const deletedTag = await tagApi.getById(tag.id, authenticatedClient);
       expect(deletedTag).toBeNull();
     });
@@ -312,13 +398,13 @@ describe('Tag Operations API Integration Tests', () => {
       const org = await createTestOrganization('TestOrgAssignment');
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
-      // Create assignment - this should automatically create entity type via trigger
       const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment.id);
+      console.log(`📝 Tracking assignment for cleanup: ${assignment.id}`);
       
-      // Get assignments for entity
       const assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(Array.isArray(assignments)).toBe(true);
@@ -326,7 +412,6 @@ describe('Tag Operations API Integration Tests', () => {
       expect(assignments[0].tag_id).toBe(tag.id);
       expect(assignments[0].target_id).toBe(org.id);
       
-      // Verify that entity type was automatically created by trigger
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: entityTypes } = await serviceClient
         .from('tag_entity_types')
@@ -347,23 +432,20 @@ describe('Tag Operations API Integration Tests', () => {
       const org = await createTestOrganization('TestOrgCreateDelete');
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
-      // Create assignment
       const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(assignment).toBeDefined();
       expect(assignment.tag_id).toBe(tag.id);
       expect(assignment.target_id).toBe(org.id);
       
-      // Verify assignment exists
       let assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       expect(assignments.length).toBe(1);
       
-      // Delete assignment
       const deleteResult = await tagAssignmentApi.delete(assignment.id, authenticatedClient);
       expect(deleteResult).toBe(true);
       
-      // Verify assignment is deleted
       assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       expect(assignments.length).toBe(0);
     });
@@ -384,14 +466,14 @@ describe('Tag Operations API Integration Tests', () => {
       const org = await createTestOrganization('TestOrgMultiAssign');
       
       createdTagIds.push(tag1.id, tag2.id);
+      console.log(`📝 Tracking tags for cleanup: ${tag1.id}, ${tag2.id}`);
       
-      // Create multiple assignments for the same entity
       const assignment1 = await tagAssignmentApi.create(tag1.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       const assignment2 = await tagAssignmentApi.create(tag2.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment1.id, assignment2.id);
+      console.log(`📝 Tracking assignments for cleanup: ${assignment1.id}, ${assignment2.id}`);
       
-      // Get all assignments for the entity
       const assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(assignments.length).toBe(2);
@@ -410,14 +492,14 @@ describe('Tag Operations API Integration Tests', () => {
       const org2 = await createTestOrganization('TestOrg2');
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
-      // Assign the same tag to multiple entities
       const assignment1 = await tagAssignmentApi.create(tag.id, org1.id, EntityType.ORGANIZATION, authenticatedClient);
       const assignment2 = await tagAssignmentApi.create(tag.id, org2.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment1.id, assignment2.id);
+      console.log(`📝 Tracking assignments for cleanup: ${assignment1.id}, ${assignment2.id}`);
       
-      // Get entities with this tag
       const entities = await tagAssignmentApi.getEntitiesByTagId(tag.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(entities.length).toBe(2);
@@ -436,14 +518,14 @@ describe('Tag Operations API Integration Tests', () => {
       const org2 = await createTestOrganization('TestOrgCleanup2');
       
       createdTagIds.push(tag.id);
+      console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
-      // Create assignments with different entity types
       const orgAssignment = await tagAssignmentApi.create(tag.id, org1.id, EntityType.ORGANIZATION, authenticatedClient);
       const profileAssignment = await tagAssignmentApi.create(tag.id, org2.id, EntityType.PROFILE, authenticatedClient);
       
       createdAssignmentIds.push(profileAssignment.id);
+      console.log(`📝 Tracking assignment for cleanup: ${profileAssignment.id}`);
       
-      // Verify both entity types exist
       const serviceClient = TestClientFactory.getServiceRoleClient();
       let { data: entityTypes } = await serviceClient
         .from('tag_entity_types')
@@ -452,31 +534,25 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(entityTypes).toHaveLength(2);
       
-      // Delete the organization assignment
       const deleteResult = await tagAssignmentApi.delete(orgAssignment.id, authenticatedClient);
       expect(deleteResult).toBe(true);
       
-      // Check if ORGANIZATION entity type was cleaned up (but PROFILE should remain)
       ({ data: entityTypes } = await serviceClient
         .from('tag_entity_types')
         .select('*')
         .eq('tag_id', tag.id));
       
-      // Should have 1 entity type left (PROFILE)
       expect(entityTypes).toHaveLength(1);
       expect(entityTypes[0].entity_type).toBe(EntityType.PROFILE);
     });
 
     test('should handle edge cases gracefully', async () => {
-      // Test getting assignments for non-existent entity
       const assignments = await tagAssignmentApi.getForEntity('non-existent-id', EntityType.ORGANIZATION, authenticatedClient);
       expect(assignments).toEqual([]);
       
-      // Test getting entities for non-existent tag
       const entities = await tagAssignmentApi.getEntitiesByTagId('non-existent-tag-id', EntityType.ORGANIZATION, authenticatedClient);
       expect(entities).toEqual([]);
       
-      // Test deleting non-existent assignment
       const deleteResult = await tagAssignmentApi.delete('non-existent-assignment-id', authenticatedClient);
       expect(deleteResult).toBe(false);
     });
