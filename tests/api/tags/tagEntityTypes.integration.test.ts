@@ -3,6 +3,7 @@ import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { createTagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
+import { tagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Entity Type Repository Integration Tests', () => {
@@ -166,8 +167,17 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     test('should automatically create entity type when tag assignment is made', async () => {
       const testTag = await createTestTag('AutoEntityTypeTest');
       
-      // Create a tag assignment - this should automatically create entity type via trigger
-      await createTestAssignment(testTag.id, EntityType.PROFILE);
+      // Create a tag assignment using the authenticated client and tagAssignmentApi
+      // This uses the test user's profile ID as the target entity
+      const assignment = await tagAssignmentApi.create(
+        testTag.id, 
+        testUser.id, 
+        EntityType.PROFILE, 
+        authenticatedClient
+      );
+      
+      // Track for cleanup
+      createdAssignmentIds.push(assignment.id);
       
       // Verify the entity type was automatically created
       const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
