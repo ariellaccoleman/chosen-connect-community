@@ -1,4 +1,3 @@
-
 /**
  * Tag API Factory
  * Creates tag-related API instances using the core API factory
@@ -167,13 +166,13 @@ export const tagAssignmentApi = {
 
   async delete(assignmentId: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
     return apiClient.query(async (supabaseClient) => {
-      const { error } = await supabaseClient
+      const { count, error } = await supabaseClient
         .from('tag_assignments')
-        .delete()
+        .delete({ count: 'exact' })
         .eq('id', assignmentId);
       
       if (error) throw error;
-      return createSuccessResponse(true);
+      return createSuccessResponse((count || 0) > 0);
     }, client);
   },
 
