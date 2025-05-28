@@ -64,8 +64,8 @@ export function createQueryOperations<
               if (value !== undefined && value !== null) {
                 if (Array.isArray(value)) {
                   query = query.in(key, value as any[]);
-                } else if (typeof value === 'object' && value.ilike) {
-                  query = query.ilike(key, value.ilike);
+                } else if (typeof value === 'object' && value !== null && 'ilike' in value) {
+                  query = query.ilike(key, (value as { ilike: string }).ilike);
                 } else {
                   query = query.eq(key, value as any);
                 }
@@ -110,8 +110,8 @@ export function createQueryOperations<
             if (value !== undefined && value !== null) {
               if (Array.isArray(value)) {
                 selectQuery = selectQuery.in(key, value as any);
-              } else if (typeof value === 'object' && value.ilike) {
-                selectQuery = selectQuery.ilike(key, value.ilike);
+              } else if (typeof value === 'object' && value !== null && 'ilike' in value) {
+                selectQuery = selectQuery.ilike(key, (value as { ilike: string }).ilike);
               } else {
                 selectQuery = selectQuery.eq(key, value as any);
               }

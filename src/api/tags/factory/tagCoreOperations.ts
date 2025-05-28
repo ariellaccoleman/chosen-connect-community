@@ -31,8 +31,7 @@ export const extendedTagOperations = {
   
   async findByName(name: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
     const response = await tagCoreOperations.getAll({ 
-      filters: { name },
-      limit: 1
+      filters: { name }
     }, providedClient);
     
     if (response.error) {
