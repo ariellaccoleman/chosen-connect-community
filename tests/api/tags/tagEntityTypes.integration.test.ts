@@ -135,6 +135,19 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     }
     
     createdTagIds.push(tagData.id);
+    
+    // Create a default entity type association since the trigger is removed
+    const { error: entityTypeError } = await serviceClient
+      .from('tag_entity_types')
+      .insert({
+        tag_id: tagData.id,
+        entity_type: EntityType.ORGANIZATION
+      });
+    
+    if (entityTypeError) {
+      console.warn('Failed to create default entity type association:', entityTypeError);
+    }
+    
     return tagData;
   };
 
@@ -142,9 +155,12 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     test('should create tag entity type association', async () => {
       const testTag = await createTestTag('EntityTypeTest');
       
+      // Remove the default association first to test creating a new one
+      await tagEntityTypeRepo.removeTagEntityTypeAssociation(testTag.id, EntityType.ORGANIZATION);
+      
       const result = await tagEntityTypeRepo.associateTagWithEntityType(
         testTag.id, 
-        EntityType.ORGANIZATION
+        EntityType.PROFILE
       );
       
       expect(result.status).toBe('success');
@@ -153,7 +169,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       // Verify the association was created
       const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
       expect(associations.length).toBe(1);
-      expect(associations[0].entity_type).toBe(EntityType.ORGANIZATION);
+      expect(associations[0].entity_type).toBe(EntityType.PROFILE);
       
       createdTagEntityTypeIds.push(associations[0].id);
     });
@@ -161,8 +177,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     test('should get entity types by tag ID', async () => {
       const testTag = await createTestTag('GetEntityTypesTest');
       
-      // Create multiple entity type associations
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.ORGANIZATION);
+      // Add additional entity type association
       await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.PROFILE);
       
       const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
@@ -180,14 +195,21 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     test('should check if tag is allowed for entity type', async () => {
       const testTag = await createTestTag('AllowedTest');
       
-      // Initially should not be allowed
+      // Should be allowed for the default entity type (ORGANIZATION)
+      const isAllowedOrg = await tagEntityTypeRepo.isTagAllowedForEntityType(
+        testTag.id, 
+        EntityType.ORGANIZATION
+      );
+      expect(isAllowedOrg).toBe(true);
+      
+      // Should not be allowed for EVENT initially
       const notAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
         testTag.id, 
         EntityType.EVENT
       );
       expect(notAllowed).toBe(false);
       
-      // Create association
+      // Create association for EVENT
       await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.EVENT);
       
       // Now should be allowed
@@ -205,7 +227,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     test('should remove tag entity type association', async () => {
       const testTag = await createTestTag('RemoveAssociationTest');
       
-      // Create association
+      // Add an additional entity type first
       await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.HUB);
       
       // Verify it exists

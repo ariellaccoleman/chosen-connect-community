@@ -149,6 +149,19 @@ describe('Tag Assignment Repository Integration Tests', () => {
     }
     
     createdTagIds.push(tagData.id);
+    
+    // Create a default entity type association since the trigger is removed
+    const { error: entityTypeError } = await serviceClient
+      .from('tag_entity_types')
+      .insert({
+        tag_id: tagData.id,
+        entity_type: EntityType.ORGANIZATION
+      });
+    
+    if (entityTypeError) {
+      console.warn('Failed to create default entity type association:', entityTypeError);
+    }
+    
     return tagData;
   };
 
