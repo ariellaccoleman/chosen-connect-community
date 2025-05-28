@@ -4,6 +4,7 @@ import { invalidateTagCache as invalidateTagCacheUtil } from "@/utils/tags";
 
 /**
  * Clear tag cache for a specific entity type or all entity types
+ * Note: The tag cache is no longer actively used, but this hook is kept for backward compatibility
  */
 export const invalidateTagCache = async (
   entityType?: EntityType

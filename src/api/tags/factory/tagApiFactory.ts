@@ -1,76 +1,47 @@
 
+/**
+ * Tag API Factory
+ * Creates tag-related API instances using the core API factory
+ */
+import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { TagApiOptions, TagOperations, TagAssignmentOperations } from './types';
-import { createTagOperations } from './tagOperations';
-import { createTagAssignmentOperations } from './tagAssignmentOperations';
+import { SupabaseClient } from '@supabase/supabase-js';
 
-/**
- * Create specialized API operations for tags
- */
-export function createTagApiFactory<T extends Tag>(options: TagApiOptions = {}): TagOperations<T> {
-  return createTagOperations<T>(options);
-}
+// Create the tag API using the core factory
+export const tagApi = createApiFactory<Tag>('tags');
 
-/**
- * Create tag assignment API factory
- */
-export function createTagAssignmentApiFactory(options: TagApiOptions = {}): TagAssignmentOperations {
-  return createTagAssignmentOperations(options);
-}
+// Create tag assignment API
+export const tagAssignmentApi = {
+  async create(tagId: string, entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<TagAssignment> {
+    const api = createApiFactory<TagAssignment>('tag_assignments', client);
+    return api.create({
+      tag_id: tagId,
+      target_id: entityId,
+      target_type: entityType
+    });
+  },
 
-// Create a default tag API instance
-export const tagApi = createTagApiFactory();
+  async delete(assignmentId: string, client?: SupabaseClient): Promise<boolean> {
+    const api = createApiFactory<TagAssignment>('tag_assignments', client);
+    return api.delete(assignmentId);
+  },
 
-// Create a default tag assignment API instance
-export const tagAssignmentApi = createTagAssignmentApiFactory();
+  async getForEntity(entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<TagAssignment[]> {
+    const api = createApiFactory<TagAssignment>('tag_assignments', client);
+    return api.query((query) => 
+      query
+        .eq('target_id', entityId)
+        .eq('target_type', entityType)
+    );
+  },
 
-// Export standard functions that match the original API
-export const getAllTags = async (providedClient?: any): Promise<Tag[]> => {
-  return await tagApi.getAll(providedClient);
-};
-
-export const getTagById = async (id: string, providedClient?: any): Promise<Tag | null> => {
-  return await tagApi.getById(id, providedClient);
-};
-
-export const findTagByName = async (name: string, providedClient?: any): Promise<Tag | null> => {
-  return await tagApi.findByName(name, providedClient);
-};
-
-export const searchTags = async (query: string, providedClient?: any): Promise<Tag[]> => {
-  return await tagApi.searchByName(query, providedClient);
-};
-
-export const createTag = async (data: Partial<Tag>, providedClient?: any): Promise<Tag> => {
-  return await tagApi.create(data, providedClient);
-};
-
-export const updateTag = async (id: string, data: Partial<Tag>, providedClient?: any): Promise<Tag> => {
-  return await tagApi.update(id, data, providedClient);
-};
-
-export const deleteTag = async (id: string, providedClient?: any): Promise<boolean> => {
-  return await tagApi.delete(id, providedClient);
-};
-
-export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<Tag> => {
-  return await tagApi.findOrCreate(data, entityType, providedClient);
-};
-
-export const getTagsByEntityType = async (entityType: EntityType, providedClient?: any): Promise<Tag[]> => {
-  return await tagApi.getByEntityType(entityType, providedClient);
-};
-
-// For tag assignments
-export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment[]> => {
-  return await tagAssignmentApi.getForEntity(entityId, entityType, providedClient);
-};
-
-export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<TagAssignment> => {
-  return await tagAssignmentApi.create(tagId, entityId, entityType, providedClient);
-};
-
-export const deleteTagAssignment = async (assignmentId: string, providedClient?: any): Promise<boolean> => {
-  return await tagAssignmentApi.delete(assignmentId, providedClient);
+  async getEntitiesByTagId(tagId: string, entityType: EntityType, client?: SupabaseClient): Promise<TagAssignment[]> {
+    const api = createApiFactory<TagAssignment>('tag_assignments', client);
+    return api.query((query) => 
+      query
+        .eq('tag_id', tagId)
+        .eq('target_type', entityType)
+    );
+  }
 };

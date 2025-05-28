@@ -20,8 +20,14 @@ export function useCreateTag() {
       logger.debug("Creating tag:", data);
       return createTag(data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    onSuccess: (result) => {
+      if (result) {
+        logger.debug("Tag created successfully:", result);
+        queryClient.invalidateQueries({ queryKey: ["tags"] });
+      }
+    },
+    onError: (error) => {
+      logger.error("Failed to create tag:", error);
     }
   });
 }
@@ -37,9 +43,15 @@ export function useUpdateTag() {
       logger.debug(`Updating tag ${id}:`, data);
       return updateTag(id, data);
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      queryClient.invalidateQueries({ queryKey: ["tags", "byId", variables.id] });
+    onSuccess: (result, variables) => {
+      if (result) {
+        logger.debug("Tag updated successfully:", result);
+        queryClient.invalidateQueries({ queryKey: ["tags"] });
+        queryClient.invalidateQueries({ queryKey: ["tags", "byId", variables.id] });
+      }
+    },
+    onError: (error) => {
+      logger.error("Failed to update tag:", error);
     }
   });
 }
@@ -55,8 +67,14 @@ export function useDeleteTag() {
       logger.debug(`Deleting tag ${id}`);
       return deleteTag(id);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    onSuccess: (result, id) => {
+      if (result) {
+        logger.debug(`Tag ${id} deleted successfully`);
+        queryClient.invalidateQueries({ queryKey: ["tags"] });
+      }
+    },
+    onError: (error) => {
+      logger.error("Failed to delete tag:", error);
     }
   });
 }
@@ -77,8 +95,14 @@ export function useFindOrCreateTag() {
       logger.debug(`Finding or creating tag:`, data);
       return findOrCreateTag(data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    onSuccess: (result) => {
+      if (result) {
+        logger.debug("Tag found/created successfully:", result);
+        queryClient.invalidateQueries({ queryKey: ["tags"] });
+      }
+    },
+    onError: (error) => {
+      logger.error("Failed to find or create tag:", error);
     }
   });
 }

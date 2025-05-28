@@ -129,6 +129,8 @@ export const updateTag = async (
   updates: Partial<Tag>
 ): Promise<Tag | null> => {
   try {
+    logger.debug(`Updating tag ${tagId} with:`, updates);
+    
     // Call the API function that properly uses the apiClient
     const response = await apiUpdateTag(tagId, updates);
     
@@ -137,6 +139,7 @@ export const updateTag = async (
       return null;
     }
     
+    logger.debug(`Successfully updated tag ${tagId}:`, response.data);
     return response.data;
   } catch (error) {
     logger.error("Error updating tag:", error);
@@ -147,6 +150,8 @@ export const updateTag = async (
 // Delete a tag - now uses the proper API client
 export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
+    logger.debug(`Deleting tag ${tagId}`);
+    
     // Call the API function that properly uses the apiClient
     const response = await apiDeleteTag(tagId);
     
@@ -155,6 +160,7 @@ export const deleteTag = async (tagId: string): Promise<boolean> => {
       return false;
     }
     
+    logger.debug(`Successfully deleted tag ${tagId}`);
     return response.data || false;
   } catch (error) {
     logger.error("Error deleting tag:", error);
