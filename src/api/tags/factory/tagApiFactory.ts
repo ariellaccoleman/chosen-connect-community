@@ -8,6 +8,7 @@ import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ApiResponse } from '@/api/core/errorHandler';
+import { apiClient } from '@/api/core/apiClient';
 
 // Create the tag API using the core factory with proper configuration
 const tagApiBase = createApiFactory<Tag>({
@@ -30,29 +31,87 @@ const tagAssignmentApiBase = createApiFactory<TagAssignment>({
 // Extended tag API that returns ApiResponse objects like other factories
 export const extendedTagApi = {
   // Basic CRUD operations (returning ApiResponse)
-  async getAll(): Promise<ApiResponse<Tag[]>> {
+  async getAll(client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data, error } = await client
+          .from('tags')
+          .select('*');
+        
+        if (error) throw error;
+        return { data: data || [], error: null, status: 'success' };
+      });
+    }
     return await tagApiBase.getAll();
   },
 
-  async getById(id: string): Promise<ApiResponse<Tag | null>> {
+  async getById(id: string, client?: SupabaseClient): Promise<ApiResponse<Tag | null>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data, error } = await client
+          .from('tags')
+          .select('*')
+          .eq('id', id)
+          .maybeSingle();
+        
+        if (error) throw error;
+        return { data: data || null, error: null, status: 'success' };
+      });
+    }
     return await tagApiBase.getById(id);
   },
 
-  async create(data: Partial<Tag>): Promise<ApiResponse<Tag>> {
+  async create(data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data: result, error } = await client
+          .from('tags')
+          .insert(data)
+          .select('*')
+          .single();
+        
+        if (error) throw error;
+        return { data: result, error: null, status: 'success' };
+      });
+    }
     return await tagApiBase.create(data);
   },
 
-  async update(id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>> {
+  async update(id: string, data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data: result, error } = await client
+          .from('tags')
+          .update(data)
+          .eq('id', id)
+          .select('*')
+          .single();
+        
+        if (error) throw error;
+        return { data: result, error: null, status: 'success' };
+      });
+    }
     return await tagApiBase.update(id, data);
   },
 
-  async delete(id: string): Promise<ApiResponse<boolean>> {
+  async delete(id: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { error } = await client
+          .from('tags')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        return { data: true, error: null, status: 'success' };
+      });
+    }
     return await tagApiBase.delete(id);
   },
 
   // Additional methods that return ApiResponse
-  async findByName(name: string): Promise<ApiResponse<Tag | null>> {
-    const allTagsResponse = await this.getAll();
+  async findByName(name: string, client?: SupabaseClient): Promise<ApiResponse<Tag | null>> {
+    const allTagsResponse = await this.getAll(client);
     if (allTagsResponse.error) {
       return allTagsResponse;
     }
@@ -67,7 +126,7 @@ export const extendedTagApi = {
     };
   },
 
-  async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
+  async searchByName(searchQuery: string, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
     if (!searchQuery.trim()) {
       return {
         data: [],
@@ -76,7 +135,7 @@ export const extendedTagApi = {
       };
     }
     
-    const allTagsResponse = await this.getAll();
+    const allTagsResponse = await this.getAll(client);
     if (allTagsResponse.error) {
       return allTagsResponse;
     }
@@ -93,14 +152,14 @@ export const extendedTagApi = {
     };
   },
 
-  async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
+  async getByEntityType(entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
     // For now return all tags, TODO: Implement proper entity type filtering
-    return this.getAll();
+    return this.getAll(client);
   },
 
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
+  async findOrCreate(data: Partial<Tag>, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
     if (data.name) {
-      const existingResponse = await this.findByName(data.name);
+      const existingResponse = await this.findByName(data.name, client);
       if (existingResponse.error) {
         return existingResponse;
       }
@@ -114,13 +173,30 @@ export const extendedTagApi = {
       }
     }
     
-    return this.create(data);
+    return this.create(data, client);
   }
 };
 
 // Tag assignment API that returns ApiResponse objects
 export const tagAssignmentApi = {
   async create(tagId: string, entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data, error } = await client
+          .from('tag_assignments')
+          .insert({
+            tag_id: tagId,
+            target_id: entityId,
+            target_type: entityType
+          })
+          .select('*')
+          .single();
+        
+        if (error) throw error;
+        return { data, error: null, status: 'success' };
+      });
+    }
+    
     return await tagAssignmentApiBase.create({
       tag_id: tagId,
       target_id: entityId,
@@ -129,10 +205,34 @@ export const tagAssignmentApi = {
   },
 
   async delete(assignmentId: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { error } = await client
+          .from('tag_assignments')
+          .delete()
+          .eq('id', assignmentId);
+        
+        if (error) throw error;
+        return { data: true, error: null, status: 'success' };
+      });
+    }
     return await tagAssignmentApiBase.delete(assignmentId);
   },
 
   async getForEntity(entityId: string, entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        const { data, error } = await client
+          .from('tag_assignments')
+          .select('*')
+          .eq('target_id', entityId)
+          .eq('target_type', entityType);
+        
+        if (error) throw error;
+        return { data: data || [], error: null, status: 'success' };
+      });
+    }
+    
     const response = await tagAssignmentApiBase.getAll();
     if (response.error) {
       return response;
@@ -151,6 +251,24 @@ export const tagAssignmentApi = {
   },
 
   async getEntitiesByTagId(tagId: string, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<TagAssignment[]>> {
+    if (client) {
+      return apiClient.query(async (supabaseClient) => {
+        let query = client
+          .from('tag_assignments')
+          .select('*')
+          .eq('tag_id', tagId);
+        
+        if (entityType) {
+          query = query.eq('target_type', entityType);
+        }
+        
+        const { data, error } = await query;
+        
+        if (error) throw error;
+        return { data: data || [], error: null, status: 'success' };
+      });
+    }
+    
     const response = await tagAssignmentApiBase.getAll();
     if (response.error) {
       return response;
