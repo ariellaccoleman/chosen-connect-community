@@ -36,13 +36,18 @@ export const extendedTagOperations = {
     });
     
     if (response.error) {
-      return response as ApiResponse<Tag | null>;
+      return {
+        data: null,
+        error: response.error,
+        status: 'error'
+      };
     }
     
     const tags = response.data || [];
     return {
       data: tags.length > 0 ? tags[0] : null,
-      error: null
+      error: null,
+      status: 'success'
     };
   },
   
@@ -61,8 +66,20 @@ export const extendedTagOperations = {
   async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
     // First try to find existing tag
     const existing = await this.findByName(data.name!);
+    if (existing.error) {
+      return {
+        data: null,
+        error: existing.error,
+        status: 'error'
+      };
+    }
+    
     if (existing.data) {
-      return existing as ApiResponse<Tag>;
+      return {
+        data: existing.data,
+        error: null,
+        status: 'success'
+      };
     }
     
     // Create new tag if not found
