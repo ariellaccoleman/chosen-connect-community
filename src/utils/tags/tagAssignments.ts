@@ -23,7 +23,6 @@ export const assignTag = async (
     
     logger.debug(`Assigning tag ${tagId} to ${entityType} ${entityId}`);
 
-    // Use the new tag assignment API with wrapped response
     const response = await tagAssignmentApi.create(tagId, entityId, entityType as EntityType);
     
     if (response.error) {
@@ -58,7 +57,6 @@ export const assignTags = async (
       tagIds.map(tagId => assignTag(tagId, entityId, entityType))
     );
     
-    // Return true only if all assignments succeeded
     return results.every(Boolean);
   } catch (error) {
     logger.error("Error in assignTags:", error);
@@ -72,7 +70,6 @@ export const assignTags = async (
  */
 export const removeTagAssignment = async (assignmentId: string): Promise<boolean> => {
   try {
-    // Use the new tag assignment API with wrapped response
     const response = await tagAssignmentApi.delete(assignmentId);
 
     if (response.error) {
@@ -107,7 +104,6 @@ export const fetchEntityTags = async (
       return [];
     }
 
-    // Use the new tag assignment API with wrapped response
     const response = await tagAssignmentApi.getForEntity(entityId, entityType as EntityType);
 
     if (response.error) {
@@ -138,7 +134,6 @@ export const fetchEntitiesWithTag = async (
       return [];
     }
 
-    // Use the new tag assignment API with wrapped response
     const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType as EntityType);
 
     if (response.error) {

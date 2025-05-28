@@ -1,27 +1,23 @@
 
 /**
- * Tag API Factory
- * Main entry point for tag API operations
+ * Tag API Factory - Main entry point using factory configuration
  */
-import { SupabaseClient } from '@supabase/supabase-js';
-import { tagCoreOperations } from './tagCoreOperations';
+import { extendedTagOperations } from './tagCoreOperations';
 import { tagAssignmentCoreOperations } from './tagAssignmentCoreOperations';
 
-// Re-export core operations as the main API
-export const extendedTagApi = tagCoreOperations;
+// Export the factory-based APIs
+export const extendedTagApi = extendedTagOperations;
 export const tagAssignmentApi = tagAssignmentCoreOperations;
+export const tagApi = extendedTagApi; // For backward compatibility
 
-// Export the base API for backward compatibility
-export const tagApi = extendedTagApi;
-
-// Factory functions for creating API instances
-export function createTagApiFactory(client?: SupabaseClient) {
+// Factory functions for creating API instances (for consistency with other APIs)
+export function createTagApiFactory() {
   return extendedTagApi;
 }
 
-export function createTagAssignmentApiFactory(client?: SupabaseClient) {
+export function createTagAssignmentApiFactory() {
   return tagAssignmentApi;
 }
 
-// Re-export all legacy compatibility functions
-export * from './legacyCompatibilityFunctions';
+// Re-export core operations for direct access if needed
+export { tagCoreOperations } from './tagCoreOperations';

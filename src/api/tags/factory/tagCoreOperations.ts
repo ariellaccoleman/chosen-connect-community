@@ -1,140 +1,58 @@
 
 /**
- * Core tag operations using the API factory pattern
+ * Tag operations using the API factory pattern
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { ApiResponse, createSuccessResponse } from '@/api/core/errorHandler';
-import { apiClient } from '@/api/core/apiClient';
+import { ApiResponse } from '@/api/core/errorHandler';
 
-// Create the tag API using the core factory with proper configuration
-const tagApiBase = createApiFactory<Tag>({
+// Create tag API using the factory pattern
+export const tagCoreOperations = createApiFactory<Tag>({
   tableName: 'tags',
   entityName: 'Tag',
   useQueryOperations: true,
   useMutationOperations: true,
-  defaultSelect: '*'
+  defaultSelect: '*',
+  defaultOrderBy: 'name',
+  transformResponse: (item: any): Tag => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    created_by: item.created_by,
+    created_at: item.created_at,
+    updated_at: item.updated_at
+  })
 });
 
-// Extended tag API that uses apiClient consistently
-export const tagCoreOperations = {
-  // Basic CRUD operations using apiClient
-  async getAll(client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
-    return apiClient.query(async (supabaseClient) => {
-      const { data, error } = await supabaseClient
-        .from('tags')
-        .select('*');
-      
-      if (error) throw error;
-      return createSuccessResponse(data || []);
-    }, client);
+// Extended operations for tag-specific logic
+export const extendedTagOperations = {
+  ...tagCoreOperations,
+  
+  async findByName(name: string): Promise<ApiResponse<Tag | null>> {
+    return tagCoreOperations.findOne({ name });
   },
-
-  async getById(id: string, client?: SupabaseClient): Promise<ApiResponse<Tag | null>> {
-    return apiClient.query(async (supabaseClient) => {
-      const { data, error } = await supabaseClient
-        .from('tags')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return createSuccessResponse(data || null);
-    }, client);
+  
+  async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
+    return tagCoreOperations.getAll({ 
+      filters: { name: { ilike: `%${searchQuery}%` } } 
+    });
   },
-
-  async create(data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
-    return apiClient.query(async (supabaseClient) => {
-      const { data: result, error } = await supabaseClient
-        .from('tags')
-        .insert(data)
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      return createSuccessResponse(result);
-    }, client);
+  
+  async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
+    // This would need to join with tag_entity_types, but for now return all tags
+    // The filtering will be handled at the application level
+    return tagCoreOperations.getAll();
   },
-
-  async update(id: string, data: Partial<Tag>, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
-    return apiClient.query(async (supabaseClient) => {
-      const { data: result, error } = await supabaseClient
-        .from('tags')
-        .update(data)
-        .eq('id', id)
-        .select('*')
-        .single();
-      
-      if (error) throw error;
-      return createSuccessResponse(result);
-    }, client);
-  },
-
-  async delete(id: string, client?: SupabaseClient): Promise<ApiResponse<boolean>> {
-    return apiClient.query(async (supabaseClient) => {
-      const { error } = await supabaseClient
-        .from('tags')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      return createSuccessResponse(true);
-    }, client);
-  },
-
-  // Additional methods using apiClient
-  async findByName(name: string, client?: SupabaseClient): Promise<ApiResponse<Tag | null>> {
-    const allTagsResponse = await this.getAll(client);
-    if (allTagsResponse.error) {
-      return allTagsResponse;
+  
+  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
+    // First try to find existing tag
+    const existing = await this.findByName(data.name!);
+    if (existing.data) {
+      return existing as ApiResponse<Tag>;
     }
     
-    const allTags = allTagsResponse.data || [];
-    const foundTag = allTags.find(tag => tag.name === name) || null;
-    
-    return createSuccessResponse(foundTag);
-  },
-
-  async searchByName(searchQuery: string, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
-    if (!searchQuery.trim()) {
-      return createSuccessResponse([]);
-    }
-    
-    const allTagsResponse = await this.getAll(client);
-    if (allTagsResponse.error) {
-      return allTagsResponse;
-    }
-    
-    const allTags = allTagsResponse.data || [];
-    const filteredTags = allTags.filter(tag => 
-      tag.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    
-    return createSuccessResponse(filteredTags);
-  },
-
-  async getByEntityType(entityType: EntityType, client?: SupabaseClient): Promise<ApiResponse<Tag[]>> {
-    // For now return all tags, TODO: Implement proper entity type filtering
-    return this.getAll(client);
-  },
-
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType, client?: SupabaseClient): Promise<ApiResponse<Tag>> {
-    if (data.name) {
-      const existingResponse = await this.findByName(data.name, client);
-      if (existingResponse.error) {
-        return existingResponse;
-      }
-      
-      if (existingResponse.data) {
-        return createSuccessResponse(existingResponse.data);
-      }
-    }
-    
-    return this.create(data, client);
+    // Create new tag if not found
+    return tagCoreOperations.create(data);
   }
 };
-
-// Export the base factory for raw access if needed
-export const tagApiBaseFactory = tagApiBase;

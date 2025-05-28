@@ -13,4 +13,3 @@ export {
 export * from './types';
 export * from './tagOperations';
 export * from './tagAssignmentOperations';
-export * from './legacyCompatibilityFunctions';
