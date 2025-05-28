@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -115,9 +116,10 @@ const TagSelector = ({
     setIsCreatingTag(true);
     
     try {
+      // Only pass the tag data - entity type associations are handled by triggers
       const newTag = await findOrCreateTag({ 
         name: searchValue.trim() 
-      }, targetType as EntityType);
+      });
       
       if (newTag) {
         logger.debug(`Created/found tag: ${newTag.name} (${newTag.id})`);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
@@ -39,23 +38,12 @@ const AdminTags = () => {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      // Create the tag first, with the created_by property
+      // Create the tag - entity type associations are handled automatically by triggers
       await createTag({
         name: values.name,
         description: values.description,
         created_by: user?.id
       });
-      
-      // Then associate it with the selected entity type
-      if (values.entityType) {
-        try {
-          const { updateTagEntityType } = await import("@/utils/tags/tagOperations");
-          await updateTagEntityType(values.name, values.entityType);
-        } catch (entityTypeError) {
-          console.error("Error setting entity type:", entityTypeError);
-          // Continue even if this fails, the trigger should handle this
-        }
-      }
       
       toast.success("Tag created successfully!");
       handleCloseCreateForm();

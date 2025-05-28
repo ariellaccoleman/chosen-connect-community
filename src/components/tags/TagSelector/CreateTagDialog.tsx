@@ -56,11 +56,12 @@ const CreateTagDialog = ({
     setIsCreating(true);
     
     try {
+      // Only pass the tag data - entity type associations are handled by triggers
       const createdTag = await findOrCreateTag({
         name: name.trim(),
         description: description.trim() || null,
         created_by: user.id
-      }, targetType);
+      });
       
       if (createdTag) {
         onTagCreated(createdTag);
