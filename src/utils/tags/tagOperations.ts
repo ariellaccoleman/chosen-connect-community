@@ -1,9 +1,9 @@
+
 import { 
   getSelectionTags, 
   getFilterTags 
 } from "@/api/tags/getTagsApi"; 
 import { createTag as apiCreateTag, findOrCreateTag as apiFindOrCreateTag } from "@/api/tags/tagCrudApi"; 
-import { updateTagEntityType as apiUpdateTagEntityType } from "@/api/tags/tagEntityTypesApi";
 import { Tag } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -81,15 +81,9 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Find or create a tag - entityType is now required
-export const findOrCreateTag = async (tagData: Partial<Tag>, entityType: EntityType | string): Promise<Tag | null> => {
+// Find or create a tag - no longer needs entity type since triggers handle it
+export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
-    // Validate entity type - this is now required
-    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
-      logger.error(`Invalid or missing entity type in findOrCreateTag: ${entityType}`);
-      throw new Error(`Entity type is required and must be valid`);
-    }
-    
     // Call the API function that properly uses the apiClient
     const response = await apiFindOrCreateTag(tagData);
     
@@ -98,13 +92,8 @@ export const findOrCreateTag = async (tagData: Partial<Tag>, entityType: EntityT
       return null;
     }
     
-    // If entity type is provided, associate it with the tag
-    try {
-      await updateTagEntityType(response.data.id, entityType);
-    } catch (entityTypeError) {
-      logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
-      // Continue even if this fails
-    }
+    // No need to manually associate entity types - triggers will handle this
+    // when tag assignments are created
     
     return response.data;
   } catch (error) {
@@ -113,42 +102,9 @@ export const findOrCreateTag = async (tagData: Partial<Tag>, entityType: EntityT
   }
 };
 
-// Update tag entity type
-export const updateTagEntityType = async (
-  tagId: string, 
-  entityType: EntityType | string
-): Promise<boolean> => {
+// Create a new tag - no longer needs entity type since triggers handle it
+export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
-    // Validate entity type - this is now required
-    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
-      logger.error(`Invalid or missing entity type in updateTagEntityType: ${entityType}`);
-      throw new Error(`Entity type is required and must be valid`);
-    }
-    
-    const response = await apiUpdateTagEntityType(tagId, entityType);
-    
-    if (response.status !== 'success') {
-      logger.error("Error updating tag entity type:", response.error);
-      return false;
-    }
-    
-    return response.data;
-  } catch (error) {
-    logger.error("Error updating tag entity type:", error);
-    // Return false instead of throwing to avoid breaking the UI
-    return false;
-  }
-};
-
-// Create a new tag - entityType is now required
-export const createTag = async (tagData: Partial<Tag>, entityType: EntityType | string): Promise<Tag | null> => {
-  try {
-    // Validate entity type - this is now required
-    if (!entityType || !isValidEntityTypeInRegistry(entityType)) {
-      logger.error(`Invalid or missing entity type in createTag: ${entityType}`);
-      throw new Error(`Entity type is required and must be valid`);
-    }
-    
     // Call the API function that properly uses the apiClient
     const response = await apiCreateTag(tagData);
     
@@ -157,13 +113,8 @@ export const createTag = async (tagData: Partial<Tag>, entityType: EntityType | 
       return null;
     }
     
-    // Associate it with the specified entity type
-    try {
-      await updateTagEntityType(response.data.id, entityType);
-    } catch (entityTypeError) {
-      logger.warn(`Error associating tag with entity type: ${entityTypeError}`);
-      // Continue even if this fails
-    }
+    // No need to manually associate entity types - triggers will handle this
+    // when tag assignments are created
     
     return response.data;
   } catch (error) {

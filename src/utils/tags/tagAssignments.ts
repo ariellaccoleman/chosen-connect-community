@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { TagAssignment } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
@@ -7,6 +6,7 @@ import { toast } from "sonner";
 
 /**
  * Assign a tag to an entity
+ * Entity type associations are now handled automatically by SQL triggers
  */
 export const assignTag = async (
   tagId: string,
@@ -50,26 +50,7 @@ export const assignTag = async (
         return false;
       }
       
-      // Also ensure that the tag is properly associated with this entity type
-      // in the tag_entity_types table
-      try {
-        const { error: typeError } = await supabase
-          .from("tag_entity_types")
-          .upsert({
-            tag_id: tagId,
-            entity_type: entityType.toString()
-          }, {
-            onConflict: 'tag_id,entity_type'
-          });
-          
-        if (typeError) {
-          logger.warn("Error updating tag entity type:", typeError);
-          // Continue anyway, this is not critical
-        }
-      } catch (typeErr) {
-        logger.warn("Failed to update tag entity types:", typeErr);
-        // This shouldn't prevent the tag assignment from working
-      }
+      // No need to manually manage tag_entity_types - triggers handle this automatically
       
       logger.info(`Tag ${tagId} assigned to ${entityType} ${entityId}`);
       return true;
@@ -109,6 +90,7 @@ export const assignTags = async (
 
 /**
  * Remove a tag assignment
+ * Entity type cleanup is now handled automatically by SQL triggers
  */
 export const removeTagAssignment = async (assignmentId: string): Promise<boolean> => {
   try {
@@ -122,6 +104,8 @@ export const removeTagAssignment = async (assignmentId: string): Promise<boolean
       toast.error("Failed to remove tag");
       return false;
     }
+    
+    // No need to manually clean up tag_entity_types - triggers handle this automatically
     
     logger.info(`Tag assignment ${assignmentId} removed`);
     return true;

@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
@@ -88,6 +89,7 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
 
 /**
  * Hook for CRUD operations on tags
+ * Entity type associations are now handled automatically by SQL triggers
  */
 export function useTagCrudMutations() {
   const queryClient = useQueryClient();
@@ -156,6 +158,7 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
 
 /**
  * Hook for tag assignment operations
+ * Entity type associations are now handled automatically by SQL triggers
  */
 export function useTagAssignmentMutations() {
   const queryClient = useQueryClient();
@@ -175,6 +178,7 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
+      // Create assignment - triggers will automatically handle entity type associations
       return tagAssignmentApi.create(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
@@ -185,6 +189,7 @@ export function useTagAssignmentMutations() {
   
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
+      // Delete assignment - triggers will automatically clean up unused entity types
       return tagAssignmentApi.delete(assignmentId);
     },
     onSuccess: () => {

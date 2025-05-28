@@ -177,6 +177,7 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
     
     /**
      * Find or create a tag
+     * Entity type associations are now handled automatically by SQL triggers
      */
     async findOrCreate(data: Partial<T>, entityType?: EntityType, providedClient?: any): Promise<T> {
       logger.debug(`TagOperations.findOrCreate: Finding or creating tag with name ${data.name}`);
@@ -198,16 +199,8 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       logger.debug(`Creating new tag with name ${data.name}`);
       const newTag = await this.create(data, providedClient);
       
-      // If entityType is provided, associate the tag with it
-      if (entityType && isValidEntityType(entityType)) {
-        try {
-          const { updateTagEntityType } = await import('@/api/tags/tagEntityTypesApi');
-          await updateTagEntityType(newTag.id, entityType);
-        } catch (error) {
-          logger.warn(`Error associating tag with entity type: ${error}`);
-          // Continue even if this fails
-        }
-      }
+      // No need to manually associate with entity type - triggers will handle this
+      // when tag assignments are created
       
       return newTag;
     },
@@ -223,27 +216,19 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
         return [];
       }
       
-      try {
-        const { data, error } = await apiClient.query(async (client) => {
-          return client
-            .from('tag_entity_types')
-            .select(`tag:tags(*)`)
-            .eq('entity_type', entityType);
-        }, providedClient);
-        
-        if (error) {
-          logger.error(`Error fetching tags for entity type ${entityType}:`, error);
-          return [];
-        }
-        
-        // Extract tags from the response
-        const tags = data.map((item: any) => item.tag) as T[];
-        return tags;
-        
-      } catch (error) {
-        logger.error(`Error in getByEntityType:`, error);
+      const { data, error } = await apiClient.query(async (client) => {
+        return client
+          .from('tag_entity_types_view')
+          .select('*')
+          .contains('entity_types', [entityType]);
+      }, providedClient);
+      
+      if (error) {
+        logger.error(`Error fetching tags for entity type ${entityType}:`, error);
         return [];
       }
+      
+      return data as T[];
     }
   };
 }

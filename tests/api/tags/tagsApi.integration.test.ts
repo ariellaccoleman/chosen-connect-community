@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -68,7 +67,7 @@ describe('Tag Operations API Integration Tests', () => {
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
-      // Clean up tag assignments by tracked IDs
+      // Clean up tag assignments first (triggers will clean up entity types)
       if (createdAssignmentIds.length > 0) {
         const { error } = await serviceClient
           .from('tag_assignments')
@@ -151,11 +150,13 @@ describe('Tag Operations API Integration Tests', () => {
     test('should create a new tag', async () => {
       const tagName = `API Test Tag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
+      // No need to pass entity type - triggers will handle entity type associations
+      // when assignments are created
       const tag = await tagApi.findOrCreate({
         name: tagName,
         description: 'Test tag created via API',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       expect(tag).toBeDefined();
       expect(tag.name).toBe(tagName);
@@ -170,7 +171,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `GetAll Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getAll operation',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
@@ -186,7 +187,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `GetByID Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getById operation',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
@@ -204,7 +205,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: tagName,
         description: 'Test tag for findByName operation',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
@@ -221,13 +222,13 @@ describe('Tag Operations API Integration Tests', () => {
         name: `${uniqueSearchTerm} Tag 1`,
         description: 'First search test tag',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       const tag2 = await tagApi.findOrCreate({
         name: `${uniqueSearchTerm} Tag 2`,
         description: 'Second search test tag',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       createdTagIds.push(tag1.id, tag2.id);
       
@@ -239,14 +240,14 @@ describe('Tag Operations API Integration Tests', () => {
       expect(searchResults.some(t => t.id === tag2.id)).toBe(true);
     });
 
-    test('should find or create tag', async () => {
+    test('should find or create tag without entity type parameter', async () => {
       const tagName = `FindOrCreate Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      // First call should create the tag
+      // First call should create the tag (no entity type needed)
       const tag1 = await tagApi.findOrCreate({
         name: tagName,
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       expect(tag1).toBeDefined();
       expect(tag1.name).toBe(tagName);
@@ -257,7 +258,7 @@ describe('Tag Operations API Integration Tests', () => {
       const tag2 = await tagApi.findOrCreate({
         name: tagName,
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       expect(tag2).toBeDefined();
       expect(tag2.id).toBe(tag1.id);
@@ -269,7 +270,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `Update Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Original description',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       createdTagIds.push(tag.id);
       
@@ -287,7 +288,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `Delete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Tag to be deleted',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       const deleteResult = await tagApi.delete(tag.id, authenticatedClient);
       
@@ -300,18 +301,18 @@ describe('Tag Operations API Integration Tests', () => {
   });
 
   describe('Tag Assignment API Operations', () => {
-    test('should get tag assignments for entity', async () => {
+    test('should automatically create entity type when assignment is made', async () => {
       const tag = await tagApi.findOrCreate({
         name: `Assignment Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for assignment',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       const org = await createTestOrganization('TestOrgAssignment');
       
       createdTagIds.push(tag.id);
       
-      // Create assignment
+      // Create assignment - this should automatically create entity type via trigger
       const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment.id);
@@ -330,7 +331,7 @@ describe('Tag Operations API Integration Tests', () => {
         name: `CreateDelete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for create/delete assignment',
         created_by: testUser.id
-      }, EntityType.ORGANIZATION, authenticatedClient);
+      }, undefined, authenticatedClient);
       
       const org = await createTestOrganization('TestOrgCreateDelete');
       

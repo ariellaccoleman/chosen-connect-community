@@ -1,3 +1,4 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -10,6 +11,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   let tagEntityTypeRepo: any;
   let createdTagIds: string[] = [];
   let createdTagEntityTypeIds: string[] = [];
+  let createdAssignmentIds: string[] = [];
   const testUserEmail = PERSISTENT_TEST_USERS.user3.email;
 
   beforeAll(async () => {
@@ -36,6 +38,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     // Reset tracking arrays AFTER cleanup
     createdTagIds = [];
     createdTagEntityTypeIds = [];
+    createdAssignmentIds = [];
     
     // Set up authentication for user3 (Tag Entity Type tests)
     console.log('🔐 Setting up test authentication for user3...');
@@ -69,19 +72,19 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
-      // Clean up tag entity types by tracked IDs
-      if (createdTagEntityTypeIds.length > 0) {
+      // Clean up tag assignments first (triggers will clean up entity types)
+      if (createdAssignmentIds.length > 0) {
         const { error } = await serviceClient
-          .from('tag_entity_types')
+          .from('tag_assignments')
           .delete()
-          .in('id', createdTagEntityTypeIds);
+          .in('id', createdAssignmentIds);
         
         if (!error) {
-          console.log(`✅ Cleaned up ${createdTagEntityTypeIds.length} tag entity types`);
+          console.log(`✅ Cleaned up ${createdAssignmentIds.length} tag assignments`);
         }
       }
       
-      // Clean up tags by tracked IDs
+      // Clean up tags (this will cascade cleanup other associations)
       if (createdTagIds.length > 0) {
         const { error } = await serviceClient
           .from('tags')
@@ -134,81 +137,71 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     }
     
     createdTagIds.push(tagData.id);
-    
-    // Create a default entity type association since the trigger is removed
-    const { error: entityTypeError } = await serviceClient
-      .from('tag_entity_types')
-      .insert({
-        tag_id: tagData.id,
-        entity_type: EntityType.ORGANIZATION
-      });
-    
-    if (entityTypeError) {
-      console.warn('Failed to create default entity type association:', entityTypeError);
-    }
-    
     return tagData;
   };
 
-  describe('Tag Entity Type CRUD Operations', () => {
-    test('should create tag entity type association', async () => {
-      const testTag = await createTestTag('EntityTypeTest');
-      
-      // Remove the default association first to test creating a new one
-      await tagEntityTypeRepo.removeTagEntityTypeAssociation(testTag.id, EntityType.ORGANIZATION);
-      
-      const result = await tagEntityTypeRepo.associateTagWithEntityType(
-        testTag.id, 
-        EntityType.PROFILE
-      );
-      
-      expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
+  const createTestAssignment = async (tagId: string, entityType: EntityType = EntityType.ORGANIZATION) => {
+    const serviceClient = TestClientFactory.getServiceRoleClient();
+    
+    // Create a dummy target entity (using the user id as target for simplicity)
+    const { data: assignment, error } = await serviceClient
+      .from('tag_assignments')
+      .insert({
+        tag_id: tagId,
+        target_id: testUser.id,
+        target_type: entityType
+      })
+      .select()
+      .single();
+    
+    if (error) {
+      throw new Error(`Failed to create test assignment: ${error.message}`);
+    }
+    
+    createdAssignmentIds.push(assignment.id);
+    return assignment;
+  };
 
-      // Verify the association was created
+  describe('Tag Entity Type CRUD Operations', () => {
+    test('should automatically create entity type when tag assignment is made', async () => {
+      const testTag = await createTestTag('AutoEntityTypeTest');
+      
+      // Create a tag assignment - this should automatically create entity type via trigger
+      await createTestAssignment(testTag.id, EntityType.PROFILE);
+      
+      // Verify the entity type was automatically created
       const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
       expect(associations.length).toBe(1);
       expect(associations[0].entity_type).toBe(EntityType.PROFILE);
-      
-      createdTagEntityTypeIds.push(associations[0].id);
     });
 
     test('should get entity types by tag ID', async () => {
       const testTag = await createTestTag('GetEntityTypesTest');
       
-      // Add additional entity type association
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.PROFILE);
+      // Create assignments for multiple entity types
+      await createTestAssignment(testTag.id, EntityType.PROFILE);
+      await createTestAssignment(testTag.id, EntityType.ORGANIZATION);
       
       const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
       
       expect(result.status).toBe('success');
-      expect(result.data).toHaveLength(1);
+      expect(result.data).toHaveLength(2);
       expect(result.data).toContain(EntityType.PROFILE);
-
-      // Track for cleanup
-      const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
-      associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
+      expect(result.data).toContain(EntityType.ORGANIZATION);
     });
 
     test('should check if tag is allowed for entity type', async () => {
       const testTag = await createTestTag('AllowedTest');
       
-      // Should be allowed for the default entity type (ORGANIZATION)
-      const isAllowedOrg = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.ORGANIZATION
-      );
-      expect(isAllowedOrg).toBe(true);
-      
-      // Should not be allowed for EVENT initially
+      // Should not be allowed initially
       const notAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
         testTag.id, 
         EntityType.EVENT
       );
       expect(notAllowed).toBe(false);
       
-      // Create association for EVENT
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.EVENT);
+      // Create assignment for EVENT - this should automatically create entity type
+      await createTestAssignment(testTag.id, EntityType.EVENT);
       
       // Now should be allowed
       const isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
@@ -216,40 +209,54 @@ describe('Tag Entity Type Repository Integration Tests', () => {
         EntityType.EVENT
       );
       expect(isAllowed).toBe(true);
-
-      // Track for cleanup
-      const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
-      associations.forEach(assoc => createdTagEntityTypeIds.push(assoc.id));
     });
 
-    test('should remove tag entity type association', async () => {
-      const testTag = await createTestTag('RemoveAssociationTest');
+    test('should manually add entity type association', async () => {
+      const testTag = await createTestTag('ManualAssociationTest');
       
-      // Add an additional entity type first
-      await tagEntityTypeRepo.associateTagWithEntityType(testTag.id, EntityType.HUB);
-      
-      // Verify it exists
-      let isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
-        testTag.id, 
-        EntityType.HUB
-      );
-      expect(isAllowed).toBe(true);
-      
-      // Remove association
-      const result = await tagEntityTypeRepo.removeTagEntityTypeAssociation(
+      const result = await tagEntityTypeRepo.associateTagWithEntityType(
         testTag.id, 
         EntityType.HUB
       );
       
       expect(result.status).toBe('success');
       expect(result.data).toBe(true);
+
+      // Verify the association was created
+      const isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
+        testTag.id, 
+        EntityType.HUB
+      );
+      expect(isAllowed).toBe(true);
+    });
+
+    test('should remove tag entity type association when last assignment is deleted', async () => {
+      const testTag = await createTestTag('RemoveAssociationTest');
       
-      // Verify it's removed
+      // Create two assignments for the same entity type
+      const assignment1 = await createTestAssignment(testTag.id, EntityType.HUB);
+      await createTestAssignment(testTag.id, EntityType.HUB);
+      
+      // Verify entity type exists
+      let isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
+        testTag.id, 
+        EntityType.HUB
+      );
+      expect(isAllowed).toBe(true);
+      
+      // Remove one assignment - entity type should still exist
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      await serviceClient
+        .from('tag_assignments')
+        .delete()
+        .eq('id', assignment1.id);
+      
+      // Should still be allowed (one assignment remains)
       isAllowed = await tagEntityTypeRepo.isTagAllowedForEntityType(
         testTag.id, 
         EntityType.HUB
       );
-      expect(isAllowed).toBe(false);
+      expect(isAllowed).toBe(true);
     });
 
     test('should handle undefined parameters gracefully', async () => {

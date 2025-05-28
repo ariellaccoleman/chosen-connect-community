@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -72,7 +71,7 @@ describe('Tag Assignment Repository Integration Tests', () => {
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
-      // Clean up tag assignments by tracked IDs
+      // Clean up tag assignments first (triggers will clean up entity types)
       if (createdAssignmentIds.length > 0) {
         const { error } = await serviceClient
           .from('tag_assignments')
@@ -149,19 +148,6 @@ describe('Tag Assignment Repository Integration Tests', () => {
     }
     
     createdTagIds.push(tagData.id);
-    
-    // Create a default entity type association since the trigger is removed
-    const { error: entityTypeError } = await serviceClient
-      .from('tag_entity_types')
-      .insert({
-        tag_id: tagData.id,
-        entity_type: EntityType.ORGANIZATION
-      });
-    
-    if (entityTypeError) {
-      console.warn('Failed to create default entity type association:', entityTypeError);
-    }
-    
     return tagData;
   };
 
@@ -186,7 +172,7 @@ describe('Tag Assignment Repository Integration Tests', () => {
   };
 
   describe('Tag Assignment CRUD Operations', () => {
-    test('should create tag assignment', async () => {
+    test('should create tag assignment and automatically create entity type', async () => {
       const testTag = await createTestTag('AssignmentTest');
       const testOrg = await createTestOrganization('TestOrg');
       
@@ -202,6 +188,16 @@ describe('Tag Assignment Repository Integration Tests', () => {
       expect(result.data.target_type).toBe(EntityType.ORGANIZATION);
       
       createdAssignmentIds.push(result.data.id);
+      
+      // Verify that entity type was automatically created by trigger
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      const { data: entityTypes } = await serviceClient
+        .from('tag_entity_types')
+        .select('*')
+        .eq('tag_id', testTag.id)
+        .eq('entity_type', EntityType.ORGANIZATION);
+      
+      expect(entityTypes).toHaveLength(1);
     });
 
     test('should get tag assignments for entity', async () => {
@@ -368,6 +364,52 @@ describe('Tag Assignment Repository Integration Tests', () => {
       
       const deleteResult = await tagAssignmentRepo.deleteTagAssignment(undefined);
       expect(deleteResult.status).toBe('error');
+    });
+
+    test('should automatically clean up entity types when last assignment is deleted', async () => {
+      const testTag = await createTestTag('DeleteTest');
+      const testOrg = await createTestOrganization('TestOrgDelete');
+      
+      // Create assignment - this will automatically create entity type
+      const assignment = await tagAssignmentRepo.createTagAssignment({
+        tag_id: testTag.id,
+        target_id: testOrg.id,
+        target_type: EntityType.ORGANIZATION
+      });
+      
+      // Create another assignment with different entity type
+      const testOrg2 = await createTestOrganization('TestOrg2');
+      const assignment2 = await tagAssignmentRepo.createTagAssignment({
+        tag_id: testTag.id,
+        target_id: testOrg2.id,
+        target_type: EntityType.PROFILE
+      });
+      
+      createdAssignmentIds.push(assignment2.data.id);
+      
+      // Verify both entity types exist
+      const serviceClient = TestClientFactory.getServiceRoleClient();
+      let { data: entityTypes } = await serviceClient
+        .from('tag_entity_types')
+        .select('*')
+        .eq('tag_id', testTag.id);
+      
+      expect(entityTypes).toHaveLength(2);
+      
+      // Delete assignment - this should trigger cleanup if it's the last assignment of that type
+      const deleteResult = await tagAssignmentRepo.deleteTagAssignment(assignment.data.id);
+      expect(deleteResult.status).toBe('success');
+      expect(deleteResult.data).toBe(true);
+      
+      // Check if ORGANIZATION entity type was cleaned up (but PROFILE should remain)
+      ({ data: entityTypes } = await serviceClient
+        .from('tag_entity_types')
+        .select('*')
+        .eq('tag_id', testTag.id));
+      
+      // Should have 1 entity type left (PROFILE)
+      expect(entityTypes).toHaveLength(1);
+      expect(entityTypes[0].entity_type).toBe(EntityType.PROFILE);
     });
   });
 });

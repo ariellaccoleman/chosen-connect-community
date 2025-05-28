@@ -63,20 +63,20 @@ export function useDeleteTag() {
 
 /**
  * Hook for finding or creating a tag
+ * Entity type associations are now handled automatically by SQL triggers
  */
 export function useFindOrCreateTag() {
   const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: ({ 
-      data, 
-      entityType 
+      data
     }: { 
       data: Partial<Tag>; 
-      entityType?: EntityType 
     }) => {
       logger.debug(`Finding or creating tag:`, data);
-      return tagApi.findOrCreate(data, entityType);
+      // No longer need to pass entity type - triggers will handle associations
+      return tagApi.findOrCreate(data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
