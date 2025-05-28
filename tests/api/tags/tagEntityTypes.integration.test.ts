@@ -172,7 +172,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       const assignment = await tagAssignmentApi.create(
         testTag.id, 
         testUser.id, 
-        EntityType.PROFILE, 
+        EntityType.PERSON, 
         authenticatedClient
       );
       
@@ -182,21 +182,21 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       // Verify the entity type was automatically created
       const associations = await tagEntityTypeRepo.getTagEntityTypesByTagId(testTag.id);
       expect(associations.length).toBe(1);
-      expect(associations[0].entity_type).toBe(EntityType.PROFILE);
+      expect(associations[0].entity_type).toBe(EntityType.PERSON);
     });
 
     test('should get entity types by tag ID', async () => {
       const testTag = await createTestTag('GetEntityTypesTest');
       
       // Create assignments for multiple entity types
-      await createTestAssignment(testTag.id, EntityType.PROFILE);
+      await createTestAssignment(testTag.id, EntityType.PERSON);
       await createTestAssignment(testTag.id, EntityType.ORGANIZATION);
       
       const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
       
       expect(result.status).toBe('success');
       expect(result.data).toHaveLength(2);
-      expect(result.data).toContain(EntityType.PROFILE);
+      expect(result.data).toContain(EntityType.PERSON);
       expect(result.data).toContain(EntityType.ORGANIZATION);
     });
 

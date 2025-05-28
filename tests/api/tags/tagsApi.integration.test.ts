@@ -487,10 +487,10 @@ describe('Tag Operations API Integration Tests', () => {
       console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const orgAssignment = await tagAssignmentApi.create(tag.id, org1.id, EntityType.ORGANIZATION, authenticatedClient);
-      const profileAssignment = await tagAssignmentApi.create(tag.id, org2.id, EntityType.PROFILE, authenticatedClient);
+      const personAssignment = await tagAssignmentApi.create(tag.id, org2.id, EntityType.PERSON, authenticatedClient);
       
-      createdAssignmentIds.push(profileAssignment.id);
-      console.log(`📝 Tracking assignment for cleanup: ${profileAssignment.id}`);
+      createdAssignmentIds.push(personAssignment.id);
+      console.log(`📝 Tracking assignment for cleanup: ${personAssignment.id}`);
       
       const serviceClient = TestClientFactory.getServiceRoleClient();
       let { data: entityTypes } = await serviceClient
@@ -509,7 +509,7 @@ describe('Tag Operations API Integration Tests', () => {
         .eq('tag_id', tag.id));
       
       expect(entityTypes).toHaveLength(1);
-      expect(entityTypes[0].entity_type).toBe(EntityType.PROFILE);
+      expect(entityTypes[0].entity_type).toBe(EntityType.PERSON);
     });
 
     test('should handle edge cases gracefully', async () => {
