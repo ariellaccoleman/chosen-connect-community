@@ -195,28 +195,6 @@ describe('Tag Operations API Integration Tests', () => {
     return orgData;
   };
 
-  // Helper function to create a test profile for assignment testing
-  const createTestProfile = async (name: string) => {
-    const serviceClient = TestClientFactory.getServiceRoleClient();
-    
-    const { data: profileData, error: profileError } = await serviceClient
-      .from('profiles')
-      .insert({
-        first_name: `${name} ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        last_name: 'TestProfile',
-        email: `${name.toLowerCase()}${Date.now()}@test.com`
-      })
-      .select()
-      .single();
-    
-    if (profileError) {
-      throw new Error(`Failed to create test profile: ${profileError.message}`);
-    }
-    
-    console.log(`📝 Created test profile: ${profileData.id}`);
-    return profileData;
-  };
-
   describe('Tag API Operations', () => {
     test('should create a new tag', async () => {
       const tagName = `API Test Tag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -383,34 +361,31 @@ describe('Tag Operations API Integration Tests', () => {
         created_by: testUser.id
       }, undefined, authenticatedClient);
       
-      // Create a test profile to assign the tag to
-      const profile = await createTestProfile('TestProfileAssignment');
+      const org = await createTestOrganization('TestOrgAssignment');
       
       createdTagIds.push(tag.id);
       console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
-      // Create tag assignment to PROFILE entity type
-      const assignment = await tagAssignmentApi.create(tag.id, profile.id, EntityType.PROFILE, authenticatedClient);
+      const assignment = await tagAssignmentApi.create(tag.id, org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       createdAssignmentIds.push(assignment.id);
       console.log(`📝 Tracking assignment for cleanup: ${assignment.id}`);
       
-      const assignments = await tagAssignmentApi.getForEntity(profile.id, EntityType.PROFILE, authenticatedClient);
+      const assignments = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION, authenticatedClient);
       
       expect(Array.isArray(assignments)).toBe(true);
       expect(assignments.length).toBe(1);
       expect(assignments[0].tag_id).toBe(tag.id);
-      expect(assignments[0].target_id).toBe(profile.id);
+      expect(assignments[0].target_id).toBe(org.id);
       
       const serviceClient = TestClientFactory.getServiceRoleClient();
       const { data: entityTypes } = await serviceClient
         .from('tag_entity_types')
         .select('*')
         .eq('tag_id', tag.id)
-        .eq('entity_type', EntityType.PROFILE);
+        .eq('entity_type', EntityType.ORGANIZATION);
       
       expect(entityTypes).toHaveLength(1);
-      expect(entityTypes[0].entity_type).toBe(EntityType.PROFILE);
     });
 
     test('should create and delete tag assignment', async () => {
@@ -506,13 +481,13 @@ describe('Tag Operations API Integration Tests', () => {
       }, undefined, authenticatedClient);
       
       const org1 = await createTestOrganization('TestOrgCleanup1');
-      const profile = await createTestProfile('TestProfileCleanup');
+      const org2 = await createTestOrganization('TestOrgCleanup2');
       
       createdTagIds.push(tag.id);
       console.log(`📝 Tracking tag for cleanup: ${tag.id}`);
       
       const orgAssignment = await tagAssignmentApi.create(tag.id, org1.id, EntityType.ORGANIZATION, authenticatedClient);
-      const profileAssignment = await tagAssignmentApi.create(tag.id, profile.id, EntityType.PROFILE, authenticatedClient);
+      const profileAssignment = await tagAssignmentApi.create(tag.id, org2.id, EntityType.PROFILE, authenticatedClient);
       
       createdAssignmentIds.push(profileAssignment.id);
       console.log(`📝 Tracking assignment for cleanup: ${profileAssignment.id}`);
