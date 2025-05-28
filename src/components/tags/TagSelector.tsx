@@ -33,7 +33,7 @@ export interface TagSelectorProps {
   placeholder?: string;
   className?: string;
   currentSelectedTagId?: string | null;
-  entityId?: string; // Add entityId prop for immediate assignment
+  entityId?: string;
 }
 
 const TagSelector = ({
@@ -119,7 +119,7 @@ const TagSelector = ({
     setIsCreatingTag(true);
     
     try {
-      // Create or find the tag
+      // Create or find the tag - no need to pass user ID
       const newTag = await findOrCreateTag({ 
         name: searchValue.trim() 
       });

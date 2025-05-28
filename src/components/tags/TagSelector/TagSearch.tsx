@@ -49,7 +49,7 @@ const TagSearch = ({
     setIsCreatingTag(true);
     
     try {
-      // Create or find the tag
+      // Create or find the tag - no need to pass user ID
       const newTag = await findOrCreateTag({ 
         name: searchValue.trim() 
       });

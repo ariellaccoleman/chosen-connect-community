@@ -81,19 +81,19 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Find or create a tag - no longer needs entity type since triggers handle it
+// Find or create a tag - no longer needs user ID since trigger handles it
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
+    // Remove created_by from tagData since the trigger will set it
+    const { created_by, ...cleanTagData } = tagData;
+    
     // Call the API function that properly uses the apiClient
-    const response = await apiFindOrCreateTag(tagData);
+    const response = await apiFindOrCreateTag(cleanTagData);
     
     if (response.status !== 'success' || !response.data) {
       logger.error("Error finding or creating tag:", response.error);
       return null;
     }
-    
-    // No need to manually associate entity types - triggers will handle this
-    // when tag assignments are created
     
     return response.data;
   } catch (error) {
@@ -102,19 +102,19 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
   }
 };
 
-// Create a new tag - no longer needs entity type since triggers handle it
+// Create a new tag - no longer needs user ID since trigger handles it
 export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
+    // Remove created_by from tagData since the trigger will set it
+    const { created_by, ...cleanTagData } = tagData;
+    
     // Call the API function that properly uses the apiClient
-    const response = await apiCreateTag(tagData);
+    const response = await apiCreateTag(cleanTagData);
     
     if (response.status !== 'success' || !response.data) {
       logger.error("Error creating tag:", response.error);
       return null;
     }
-    
-    // No need to manually associate entity types - triggers will handle this
-    // when tag assignments are created
     
     return response.data;
   } catch (error) {

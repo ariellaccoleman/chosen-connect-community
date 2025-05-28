@@ -25,7 +25,7 @@ interface CreateTagDialogProps {
   targetType: EntityType;
   onTagCreated: (tag: Tag) => void;
   isAdmin?: boolean;
-  entityId?: string; // Add entityId prop
+  entityId?: string;
 }
 
 const CreateTagDialog = ({
@@ -60,11 +60,10 @@ const CreateTagDialog = ({
     setIsCreating(true);
     
     try {
-      // Create or find the tag
+      // Create or find the tag - no need to pass user ID
       const createdTag = await findOrCreateTag({
         name: name.trim(),
-        description: description.trim() || null,
-        created_by: user.id
+        description: description.trim() || null
       });
       
       if (createdTag) {

@@ -21,7 +21,7 @@ const AdminTags = () => {
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
   const { data: hubsData, isLoading: isHubsLoading } = useHubs();
   const { createTag, isCreating } = useTagCrudMutations();
-  const { isAdmin, loading, user } = useAuth();
+  const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
   const [processingHubTags, setProcessingHubTags] = useState<{[key: string]: boolean}>({});
   const createHub = useCreateHub();
@@ -38,11 +38,10 @@ const AdminTags = () => {
 
   const handleCreateTag = async (values: TagFormValues) => {
     try {
-      // Create the tag - entity type associations are handled automatically by triggers
+      // Create the tag - no need to pass user ID since trigger handles it
       await createTag({
         name: values.name,
-        description: values.description,
-        created_by: user?.id
+        description: values.description
       });
       
       toast.success("Tag created successfully!");

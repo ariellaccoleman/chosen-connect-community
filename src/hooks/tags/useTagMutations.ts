@@ -18,7 +18,9 @@ export function useCreateTag() {
   return useMutation({
     mutationFn: (data: Partial<Tag>) => {
       logger.debug("Creating tag:", data);
-      return tagApi.create(data);
+      // Remove created_by from data since trigger will handle it
+      const { created_by, ...cleanData } = data;
+      return tagApi.create(cleanData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
@@ -63,7 +65,7 @@ export function useDeleteTag() {
 
 /**
  * Hook for finding or creating a tag
- * Entity type associations are now handled automatically by SQL triggers
+ * No longer needs to handle user ID since triggers handle it automatically
  */
 export function useFindOrCreateTag() {
   const queryClient = useQueryClient();
@@ -75,8 +77,9 @@ export function useFindOrCreateTag() {
       data: Partial<Tag>; 
     }) => {
       logger.debug(`Finding or creating tag:`, data);
-      // No longer need to pass entity type - triggers will handle associations
-      return tagApi.findOrCreate(data);
+      // Remove created_by from data since trigger will handle it
+      const { created_by, ...cleanData } = data;
+      return tagApi.findOrCreate(cleanData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
