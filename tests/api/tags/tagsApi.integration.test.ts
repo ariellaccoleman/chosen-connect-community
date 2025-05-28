@@ -30,8 +30,8 @@ describe('Tag Operations API Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up any existing test data first (comprehensive cleanup)
-    await comprehensiveCleanup();
+    // Clean up any existing test data for THIS USER ONLY
+    await userScopedCleanup();
     
     // Reset tracking arrays AFTER cleanup
     createdTagIds = [];
@@ -55,7 +55,7 @@ describe('Tag Operations API Integration Tests', () => {
   });
 
   afterEach(async () => {
-    await comprehensiveCleanup();
+    await userScopedCleanup();
     await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
@@ -63,55 +63,47 @@ describe('Tag Operations API Integration Tests', () => {
     TestClientFactory.cleanup();
   });
 
-  const comprehensiveCleanup = async () => {
+  const userScopedCleanup = async () => {
     try {
       const serviceClient = TestClientFactory.getServiceRoleClient();
       
-      console.log('🧹 Starting comprehensive cleanup...');
+      console.log('🧹 Starting user-scoped cleanup for user5...');
       
-      // First, clean up tag assignments for ALL test users (not just tracked ones)
-      const testUserIds = Object.values(PERSISTENT_TEST_USERS).map(user => user.email);
-      const allTestUserProfiles = [];
+      // Get user5's profile ID for scoped cleanup
+      const { data: userProfile } = await serviceClient
+        .from('profiles')
+        .select('id')
+        .eq('email', testUserEmail)
+        .single();
       
-      for (const email of testUserIds) {
-        try {
-          const { data: profile } = await serviceClient
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
-          if (profile) {
-            allTestUserProfiles.push(profile.id);
-          }
-        } catch (error) {
-          // Profile might not exist, continue
-        }
+      if (!userProfile) {
+        console.log('ℹ️ No profile found for user5, skipping cleanup');
+        return;
       }
       
-      // Clean up all tag assignments from test users
-      if (allTestUserProfiles.length > 0) {
-        // Get all tags created by test users
-        const { data: testUserTags } = await serviceClient
-          .from('tags')
-          .select('id')
-          .in('created_by', allTestUserProfiles);
+      const userId = userProfile.id;
+      
+      // Clean up tag assignments for tags created by THIS USER ONLY
+      const { data: userTags } = await serviceClient
+        .from('tags')
+        .select('id')
+        .eq('created_by', userId);
+      
+      if (userTags && userTags.length > 0) {
+        const userTagIds = userTags.map(tag => tag.id);
         
-        if (testUserTags && testUserTags.length > 0) {
-          const testTagIds = testUserTags.map(tag => tag.id);
-          
-          // Delete all assignments for these tags
-          const { error: assignmentError } = await serviceClient
-            .from('tag_assignments')
-            .delete()
-            .in('tag_id', testTagIds);
-          
-          if (!assignmentError) {
-            console.log(`✅ Cleaned up assignments for ${testTagIds.length} test user tags`);
-          }
+        // Delete assignments for THIS USER's tags only
+        const { error: assignmentError } = await serviceClient
+          .from('tag_assignments')
+          .delete()
+          .in('tag_id', userTagIds);
+        
+        if (!assignmentError) {
+          console.log(`✅ Cleaned up assignments for ${userTagIds.length} user5 tags`);
         }
       }
       
-      // Clean up tracked assignments
+      // Clean up tracked assignments (belt and suspenders)
       if (createdAssignmentIds.length > 0) {
         const { error } = await serviceClient
           .from('tag_assignments')
@@ -123,7 +115,7 @@ describe('Tag Operations API Integration Tests', () => {
         }
       }
       
-      // Clean up organizations (including any created during tests)
+      // Clean up organizations created during tests (tracked ones)
       if (createdOrganizationIds.length > 0) {
         const { error } = await serviceClient
           .from('organizations')
@@ -135,17 +127,17 @@ describe('Tag Operations API Integration Tests', () => {
         }
       }
       
-      // Clean up test organizations by name pattern (backup cleanup)
-      const { error: orgPatternError } = await serviceClient
-        .from('organizations')
+      // Clean up tags created by THIS USER ONLY
+      const { error: userTagsError } = await serviceClient
+        .from('tags')
         .delete()
-        .like('name', '%Test%');
+        .eq('created_by', userId);
       
-      if (!orgPatternError) {
-        console.log('✅ Cleaned up test organizations by name pattern');
+      if (!userTagsError) {
+        console.log('✅ Cleaned up all tags created by user5');
       }
       
-      // Clean up tags by tracked IDs
+      // Clean up tracked tags (belt and suspenders)
       if (createdTagIds.length > 0) {
         const { error } = await serviceClient
           .from('tags')
@@ -157,36 +149,10 @@ describe('Tag Operations API Integration Tests', () => {
         }
       }
       
-      // Clean up all tags created by test users (comprehensive cleanup)
-      if (allTestUserProfiles.length > 0) {
-        const { error: testUserTagsError } = await serviceClient
-          .from('tags')
-          .delete()
-          .in('created_by', allTestUserProfiles);
-        
-        if (!testUserTagsError) {
-          console.log('✅ Cleaned up all tags created by test users');
-        }
-      }
-      
-      // Clean up tags by name patterns (backup cleanup for any missed tags)
-      const testPatterns = ['%API Test%', '%GetAll Test%', '%GetByID Test%', '%FindByName Test%', '%SearchTest%', '%FindOrCreate Test%', '%Update Test%', '%Delete Test%', '%Assignment Test%', '%CreateDelete Test%', '%MultiAssign%', '%EntityByTag%', '%CleanupTest%'];
-      
-      for (const pattern of testPatterns) {
-        const { error: patternError } = await serviceClient
-          .from('tags')
-          .delete()
-          .like('name', pattern);
-        
-        if (!patternError) {
-          console.log(`✅ Cleaned up tags matching pattern: ${pattern}`);
-        }
-      }
-      
-      console.log('✅ Comprehensive cleanup completed');
+      console.log('✅ User-scoped cleanup completed for user5');
       
     } catch (error) {
-      console.warn('⚠️ Cleanup warning:', error);
+      console.warn('⚠️ User-scoped cleanup warning:', error);
     }
   };
 
