@@ -28,29 +28,29 @@ const tagAssignmentBase = createApiFactory<TagAssignment>({
 export const tagAssignmentCoreOperations = {
   ...tagAssignmentBase,
   
-  async create(tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment>> {
+  async create(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment>> {
     return tagAssignmentBase.create({
       tag_id: tagId,
       target_id: entityId,
       target_type: entityType
-    });
+    }, providedClient);
   },
   
-  async getForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>> {
+  async getForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
     return tagAssignmentBase.getAll({
       filters: {
         target_id: entityId,
         target_type: entityType
       }
-    });
+    }, providedClient);
   },
   
-  async getEntitiesByTagId(tagId: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>> {
+  async getEntitiesByTagId(tagId: string, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
     const filters: any = { tag_id: tagId };
     if (entityType) {
       filters.target_type = entityType;
     }
     
-    return tagAssignmentBase.getAll({ filters });
+    return tagAssignmentBase.getAll({ filters }, providedClient);
   }
 };
