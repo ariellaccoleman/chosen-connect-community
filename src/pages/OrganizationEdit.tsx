@@ -15,8 +15,8 @@ import {
 } from "@/components/organizations/edit";
 
 const OrganizationEdit = () => {
-  // Get the id from URL parameters - matching route definition
-  const { id } = useParams<{ id: string }>();
+  // Get the orgId from URL parameters - matching route definition
+  const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -24,24 +24,24 @@ const OrganizationEdit = () => {
   // Add more comprehensive logging for debugging
   useEffect(() => {
     logger.info("OrganizationEdit - Component mounted with URL parameters:", { 
-      id,
-      idType: typeof id,
-      idValue: id || "undefined",
+      orgId,
+      orgIdType: typeof orgId,
+      orgIdValue: orgId || "undefined",
       pathname: window.location.pathname
     });
     
     return () => {
       logger.info("OrganizationEdit - Component unmounting");
     };
-  }, [id]);
+  }, [orgId]);
   
-  // The organization query - pass id directly to match the route parameter
+  // The organization query - pass orgId directly to match the route parameter
   const { 
     data: organizationData, 
     isLoading, 
     error, 
     isError 
-  } = useOrganization(id);
+  } = useOrganization(orgId);
   
   // Safely access organization data with extra logging
   const organization = organizationData?.data || null;
@@ -57,25 +57,27 @@ const OrganizationEdit = () => {
       logger.warn("No organization data retrieved after loading completed", {
         error: error?.message || "No specific error message",
         hasErrorObj: !!error,
-        hasOrgData: !!organizationData
+        hasOrgData: !!organizationData,
+        orgId: orgId || "undefined"
       });
     }
-  }, [organization, isLoading, error, organizationData]);
+  }, [organization, isLoading, error, organizationData, orgId]);
   
-  // Check if user is admin - use id parameter
+  // Check if user is admin - use orgId parameter
   const { 
     data: isOrgAdmin = false, 
     isLoading: adminCheckLoading 
-  } = useIsOrganizationAdmin(user?.id, id);
+  } = useIsOrganizationAdmin(user?.id, orgId);
   
   // Check if user is admin and redirect if not
   useEffect(() => {
     // Only check admin status if loading is complete
-    if (!adminCheckLoading && !isOrgAdmin && user && id) {
+    if (!adminCheckLoading && !isOrgAdmin && user && orgId) {
       logger.info("Admin check failed - redirecting", { 
         isOrgAdmin, 
         adminCheckLoading, 
-        userId: user.id 
+        userId: user.id,
+        orgId
       });
       
       toast({
@@ -84,9 +86,9 @@ const OrganizationEdit = () => {
         variant: "destructive",
       });
       
-      navigate(`/organizations/${id}`);
+      navigate(`/organizations/${orgId}`);
     }
-  }, [isOrgAdmin, adminCheckLoading, navigate, id, toast, user]);
+  }, [isOrgAdmin, adminCheckLoading, navigate, orgId, toast, user]);
 
   return (
     <Layout>
@@ -94,16 +96,16 @@ const OrganizationEdit = () => {
         {isLoading ? (
           <OrganizationEditSkeleton />
         ) : error || !organization ? (
-          <OrganizationEditError error={error} orgId={id} />
+          <OrganizationEditError error={error} orgId={orgId} />
         ) : (
           <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
-            <OrganizationEditHeader orgId={id || ''} />
+            <OrganizationEditHeader orgId={orgId || ''} />
             <OrganizationEditForm 
               organization={organization} 
-              orgId={id || ''}
+              orgId={orgId || ''}
             >
               <OrganizationEditTabs 
-                orgId={id || ''} 
+                orgId={orgId || ''} 
                 isOrgAdmin={isOrgAdmin}
                 organization={organization}
               />
