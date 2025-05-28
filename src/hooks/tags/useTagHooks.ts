@@ -25,7 +25,7 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the extendedTagApi and unwrap the response
+        // Use the extendedTagApi and handle wrapped response
         const response = await extendedTagApi.getAll();
         if (response.error) {
           logger.error("Error in useSelectionTags:", response.error);
@@ -74,7 +74,7 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         // Log for debugging filters
         logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
         
-        // Use the tagAssignmentApi and unwrap the response
+        // Use the tagAssignmentApi and handle wrapped response
         const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
         if (response.error) {
           logger.error(`useFilterByTag: Error fetching tag assignments for tag ${tagId}:`, response.error);
@@ -168,7 +168,7 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
       }
       
       try {
-        // Use tagAssignmentApi and unwrap the response
+        // Use tagAssignmentApi and handle wrapped response
         const response = await tagAssignmentApi.getForEntity(entityId, entityType);
         if (response.error) {
           logger.error(`Error fetching tags for entity ${entityId}:`, response.error);
@@ -209,7 +209,7 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Create assignment
+      // Create assignment using new API with wrapped response
       const response = await tagAssignmentApi.create(tagId, entityId, entityType);
       if (response.error) {
         throw response.error;
@@ -224,7 +224,7 @@ export function useTagAssignmentMutations() {
   
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      // Delete assignment
+      // Delete assignment using new API with wrapped response
       const response = await tagAssignmentApi.delete(assignmentId);
       if (response.error) {
         throw response.error;

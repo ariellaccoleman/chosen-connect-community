@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
-import { tagAssignmentApi } from '@/api/tags';
+import { tagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
 import { logger } from '@/utils/logger';
 
 /**
@@ -24,7 +24,12 @@ export function useEntityTagAssignments(entityId: string, entityType: EntityType
       }
       
       try {
-        return await tagAssignmentApi.getForEntity(entityId, entityType);
+        const response = await tagAssignmentApi.getForEntity(entityId, entityType);
+        if (response.error) {
+          logger.error(`Error fetching tag assignments for entity ${entityId}:`, response.error);
+          throw response.error;
+        }
+        return response.data || [];
       } catch (error) {
         logger.error(`Error fetching tag assignments for entity ${entityId}:`, error);
         throw error;
@@ -57,7 +62,10 @@ export function useAssignTag() {
       logger.debug(`Assigning tag ${tagId} to entity ${entityId} of type ${entityType}`);
       return tagAssignmentApi.create(tagId, entityId, entityType);
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (response, variables) => {
+      if (response.error) {
+        throw response.error;
+      }
       queryClient.invalidateQueries({ 
         queryKey: ["entity", variables.entityId, "tag-assignments"] 
       });
@@ -79,7 +87,10 @@ export function useRemoveTagAssignment() {
       logger.debug(`Removing tag assignment ${assignmentId}`);
       return tagAssignmentApi.delete(assignmentId);
     },
-    onSuccess: () => {
+    onSuccess: (response) => {
+      if (response.error) {
+        throw response.error;
+      }
       queryClient.invalidateQueries({ queryKey: ["entity"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }

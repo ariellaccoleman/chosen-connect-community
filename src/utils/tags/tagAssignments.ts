@@ -1,8 +1,9 @@
-import { supabase } from "@/integrations/supabase/client";
+
 import { TagAssignment } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
+import { tagAssignmentApi } from "@/api/tags/factory/tagApiFactory";
 
 /**
  * Assign a tag to an entity
@@ -22,43 +23,20 @@ export const assignTag = async (
     
     logger.debug(`Assigning tag ${tagId} to ${entityType} ${entityId}`);
 
-    // First check if this assignment already exists to prevent duplicates
-    const { data: existingAssignments, error: checkError } = await supabase
-      .from("tag_assignments")
-      .select("id")
-      .eq("tag_id", tagId)
-      .eq("target_id", entityId)
-      .eq("target_type", entityType);
-
-    if (checkError) {
-      logger.error("Error checking for existing tag assignment:", checkError);
+    // Use the new tag assignment API with wrapped response
+    const response = await tagAssignmentApi.create(tagId, entityId, entityType as EntityType);
+    
+    if (response.error) {
+      logger.error("Error assigning tag:", response.error);
       return false;
     }
-
-    // If the assignment doesn't exist, create it
-    if (existingAssignments.length === 0) {
-      const { error } = await supabase
-        .from("tag_assignments")
-        .insert({
-          tag_id: tagId,
-          target_id: entityId,
-          target_type: entityType,
-        });
-
-      if (error) {
-        logger.error("Error assigning tag:", error);
-        return false;
-      }
-      
-      // No need to manually manage tag_entity_types - triggers handle this automatically
-      
+    
+    if (response.data) {
       logger.info(`Tag ${tagId} assigned to ${entityType} ${entityId}`);
       return true;
     }
     
-    // Assignment already exists
-    logger.info(`Tag ${tagId} is already assigned to ${entityType} ${entityId}`);
-    return true;
+    return false;
   } catch (error) {
     logger.error("Error in assignTag:", error);
     return false;
@@ -94,21 +72,21 @@ export const assignTags = async (
  */
 export const removeTagAssignment = async (assignmentId: string): Promise<boolean> => {
   try {
-    const { error } = await supabase
-      .from("tag_assignments")
-      .delete()
-      .eq("id", assignmentId);
+    // Use the new tag assignment API with wrapped response
+    const response = await tagAssignmentApi.delete(assignmentId);
 
-    if (error) {
-      logger.error("Error removing tag assignment:", error);
+    if (response.error) {
+      logger.error("Error removing tag assignment:", response.error);
       toast.error("Failed to remove tag");
       return false;
     }
     
-    // No need to manually clean up tag_entity_types - triggers handle this automatically
+    if (response.data) {
+      logger.info(`Tag assignment ${assignmentId} removed`);
+      return true;
+    }
     
-    logger.info(`Tag assignment ${assignmentId} removed`);
-    return true;
+    return false;
   } catch (error) {
     logger.error("Error in removeTagAssignment:", error);
     return false;
@@ -129,21 +107,15 @@ export const fetchEntityTags = async (
       return [];
     }
 
-    const { data, error } = await supabase
-      .from("tag_assignments")
-      .select(`
-        *,
-        tag:tags(*)
-      `)
-      .eq("target_id", entityId)
-      .eq("target_type", entityType);
+    // Use the new tag assignment API with wrapped response
+    const response = await tagAssignmentApi.getForEntity(entityId, entityType as EntityType);
 
-    if (error) {
-      logger.error("Error fetching entity tags:", error);
+    if (response.error) {
+      logger.error("Error fetching entity tags:", response.error);
       return [];
     }
 
-    return data as TagAssignment[];
+    return response.data || [];
   } catch (error) {
     logger.error("Error in fetchEntityTags:", error);
     return [];
@@ -160,27 +132,21 @@ export const fetchEntitiesWithTag = async (
   try {
     if (!tagId) return [];
 
-    let query = supabase
-      .from("tag_assignments")
-      .select(`
-        *,
-        tag:tags(*)
-      `)
-      .eq("tag_id", tagId);
-
-    // Add entity type filter if provided
-    if (entityType && isValidEntityType(entityType)) {
-      query = query.eq("target_type", entityType);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      logger.error("Error fetching entities with tag:", error);
+    // Validate entity type if provided
+    if (entityType && !isValidEntityType(entityType)) {
+      logger.error(`Invalid entity type: ${entityType}`);
       return [];
     }
 
-    return data as TagAssignment[];
+    // Use the new tag assignment API with wrapped response
+    const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType as EntityType);
+
+    if (response.error) {
+      logger.error("Error fetching entities with tag:", response.error);
+      return [];
+    }
+
+    return response.data || [];
   } catch (error) {
     logger.error("Error in fetchEntitiesWithTag:", error);
     return [];

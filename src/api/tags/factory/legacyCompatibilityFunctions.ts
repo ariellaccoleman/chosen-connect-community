@@ -2,13 +2,19 @@
 /**
  * Legacy compatibility functions for backward compatibility
  * These functions unwrap the ApiResponse format for legacy consumers
+ * 
+ * NOTE: These functions are deprecated and should be replaced with direct
+ * usage of the new API factory functions that return wrapped responses.
  */
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { tagCoreOperations } from './tagCoreOperations';
 import { tagAssignmentCoreOperations } from './tagAssignmentCoreOperations';
 
-// Export individual functions for backward compatibility - these need to unwrap responses
+// NOTE: All these functions are now deprecated since the codebase has been updated
+// to use the new wrapped API responses. They remain here for any external integrations
+// that might still depend on them, but should be removed in a future version.
+
 export const getAllTags = async (): Promise<Tag[]> => {
   const response = await tagCoreOperations.getAll();
   return response.data || [];

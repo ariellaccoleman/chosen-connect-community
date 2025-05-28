@@ -6,7 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { createTag, updateTag, deleteTag, findOrCreateTag } from '@/utils/tags/tagOperations';
+import { extendedTagApi } from '@/api/tags/factory/tagApiFactory';
 import { logger } from '@/utils/logger';
 
 /**
@@ -16,9 +16,13 @@ export function useCreateTag() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: Partial<Tag>) => {
+    mutationFn: async (data: Partial<Tag>) => {
       logger.debug("Creating tag:", data);
-      return createTag(data);
+      const response = await extendedTagApi.create(data);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: (result) => {
       if (result) {
@@ -39,9 +43,13 @@ export function useUpdateTag() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Tag> }) => {
       logger.debug(`Updating tag ${id}:`, data);
-      return updateTag(id, data);
+      const response = await extendedTagApi.update(id, data);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: (result, variables) => {
       if (result) {
@@ -63,9 +71,13 @@ export function useDeleteTag() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (id: string) => {
+    mutationFn: async (id: string) => {
       logger.debug(`Deleting tag ${id}`);
-      return deleteTag(id);
+      const response = await extendedTagApi.delete(id);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: (result, id) => {
       if (result) {
@@ -87,13 +99,17 @@ export function useFindOrCreateTag() {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ 
+    mutationFn: async ({ 
       data
     }: { 
       data: Partial<Tag>; 
     }) => {
       logger.debug(`Finding or creating tag:`, data);
-      return findOrCreateTag(data);
+      const response = await extendedTagApi.findOrCreate(data);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: (result) => {
       if (result) {

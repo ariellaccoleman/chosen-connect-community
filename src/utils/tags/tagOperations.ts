@@ -81,13 +81,13 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Find or create a tag - no longer needs user ID since trigger handles it
+// Find or create a tag - now uses the new API with wrapped responses
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
     // Remove created_by from tagData since the trigger will set it
     const { created_by, ...cleanTagData } = tagData;
     
-    // Call the API function that properly uses the apiClient
+    // Call the API function that properly uses the apiClient and handle wrapped response
     const response = await extendedTagApi.findOrCreate(cleanTagData);
     if (response.error) {
       logger.error("Error finding or creating tag:", response.error);
@@ -101,13 +101,13 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
   }
 };
 
-// Create a new tag - no longer needs user ID since trigger handles it
+// Create a new tag - now uses the new API with wrapped responses
 export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
     // Remove created_by from tagData since the trigger will set it
     const { created_by, ...cleanTagData } = tagData;
     
-    // Call the API function that properly uses the apiClient
+    // Call the API function that properly uses the apiClient and handle wrapped response
     const response = await extendedTagApi.create(cleanTagData);
     if (response.error) {
       logger.error("Error creating tag:", response.error);
@@ -121,7 +121,7 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   }
 };
 
-// Update an existing tag - now uses the proper API client
+// Update an existing tag - now uses the new API with wrapped responses
 export const updateTag = async (
   tagId: string,
   updates: Partial<Tag>
@@ -129,7 +129,7 @@ export const updateTag = async (
   try {
     logger.debug(`Updating tag ${tagId} with:`, updates);
     
-    // Call the API function that properly uses the apiClient
+    // Call the API function that properly uses the apiClient and handle wrapped response
     const response = await extendedTagApi.update(tagId, updates);
     if (response.error) {
       logger.error("Error updating tag:", response.error);
@@ -144,12 +144,12 @@ export const updateTag = async (
   }
 };
 
-// Delete a tag - now uses the proper API client
+// Delete a tag - now uses the new API with wrapped responses
 export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
     logger.debug(`Deleting tag ${tagId}`);
     
-    // Call the API function that properly uses the apiClient
+    // Call the API function that properly uses the apiClient and handle wrapped response
     const response = await extendedTagApi.delete(tagId);
     if (response.error) {
       logger.error("Error deleting tag:", response.error);
