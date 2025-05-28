@@ -1,4 +1,3 @@
-
 /**
  * Tag operations using the API factory pattern
  */
@@ -245,14 +244,18 @@ export const extendedTagOperations = {
   },
   
   // Override base operations to add client support
-  async getAll(options?: any, providedClient?: any): Promise<ApiResponse<Tag[]>> {
-    if (providedClient) {
+  async getAll(optionsOrClient?: any, providedClient?: any): Promise<ApiResponse<Tag[]>> {
+    // Handle both old signature (options) and new signature with client
+    const actualClient = providedClient || (typeof optionsOrClient === 'object' && optionsOrClient?.auth ? optionsOrClient : undefined);
+    const actualOptions = actualClient ? optionsOrClient : (optionsOrClient || {});
+    
+    if (actualClient) {
       try {
-        let query = providedClient.from('tags').select('*');
+        let query = actualClient.from('tags').select('*');
         
         // Apply filters if provided
-        if (options?.filters) {
-          Object.entries(options.filters).forEach(([key, value]: [string, any]) => {
+        if (actualOptions?.filters) {
+          Object.entries(actualOptions.filters).forEach(([key, value]: [string, any]) => {
             if (typeof value === 'object' && value.ilike) {
               query = query.ilike(key, value.ilike);
             } else {
@@ -262,15 +265,15 @@ export const extendedTagOperations = {
         }
         
         // Apply ordering
-        if (options?.orderBy) {
-          query = query.order(options.orderBy);
+        if (actualOptions?.orderBy) {
+          query = query.order(actualOptions.orderBy);
         } else {
           query = query.order('name');
         }
         
         // Apply limit
-        if (options?.limit) {
-          query = query.limit(options.limit);
+        if (actualOptions?.limit) {
+          query = query.limit(actualOptions.limit);
         }
         
         const { data, error } = await query;
@@ -306,7 +309,7 @@ export const extendedTagOperations = {
       }
     }
     
-    return tagCoreOperations.getAll(options);
+    return tagCoreOperations.getAll(actualOptions);
   },
   
   async getById(id: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
