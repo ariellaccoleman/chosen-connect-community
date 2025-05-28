@@ -1,15 +1,17 @@
 
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { createTagEntityTypeRepository } from '@/api/tags/repository/TagEntityTypeRepository';
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Entity Type Repository Integration Tests', () => {
-  let testSetup: any;
+  let testUser: any;
+  let authenticatedClient: any;
   let tagEntityTypeRepo: any;
   let createdTagIds: string[] = [];
   let createdTagEntityTypeIds: string[] = [];
+  const testUserEmail = PERSISTENT_TEST_USERS.user3.email;
 
   beforeAll(async () => {
     // Verify test users are set up
@@ -36,14 +38,20 @@ describe('Tag Entity Type Repository Integration Tests', () => {
     createdTagIds = [];
     createdTagEntityTypeIds = [];
     
-    // Set up authentication for user3 (Tag Entity Type tests) using new pattern
+    // Set up authentication for user3 (Tag Entity Type tests)
     console.log('🔐 Setting up test authentication for user3...');
-    testSetup = await TestAuthUtils.setupTestAuth('user3');
+    const authResult = await TestAuthUtils.setupTestAuth('user3');
+    testUser = authResult.user;
+    authenticatedClient = authResult.client;
     
-    console.log(`✅ Test user authenticated: ${testSetup.user.email}`);
+    if (!testUser?.id) {
+      throw new Error('❌ Test user setup failed - no user returned');
+    }
+    
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
     
     // Initialize repository with the authenticated client
-    tagEntityTypeRepo = createTagEntityTypeRepository(testSetup.client);
+    tagEntityTypeRepo = createTagEntityTypeRepository(authenticatedClient);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -51,9 +59,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    if (testSetup?.user?.email) {
-      await TestAuthUtils.cleanupTestAuth(testSetup.user.email);
-    }
+    await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
   afterAll(() => {
@@ -88,33 +94,20 @@ describe('Tag Entity Type Repository Integration Tests', () => {
         }
       }
       
-      // Fallback cleanup by user ID (only if we have a valid user)
-      if (testSetup?.user?.id) {
-        await serviceClient
-          .from('tags')
-          .delete()
-          .eq('created_by', testSetup.user.id);
-      }
-      
     } catch (error) {
       console.warn('Cleanup warning:', error);
     }
   };
 
   const setupTestData = async () => {
-    // Only proceed if we have a valid authenticated user
-    if (!testSetup?.user?.id) {
-      throw new Error('❌ Cannot setup test data - no authenticated user');
-    }
-    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testSetup.user.id, 
-        email: testSetup.user.email,
+        id: testUser.id, 
+        email: testUser.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -125,10 +118,6 @@ describe('Tag Entity Type Repository Integration Tests', () => {
   };
 
   const createTestTag = async (name: string) => {
-    if (!testSetup?.user?.id) {
-      throw new Error('❌ Cannot create test tag - no authenticated user');
-    }
-    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     const { data: tagData, error: tagError } = await serviceClient
@@ -136,7 +125,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       .insert({
         name: `${name} ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for entity type testing',
-        created_by: testSetup.user.id
+        created_by: testUser.id
       })
       .select()
       .single();

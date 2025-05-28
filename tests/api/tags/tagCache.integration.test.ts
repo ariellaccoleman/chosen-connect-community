@@ -1,14 +1,16 @@
 
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { PersistentTestUserHelper } from '../../utils/persistentTestUsers';
+import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { invalidateTagCache } from '@/api/tags/cacheApi';
 import { updateTagCache, invalidateTagCache as utilsInvalidateCache } from '@/utils/tags/cacheUtils';
 import { EntityType } from '@/types/entityTypes';
 
 describe('Tag Cache Integration Tests', () => {
-  let testSetup: any;
+  let testUser: any;
+  let authenticatedClient: any;
   let createdCacheEntries: string[] = [];
+  const testUserEmail = PERSISTENT_TEST_USERS.user6.email;
 
   beforeAll(async () => {
     // Verify test users are set up
@@ -34,11 +36,17 @@ describe('Tag Cache Integration Tests', () => {
     // Reset tracking arrays AFTER cleanup
     createdCacheEntries = [];
     
-    // Set up authentication for user6 (Tag Cache tests) using new pattern
+    // Set up authentication for user6 (Tag Cache tests)
     console.log('🔐 Setting up test authentication for user6...');
-    testSetup = await TestAuthUtils.setupTestAuth('user6');
+    const authResult = await TestAuthUtils.setupTestAuth('user6');
+    testUser = authResult.user;
+    authenticatedClient = authResult.client;
     
-    console.log(`✅ Test user authenticated: ${testSetup.user.email}`);
+    if (!testUser?.id) {
+      throw new Error('❌ Test user setup failed - no user returned');
+    }
+    
+    console.log(`✅ Test user authenticated: ${testUser.email}`);
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -46,9 +54,7 @@ describe('Tag Cache Integration Tests', () => {
 
   afterEach(async () => {
     await cleanupTestData();
-    if (testSetup?.user?.email) {
-      await TestAuthUtils.cleanupTestAuth(testSetup.user.email);
-    }
+    await TestAuthUtils.cleanupTestAuth(testUserEmail);
   });
 
   afterAll(() => {
@@ -83,19 +89,14 @@ describe('Tag Cache Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    // Only proceed if we have a valid authenticated user
-    if (!testSetup?.user?.id) {
-      throw new Error('❌ Cannot setup test data - no authenticated user');
-    }
-    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     // Create profile for authenticated user
     const { error: profileError } = await serviceClient
       .from('profiles')
       .upsert({ 
-        id: testSetup.user.id, 
-        email: testSetup.user.email,
+        id: testUser.id, 
+        email: testUser.email,
         first_name: 'Test',
         last_name: 'User'
       });
@@ -156,12 +157,6 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should invalidate specific entity type cache', async () => {
-      if (!testSetup?.user?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       // Create a test cache entry
       const cacheKey = `selection_tags_${EntityType.PROFILE}`;
       await createTestCacheEntry(cacheKey, [{ id: '1', name: 'Test' }]);
@@ -183,12 +178,6 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should invalidate all tag caches when no entity type specified', async () => {
-      if (!testSetup?.user?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       // Create multiple test cache entries
       const cacheKey1 = `selection_tags_${EntityType.ORGANIZATION}`;
       const cacheKey2 = `selection_tags_${EntityType.PROFILE}`;
@@ -226,12 +215,6 @@ describe('Tag Cache Integration Tests', () => {
     });
 
     test('should use API invalidateTagCache function', async () => {
-      if (!testSetup?.user?.id) {
-        console.warn('Skipping test - test setup incomplete');
-        expect(true).toBe(true);
-        return;
-      }
-
       // Create a test cache entry
       const cacheKey = `test_cache_${Date.now()}`;
       await createTestCacheEntry(cacheKey, { test: 'data' });
@@ -240,7 +223,6 @@ describe('Tag Cache Integration Tests', () => {
       const result = await invalidateTagCache();
       
       // The function should execute without error
-      // Note: We can't easily test the exact behavior since it may use different logic
       expect(typeof result).toBe('boolean');
     });
 

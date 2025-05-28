@@ -4,7 +4,6 @@ import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/per
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { tagApi, tagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
 import { EntityType } from '@/types/entityTypes';
-import { v4 as uuidv4 } from 'uuid';
 
 describe('Tag Operations API Integration Tests', () => {
   let testUser: any;
@@ -18,7 +17,7 @@ describe('Tag Operations API Integration Tests', () => {
     // Verify test users are set up
     const isSetup = await PersistentTestUserHelper.verifyTestUsersSetup();
     if (!isSetup) {
-      console.warn('⚠️ Persistent test users not set up - some tests may fail');
+      throw new Error('❌ Persistent test users not set up - cannot run tests');
     }
 
     // Verify service role key is available
@@ -111,11 +110,6 @@ describe('Tag Operations API Integration Tests', () => {
   };
 
   const setupTestData = async () => {
-    // Only proceed if we have a valid authenticated user
-    if (!testUser?.id) {
-      throw new Error('❌ Cannot setup test data - no authenticated user');
-    }
-    
     const serviceClient = TestClientFactory.getServiceRoleClient();
     
     // Create profile for authenticated user
