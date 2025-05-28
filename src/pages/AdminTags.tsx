@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Navigate } from "react-router-dom";
@@ -15,15 +16,18 @@ import { useHubs, useCreateHub, useDeleteHub } from "@/hooks/hubs";
 import AdminTagsHeader from "@/components/admin/tags/AdminTagsHeader";
 import TagForm, { TagFormValues } from "@/components/admin/tags/TagForm";
 import TagsTable from "@/components/admin/tags/TagsTable";
+import { Tag } from "@/utils/tags";
 
 const AdminTags = () => {
   const queryClient = useQueryClient();
   const { data: tagsResponse, isLoading: isTagsLoading } = useSelectionTags();
   const { data: hubsData, isLoading: isHubsLoading } = useHubs();
-  const { createTag, isCreating } = useTagCrudMutations();
+  const { createTag, updateTag, deleteTag, isCreating, isUpdating, isDeleting } = useTagCrudMutations();
   const { isAdmin, loading } = useAuth();
   const [isCreateFormOpen, setIsCreateFormOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [processingHubTags, setProcessingHubTags] = useState<{[key: string]: boolean}>({});
+  const [deletingTags, setDeletingTags] = useState<{[key: string]: boolean}>({});
   const createHub = useCreateHub();
   const deleteHub = useDeleteHub();
 
@@ -33,22 +37,61 @@ const AdminTags = () => {
   // Extract hub tag IDs
   const hubTagIds = (hubsData?.data || []).map(hub => hub.tag_id).filter(Boolean);
 
-  const handleOpenCreateForm = () => setIsCreateFormOpen(true);
-  const handleCloseCreateForm = () => setIsCreateFormOpen(false);
+  const handleOpenCreateForm = () => {
+    setEditingTag(null);
+    setIsCreateFormOpen(true);
+  };
+  
+  const handleCloseCreateForm = () => {
+    setIsCreateFormOpen(false);
+    setEditingTag(null);
+  };
 
-  const handleCreateTag = async (values: TagFormValues) => {
+  const handleEditTag = (tag: Tag) => {
+    setEditingTag(tag);
+    setIsCreateFormOpen(true);
+  };
+
+  const handleCreateOrUpdateTag = async (values: TagFormValues) => {
     try {
-      // Create the tag - no need to pass user ID since trigger handles it
-      await createTag({
-        name: values.name,
-        description: values.description
-      });
+      if (editingTag) {
+        // Update existing tag
+        await updateTag({
+          id: editingTag.id,
+          data: {
+            name: values.name,
+            description: values.description
+          }
+        });
+        toast.success("Tag updated successfully!");
+      } else {
+        // Create new tag
+        await createTag({
+          name: values.name,
+          description: values.description
+        });
+        toast.success("Tag created successfully!");
+      }
       
-      toast.success("Tag created successfully!");
       handleCloseCreateForm();
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     } catch (error: any) {
-      toast.error(`Failed to create tag: ${error?.message || "Unknown error"}`);
+      toast.error(`Failed to ${editingTag ? 'update' : 'create'} tag: ${error?.message || "Unknown error"}`);
+    }
+  };
+
+  const handleDeleteTag = async (tagId: string) => {
+    try {
+      setDeletingTags(prev => ({ ...prev, [tagId]: true }));
+      
+      await deleteTag(tagId);
+      
+      toast.success("Tag deleted successfully!");
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+    } catch (error: any) {
+      toast.error(`Failed to delete tag: ${error?.message || "Unknown error"}`);
+    } finally {
+      setDeletingTags(prev => ({ ...prev, [tagId]: false }));
     }
   };
 
@@ -125,8 +168,9 @@ const AdminTags = () => {
       <TagForm 
         isOpen={isCreateFormOpen}
         onClose={handleCloseCreateForm}
-        onSubmit={handleCreateTag}
-        isSubmitting={isCreating}
+        onSubmit={handleCreateOrUpdateTag}
+        isSubmitting={isCreating || isUpdating}
+        editingTag={editingTag}
       />
 
       <TagsTable 
@@ -134,8 +178,11 @@ const AdminTags = () => {
         isLoading={isLoading} 
         onMakeHub={handleMakeHub}
         onRemoveHub={handleRemoveHub}
+        onEditTag={handleEditTag}
+        onDeleteTag={handleDeleteTag}
         hubTagIds={hubTagIds}
         isProcessing={processingHubTags}
+        isDeletingTag={deletingTags}
       />
     </div>
   );

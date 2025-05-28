@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,15 +12,29 @@ import {
 import { Tag } from "@/utils/tags";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Home } from "lucide-react";
+import { Home, Edit, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TagsTableProps {
   tags: Tag[];
   isLoading: boolean;
   onMakeHub?: (tagId: string) => Promise<void>;
   onRemoveHub?: (tagId: string) => Promise<void>;
+  onEditTag?: (tag: Tag) => void;
+  onDeleteTag?: (tagId: string) => Promise<void>;
   hubTagIds?: string[];
   isProcessing?: { [key: string]: boolean };
+  isDeletingTag?: { [key: string]: boolean };
 }
 
 const TagsTable = ({ 
@@ -28,8 +42,11 @@ const TagsTable = ({
   isLoading, 
   onMakeHub, 
   onRemoveHub,
+  onEditTag,
+  onDeleteTag,
   hubTagIds = [],
-  isProcessing = {}
+  isProcessing = {},
+  isDeletingTag = {}
 }: TagsTableProps) => {
   if (isLoading) {
     return <p>Loading tags...</p>;
@@ -54,6 +71,7 @@ const TagsTable = ({
           {tags.map((tag) => {
             const isHub = hubTagIds.includes(tag.id);
             const isProcessingTag = isProcessing[tag.id];
+            const isDeletingThisTag = isDeletingTag[tag.id];
             
             return (
               <TableRow key={tag.id}>
@@ -65,29 +83,75 @@ const TagsTable = ({
                 </TableCell>
                 <TableCell>{tag.description}</TableCell>
                 <TableCell className="text-right">
-                  {onMakeHub && onRemoveHub && (
-                    isHub ? (
+                  <div className="flex justify-end gap-2">
+                    {onEditTag && (
                       <Button 
                         variant="outline" 
                         size="sm"
-                        disabled={isProcessingTag}
-                        onClick={() => onRemoveHub(tag.id)}
+                        onClick={() => onEditTag(tag)}
+                        disabled={isProcessingTag || isDeletingThisTag}
                       >
-                        <Home className="h-4 w-4 mr-2" />
-                        {isProcessingTag ? 'Processing...' : 'Remove Hub'}
+                        <Edit className="h-4 w-4 mr-2" />
+                        Edit
                       </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        disabled={isProcessingTag}
-                        onClick={() => onMakeHub(tag.id)}
-                      >
-                        <Home className="h-4 w-4 mr-2" />
-                        {isProcessingTag ? 'Processing...' : 'Make Hub'}
-                      </Button>
-                    )
-                  )}
+                    )}
+                    
+                    {onDeleteTag && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            disabled={isProcessingTag || isDeletingThisTag}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            {isDeletingThisTag ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Tag</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete "{tag.name}"? This action cannot be undone and will remove all assignments of this tag.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => onDeleteTag(tag.id)}
+                              className="bg-red-600 hover:bg-red-700"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                    
+                    {onMakeHub && onRemoveHub && (
+                      isHub ? (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={isProcessingTag || isDeletingThisTag}
+                          onClick={() => onRemoveHub(tag.id)}
+                        >
+                          <Home className="h-4 w-4 mr-2" />
+                          {isProcessingTag ? 'Processing...' : 'Remove Hub'}
+                        </Button>
+                      ) : (
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          disabled={isProcessingTag || isDeletingThisTag}
+                          onClick={() => onMakeHub(tag.id)}
+                        >
+                          <Home className="h-4 w-4 mr-2" />
+                          {isProcessingTag ? 'Processing...' : 'Make Hub'}
+                        </Button>
+                      )
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             );
