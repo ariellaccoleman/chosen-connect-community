@@ -1,106 +1,75 @@
 
-/**
- * Tag Query Hooks
- * Provides hooks for reading tag data
- */
-import { useQuery } from '@tanstack/react-query';
-import { EntityType, isValidEntityType } from '@/types/entityTypes';
-import { logger } from '@/utils/logger';
-import { Tag } from '@/utils/tags/types';
-import { tagApi, tagAssignmentApi } from '@/api/tags';
+import { useQuery } from "@tanstack/react-query";
+import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
+import { Tag } from "@/utils/tags/types";
+import { EntityType, isValidEntityType } from "@/types/entityTypes";
 
 /**
- * Hook to fetch tags filtered by entity type
+ * Hook to fetch all tags
  */
-export function useTagQuery(entityType?: EntityType) {
+export function useTags() {
   return useQuery({
-    queryKey: ["tags", "query", entityType],
+    queryKey: ["tags", "all"],
     queryFn: async () => {
-      try {
-        if (entityType) {
-          if (!isValidEntityType(entityType)) {
-            logger.warn(`Invalid entity type passed to useTagQuery: ${entityType}`);
-            return {
-              status: 'success',
-              data: []
-            };
-          }
-          const tags = await tagApi.getByEntityType(entityType);
-          return {
-            status: 'success',
-            data: tags || []
-          };
-        }
-        const tags = await tagApi.getAll();
-        return {
-          status: 'success',
-          data: tags || []
-        };
-      } catch (error) {
-        logger.error("Error in useTagQuery:", error);
-        throw error;
-      }
-    },
-    staleTime: 30000
+      return await extendedTagApi.getAll();
+    }
   });
 }
 
 /**
- * Hook to fetch a specific tag by ID
+ * Hook to fetch tags by entity type
  */
-export function useTagById(tagId: string | null) {
+export function useTagsByEntityType(entityType: EntityType) {
   return useQuery({
-    queryKey: ["tags", "byId", tagId],
+    queryKey: ["tags", "byEntityType", entityType],
     queryFn: async () => {
-      if (!tagId) return null;
-      try {
-        return await tagApi.getById(tagId);
-      } catch (error) {
-        logger.error(`Error fetching tag with ID ${tagId}:`, error);
-        throw error;
+      if (!isValidEntityType(entityType)) {
+        throw new Error(`Invalid entity type: ${entityType}`);
       }
+      return await extendedTagApi.getByEntityType(entityType);
     },
-    enabled: !!tagId
+    enabled: isValidEntityType(entityType)
   });
 }
 
 /**
- * Hook to find a tag by name
+ * Hook to fetch a single tag by ID
  */
-export function useFindTagByName(name: string | null) {
+export function useTag(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ["tags", "byId", id],
+    queryFn: async () => {
+      if (!id) return null;
+      return await extendedTagApi.getById(id);
+    },
+    enabled: !!id
+  });
+}
+
+/**
+ * Hook to search tags by name
+ */
+export function useTagSearch(searchQuery: string) {
+  return useQuery({
+    queryKey: ["tags", "search", searchQuery],
+    queryFn: async () => {
+      if (!searchQuery.trim()) return [];
+      return await extendedTagApi.searchByName(searchQuery);
+    },
+    enabled: !!searchQuery.trim()
+  });
+}
+
+/**
+ * Hook to find a tag by exact name
+ */
+export function useTagByName(name: string | null | undefined) {
   return useQuery({
     queryKey: ["tags", "byName", name],
     queryFn: async () => {
       if (!name) return null;
-      try {
-        return await tagApi.findByName(name);
-      } catch (error) {
-        logger.error(`Error finding tag with name "${name}":`, error);
-        throw error;
-      }
+      return await extendedTagApi.findByName(name);
     },
     enabled: !!name
-  });
-}
-
-/**
- * Hook to fetch all available tags
- */
-export function useAllTags() {
-  return useQuery({
-    queryKey: ["tags", "all"],
-    queryFn: async () => {
-      try {
-        const tags = await tagApi.getAll();
-        return {
-          status: 'success',
-          data: tags || []
-        };
-      } catch (error) {
-        logger.error("Error fetching all tags:", error);
-        throw error;
-      }
-    },
-    staleTime: 60000 // Cache for 1 minute
   });
 }

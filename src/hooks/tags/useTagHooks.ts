@@ -1,17 +1,11 @@
-
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  tagApi,
-  tagAssignmentApi,
-  createTag, 
-  updateTag,
-  deleteTag
-} from "@/api/tags";
+  extendedTagApi,
+  tagAssignmentApi
+} from "@/api/tags/factory/tagApiFactory";
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
-import { apiClient } from "@/api/core/apiClient";
-import { supabase } from "@/integrations/supabase/client";
 import { logger } from "@/utils/logger";
 
 /**
@@ -30,8 +24,8 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the tagApi from factory
-        const tags = await tagApi.getAll();
+        // Use the extendedTagApi
+        const tags = await extendedTagApi.getAll();
         
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
@@ -70,7 +64,7 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         // Log for debugging filters
         logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
         
-        // Use the tagAssignmentApi from factory with the corrected method
+        // Use the tagAssignmentApi
         const assignments = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
         
         // Log results for debugging
@@ -89,27 +83,26 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
 
 /**
  * Hook for CRUD operations on tags
- * Entity type associations are now handled automatically by SQL triggers
  */
 export function useTagCrudMutations() {
   const queryClient = useQueryClient();
   
   const createTagMutation = useMutation({
-    mutationFn: createTag,
+    mutationFn: extendedTagApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
   const updateTagMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => updateTag(id, data),
+    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => extendedTagApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
   const deleteTagMutation = useMutation({
-    mutationFn: deleteTag,
+    mutationFn: extendedTagApi.delete,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
@@ -158,7 +151,6 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
 
 /**
  * Hook for tag assignment operations
- * Entity type associations are now handled automatically by SQL triggers
  */
 export function useTagAssignmentMutations() {
   const queryClient = useQueryClient();
@@ -178,7 +170,7 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Create assignment - triggers will automatically handle entity type associations
+      // Create assignment
       return tagAssignmentApi.create(tagId, entityId, entityType);
     },
     onSuccess: (_, variables) => {
@@ -189,7 +181,7 @@ export function useTagAssignmentMutations() {
   
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      // Delete assignment - triggers will automatically clean up unused entity types
+      // Delete assignment
       return tagAssignmentApi.delete(assignmentId);
     },
     onSuccess: () => {

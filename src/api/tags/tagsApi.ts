@@ -1,62 +1,62 @@
 
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { tagApi, tagAssignmentApi } from './factory/tagApiFactory';
+import { extendedTagApi, tagAssignmentApi } from './factory/tagApiFactory';
 
 /**
  * Get all tags
  */
 export const getAllTags = async (): Promise<Tag[]> => {
-  return await tagApi.getAll();
+  return await extendedTagApi.getAll();
 };
 
 /**
  * Get tag by ID
  */
 export const getTagById = async (id: string): Promise<Tag | null> => {
-  return await tagApi.getById(id);
+  return await extendedTagApi.getById(id);
 };
 
 /**
  * Find tag by name
  */
 export const findTagByName = async (name: string): Promise<Tag | null> => {
-  return await tagApi.findByName(name);
+  return await extendedTagApi.findByName(name);
 };
 
 /**
  * Create a new tag
  */
 export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
-  return await tagApi.create(data);
+  return await extendedTagApi.create(data);
 };
 
 /**
  * Update an existing tag
  */
 export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
-  return await tagApi.update(id, data);
+  return await extendedTagApi.update(id, data);
 };
 
 /**
  * Delete a tag
  */
 export const deleteTag = async (id: string): Promise<boolean> => {
-  return await tagApi.delete(id);
+  return await extendedTagApi.delete(id);
 };
 
 /**
  * Find or create a tag
  */
 export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
-  return await tagApi.findOrCreate(data, entityType);
+  return await extendedTagApi.findOrCreate(data, entityType);
 };
 
 /**
  * Get tags by entity type
  */
 export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
-  return await tagApi.getByEntityType(entityType);
+  return await extendedTagApi.getByEntityType(entityType);
 };
 
 /**
