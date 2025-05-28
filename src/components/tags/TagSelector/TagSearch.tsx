@@ -128,6 +128,7 @@ const TagSearch = ({
                 key={tag.id}
                 tag={tag}
                 onSelect={() => onTagSelected(tag)}
+                targetType={targetType}
               />
             ))}
           {user?.id && searchValue.trim() && !tags.some(tag => 
