@@ -6,6 +6,14 @@ import { TagApiOptions, TagAssignmentOperations } from './types';
 import { logger } from '@/utils/logger';
 
 /**
+ * Validate if a string is a valid UUID
+ */
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+/**
  * Create tag assignment API operations
  */
 export function createTagAssignmentOperations(options: TagApiOptions = {}): TagAssignmentOperations {
@@ -14,6 +22,12 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Get assignments for entity
     getForEntity: async (entityId: string, entityType: EntityType, providedClient?: any) => {
       try {
+        // Validate UUID format
+        if (!isValidUUID(entityId)) {
+          logger.warn(`Invalid UUID format for entity ID: ${entityId}`);
+          return [];
+        }
+        
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         const response = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
         if (response.status === 'success' && response.data) {
@@ -29,6 +43,13 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Get entities by tag ID
     getEntitiesByTagId: async (tagId: string, entityType?: EntityType, providedClient?: any) => {
       logger.debug(`TagAssignmentOperations.getEntitiesByTagId: Getting entities with tag ${tagId}`);
+      
+      // Validate UUID format
+      if (!isValidUUID(tagId)) {
+        logger.warn(`Invalid UUID format for tag ID: ${tagId}`);
+        return [];
+      }
+      
       try {
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         const assignments = await tagAssignmentRepo.getEntitiesWithTag(tagId, entityType);
@@ -42,6 +63,14 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Create assignment
     create: async (tagId: string, entityId: string, entityType: EntityType, providedClient?: any) => {
       try {
+        // Validate UUID formats
+        if (!isValidUUID(tagId)) {
+          throw new Error(`Invalid UUID format for tag ID: ${tagId}`);
+        }
+        if (!isValidUUID(entityId)) {
+          throw new Error(`Invalid UUID format for entity ID: ${entityId}`);
+        }
+        
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         const response = await tagAssignmentRepo.createTagAssignment({
           tag_id: tagId,
@@ -62,6 +91,12 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Delete assignment
     delete: async (assignmentId: string, providedClient?: any) => {
       try {
+        // Validate UUID format
+        if (!isValidUUID(assignmentId)) {
+          logger.warn(`Invalid UUID format for assignment ID: ${assignmentId}`);
+          return false;
+        }
+        
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         const response = await tagAssignmentRepo.deleteTagAssignment(assignmentId);
         return response.status === 'success' && !!response.data;
@@ -74,6 +109,16 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Delete by tag and entity
     deleteByTagAndEntity: async (tagId: string, entityId: string, entityType: EntityType, providedClient?: any) => {
       logger.debug(`Deleting tag assignment for tag ${tagId} and entity ${entityId} of type ${entityType}`);
+      
+      // Validate UUID formats
+      if (!isValidUUID(tagId)) {
+        logger.warn(`Invalid UUID format for tag ID: ${tagId}`);
+        return false;
+      }
+      if (!isValidUUID(entityId)) {
+        logger.warn(`Invalid UUID format for entity ID: ${entityId}`);
+        return false;
+      }
       
       try {
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
@@ -100,6 +145,12 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Delete all assignments for an entity
     deleteForEntity: async (entityId: string, entityType: EntityType, providedClient?: any) => {
       try {
+        // Validate UUID format
+        if (!isValidUUID(entityId)) {
+          logger.warn(`Invalid UUID format for entity ID: ${entityId}`);
+          return false;
+        }
+        
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         await tagAssignmentRepo.deleteTagAssignmentsForEntity(entityId, entityType);
         return true;
@@ -112,6 +163,12 @@ export function createTagAssignmentOperations(options: TagApiOptions = {}): TagA
     // Check if tag is assigned
     isTagAssigned: async (tagId: string, entityId: string, entityType: EntityType, providedClient?: any) => {
       try {
+        // Validate UUID formats
+        if (!isValidUUID(tagId) || !isValidUUID(entityId)) {
+          logger.warn(`Invalid UUID format for tag ID ${tagId} or entity ID ${entityId}`);
+          return false;
+        }
+        
         const tagAssignmentRepo = createTagAssignmentRepository(providedClient);
         const assignmentsResponse = await tagAssignmentRepo.getTagAssignmentsForEntity(entityId, entityType);
         if (assignmentsResponse.status === 'success' && assignmentsResponse.data) {

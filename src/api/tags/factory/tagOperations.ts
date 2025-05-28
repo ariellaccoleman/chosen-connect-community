@@ -6,6 +6,14 @@ import { apiClient } from '@/api/core/apiClient';
 import { logger } from '@/utils/logger';
 
 /**
+ * Validate if a string is a valid UUID
+ */
+function isValidUUID(str: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(str);
+}
+
+/**
  * Create tag operations with provided options
  */
 export function createTagOperations<T extends Tag>(options: TagApiOptions = {}): TagOperations<T> {
@@ -39,6 +47,12 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
      */
     async getById(id: string, providedClient?: any): Promise<T | null> {
       logger.debug(`TagOperations.getById: Fetching tag with ID ${id}`);
+      
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        logger.warn(`Invalid UUID format for tag ID: ${id}`);
+        return null;
+      }
       
       const { data, error } = await apiClient.query(async (client) => {
         return client
@@ -142,6 +156,11 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
         throw new Error('Tag ID is required for update');
       }
       
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error(`Invalid UUID format for tag ID: ${id}`);
+      }
+      
       // First check if the tag exists
       const existingTag = await this.getById(id, providedClient);
       if (!existingTag) {
@@ -178,6 +197,12 @@ export function createTagOperations<T extends Tag>(options: TagApiOptions = {}):
       // Validate that we have an ID
       if (!id) {
         throw new Error('Tag ID is required for delete');
+      }
+      
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        logger.warn(`Invalid UUID format for tag ID: ${id}`);
+        return false;
       }
       
       // First check if the tag exists
