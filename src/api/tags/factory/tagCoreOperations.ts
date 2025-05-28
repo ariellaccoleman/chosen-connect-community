@@ -32,7 +32,7 @@ export const extendedTagOperations = {
   async findByName(name: string, providedClient?: any): Promise<ApiResponse<Tag | null>> {
     const response = await tagCoreOperations.getAll({ 
       filters: { name }
-    }, providedClient);
+    });
     
     if (response.error) {
       return {
@@ -53,13 +53,13 @@ export const extendedTagOperations = {
   async searchByName(searchQuery: string, providedClient?: any): Promise<ApiResponse<Tag[]>> {
     return tagCoreOperations.getAll({ 
       filters: { name: { ilike: `%${searchQuery}%` } } 
-    }, providedClient);
+    });
   },
   
   async getByEntityType(entityType: EntityType, providedClient?: any): Promise<ApiResponse<Tag[]>> {
     // This would need to join with tag_entity_types, but for now return all tags
     // The filtering will be handled at the application level
-    return tagCoreOperations.getAll({}, providedClient);
+    return tagCoreOperations.getAll({});
   },
   
   async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
@@ -82,6 +82,6 @@ export const extendedTagOperations = {
     }
     
     // Create new tag if not found
-    return tagCoreOperations.create(data, providedClient);
+    return tagCoreOperations.create(data);
   }
 };

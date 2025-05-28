@@ -33,7 +33,7 @@ export const tagAssignmentCoreOperations = {
       tag_id: tagId,
       target_id: entityId,
       target_type: entityType
-    }, providedClient);
+    });
   },
   
   async getForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
@@ -42,7 +42,7 @@ export const tagAssignmentCoreOperations = {
         target_id: entityId,
         target_type: entityType
       }
-    }, providedClient);
+    });
   },
   
   async getEntitiesByTagId(tagId: string, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
@@ -51,6 +51,6 @@ export const tagAssignmentCoreOperations = {
       filters.target_type = entityType;
     }
     
-    return tagAssignmentBase.getAll({ filters }, providedClient);
+    return tagAssignmentBase.getAll({ filters });
   }
 };
