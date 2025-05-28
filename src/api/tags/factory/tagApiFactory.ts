@@ -19,5 +19,21 @@ export function createTagAssignmentApiFactory() {
   return tagAssignmentApi;
 }
 
+// Individual function exports for backward compatibility with index.ts
+export const getAllTags = extendedTagApi.getAll;
+export const getTagById = extendedTagApi.getById;
+export const findTagByName = extendedTagApi.findByName;
+export const searchTags = extendedTagApi.searchByName;
+export const createTag = extendedTagApi.create;
+export const updateTag = extendedTagApi.update;
+export const deleteTag = extendedTagApi.delete;
+export const findOrCreateTag = extendedTagApi.findOrCreate;
+export const getTagsByEntityType = extendedTagApi.getByEntityType;
+
+// Tag assignment function exports
+export const getTagAssignmentsForEntity = tagAssignmentApi.getForEntity;
+export const createTagAssignment = tagAssignmentApi.create;
+export const deleteTagAssignment = tagAssignmentApi.delete;
+
 // Re-export core operations for direct access if needed
 export { tagCoreOperations } from './tagCoreOperations';

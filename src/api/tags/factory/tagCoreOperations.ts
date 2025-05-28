@@ -30,7 +30,20 @@ export const extendedTagOperations = {
   ...tagCoreOperations,
   
   async findByName(name: string): Promise<ApiResponse<Tag | null>> {
-    return tagCoreOperations.findOne({ name });
+    const response = await tagCoreOperations.getAll({ 
+      filters: { name },
+      limit: 1
+    });
+    
+    if (response.error) {
+      return response as ApiResponse<Tag | null>;
+    }
+    
+    const tags = response.data || [];
+    return {
+      data: tags.length > 0 ? tags[0] : null,
+      error: null
+    };
   },
   
   async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
