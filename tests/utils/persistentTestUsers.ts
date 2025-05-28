@@ -16,9 +16,12 @@ export const TEST_USER_CONFIG = {
  * Test user email addresses
  */
 export const TEST_USER_EMAILS = {
-  user1: 'testuser4@example.com',
-  user2: 'testuser5@example.com', 
-  user3: 'testuser6@example.com'
+  user1: 'testuser1@example.com',
+  user2: 'testuser2@example.com', 
+  user3: 'testuser3@example.com',
+  user4: 'testuser4@example.com',
+  user5: 'testuser5@example.com', 
+  user6: 'testuser6@example.com'
 } as const;
 
 /**
@@ -34,37 +37,37 @@ export const PERSISTENT_TEST_USERS = {
     email: TEST_USER_EMAILS.user1,
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User4'
+    displayName: 'Test User1'
   },
   user2: {
     email: TEST_USER_EMAILS.user2,
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User5'
+    displayName: 'Test User2'
   },
   user3: {
     email: TEST_USER_EMAILS.user3,
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User6'
+    displayName: 'Test User3'
   },
   user4: {
-    email: 'testuser1@example.com',
+    email: TEST_USER_EMAILS.user4,
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User1'
+    displayName: 'Test User4'
   },
   user5: {
-    email: 'testuser2@example.com', 
+    email: TEST_USER_EMAILS.user5, 
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User2'
+    displayName: 'Test User5'
   },
   user6: {
-    email: 'testuser3@example.com',
+    email: TEST_USER_EMAILS.user6,
     password: TEST_USER_CONFIG.password,
     role: TEST_USER_CONFIG.role,
-    displayName: 'Test User3'
+    displayName: 'Test User6'
   }
 } as const;
 
@@ -79,7 +82,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
  */
 export class PersistentTestUserHelper {
   /**
-   * Get authenticated client for test user 1 (Test User4)
+   * Get authenticated client for test user 1
    * Uses new per-user client pattern
    */
   static async getUser1Client(): Promise<SupabaseClient<Database>> {
@@ -91,7 +94,7 @@ export class PersistentTestUserHelper {
   }
 
   /**
-   * Get authenticated client for test user 2 (Test User5)
+   * Get authenticated client for test user 2
    * Uses new per-user client pattern
    */
   static async getUser2Client(): Promise<SupabaseClient<Database>> {
@@ -103,7 +106,7 @@ export class PersistentTestUserHelper {
   }
 
   /**
-   * Get authenticated client for test user 3 (Test User6)
+   * Get authenticated client for test user 3
    * Uses new per-user client pattern
    */
   static async getUser3Client(): Promise<SupabaseClient<Database>> {
