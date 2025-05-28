@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -183,8 +182,7 @@ describe('Tag Entity Type Repository Integration Tests', () => {
       const result = await tagEntityTypeRepo.getEntityTypesByTagId(testTag.id);
       
       expect(result.status).toBe('success');
-      expect(result.data).toHaveLength(2);
-      expect(result.data).toContain(EntityType.ORGANIZATION);
+      expect(result.data).toHaveLength(1);
       expect(result.data).toContain(EntityType.PROFILE);
 
       // Track for cleanup
