@@ -71,21 +71,21 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting, editingTag }: TagFor
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingTag ? 'Edit Tag' : 'Create New Tag'}
-              </DialogTitle>
-              <DialogDescription>
-                {editingTag 
-                  ? 'Update the tag information below.'
-                  : 'Add a new tag to the database.'
-                }
-              </DialogDescription>
-            </DialogHeader>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {editingTag ? 'Edit Tag' : 'Create New Tag'}
+          </DialogTitle>
+          <DialogDescription>
+            {editingTag 
+              ? 'Update the tag information below.'
+              : 'Add a new tag to the database.'
+            }
+          </DialogDescription>
+        </DialogHeader>
 
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -113,20 +113,21 @@ const TagForm = ({ isOpen, onClose, onSubmit, isSubmitting, editingTag }: TagFor
                 </FormItem>
               )}
             />
-          </DialogContent>
-          <div className="px-6 py-4 flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting 
-                ? (editingTag ? "Updating..." : "Creating...")
-                : (editingTag ? "Update Tag" : "Create Tag")
-              }
-            </Button>
-          </div>
-        </form>
-      </Form>
+
+            <div className="flex justify-end space-x-2 pt-4">
+              <Button type="button" variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting 
+                  ? (editingTag ? "Updating..." : "Creating...")
+                  : (editingTag ? "Update Tag" : "Create Tag")
+                }
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </DialogContent>
     </Dialog>
   );
 };
