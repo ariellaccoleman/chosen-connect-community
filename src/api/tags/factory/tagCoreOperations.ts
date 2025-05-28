@@ -65,7 +65,7 @@ export const extendedTagOperations = {
   
   async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
     // First try to find existing tag
-    const existing = await this.findByName(data.name!, providedClient);
+    const existing = await extendedTagOperations.findByName(data.name!, providedClient);
     if (existing.error) {
       return {
         data: null,
