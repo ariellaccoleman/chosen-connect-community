@@ -1,4 +1,3 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -680,15 +679,20 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should handle edge cases gracefully', async () => {
-      const getAssignmentsResponse = await tagAssignmentApi.getForEntity('non-existent-id', EntityType.ORGANIZATION, authenticatedClient);
+      // Use valid UUIDs that don't exist in the database instead of invalid format strings
+      const nonExistentEntityId = '00000000-0000-0000-0000-000000000000';
+      const nonExistentTagId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
+      const nonExistentAssignmentId = 'bbbbbbbb-cccc-dddd-eeee-ffffffffffff';
+      
+      const getAssignmentsResponse = await tagAssignmentApi.getForEntity(nonExistentEntityId, EntityType.ORGANIZATION, authenticatedClient);
       expect(getAssignmentsResponse.error).toBeNull();
       expect(getAssignmentsResponse.data).toEqual([]);
       
-      const getEntitiesResponse = await tagAssignmentApi.getEntitiesByTagId('non-existent-tag-id', EntityType.ORGANIZATION, authenticatedClient);
+      const getEntitiesResponse = await tagAssignmentApi.getEntitiesByTagId(nonExistentTagId, EntityType.ORGANIZATION, authenticatedClient);
       expect(getEntitiesResponse.error).toBeNull();
       expect(getEntitiesResponse.data).toEqual([]);
       
-      const deleteResponse = await tagAssignmentApi.delete('non-existent-assignment-id', authenticatedClient);
+      const deleteResponse = await tagAssignmentApi.delete(nonExistentAssignmentId, authenticatedClient);
       expect(deleteResponse.error).toBeNull();
       expect(deleteResponse.data).toBe(false);
     });
