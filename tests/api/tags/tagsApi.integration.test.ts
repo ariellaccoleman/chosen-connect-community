@@ -1,3 +1,4 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
@@ -207,6 +208,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(response.error).toBeNull();
       expect(response.data).toBeDefined();
+      expect(response.data).not.toBeNull();
       
       const tag = response.data!;
       expect(tag.name).toBe(tagName);
@@ -225,6 +227,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse.error).toBeNull();
       expect(createResponse.data).toBeDefined();
+      expect(createResponse.data).not.toBeNull();
       
       const tag = createResponse.data!;
       createdTagIds.push(tag.id);
@@ -234,6 +237,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(getAllResponse.error).toBeNull();
       expect(getAllResponse.data).toBeDefined();
+      expect(getAllResponse.data).not.toBeNull();
       
       const tags = getAllResponse.data!;
       expect(Array.isArray(tags)).toBe(true);
@@ -250,6 +254,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse.error).toBeNull();
       expect(createResponse.data).toBeDefined();
+      expect(createResponse.data).not.toBeNull();
       
       const tag = createResponse.data!;
       createdTagIds.push(tag.id);
@@ -259,6 +264,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(getByIdResponse.error).toBeNull();
       expect(getByIdResponse.data).toBeDefined();
+      expect(getByIdResponse.data).not.toBeNull();
       
       const foundTag = getByIdResponse.data!;
       expect(foundTag.id).toBe(tag.id);
@@ -276,6 +282,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse.error).toBeNull();
       expect(createResponse.data).toBeDefined();
+      expect(createResponse.data).not.toBeNull();
       
       const tag = createResponse.data!;
       createdTagIds.push(tag.id);
@@ -285,6 +292,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(findByNameResponse.error).toBeNull();
       expect(findByNameResponse.data).toBeDefined();
+      expect(findByNameResponse.data).not.toBeNull();
       
       const foundTag = findByNameResponse.data!;
       expect(foundTag.name).toBe(tagName);
@@ -309,6 +317,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(createResponse2.error).toBeNull();
       expect(createResponse1.data).toBeDefined();
       expect(createResponse2.data).toBeDefined();
+      expect(createResponse1.data).not.toBeNull();
+      expect(createResponse2.data).not.toBeNull();
       
       const tag1 = createResponse1.data!;
       const tag2 = createResponse2.data!;
@@ -320,6 +330,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(searchResponse.error).toBeNull();
       expect(searchResponse.data).toBeDefined();
+      expect(searchResponse.data).not.toBeNull();
       
       const searchResults = searchResponse.data!;
       expect(Array.isArray(searchResults)).toBe(true);
@@ -338,6 +349,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse1.error).toBeNull();
       expect(createResponse1.data).toBeDefined();
+      expect(createResponse1.data).not.toBeNull();
       
       const tag1 = createResponse1.data!;
       expect(tag1.name).toBe(tagName);
@@ -352,6 +364,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse2.error).toBeNull();
       expect(createResponse2.data).toBeDefined();
+      expect(createResponse2.data).not.toBeNull();
       
       const tag2 = createResponse2.data!;
       expect(tag2.id).toBe(tag1.id);
@@ -367,6 +380,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse.error).toBeNull();
       expect(createResponse.data).toBeDefined();
+      expect(createResponse.data).not.toBeNull();
       
       const tag = createResponse.data!;
       createdTagIds.push(tag.id);
@@ -378,6 +392,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(updateResponse.error).toBeNull();
       expect(updateResponse.data).toBeDefined();
+      expect(updateResponse.data).not.toBeNull();
       
       const updatedTag = updateResponse.data!;
       expect(updatedTag.id).toBe(tag.id);
@@ -393,6 +408,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createResponse.error).toBeNull();
       expect(createResponse.data).toBeDefined();
+      expect(createResponse.data).not.toBeNull();
       
       const tag = createResponse.data!;
       // Don't add to cleanup array since we're testing deletion
@@ -404,6 +420,7 @@ describe('Tag Operations API Integration Tests', () => {
       expect(deleteResponse.data).toBe(true);
       
       const getDeletedResponse = await extendedTagApi.getById(tag.id);
+      expect(getDeletedResponse.error).toBeNull();
       expect(getDeletedResponse.data).toBeNull();
     });
   });
@@ -418,6 +435,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createTagResponse.error).toBeNull();
       expect(createTagResponse.data).toBeDefined();
+      expect(createTagResponse.data).not.toBeNull();
       
       const tag = createTagResponse.data!;
       const org = await createTestOrganization('TestOrgAssignment');
@@ -429,6 +447,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(assignmentResponse.error).toBeNull();
       expect(assignmentResponse.data).toBeDefined();
+      expect(assignmentResponse.data).not.toBeNull();
       
       const assignment = assignmentResponse.data!;
       createdAssignmentIds.push(assignment.id);
@@ -438,6 +457,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(getAssignmentsResponse.error).toBeNull();
       expect(getAssignmentsResponse.data).toBeDefined();
+      expect(getAssignmentsResponse.data).not.toBeNull();
       
       const assignments = getAssignmentsResponse.data!;
       expect(Array.isArray(assignments)).toBe(true);
@@ -464,6 +484,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createTagResponse.error).toBeNull();
       expect(createTagResponse.data).toBeDefined();
+      expect(createTagResponse.data).not.toBeNull();
       
       const tag = createTagResponse.data!;
       const org = await createTestOrganization('TestOrgCreateDelete');
@@ -475,6 +496,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createAssignmentResponse.error).toBeNull();
       expect(createAssignmentResponse.data).toBeDefined();
+      expect(createAssignmentResponse.data).not.toBeNull();
       
       const assignment = createAssignmentResponse.data!;
       expect(assignment.tag_id).toBe(tag.id);
@@ -483,6 +505,7 @@ describe('Tag Operations API Integration Tests', () => {
       let getAssignmentsResponse = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION);
       expect(getAssignmentsResponse.error).toBeNull();
       expect(getAssignmentsResponse.data).toBeDefined();
+      expect(getAssignmentsResponse.data).not.toBeNull();
       
       let assignments = getAssignmentsResponse.data!;
       expect(assignments.length).toBe(1);
@@ -494,6 +517,7 @@ describe('Tag Operations API Integration Tests', () => {
       getAssignmentsResponse = await tagAssignmentApi.getForEntity(org.id, EntityType.ORGANIZATION);
       expect(getAssignmentsResponse.error).toBeNull();
       expect(getAssignmentsResponse.data).toBeDefined();
+      expect(getAssignmentsResponse.data).not.toBeNull();
       
       assignments = getAssignmentsResponse.data!;
       expect(assignments.length).toBe(0);
@@ -516,6 +540,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(createTag2Response.error).toBeNull();
       expect(createTag1Response.data).toBeDefined();
       expect(createTag2Response.data).toBeDefined();
+      expect(createTag1Response.data).not.toBeNull();
+      expect(createTag2Response.data).not.toBeNull();
       
       const tag1 = createTag1Response.data!;
       const tag2 = createTag2Response.data!;
@@ -531,6 +557,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(assignment2Response.error).toBeNull();
       expect(assignment1Response.data).toBeDefined();
       expect(assignment2Response.data).toBeDefined();
+      expect(assignment1Response.data).not.toBeNull();
+      expect(assignment2Response.data).not.toBeNull();
       
       const assignment1 = assignment1Response.data!;
       const assignment2 = assignment2Response.data!;
@@ -542,6 +570,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(getAssignmentsResponse.error).toBeNull();
       expect(getAssignmentsResponse.data).toBeDefined();
+      expect(getAssignmentsResponse.data).not.toBeNull();
       
       const assignments = getAssignmentsResponse.data!;
       expect(assignments.length).toBe(2);
@@ -558,6 +587,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createTagResponse.error).toBeNull();
       expect(createTagResponse.data).toBeDefined();
+      expect(createTagResponse.data).not.toBeNull();
       
       const tag = createTagResponse.data!;
       const org1 = await createTestOrganization('TestOrg1');
@@ -573,6 +603,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(assignment2Response.error).toBeNull();
       expect(assignment1Response.data).toBeDefined();
       expect(assignment2Response.data).toBeDefined();
+      expect(assignment1Response.data).not.toBeNull();
+      expect(assignment2Response.data).not.toBeNull();
       
       const assignment1 = assignment1Response.data!;
       const assignment2 = assignment2Response.data!;
@@ -584,6 +616,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(getEntitiesResponse.error).toBeNull();
       expect(getEntitiesResponse.data).toBeDefined();
+      expect(getEntitiesResponse.data).not.toBeNull();
       
       const entities = getEntitiesResponse.data!;
       expect(entities.length).toBe(2);
@@ -600,6 +633,7 @@ describe('Tag Operations API Integration Tests', () => {
       
       expect(createTagResponse.error).toBeNull();
       expect(createTagResponse.data).toBeDefined();
+      expect(createTagResponse.data).not.toBeNull();
       
       const tag = createTagResponse.data!;
       const org1 = await createTestOrganization('TestOrgCleanup1');
@@ -615,6 +649,8 @@ describe('Tag Operations API Integration Tests', () => {
       expect(personAssignmentResponse.error).toBeNull();
       expect(orgAssignmentResponse.data).toBeDefined();
       expect(personAssignmentResponse.data).toBeDefined();
+      expect(orgAssignmentResponse.data).not.toBeNull();
+      expect(personAssignmentResponse.data).not.toBeNull();
       
       const orgAssignment = orgAssignmentResponse.data!;
       const personAssignment = personAssignmentResponse.data!;
