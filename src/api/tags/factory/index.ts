@@ -6,9 +6,11 @@ export {
   createTagApiFactory,
   createTagAssignmentApiFactory,
   tagApi,
-  tagAssignmentApi
+  tagAssignmentApi,
+  extendedTagApi
 } from './tagApiFactory';
 
 export * from './types';
 export * from './tagOperations';
 export * from './tagAssignmentOperations';
+export * from './legacyCompatibilityFunctions';
