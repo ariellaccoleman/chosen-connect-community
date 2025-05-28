@@ -23,14 +23,23 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the extendedTagApi
-        const tags = await extendedTagApi.getAll();
+        // Use the extendedTagApi and unwrap the response
+        const response = await extendedTagApi.getAll();
+        if (response.error) {
+          logger.error("Error in useSelectionTags:", response.error);
+          return {
+            status: 'error',
+            data: [],
+            error: response.error
+          };
+        }
         
+        const tags = response.data || [];
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
         return {
           status: 'success',
-          data: tags || []
+          data: tags
         };
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);

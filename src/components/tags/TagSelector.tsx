@@ -64,9 +64,13 @@ const TagSelector = ({
     if (currentSelectedTagId) {
       const findTag = async () => {
         try {
-          const tag = await extendedTagApi.getById(currentSelectedTagId);
-          if (tag) {
-            setSelectedTag(tag);
+          const response = await extendedTagApi.getById(currentSelectedTagId);
+          if (response.error) {
+            logger.error("Error fetching selected tag:", response.error);
+            return;
+          }
+          if (response.data) {
+            setSelectedTag(response.data);
           }
         } catch (err) {
           logger.error("Error fetching selected tag:", err);
@@ -86,10 +90,22 @@ const TagSelector = ({
       
       if (searchValue) {
         // If there's a search query, search by name
-        fetchedTags = await extendedTagApi.searchByName(searchValue);
+        const response = await extendedTagApi.searchByName(searchValue);
+        if (response.error) {
+          logger.error("Error searching tags:", response.error);
+          setTags([]);
+          return;
+        }
+        fetchedTags = response.data || [];
       } else {
         // Otherwise get tags for entity type
-        fetchedTags = await extendedTagApi.getByEntityType(targetType as EntityType);
+        const response = await extendedTagApi.getByEntityType(targetType as EntityType);
+        if (response.error) {
+          logger.error("Error loading tags:", response.error);
+          setTags([]);
+          return;
+        }
+        fetchedTags = response.data || [];
       }
       
       logger.debug(`TagSelector loaded ${fetchedTags.length} tags for entity type ${targetType}`);

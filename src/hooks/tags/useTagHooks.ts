@@ -25,14 +25,23 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the extendedTagApi
-        const tags = await extendedTagApi.getAll();
+        // Use the extendedTagApi and unwrap the response
+        const response = await extendedTagApi.getAll();
+        if (response.error) {
+          logger.error("Error in useSelectionTags:", response.error);
+          return {
+            status: 'error',
+            data: [],
+            error: response.error
+          };
+        }
         
+        const tags = response.data || [];
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
         return {
           status: 'success',
-          data: tags || []
+          data: tags
         };
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);
@@ -65,8 +74,14 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         // Log for debugging filters
         logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
         
-        // Use the tagAssignmentApi
-        const assignments = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
+        // Use the tagAssignmentApi and unwrap the response
+        const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
+        if (response.error) {
+          logger.error(`useFilterByTag: Error fetching tag assignments for tag ${tagId}:`, response.error);
+          return [];
+        }
+        
+        const assignments = response.data || [];
         
         // Log results for debugging
         logger.debug(`useFilterByTag: Found ${assignments.length} tag assignments for tag ${tagId}`);
@@ -89,21 +104,39 @@ export function useTagCrudMutations() {
   const queryClient = useQueryClient();
   
   const createTagMutation = useMutation({
-    mutationFn: extendedTagApi.create,
+    mutationFn: async (data: Partial<Tag>) => {
+      const response = await extendedTagApi.create(data);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
   const updateTagMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Partial<Tag> }) => extendedTagApi.update(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: Partial<Tag> }) => {
+      const response = await extendedTagApi.update(id, data);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
   });
   
   const deleteTagMutation = useMutation({
-    mutationFn: extendedTagApi.delete,
+    mutationFn: async (id: string) => {
+      const response = await extendedTagApi.delete(id);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }
@@ -135,11 +168,16 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
       }
       
       try {
-        // Use tagAssignmentApi
-        const assignments = await tagAssignmentApi.getForEntity(entityId, entityType);
+        // Use tagAssignmentApi and unwrap the response
+        const response = await tagAssignmentApi.getForEntity(entityId, entityType);
+        if (response.error) {
+          logger.error(`Error fetching tags for entity ${entityId}:`, response.error);
+          throw response.error;
+        }
+        
         return { 
           status: 'success', 
-          data: assignments
+          data: response.data || []
         };
       } catch (error) {
         logger.error(`Error fetching tags for entity ${entityId}:`, error);
@@ -172,7 +210,11 @@ export function useTagAssignmentMutations() {
       }
       
       // Create assignment
-      return tagAssignmentApi.create(tagId, entityId, entityType);
+      const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["entity", variables.entityId, "tags"] });
@@ -183,7 +225,11 @@ export function useTagAssignmentMutations() {
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
       // Delete assignment
-      return tagAssignmentApi.delete(assignmentId);
+      const response = await tagAssignmentApi.delete(assignmentId);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["entity"] });

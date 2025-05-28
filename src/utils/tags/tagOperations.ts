@@ -88,9 +88,13 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
     const { created_by, ...cleanTagData } = tagData;
     
     // Call the API function that properly uses the apiClient
-    const result = await extendedTagApi.findOrCreate(cleanTagData);
+    const response = await extendedTagApi.findOrCreate(cleanTagData);
+    if (response.error) {
+      logger.error("Error finding or creating tag:", response.error);
+      throw response.error;
+    }
     
-    return result;
+    return response.data || null;
   } catch (error) {
     logger.error("Error finding or creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
@@ -104,9 +108,13 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
     const { created_by, ...cleanTagData } = tagData;
     
     // Call the API function that properly uses the apiClient
-    const result = await extendedTagApi.create(cleanTagData);
+    const response = await extendedTagApi.create(cleanTagData);
+    if (response.error) {
+      logger.error("Error creating tag:", response.error);
+      throw response.error;
+    }
     
-    return result;
+    return response.data || null;
   } catch (error) {
     logger.error("Error creating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
@@ -122,10 +130,14 @@ export const updateTag = async (
     logger.debug(`Updating tag ${tagId} with:`, updates);
     
     // Call the API function that properly uses the apiClient
-    const result = await extendedTagApi.update(tagId, updates);
+    const response = await extendedTagApi.update(tagId, updates);
+    if (response.error) {
+      logger.error("Error updating tag:", response.error);
+      throw response.error;
+    }
     
-    logger.debug(`Successfully updated tag ${tagId}:`, result);
-    return result;
+    logger.debug(`Successfully updated tag ${tagId}:`, response.data);
+    return response.data || null;
   } catch (error) {
     logger.error("Error updating tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it
@@ -138,10 +150,14 @@ export const deleteTag = async (tagId: string): Promise<boolean> => {
     logger.debug(`Deleting tag ${tagId}`);
     
     // Call the API function that properly uses the apiClient
-    const result = await extendedTagApi.delete(tagId);
+    const response = await extendedTagApi.delete(tagId);
+    if (response.error) {
+      logger.error("Error deleting tag:", response.error);
+      throw response.error;
+    }
     
     logger.debug(`Successfully deleted tag ${tagId}`);
-    return result;
+    return response.data === true;
   } catch (error) {
     logger.error("Error deleting tag:", error);
     throw error; // Re-throw to let the mutation handler deal with it

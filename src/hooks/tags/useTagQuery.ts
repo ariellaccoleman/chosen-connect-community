@@ -11,7 +11,11 @@ export function useTags() {
   return useQuery({
     queryKey: ["tags", "all"],
     queryFn: async () => {
-      return await extendedTagApi.getAll();
+      const response = await extendedTagApi.getAll();
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data || [];
     }
   });
 }
@@ -26,7 +30,11 @@ export function useTagsByEntityType(entityType: EntityType) {
       if (!isValidEntityType(entityType)) {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
-      return await extendedTagApi.getByEntityType(entityType);
+      const response = await extendedTagApi.getByEntityType(entityType);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data || [];
     },
     enabled: isValidEntityType(entityType)
   });
@@ -40,7 +48,11 @@ export function useTag(id: string | null | undefined) {
     queryKey: ["tags", "byId", id],
     queryFn: async () => {
       if (!id) return null;
-      return await extendedTagApi.getById(id);
+      const response = await extendedTagApi.getById(id);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data || null;
     },
     enabled: !!id
   });
@@ -54,7 +66,11 @@ export function useTagSearch(searchQuery: string) {
     queryKey: ["tags", "search", searchQuery],
     queryFn: async () => {
       if (!searchQuery.trim()) return [];
-      return await extendedTagApi.searchByName(searchQuery);
+      const response = await extendedTagApi.searchByName(searchQuery);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data || [];
     },
     enabled: !!searchQuery.trim()
   });
@@ -68,7 +84,11 @@ export function useTagByName(name: string | null | undefined) {
     queryKey: ["tags", "byName", name],
     queryFn: async () => {
       if (!name) return null;
-      return await extendedTagApi.findByName(name);
+      const response = await extendedTagApi.findByName(name);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data || null;
     },
     enabled: !!name
   });

@@ -10,7 +10,7 @@ import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
-import { tagApi } from "@/api/tags";
+import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -52,9 +52,13 @@ const TagSelectorComponent = ({
       const findSelectedTag = async () => {
         try {
           setIsLoading(true);
-          const tag = await tagApi.getById(currentSelectedTagId);
-          if (tag) {
-            setSelectedTag(tag);
+          const response = await extendedTagApi.getById(currentSelectedTagId);
+          if (response.error) {
+            logger.error("Error fetching selected tag:", response.error);
+            return;
+          }
+          if (response.data) {
+            setSelectedTag(response.data);
           }
         } catch (err) {
           logger.error("Error fetching selected tag:", err);
@@ -68,7 +72,7 @@ const TagSelectorComponent = ({
       setSelectedTag(null);
     }
   }, [currentSelectedTagId]);
-
+  
   /**
    * Load tags with debounce to prevent excessive API calls
    */
@@ -91,10 +95,22 @@ const TagSelectorComponent = ({
       
       if (searchValue) {
         // Search by name
-        fetchedTags = await tagApi.searchByName(searchValue);
+        const response = await extendedTagApi.searchByName(searchValue);
+        if (response.error) {
+          logger.error("Error searching tags:", response.error);
+          setTags([]);
+          return;
+        }
+        fetchedTags = response.data || [];
       } else {
         // Get tags for entity type
-        fetchedTags = await tagApi.getByEntityType(targetType);
+        const response = await extendedTagApi.getByEntityType(targetType);
+        if (response.error) {
+          logger.error("Error loading tags:", response.error);
+          setTags([]);
+          return;
+        }
+        fetchedTags = response.data || [];
       }
       
       logger.debug("Fetched tags:", fetchedTags);
