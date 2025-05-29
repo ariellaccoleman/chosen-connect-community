@@ -7,6 +7,7 @@ import TagSelector from "./TagSelector";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EntityTagManagerProps {
   entityId: string;
@@ -29,6 +30,7 @@ const EntityTagManager = ({
   onTagError,
   className = ""
 }: EntityTagManagerProps) => {
+  const queryClient = useQueryClient();
   const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
@@ -76,10 +78,18 @@ const EntityTagManager = ({
         entityType 
       });
       
+      // Invalidate related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['entity-tags', entityId, entityType] });
+      queryClient.invalidateQueries({ queryKey: ['organization', entityId] });
+      queryClient.invalidateQueries({ queryKey: ['event', entityId] });
+      queryClient.invalidateQueries({ queryKey: ['profile', entityId] });
+      
       // Call success callback if provided
       if (onTagSuccess) {
         onTagSuccess();
       }
+      
+      toast.success("Tag added successfully");
     } catch (error) {
       logger.error("Error assigning tag:", error);
       
@@ -87,6 +97,8 @@ const EntityTagManager = ({
       if (onTagError && error instanceof Error) {
         onTagError(error);
       }
+      
+      toast.error("Failed to add tag");
     }
   };
   
@@ -94,10 +106,18 @@ const EntityTagManager = ({
     try {
       await removeTagAssignment(assignmentId);
       
+      // Invalidate related queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['entity-tags', entityId, entityType] });
+      queryClient.invalidateQueries({ queryKey: ['organization', entityId] });
+      queryClient.invalidateQueries({ queryKey: ['event', entityId] });
+      queryClient.invalidateQueries({ queryKey: ['profile', entityId] });
+      
       // Call success callback if provided
       if (onTagSuccess) {
         onTagSuccess();
       }
+      
+      toast.success("Tag removed successfully");
     } catch (error) {
       logger.error("Error removing tag:", error);
       
@@ -105,6 +125,8 @@ const EntityTagManager = ({
       if (onTagError && error instanceof Error) {
         onTagError(error);
       }
+      
+      toast.error("Failed to remove tag");
     }
   };
   

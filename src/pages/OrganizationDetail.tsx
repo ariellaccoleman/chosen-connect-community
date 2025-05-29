@@ -23,7 +23,7 @@ const OrganizationDetail = () => {
   const [activeTab, setActiveTab] = useState("members");
   
   // Pass the correct id to the useOrganization hook
-  const { data: organizationResponse, isLoading } = useOrganization(orgId);
+  const { data: organizationResponse, isLoading, refetch } = useOrganization(orgId);
   const organization = organizationResponse?.data as OrganizationWithLocation;
   
   // Update all useIsOrganizationAdmin calls with the correct ID
@@ -36,11 +36,23 @@ const OrganizationDetail = () => {
   // Log organization data for debugging
   useEffect(() => {
     if (organization) {
-      logger.info(`OrganizationDetail - Successfully loaded organization: ${organization.name}`);
+      logger.info(`OrganizationDetail - Successfully loaded organization: ${organization.name}`, {
+        tagsCount: organization.tags?.length || 0
+      });
     } else if (!isLoading && orgId) {
       logger.warn(`OrganizationDetail - No organization found with ID: ${orgId}`);
     }
   }, [organization, isLoading, orgId]);
+
+  // Handle tag operations success to refresh organization data
+  const handleTagSuccess = () => {
+    logger.info("Tag operation successful, refreshing organization data");
+    refetch();
+  };
+
+  const handleTagError = (error: Error) => {
+    logger.error("Tag operation failed:", error);
+  };
 
   if (isLoading) {
     return (
@@ -82,13 +94,17 @@ const OrganizationDetail = () => {
             
             {/* Tags Section */}
             <div className="mt-6 border-t pt-6">
-              <h3 className="text-lg font-medium mb-2">Tags</h3>
+              <h3 className="text-lg font-medium mb-4">Tags</h3>
               <div className="mt-2">
                 {orgId && (
                   <EntityTagManager 
                     entityId={orgId} 
                     entityType={EntityType.ORGANIZATION} 
                     isAdmin={isOrgAdmin || isAdmin}
+                    isEditing={isOrgAdmin || isAdmin}
+                    onTagSuccess={handleTagSuccess}
+                    onTagError={handleTagError}
+                    className="w-full"
                   />
                 )}
               </div>

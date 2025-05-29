@@ -8,7 +8,7 @@ import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
-import PublicProfileTags from "@/components/profile/PublicProfileTags";
+import EntityTagManager from "@/components/tags/EntityTagManager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -19,6 +19,7 @@ const ProfileView = () => {
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const { profileId } = useParams<{ profileId: string }>();
   const navigate = useNavigate();
+  const { user, isAdmin } = useAuth();
   
   // Log the extracted profileId for debugging
   logger.info(`ProfileView: Rendering profile with ID: ${profileId}`);
@@ -26,7 +27,8 @@ const ProfileView = () => {
   const { 
     data: profile, 
     isLoading: isLoadingProfile, 
-    error: profileError 
+    error: profileError,
+    refetch: refetchProfile
   } = usePublicProfile(profileId);
   
   const { 
@@ -36,7 +38,8 @@ const ProfileView = () => {
   
   const { 
     data: tagAssignments, 
-    isLoading: isLoadingTags 
+    isLoading: isLoadingTags,
+    refetch: refetchTags
   } = useEntityTags(profileId, EntityType.PERSON);
 
   useEffect(() => {
@@ -50,6 +53,19 @@ const ProfileView = () => {
   const handleBack = () => {
     navigate(-1);
   };
+
+  // Handle tag operations success
+  const handleTagSuccess = () => {
+    logger.info("Tag operation successful, refreshing tag data");
+    refetchTags();
+  };
+
+  const handleTagError = (error: Error) => {
+    logger.error("Tag operation failed:", error);
+  };
+
+  // Check if current user can edit tags (admin or viewing own profile)
+  const canEditTags = isAdmin || (user?.id === profileId);
 
   if (isLoadingProfile) {
     return (
@@ -105,9 +121,20 @@ const ProfileView = () => {
             relationships={organizations}
             isLoading={isLoadingOrgs}
           />
-          <PublicProfileTags
-            profileId={profile.id}
-          />
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+            <h3 className="text-lg font-semibold mb-4 dark:text-white">Tags</h3>
+            {profileId && (
+              <EntityTagManager 
+                entityId={profileId} 
+                entityType={EntityType.PERSON} 
+                isAdmin={canEditTags}
+                isEditing={canEditTags}
+                onTagSuccess={handleTagSuccess}
+                onTagError={handleTagError}
+                className="w-full"
+              />
+            )}
+          </div>
         </div>
       </div>
     </div>
