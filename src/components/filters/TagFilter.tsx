@@ -1,16 +1,14 @@
 
-import React from "react";
+import React, { useState } from "react";
 import { Tag } from "@/utils/tags/types";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { X } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
+import { useSelectionTags } from "@/hooks/tags/useTagFactoryHooks";
 
 interface TagFilterProps {
-  tags: Tag[];
-  isLoading: boolean;
-  
   // Single tag selection mode props
   selectedTagId?: string | null;
   onTagSelect?: (tagId: string | null) => void;
@@ -25,8 +23,6 @@ interface TagFilterProps {
 }
 
 const TagFilter: React.FC<TagFilterProps> = ({
-  tags,
-  isLoading,
   selectedTagId,
   onTagSelect,
   selectedTagIds,
@@ -34,38 +30,45 @@ const TagFilter: React.FC<TagFilterProps> = ({
   targetType,
   label
 }) => {
-  // Ensure tags is always an array
-  const safeTags = Array.isArray(tags) ? tags : [];
+  const { data: tagsResponse, isLoading } = useSelectionTags(targetType as EntityType);
+  
+  // Extract tags from the API response - handle both array and ApiResponse formats
+  const tags = Array.isArray(tagsResponse) ? tagsResponse : (tagsResponse?.data || []);
   
   // Enhanced logging for debugging tag filtering
   React.useEffect(() => {
     logger.debug(`TagFilter mounted with:`, {
-      tagsCount: safeTags.length,
+      tagsCount: tags.length,
       selectedTagId,
       selectedTagIds,
       targetType,
       mode: selectedTagIds ? 'multi' : 'single'
     });
     
-    if (safeTags.length > 0) {
-      logger.debug(`Available tags:`, safeTags.map(tag => ({ id: tag.id, name: tag.name })));
+    if (tags.length > 0) {
+      logger.debug(`Available tags:`, tags.map(tag => ({ id: tag.id, name: tag.name })));
     }
-  }, [safeTags, selectedTagId, selectedTagIds, targetType]);
+  }, [tags, selectedTagId, selectedTagIds, targetType]);
 
   // Determine if we're in single or multi-select mode
   const isMultiSelectMode = selectedTagIds !== undefined && onTagsSelect !== undefined;
 
   if (isLoading) {
     return (
-      <div className="flex flex-wrap gap-2">
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-6 w-24" />
-        <Skeleton className="h-6 w-24" />
+      <div className="mb-4">
+        <div className="text-sm text-muted-foreground mb-2">
+          {label || "Filter by tag:"}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-24" />
+          <Skeleton className="h-6 w-24" />
+        </div>
       </div>
     );
   }
 
-  if (!safeTags || safeTags.length === 0) {
+  if (!tags || tags.length === 0) {
     return null;
   }
 
@@ -111,13 +114,60 @@ const TagFilter: React.FC<TagFilterProps> = ({
     return selectedTagId === tagId;
   };
 
+  // Get selected tag names for display
+  const getSelectedTagNames = (): string[] => {
+    if (isMultiSelectMode && selectedTagIds) {
+      return tags.filter(tag => selectedTagIds.includes(tag.id)).map(tag => tag.name);
+    } else if (selectedTagId) {
+      const selectedTag = tags.find(tag => tag.id === selectedTagId);
+      return selectedTag ? [selectedTag.name] : [];
+    }
+    return [];
+  };
+
+  const selectedTagNames = getSelectedTagNames();
+
   return (
     <div className="mb-4">
       <div className="text-sm text-muted-foreground mb-2">
         {label || "Filter by tag:"}
       </div>
+      
+      {/* Show selected tags prominently */}
+      {selectedTagNames.length > 0 && (
+        <div className="mb-3 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+          <div className="text-xs text-blue-700 dark:text-blue-300 mb-1">Selected:</div>
+          <div className="flex flex-wrap gap-1">
+            {selectedTagNames.map((tagName, index) => (
+              <Badge
+                key={index}
+                variant="default"
+                className="bg-blue-600 text-white flex items-center gap-1"
+              >
+                {tagName}
+                <X
+                  className="h-3 w-3 cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearFilter();
+                  }}
+                />
+              </Badge>
+            ))}
+            <Badge
+              variant="secondary"
+              className="cursor-pointer"
+              onClick={clearFilter}
+            >
+              Clear all <X className="ml-1 h-3 w-3" />
+            </Badge>
+          </div>
+        </div>
+      )}
+      
+      {/* Available tags */}
       <div className="flex flex-wrap gap-2">
-        {safeTags.map((tag) => {
+        {tags.map((tag) => {
           const isSelected = isTagSelected(tag.id);
           
           return (
@@ -130,32 +180,9 @@ const TagFilter: React.FC<TagFilterProps> = ({
               onClick={() => handleSelectTag(tag.id)}
             >
               {tag.name}
-              {isSelected && (
-                <X
-                  className="ml-1 h-3 w-3"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (isMultiSelectMode && onTagsSelect) {
-                      onTagsSelect(selectedTagIds?.filter(id => id !== tag.id) || []);
-                    } else if (onTagSelect) {
-                      onTagSelect(null);
-                    }
-                  }}
-                />
-              )}
             </Badge>
           );
         })}
-        
-        {(selectedTagId || (selectedTagIds && selectedTagIds.length > 0)) && (
-          <Badge
-            variant="secondary"
-            className="cursor-pointer"
-            onClick={clearFilter}
-          >
-            Clear filter <X className="ml-1 h-3 w-3" />
-          </Badge>
-        )}
       </div>
     </div>
   );

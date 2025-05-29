@@ -9,17 +9,21 @@ import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import ErrorBoundary from "@/components/common/ErrorBoundary";
 import EventForm from "@/components/events/EventForm";
+import EntityTagManager from "@/components/tags/EntityTagManager";
+import { EntityType } from "@/types/entityTypes";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const EventDetailContent = () => {
   // Use the correct parameter name (eventId) to match the route definition in APP_ROUTES.EVENT_DETAIL
   const { eventId } = useParams<{ eventId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { data: event, isLoading, error } = useEventById(eventId);
+  const { user, isAdmin } = useAuth();
+  const { data: event, isLoading, error, refetch } = useEventById(eventId);
   const [isEditing, setIsEditing] = useState(false);
 
   // Use optional chaining to safely access host_id
   const isOwner = user?.id && event && event.host_id === user.id;
+  const canEditTags = isOwner || isAdmin;
 
   logger.info("EventDetail rendering", {
     eventId,
@@ -33,6 +37,16 @@ const EventDetailContent = () => {
   // Update to use browser history instead of hardcoded route
   const handleBack = () => {
     navigate(-1);
+  };
+
+  // Handle tag operations success
+  const handleTagSuccess = () => {
+    logger.info("Tag operation successful, refreshing event data");
+    refetch();
+  };
+
+  const handleTagError = (error: Error) => {
+    logger.error("Tag operation failed:", error);
   };
 
   if (isLoading) {
@@ -117,6 +131,26 @@ const EventDetailContent = () => {
       </div>
 
       <EventDetails event={event} isAdmin={isOwner} />
+      
+      {/* Tags Section */}
+      {eventId && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-medium">Tags</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EntityTagManager 
+              entityId={eventId} 
+              entityType={EntityType.EVENT} 
+              isAdmin={canEditTags}
+              isEditing={canEditTags}
+              onTagSuccess={handleTagSuccess}
+              onTagError={handleTagError}
+              className="w-full"
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

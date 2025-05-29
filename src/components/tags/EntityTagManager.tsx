@@ -2,6 +2,7 @@
 import React, { useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagFactoryHooks";
 import TagList from "./TagList";
+import EntityTagDisplay from "./EntityTagDisplay";
 import { Skeleton } from "@/components/ui/skeleton";
 import TagSelector from "./TagSelector";
 import { EntityType } from "@/types/entityTypes";
@@ -133,36 +134,37 @@ const EntityTagManager = ({
   if (isLoading) {
     return <Skeleton className="h-12 w-full" />;
   }
-  
+
+  // DISPLAY MODE: Just show tag pills like on entity cards
+  if (!isEditing) {
+    return (
+      <EntityTagDisplay 
+        entityId={entityId}
+        entityType={entityType}
+        className={className}
+      />
+    );
+  }
+
+  // EDITING MODE: Show tag selector + removable tag list
   return (
     <div className={className}>
-      {isEditing ? (
-        <div>
-          <div className="mb-4">
-            <TagSelector
-              targetType={entityType}
-              onTagSelected={handleAddTag}
-              isAdmin={isAdmin}
-              entityId={entityId}
-            />
-            {isAssigning && <p className="text-sm text-muted-foreground mt-1">Adding tag...</p>}
-          </div>
-          
-          <TagList 
-            tagAssignments={tagAssignments} 
-            onRemove={isAdmin ? handleRemoveTag : undefined}
-            isRemoving={isRemoving}
-            className="mt-2"
-          />
-        </div>
-      ) : (
-        <TagList 
-          tagAssignments={tagAssignments} 
-          onRemove={isAdmin ? handleRemoveTag : undefined}
-          isRemoving={isRemoving}
-          className={className}
+      <div className="mb-4">
+        <TagSelector
+          targetType={entityType}
+          onTagSelected={handleAddTag}
+          isAdmin={isAdmin}
+          entityId={entityId}
         />
-      )}
+        {isAssigning && <p className="text-sm text-muted-foreground mt-1">Adding tag...</p>}
+      </div>
+      
+      <TagList 
+        tagAssignments={tagAssignments} 
+        onRemove={isAdmin ? handleRemoveTag : undefined}
+        isRemoving={isRemoving}
+        className="mt-2"
+      />
     </div>
   );
 };
