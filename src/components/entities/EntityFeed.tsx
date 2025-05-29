@@ -19,6 +19,9 @@ interface EntityFeedProps {
   emptyMessage?: string;
   tagId?: string; // Fixed tagId prop to match what's being passed in HubDetail.tsx
   excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
+  // Profile-specific props
+  search?: string;
+  isApproved?: boolean;
 }
 
 /**
@@ -33,7 +36,9 @@ const EntityFeed = ({
   className = "",
   emptyMessage = "No items found",
   tagId, // Add the tagId prop to destructuring
-  excludeEntityTypes = []
+  excludeEntityTypes = [],
+  search = "",
+  isApproved = true
 }: EntityFeedProps) => {
   // Filter out excluded entity types
   const availableEntityTypes = defaultEntityTypes.filter(
@@ -54,9 +59,11 @@ const EntityFeed = ({
       excludedTypes: excludeEntityTypes,
       availableTypes: availableEntityTypes,
       showTagFilter,
-      fixedTagId: tagId
+      fixedTagId: tagId,
+      search,
+      isApproved
     });
-  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId]);
+  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId, search, isApproved]);
   
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
@@ -71,14 +78,16 @@ const EntityFeed = ({
     logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
   }, [selectedTagId]);
   
-  // Use the entity feed hook with enhanced tag filtering
+  // Use the entity feed hook with enhanced tag filtering and profile-specific options
   const { 
     entities, 
     isLoading
   } = useEntityFeed({
     entityTypes,
     limit,
-    tagId: selectedTagId
+    tagId: selectedTagId,
+    search,
+    isApproved
   });
   
   // Log entity count when it changes 
@@ -87,9 +96,11 @@ const EntityFeed = ({
       activeTab,
       selectedTagId,
       entityTypes: entityTypes.join(','),
+      search,
+      isApproved,
       entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
     });
-  }, [entities, activeTab, selectedTagId, entityTypes]);
+  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);

@@ -11,6 +11,9 @@ interface UseEntityFeedOptions {
   tagId?: string | null;
   limit?: number;
   filterByUserId?: string | null;
+  // Profile-specific options
+  search?: string;
+  isApproved?: boolean;
 }
 
 /**
@@ -21,14 +24,16 @@ export const useEntityFeed = ({
   tagId = null,
   limit = 10,
   filterByUserId = null,
+  search = "",
+  isApproved = true,
 }: UseEntityFeedOptions) => {
   // This query fetches entities based on the provided entityTypes
   const { data: entitiesData, isLoading, error } = useQuery({
-    queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId }],
+    queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId, search, isApproved }],
     queryFn: async () => {
       const allEntities: Entity[] = [];
       
-      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}`);
+      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
       
       // If tagId is provided, get all tagged entity IDs first
       let taggedEntityIds: Record<string, string[]> = {};
@@ -87,14 +92,27 @@ export const useEntityFeed = ({
             // Fetch the appropriate data based on entity type
             switch (type) {
               case EntityType.PERSON:
-                logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}`);
+                logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
                 
                 // Basic query for people
                 let peopleQuery = supabase.from('profiles').select('*');
                 
-                // Apply filters
+                // Apply profile-specific filters
                 if (filterByUserId) {
                   peopleQuery = peopleQuery.eq('id', filterByUserId);
+                }
+                
+                // Apply approved filter for profiles
+                if (isApproved !== undefined) {
+                  peopleQuery = peopleQuery.eq('is_approved', isApproved);
+                }
+                
+                // Apply search filter for profiles
+                if (search && search.trim()) {
+                  const searchTerm = `%${search.toLowerCase()}%`;
+                  peopleQuery = peopleQuery.or(
+                    `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},bio.ilike.${searchTerm},headline.ilike.${searchTerm},email.ilike.${searchTerm}`
+                  );
                 }
                 
                 // Apply tag filtering if we have tagged person IDs
