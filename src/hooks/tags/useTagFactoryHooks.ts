@@ -11,7 +11,7 @@ import { EntityType } from '@/types/entityTypes';
 
 // Create tag API factory instance (lazy instantiation)
 const createTagHooks = () => {
-  const { tagApi } = createTagApiFactory();
+  const tagApi = createTagApiFactory();
   return createQueryHooks<Tag, string>(
     {
       name: 'tag',

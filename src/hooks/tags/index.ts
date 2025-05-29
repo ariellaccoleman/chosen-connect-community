@@ -17,8 +17,6 @@ export * from './useTagAssignmentRelationshipHooks';
 // Export from useTagHooks with unique names to avoid conflicts
 // Note: These are now deprecated in favor of factory-based hooks
 export { 
-  useTagCrudMutations as useTagCrudOperationsLegacy,
-  useTagAssignmentMutations as useTagAssignmentOperationsLegacy,
   useSelectionTags as useSelectionTagsLegacy,
   useFilterByTag as useFilterByTagLegacy
 } from './useTagHooks';
