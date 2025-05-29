@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -7,7 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ChatChannel } from '@/types/chat';
 import { format } from 'date-fns';
 import TagList from '@/components/tags/TagList';
-import { useEntityTags } from '@/hooks/tags/useTagHooks';
+import { useEntityTags } from '@/hooks/tags/useTagFactoryHooks';
 import { EntityType } from '@/types/entityTypes';
 
 interface ChatChannelListProps {
@@ -80,8 +81,7 @@ interface ChatChannelRowProps {
 }
 
 function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) {
-  const { data: tagAssignmentsResponse } = useEntityTags(channel.id, EntityType.CHAT);
-  const tagAssignments = tagAssignmentsResponse?.data || [];
+  const { data: tagAssignments } = useEntityTags(channel.id, EntityType.CHAT);
   
   return (
     <TableRow key={channel.id}>
@@ -103,7 +103,7 @@ function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) 
       </TableCell>
       <TableCell>
         <TagList 
-          tagAssignments={tagAssignments}
+          tagAssignments={tagAssignments || []}
           className="flex flex-wrap"
         />
       </TableCell>

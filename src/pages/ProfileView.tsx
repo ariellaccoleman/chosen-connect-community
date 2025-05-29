@@ -4,7 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
-import { useEntityTags } from "@/hooks/tags/useTagHooks";
+import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
@@ -35,12 +35,9 @@ const ProfileView = () => {
   } = usePublicProfileOrganizations(profileId);
   
   const { 
-    data: tagsResponse, 
+    data: tagAssignments, 
     isLoading: isLoadingTags 
   } = useEntityTags(profileId, EntityType.PERSON);
-
-  // Extract tag assignments from the wrapped response
-  const tagAssignments = tagsResponse?.data || [];
 
   useEffect(() => {
     if (profileError) {
