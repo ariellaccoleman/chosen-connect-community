@@ -74,9 +74,9 @@ export const {
   useDelete: useDeleteOrganizationRelationship
 } = baseHooks;
 
-// For backward compatibility, re-export existing hooks that were already using the right pattern
-export {
-  useAddOrganizationRelationship,
-  useUpdateOrganizationRelationship as useUpdateOrganizationRelationshipLegacy,
-  useDeleteOrganizationRelationship as useDeleteOrganizationRelationshipLegacy
-} from './useOrganizationRelationshipHooks';
+// For backward compatibility, alias the creation hook to the legacy name
+export const useAddOrganizationRelationship = useCreateOrganizationRelationship;
+
+// For backward compatibility, alias the existing hooks with legacy names
+export const useUpdateOrganizationRelationshipLegacy = useUpdateOrganizationRelationship;
+export const useDeleteOrganizationRelationshipLegacy = useDeleteOrganizationRelationship;

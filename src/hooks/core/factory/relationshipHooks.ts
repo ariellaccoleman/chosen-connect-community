@@ -145,7 +145,7 @@ export function createRelationshipHooks<T, TId = string, TCreate = Partial<T>, T
     return useMutation({
       mutationFn: (items: {id: TId, data: TUpdate}[]) => 
         apiOperations.batchUpdate!(items),
-      onSuccess: () => {
+      onSuccess: (_, items) => {
         toast.success(`Successfully updated ${items.length} ${entityName}s`);
         queryClient.invalidateQueries({ queryKey: [queryKey] });
         additionalInvalidateKeys.forEach(key => {
@@ -164,7 +164,7 @@ export function createRelationshipHooks<T, TId = string, TCreate = Partial<T>, T
     
     return useMutation({
       mutationFn: (ids: TId[]) => apiOperations.batchDelete!(ids),
-      onSuccess: () => {
+      onSuccess: (_, ids) => {
         toast.success(`Successfully deleted ${ids.length} ${entityName}s`);
         queryClient.invalidateQueries({ queryKey: [queryKey] });
         additionalInvalidateKeys.forEach(key => {
