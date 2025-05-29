@@ -1,8 +1,7 @@
-
 import { ApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
 import { createBatchOperations } from "./operations/batchOperations";
-import { ApiFactoryOptions, TableNames } from "./types";
+import { ApiFactoryOptions, TableNames, ViewNames, ViewFactoryOptions, ViewOperations } from "./types";
 import { createMutationOperations } from "./operations/mutationOperations";
 import { 
   createRepository, 
@@ -290,6 +289,99 @@ export function createApiFactory<
   }
   
   return result;
+}
+
+/**
+ * Creates a view-only API factory with read operations that support client injection
+ * 
+ * @param config - Configuration for the view factory
+ * @param providedClient - Optional Supabase client for testing/custom usage
+ * @returns View operations for read-only access with client injection support
+ */
+export function createViewApiFactory<
+  T, 
+  TId = string,
+  View extends ViewNames = ViewNames
+>({
+  viewName,
+  entityName,
+  repository,
+  ...options
+}: {
+  viewName: View;
+  entityName?: string;
+  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
+} & ViewFactoryOptions<T>, providedClient?: any): ViewOperations<T, TId> {
+  // Validate viewName is defined
+  if (!viewName) {
+    throw new Error('viewName is required to create view operations');
+  }
+  
+  // Get repository based on provided options
+  let dataRepository: DataRepository<T>;
+  
+  if (repository) {
+    if (typeof repository === 'function') {
+      dataRepository = repository();
+    } else if ('select' in repository && typeof repository.select === 'function') {
+      // It's a repository instance
+      dataRepository = repository as DataRepository<T>;
+    } else {
+      // It's a repository config
+      const repoConfig = repository as RepositoryConfig<T>;
+      
+      if (repoConfig.enhanced) {
+        dataRepository = createEnhancedRepository<T>(
+          viewName as string, 
+          repoConfig.type,
+          repoConfig.initialData,
+          {
+            idField: options.idField,
+            defaultSelect: options.defaultSelect,
+            transformResponse: options.transformResponse,
+            softDelete: false, // Views don't support soft delete
+            enableLogging: repoConfig.enableLogging
+          }
+        );
+      } else {
+        dataRepository = createRepository<T>(
+          viewName as string, 
+          { schema: 'public' }
+        );
+      }
+    }
+  } else {
+    // Create default repository for view
+    dataRepository = createRepository<T>(viewName as string);
+  }
+  
+  // Create client-aware repository that can handle both repository and direct client access
+  const clientAwareRepository = createClientAwareRepository(dataRepository, viewName as string, providedClient);
+  
+  // Use entityName or generate from viewName (with safety check)
+  const entity = entityName || 
+    (typeof viewName === 'string' ? 
+      viewName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
+      'ViewEntity');
+  
+  // Create base operations for read-only access
+  const baseOps = createBaseOperations<T, TId, never, never, any>(
+    entity,
+    viewName as any, // Cast to satisfy the generic constraint
+    {
+      ...options,
+      repository: clientAwareRepository
+    },
+    providedClient
+  );
+  
+  // Return only read operations and view name
+  return {
+    getAll: baseOps.getAll,
+    getById: baseOps.getById,
+    getByIds: baseOps.getByIds,
+    viewName: viewName as string
+  } as ViewOperations<T, TId>;
 }
 
 /**
