@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
@@ -28,7 +27,7 @@ interface EntityFeedProps {
  * Component for displaying a feed of entities, with optional filtering by type and tags
  */
 const EntityFeed = ({
-  title = "Entity Feed",
+  title = "", // Changed default from "Entity Feed" to empty string
   defaultEntityTypes = Object.values(EntityType),
   showTabs = true,
   showTagFilter = true,
