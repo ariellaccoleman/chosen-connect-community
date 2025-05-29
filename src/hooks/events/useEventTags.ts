@@ -36,7 +36,8 @@ export function useEventTags(eventId: string | undefined) {
       
       return (data || []) as TagAssignment[];
     },
-    enabled: !!eventId
+    enabled: !!eventId,
+    staleTime: 30000 // Cache for 30 seconds via React Query
   });
 }
 

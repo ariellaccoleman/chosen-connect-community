@@ -1,14 +1,12 @@
 
-import { useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { tagApi } from "@/api/tags/factory/tagApiFactory";
-import { Tag } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 /**
- * Legacy hook to fetch tags for selection lists
- * @deprecated Use useSelectionTags from useTagHooks instead
+ * Simplified hook to fetch tags for selection lists
+ * Now relies only on React Query caching (no database cache)
  */
 export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
@@ -17,40 +15,26 @@ export function useSelectionTags(entityType?: EntityType) {
       try {
         if (entityType && !isValidEntityType(entityType)) {
           logger.warn(`Invalid entity type passed to useSelectionTags: ${entityType}`);
-          return {
-            status: 'success',
-            data: []
-          };
+          return [];
         }
         
         // Use the tagApi and unwrap the response
         const response = await tagApi.getAll();
         if (response.error) {
           logger.error("Error in useSelectionTags:", response.error);
-          return {
-            status: 'error',
-            data: [],
-            error: response.error
-          };
+          throw new Error(response.error.message || "Failed to fetch tags");
         }
         
         const tags = response.data || [];
         logger.debug(`useSelectionTags: Found ${tags.length} tags for entity type ${entityType || 'all'}`);
         
-        return {
-          status: 'success',
-          data: tags
-        };
+        return tags;
       } catch (error) {
         logger.error("Error in useSelectionTags:", error);
-        return {
-          status: 'error',
-          data: [],
-          error
-        };
+        throw error;
       }
     },
-    staleTime: 30000 // Cache for 30 seconds
+    staleTime: 30000 // Cache for 30 seconds via React Query
   });
 }
 
@@ -60,9 +44,6 @@ export function useSelectionTags(entityType?: EntityType) {
  */
 export function useFilterTags(tagId: string | null, entityType?: EntityType) {
   console.warn('useFilterTags is deprecated, use useFilterByTag instead');
-  // You would typically call the new hook here and return its result
-  // For demonstration, let's assume useFilterByTag returns the same type
-  // return useFilterByTag(tagId, entityType);
   return {
     data: [],
     isLoading: false,

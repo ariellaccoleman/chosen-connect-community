@@ -27,10 +27,6 @@ export {
   deleteTagAssignment
 } from './factory/tagApiFactory';
 
-// Export cache utilities
-export * from './cacheApi';
-export * from './invalidateCache';
-
 // For backward compatibility with legacy code, export the old tagsApi functions
 // These will be removed in a future version
 export * from './tagsApi';
