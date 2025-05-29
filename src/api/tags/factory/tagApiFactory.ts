@@ -155,6 +155,53 @@ export function createExtendedTagAssignmentApi(client?: any) {
   };
 }
 
+/**
+ * Reset all tag-related APIs with authenticated client
+ * Returns an object matching all current exports from this factory
+ */
+export const resetApi = (client?: any) => {
+  // Recreate all APIs with the provided client
+  const newTagApi = createExtendedTagApi(client);
+  const newTagAssignmentApi = createExtendedTagAssignmentApi(client);
+  const newTagAssignmentRelationshipApi = createTagAssignmentRelationshipApi(client);
+
+  return {
+    // Factory functions
+    createTagApi: () => createTagApi(client),
+    createExtendedTagApi: () => createExtendedTagApi(client),
+    createTagAssignmentApi: () => createTagAssignmentApi(client),
+    createExtendedTagAssignmentApi: () => createExtendedTagAssignmentApi(client),
+    createTagAssignmentRelationshipApi: () => createTagAssignmentRelationshipApi(client),
+    
+    // API instances
+    tagApi: newTagApi,
+    tagAssignmentApi: newTagAssignmentApi,
+    tagAssignmentRelationshipApi: newTagAssignmentRelationshipApi,
+    
+    // Direct function exports matching current structure
+    getAllTags: newTagApi.getAll,
+    getTagById: newTagApi.getById,
+    createTag: newTagApi.create,
+    updateTag: newTagApi.update,
+    deleteTag: newTagApi.delete,
+    findTagByName: (name: string) => newTagApi.getAll({ filters: { name } }),
+    searchTags: newTagApi.searchByName,
+    findOrCreateTag: newTagApi.findOrCreate,
+    getTagsByEntityType: newTagApi.getByEntityType,
+    
+    // Tag assignment function exports
+    getTagAssignmentsForEntity: (entityId: string, entityType: EntityType) => 
+      newTagAssignmentApi.getAll({ 
+        filters: { 
+          target_id: entityId, 
+          target_type: entityType 
+        } 
+      }),
+    createTagAssignment: newTagAssignmentApi.createAssignment,
+    deleteTagAssignment: newTagAssignmentApi.delete
+  };
+};
+
 // DEPRECATED: Default exports - will be removed in next phase
 // These cause repositories to be created at import time with unauthenticated client
 export const tagApi = createExtendedTagApi(); // Use extended for backward compatibility
