@@ -3,7 +3,6 @@ import { ApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
 import { createBatchOperations } from "./operations/batchOperations";
 import { ApiFactoryOptions, TableNames } from "./types";
-import { createQueryOperations } from "./operations/queryOperations";
 import { createMutationOperations } from "./operations/mutationOperations";
 import { 
   createRepository, 
@@ -42,11 +41,6 @@ export interface RepositoryConfig<T = any> {
  */
 export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'repository'> {
   /**
-   * Enable query operations
-   */
-  useQueryOperations?: boolean;
-  
-  /**
    * Enable mutation operations
    */
   useMutationOperations?: boolean;
@@ -78,7 +72,6 @@ export function createApiFactory<
   tableName,
   entityName,
   repository,
-  useQueryOperations = false,
   useMutationOperations = false,
   useBatchOperations = false,
   ...options
@@ -86,7 +79,6 @@ export function createApiFactory<
   tableName: Table;
   entityName?: string;
   repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
-  useQueryOperations?: boolean;
   useMutationOperations?: boolean;
   useBatchOperations?: boolean;
 } & ApiFactoryOptions<T>): ApiOperations<T, TId, TCreate, TUpdate> {
@@ -141,7 +133,7 @@ export function createApiFactory<
       tableName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
       'Entity');
   
-  // Base operations are always included - wrap them to support client injection
+  // Base operations are always included - includes query operations by default
   const baseOps = createBaseOperations<T, TId, TCreate, TUpdate, Table>(
     entity,
     tableName,
@@ -230,22 +222,6 @@ export function createApiFactory<
     ...wrappedBaseOps,
     tableName
   } as ApiOperations<T, TId, TCreate, TUpdate>;
-  
-  // Add query operations if requested
-  if (useQueryOperations) {
-    const queryOps = createQueryOperations<T, TId, Table>(
-      entity,
-      tableName,
-      {
-        idField: options.idField,
-        defaultSelect: options.defaultSelect,
-        defaultOrderBy: options.defaultOrderBy,
-        transformResponse: options.transformResponse,
-        repository: dataRepository
-      }
-    );
-    Object.assign(result, queryOps);
-  }
   
   // Add mutation operations if requested
   if (useMutationOperations) {
