@@ -10,6 +10,7 @@ import EventCard from '@/components/events/EventCard';
 import { useEntitySystem } from '@/hooks/useEntitySystem';
 import { useNavigate, generatePath } from 'react-router-dom';
 import { APP_ROUTES } from '@/config/routes';
+import { ProfileWithDetails } from '@/types/profile';
 
 interface EntityCardFactoryProps {
   entity: Entity;
@@ -39,9 +40,9 @@ export const EntityCardFactory: React.FC<EntityCardFactoryProps> = ({
   switch (entity.entityType) {
     case EntityType.PERSON:
       // Convert Entity to ProfileWithDetails format for ProfileCard
-      const profileData = {
+      const profileData: ProfileWithDetails = {
         ...entity,
-        entityType: EntityType.PERSON, // Explicitly set to PERSON type
+        entityType: EntityType.PERSON,
         first_name: entity.name.split(' ')[0] || '',
         last_name: entity.name.split(' ').slice(1).join(' ') || '',
         full_name: entity.name, // Add the required full_name field
