@@ -1,8 +1,7 @@
-
 import React, { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
+import { Calendar, MapPin, Video, AlertCircle, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";
@@ -111,23 +110,13 @@ const Events: React.FC = () => {
     <div className="container py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Events</h1>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={refetch}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
-          <Button 
-            onClick={() => navigate("/events/create")}
-            className="bg-chosen-blue hover:bg-chosen-navy flex items-center gap-2"
-          >
-            <Calendar className="h-4 w-4" />
-            Create Event
-          </Button>
-        </div>
+        <Button 
+          onClick={() => navigate("/events/create")}
+          className="bg-chosen-blue hover:bg-chosen-navy flex items-center gap-2"
+        >
+          <Calendar className="h-4 w-4" />
+          Create Event
+        </Button>
       </div>
       
       <Card className="mb-6">
