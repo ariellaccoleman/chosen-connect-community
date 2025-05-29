@@ -1,4 +1,82 @@
 
+# Tag Hooks Factory Migration Plan
+
+## Overview
+Migrate tag-related hooks to use the new hook factory pattern while implementing the RelationshipApiOperations interface. This migration works in coordination with the RelationshipApiOperations implementation to create a consistent, type-safe API pattern.
+
+## Current State Analysis
+- Tag hooks are currently using mixed patterns and direct API calls
+- Some hooks use the extended tag assignment API with business operations
+- Hook implementations are scattered across multiple files
+- Type safety could be improved with standardized interfaces
+
+## Migration Phases
+
+### Phase 1: Fix Immediate Build Errors ✅ COMPLETED
+- [x] Fixed type export syntax in `src/api/tags/factory/types.ts`
+- [x] Updated all `create()` calls to use `createAssignment()` method
+- [x] Ensured all imports and method calls are consistent
+
+### Phase 2: Implement RelationshipApiOperations for Tag Assignments
+**Goal**: Create the relationship operations interface and update tag assignment factory
+
+#### 2.1 Create Core Relationship Infrastructure
+- Update `src/api/core/types.ts` to add `RelationshipApiOperations<T, TId, TCreate, TUpdate>` interface
+- This interface extends `Omit<ApiOperations<T, TId, TCreate, TUpdate>, 'create'>` to remove generic create
+- Update `src/api/core/factory/types.ts` to add `RelationshipFactoryOptions<T>`
+
+#### 2.2 Update Tag Assignment Factory
+- Update `src/api/tags/factory/tagApiFactory.ts` to return `RelationshipApiOperations` for tag assignments
+- Ensure backward compatibility with existing `createExtendedTagAssignmentApi`
+- Create new `createTagAssignmentRelationshipApi()` function
+
+#### 2.3 Update Hook Factories  
+- Update tag assignment hooks to use new relationship operations interface
+- Ensure type safety prevents calling generic `create` method
+- Maintain existing hook signatures for backward compatibility
+
+### Phase 3: Migrate Remaining Tag Operations
+**Goal**: Complete migration of all tag-related hooks to factory pattern
+
+#### 3.1 Migrate Core Tag Hooks
+- Update `useTagHooks.ts` to use hook factory pattern
+- Create focused hook modules for specific operations
+- Maintain backward compatibility with existing exports
+
+#### 3.2 Update Tag Assignment Hooks
+- Ensure `useTagAssignments.ts` fully uses relationship operations
+- Update mutation hooks to leverage relationship-specific methods
+- Test type safety and error handling
+
+### Phase 4: Clean Up and Optimization
+**Goal**: Remove deprecated code and optimize the new structure
+
+#### 4.1 Remove Deprecated Exports
+- Mark old factory functions as deprecated in `tagApiFactory.ts`
+- Plan removal timeline for deprecated functions
+- Update documentation and migration guides
+
+#### 4.2 Final Testing and Validation
+- Test all tag-related functionality
+- Verify backward compatibility
+- Ensure type safety across all operations
+
+## Benefits of This Migration
+1. **Consistent Hook Pattern**: All tag hooks follow the same factory pattern
+2. **Type Safety**: Relationship operations prevent incorrect method calls
+3. **Better Organization**: Focused, single-responsibility hook modules
+4. **Future-Proof**: Foundation for additional relationship entities
+5. **Backward Compatibility**: Existing code continues to work during transition
+
+## Dependencies and Coordination
+This migration works hand-in-hand with the RelationshipApiOperations plan:
+- Both implement the same relationship operations interface
+- Hook factories consume the relationship API operations
+- Type safety is enforced at both API and hook layers
+- Testing covers both implementation layers
+
+---
+
 # Plan: Implement RelationshipApiOperations Pattern
 
 ## Overview
