@@ -6,17 +6,21 @@ import OrganizationSection from "@/components/dashboard/OrganizationSection";
 import EventSection from "@/components/dashboard/EventSection";
 import { useProfileById } from "@/hooks/profiles";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
-import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
+import { useEntityTags } from "@/hooks/tags/useTagHooks";
+import { EntityType } from "@/types/entityTypes";
 import { ProfileWithDetails } from "@/types";
 
 const Dashboard: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const { data: profileData } = useProfileById(user?.id);
   const { data: relationships = [], isLoading: isLoadingOrgs } = usePublicProfileOrganizations(user?.id);
-  const { data: tagAssignments = [], isLoading: isLoadingTags } = usePublicProfileTags(user?.id);
+  const { data: tagsResponse, isLoading: isLoadingTags } = useEntityTags(user?.id, EntityType.PERSON);
   
   // Extract the profile data from the API response
   const profile = profileData?.data;
+  
+  // Extract tag assignments from the wrapped response
+  const tagAssignments = tagsResponse?.data || [];
   
   // If the profile is loaded, add the isAdmin flag and tags to it
   const profileWithAdminStatus = profile ? {

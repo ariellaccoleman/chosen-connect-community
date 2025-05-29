@@ -4,7 +4,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
-import { usePublicProfileTags } from "@/hooks/usePublicProfileTags";
+import { useEntityTags } from "@/hooks/tags/useTagHooks";
+import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
 import PublicProfileTags from "@/components/profile/PublicProfileTags";
@@ -34,9 +35,12 @@ const ProfileView = () => {
   } = usePublicProfileOrganizations(profileId);
   
   const { 
-    data: tagAssignments = [], 
+    data: tagsResponse, 
     isLoading: isLoadingTags 
-  } = usePublicProfileTags(profileId);
+  } = useEntityTags(profileId, EntityType.PERSON);
+
+  // Extract tag assignments from the wrapped response
+  const tagAssignments = tagsResponse?.data || [];
 
   useEffect(() => {
     if (profileError) {
