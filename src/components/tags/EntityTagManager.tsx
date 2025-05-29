@@ -1,6 +1,6 @@
 
 import React, { useEffect } from "react";
-import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagHooks";
+import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagFactoryHooks";
 import TagList from "./TagList";
 import { Skeleton } from "@/components/ui/skeleton";
 import TagSelector from "./TagSelector";
@@ -33,7 +33,7 @@ const EntityTagManager = ({
   const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
   
   // Extract the actual assignments from the API response
-  const tagAssignments = tagAssignmentsResponse?.data || [];
+  const tagAssignments = tagAssignmentsResponse || [];
   
   // Log component mounting and props for debugging
   useEffect(() => {

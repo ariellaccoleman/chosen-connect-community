@@ -1,6 +1,6 @@
 
 import React from "react";
-import { useEntityTags } from "@/hooks/tags/useTagHooks";
+import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import TagList from "@/components/tags/TagList";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/types/entityTypes";
@@ -10,7 +10,7 @@ interface PublicProfileTagsProps {
 }
 
 const PublicProfileTags = ({ profileId }: PublicProfileTagsProps) => {
-  const { data: tagsResponse, isLoading } = useEntityTags(profileId, EntityType.PERSON);
+  const { data: tagAssignments, isLoading } = useEntityTags(profileId, EntityType.PERSON);
   
   if (isLoading) {
     return <Skeleton className="h-24 w-full" />;
@@ -20,7 +20,7 @@ const PublicProfileTags = ({ profileId }: PublicProfileTagsProps) => {
     <div className="mt-4">
       <h3 className="text-lg font-semibold mb-2">Tags</h3>
       <TagList 
-        tagAssignments={tagsResponse?.data || []} 
+        tagAssignments={tagAssignments || []} 
         className="flex flex-wrap gap-2"
       />
     </div>
