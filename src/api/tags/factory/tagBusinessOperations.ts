@@ -1,7 +1,7 @@
 
 /**
  * Tag business operations - complex operations that combine multiple steps
- * Updated to use repository layer for proper client injection
+ * Updated to use ViewRepository for proper view access
  */
 import { createApiFactory, createViewApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
@@ -16,12 +16,13 @@ export function createTagBusinessOperations(client?: any) {
   // Get client-aware core operations
   const tagBase = createTagCoreOperations(client);
 
-  // Create a view factory for the filtered_entity_tags_view that properly handles client injection
+  // Create a view factory for the filtered_entity_tags_view using ViewRepository
   const viewFactory = createViewApiFactory<any>({
     viewName: 'filtered_entity_tags_view',
     entityName: 'FilteredEntityTag',
     defaultSelect: '*',
-    transformResponse: (item: any) => item
+    transformResponse: (item: any) => item,
+    enableLogging: false
   }, client);
 
   return {
@@ -68,7 +69,7 @@ export function createTagBusinessOperations(client?: any) {
      */
     async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
       try {
-        // Use the view factory with proper client injection
+        // Use the view factory with ViewRepository
         const result = await viewFactory.getAll({
           filters: { entity_type: entityType }
         });

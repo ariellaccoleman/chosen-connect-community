@@ -1,7 +1,7 @@
 
 /**
  * Tag assignment operations using the API factory pattern - cleaned up version
- * Updated to use repository layer for proper client injection
+ * Updated to use ViewRepository for proper view access
  */
 import { createApiFactory, createViewApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from '@/utils/tags/types';
@@ -31,12 +31,13 @@ export function createTagAssignmentCoreOperations(client?: any) {
  * Factory function to create enriched tag assignment operations with optional client injection
  */
 export function createEnrichedTagAssignmentOperations(client?: any) {
-  // Create a view factory for the entity_tag_assignments_view that properly handles client injection
+  // Create a view factory for the entity_tag_assignments_view using ViewRepository
   const viewFactory = createViewApiFactory<any>({
     viewName: 'entity_tag_assignments_view',
     entityName: 'EntityTagAssignment',
     defaultSelect: '*',
-    transformResponse: (item: any) => item
+    transformResponse: (item: any) => item,
+    enableLogging: false
   }, client);
 
   return {
@@ -61,7 +62,7 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
           select = '*'
         } = options;
 
-        // Use the view factory with proper client injection
+        // Use the view factory with ViewRepository
         const result = await viewFactory.getAll({
           filters,
           ascending,

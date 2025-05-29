@@ -44,14 +44,37 @@ export interface ViewFactoryOptions<T> {
   defaultSelect?: string;
   defaultOrderBy?: string;
   transformResponse?: (item: any) => T;
+  enableLogging?: boolean;
 }
 
 // Read-only operations interface for view factories
 export interface ViewOperations<T, TId = string> {
   // Read operations only
-  getAll: (params?: any) => Promise<any>;
-  getById: (id: TId) => Promise<any>;
-  getByIds: (ids: TId[]) => Promise<any>;
+  getAll: (params?: {
+    filters?: Record<string, any>;
+    search?: string;
+    searchColumns?: string[];
+    ascending?: boolean;
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  getById: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  getByIds: (ids: TId[]) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
   
   // View name for reference
   readonly viewName: string;
