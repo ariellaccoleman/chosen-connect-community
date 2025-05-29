@@ -1,4 +1,5 @@
 
+import { useQuery } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { createRelationshipHooks, createRelationshipMutationHook } from '@/hooks/core/factory/relationshipHooks';
 import { createTagApiFactory, createTagAssignmentRelationshipApi } from '@/api/tags/factory/tagApiFactory';
@@ -122,10 +123,15 @@ export function useTagAssignmentMutations() {
 export function useEntityTags(entityId: string, entityType: EntityType) {
   const enrichedOperations = createEnrichedTagAssignmentOperations();
   
-  return enrichedOperations.useGetAll({ 
-    filters: { 
-      target_id: entityId, 
-      target_type: entityType 
-    } 
+  return useQuery({
+    queryKey: ['entity-tags', entityId, entityType],
+    queryFn: () => enrichedOperations.getAll({ 
+      filters: { 
+        target_id: entityId, 
+        target_type: entityType 
+      } 
+    }),
+    select: (response) => response.data,
+    enabled: !!entityId && !!entityType
   });
 }
