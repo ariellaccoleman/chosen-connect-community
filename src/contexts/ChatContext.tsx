@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { ChatMessageWithAuthor, ChatChannel } from '@/types/chat';
 import { useChat } from '@/hooks/chat/useChat';
@@ -22,7 +23,6 @@ interface ChatContextType {
   setAutoScrollMessages: (value: boolean) => void;
   autoScrollThread: boolean;
   setAutoScrollThread: (value: boolean) => void;
-  currentChannel: ChatChannel;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -69,17 +69,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const messages = channelMessagesQuery.data || [];
   const threadMessages = threadMessagesQuery.data || [];
   
-  const currentChannel = activeChannel || {
-    id: '',
-    name: null,
-    description: null,
-    is_public: true,
-    created_at: '',
-    updated_at: '',
-    created_by: null,
-    channel_type: 'group' as const
-  };
-  
   const value: ChatContextType = {
     channelId,
     activeChannel,
@@ -96,8 +85,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     autoScrollMessages,
     setAutoScrollMessages,
     autoScrollThread,
-    setAutoScrollThread,
-    currentChannel
+    setAutoScrollThread
   };
   
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

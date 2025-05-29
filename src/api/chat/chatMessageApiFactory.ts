@@ -1,7 +1,15 @@
 
+
 import { createApiFactory } from '../core/factory';
+import { createRepository } from '../core/repository/repositoryFactory';
 import { ChatMessageWithAuthor } from '@/types/chat';
 import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
+import { 
+  getChannelMessages,
+  getThreadReplies,
+  sendChatMessage,
+  getChannelMessagePreviews
+} from './chatMessageService';
 
 /**
  * API Factory for chat messages
@@ -27,3 +35,7 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
     return ChatMessageFactory.createMessageWithAuthor(data);
   }
 });
+
+// Re-export functions from the service
+export { getChannelMessages, getThreadReplies, sendChatMessage, getChannelMessagePreviews };
+

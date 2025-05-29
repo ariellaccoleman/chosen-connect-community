@@ -90,17 +90,14 @@ export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityTyp
   if (!response.data) {
     throw new Error('Failed to find or create tag');
   }
-  // Handle both single tag and array response from the API
-  const result = Array.isArray(response.data) ? response.data[0] : response.data;
-  return result;
+  return response.data;
 };
 
 /**
- * Get tags by entity type - using searchByName as fallback
+ * Get tags by entity type
  */
 export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
-  // Use searchByName as a fallback since getByEntityType might not be available
-  const response = await extendedTagApi.getAll();
+  const response = await extendedTagApi.getByEntityType(entityType);
   if (response.error) {
     throw response.error;
   }
