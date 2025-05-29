@@ -2,6 +2,7 @@
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { createRelationshipHooks, createRelationshipMutationHook } from '@/hooks/core/factory/relationshipHooks';
 import { createTagApiFactory, createTagAssignmentRelationshipApi } from '@/api/tags/factory/tagApiFactory';
+import { createEnrichedTagAssignmentOperations } from '@/api/tags/factory/tagAssignmentCoreOperations';
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 
@@ -116,11 +117,12 @@ export function useTagAssignmentMutations() {
 }
 
 /**
- * Hook to fetch tags for a specific entity (factory-based)
+ * Hook to fetch tags for a specific entity (factory-based with enriched data)
  */
 export function useEntityTags(entityId: string, entityType: EntityType) {
-  const tagAssignmentHooks = createTagAssignmentHooks();
-  return tagAssignmentHooks.useGetAll({ 
+  const enrichedOperations = createEnrichedTagAssignmentOperations();
+  
+  return enrichedOperations.useGetAll({ 
     filters: { 
       target_id: entityId, 
       target_type: entityType 
