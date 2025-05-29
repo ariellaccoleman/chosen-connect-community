@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Entity } from "@/types/entity";
-import EntityCard from "./EntityCard";
+import { EntityCardFactory } from "./EntityCardFactory";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface EntityListProps {
@@ -14,6 +14,7 @@ interface EntityListProps {
 
 /**
  * Generic list component for displaying entities of any type
+ * Uses EntityCardFactory to render specialized cards
  */
 const EntityList = ({ 
   entities, 
@@ -43,7 +44,7 @@ const EntityList = ({
   return (
     <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
       {entities.map(entity => (
-        <EntityCard 
+        <EntityCardFactory 
           key={`${entity.entityType}-${entity.id}`}
           entity={entity}
           showTags={showTags}

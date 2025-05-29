@@ -1,119 +1,40 @@
 
 import React, { useState } from "react";
-import { useNavigate, generatePath } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, MapPin, Video, AlertCircle, ExternalLink } from "lucide-react";
-import { format } from "date-fns";
-import { Skeleton } from "@/components/ui/skeleton";
-import { EventWithDetails } from "@/types";
+import { Calendar } from "lucide-react";
 import { logger } from "@/utils/logger";
-import TagList from "@/components/tags/TagList";
-import EventCardRegistrationButton from "@/components/events/EventCardRegistrationButton";
-import { APP_ROUTES } from "@/config/routes";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
-import { toast } from "sonner";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags/types";
-import { useEntityFeed } from "@/hooks/useEntityFeed";
 import FilterPills from "@/components/filters/FilterPills";
+import EntityFeed from "@/components/entities/EntityFeed";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
-  
-  // State for selected tag - same as community and organizations pages
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  
-  // Use the entity feed hook to fetch events - same as organizations page
-  const { entities: eventEntities, isLoading, error } = useEntityFeed({
-    entityTypes: [EntityType.EVENT],
-    tagId: selectedTagId,
-    limit: 100
-  });
   
   // Log page load for debugging
   logger.info("Events page mounted");
-  logger.debug("Events data:", { count: eventEntities.length, hasTagData: eventEntities.some(e => e.tags && e.tags.length > 0) });
   
-  // Show error toast if events loading fails
-  if (error) {
-    logger.error("Error fetching events:", error);
-    toast.error("Failed to load events. Please try again.");
-  }
-
-  // Filter by search term
-  const filteredEvents = eventEntities.filter((entity) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      entity.name.toLowerCase().includes(searchLower) ||
-      (entity.description && entity.description.toLowerCase().includes(searchLower)) ||
-      ((entity as any).location?.full_name && (entity as any).location.full_name.toLowerCase().includes(searchLower))
-    );
-  });
-    
-  // Debug filtered events
-  React.useEffect(() => {
-    if (selectedTagId) {
-      logger.debug(`Filtered to ${filteredEvents.length} events out of ${eventEntities.length}`);
-    }
-  }, [filteredEvents.length, eventEntities.length, selectedTagId]);
-
-  const formatEventDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), "MMM d, yyyy • h:mm a");
-    } catch (e) {
-      logger.error("Error formatting date:", e, { dateString });
-      return "Date unavailable";
-    }
-  };
-
-  const renderLocationInfo = (event: any) => {
-    if (event.is_virtual) {
-      return (
-        <div className="flex items-center text-gray-500 text-sm">
-          <Video className="h-3 w-3 mr-1" />
-          <span>Virtual Event</span>
-        </div>
-      );
-    }
-    
-    if (event.location?.full_name) {
-      return (
-        <div className="flex items-center text-gray-500 text-sm">
-          <MapPin className="h-3 w-3 mr-1" />
-          <span>{event.location.full_name}</span>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
-  const handleViewEvent = (eventId: string) => {
-    const eventUrl = generatePath(APP_ROUTES.EVENT_DETAIL, { eventId });
-    navigate(eventUrl);
-  };
-  
-  // Handle tag selection - same as community and organizations pages
+  // Handle tag selection
   const handleTagSelect = (tag: Tag) => {
     setSelectedTagId(tag.id === "" ? null : tag.id);
     logger.debug(`Events: Tag selected: ${tag.id}`);
   };
 
-  // Find selected tag for filter pills
-  const selectedTag = selectedTagId ? eventEntities
-    .flatMap(entity => entity.tags || [])
-    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
-
   // Prepare filter pills
   const filterPills = [];
-  if (selectedTag) {
+  if (selectedTagId) {
+    // Note: We'll need to get the tag name from the entities once they're loaded
+    // For now, just show the tag ID
     filterPills.push({
-      id: selectedTag.id,
-      label: selectedTag.name,
+      id: selectedTagId,
+      label: `Tag: ${selectedTagId}`,
       onRemove: () => setSelectedTagId(null)
     });
   }
@@ -146,7 +67,6 @@ const Events: React.FC = () => {
               </div>
             </div>
             
-            {/* Tag selector moved to same row as search */}
             <div className="md:w-64">
               <TagSelector
                 targetType={EntityType.EVENT}
@@ -162,86 +82,16 @@ const Events: React.FC = () => {
 
       <FilterPills filters={filterPills} />
       
-      {isLoading ? (
-        <div className="space-y-4">
-          <Skeleton className="h-48 w-full rounded-lg" />
-          <Skeleton className="h-48 w-full rounded-lg" />
-        </div>
-      ) : error ? (
-        <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center text-red-600 mb-2">
-            <AlertCircle size={20} className="mr-2" />
-            <h3 className="font-medium">Error loading events</h3>
-          </div>
-          <p className="text-red-500 mb-4">{error instanceof Error ? error.message : "Failed to load events. Please try again later."}</p>
-        </div>
-      ) : filteredEvents.length === 0 ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">
-            {selectedTagId 
-              ? "No events match your selected tag. Try selecting a different tag or clear the filter."
-              : searchTerm 
-                ? "No events match your search. Try different keywords."
-                : "Your events will appear here. Refresh to check for new events."
-            }
-          </p>
-        </div>
-      ) : (
-        <>
-          <p className="text-sm text-gray-500 mb-4">
-            {selectedTagId 
-              ? `Found ${filteredEvents.length} matching event(s)`
-              : `Found ${filteredEvents.length} event(s)`
-            }
-          </p>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredEvents.map((event) => (
-              <div 
-                key={event.id} 
-                className="relative bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => handleViewEvent(event.id)}
-              >
-                {/* Registration button positioned in top right */}
-                <div className="absolute top-3 right-3 z-10 flex flex-col items-end gap-2">
-                  <div className="pointer-events-auto" onClick={(e) => e.stopPropagation()}>
-                    <EventCardRegistrationButton eventId={event.id} />
-                  </div>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="text-chosen-blue hover:text-chosen-navy flex items-center gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    View
-                  </Button>
-                </div>
-                
-                <h3 className="font-semibold text-lg mb-2 pr-24">{event.name}</h3>
-                <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
-                
-                <div className="text-sm text-gray-600 mb-2 flex items-center">
-                  <Calendar className="h-3 w-3 mr-1" />
-                  {(event as any).start_time && formatEventDate((event as any).start_time)}
-                </div>
-                
-                {renderLocationInfo(event)}
-                
-                {event.tags && event.tags.length > 0 && (
-                  <div className="mt-2 mb-2">
-                    <TagList tagAssignments={event.tags} />
-                  </div>
-                )}
-                
-                <div className="mt-3 pt-3 border-t">
-                  <div className="text-sm text-gray-500">
-                    {(event as any).host && `Hosted by: ${(event as any).host.first_name} ${(event as any).host.last_name}`}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
+      <EntityFeed
+        defaultEntityTypes={[EntityType.EVENT]}
+        showTabs={false}
+        showTagFilter={false}
+        tagId={selectedTagId}
+        search={searchTerm}
+        isApproved={true}
+        emptyMessage={selectedTagId ? "No events match your selected tag. Try selecting a different tag or clear the filter." : searchTerm ? "No events match your search. Try different keywords." : "Your events will appear here. Refresh to check for new events."}
+        className="mt-6"
+      />
     </div>
   );
 };

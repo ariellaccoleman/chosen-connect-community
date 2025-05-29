@@ -1,64 +1,30 @@
+
 import { useState } from "react";
-import { useNavigate, generatePath } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
 import { logger } from "@/utils/logger";
-import { toast } from "@/components/ui/sonner";
 import TagSelector from "@/components/tags/TagSelector";
-import { useEntityFeed } from "@/hooks/useEntityFeed";
-import { formatLocation } from "@/utils/formatters/locationFormatters";
 import { Tag } from "@/utils/tags/types";
 import FilterPills from "@/components/filters/FilterPills";
+import EntityFeed from "@/components/entities/EntityFeed";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
-  // Use the entity feed hook to fetch organizations - same as community page
-  const { entities: organizationEntities, isLoading, error } = useEntityFeed({
-    entityTypes: [EntityType.ORGANIZATION],
-    tagId: selectedTagId,
-    limit: 100
-  });
-  
   // Log page load for debugging
   logger.info("Organizations - Component mounted", {
     path: window.location.pathname,
-    organizationCount: organizationEntities.length,
     selectedTagId
   });
   
-  // Show error toast if organization loading fails
-  if (error) {
-    console.error("Error fetching organizations:", error);
-    toast.error("Failed to load organizations. Please try again.");
-  }
-
-  // Filter by search term
-  const filteredOrganizations = organizationEntities.filter((entity) => {
-    const searchLower = searchTerm.toLowerCase();
-    const locationString = entity.location ? formatLocation(entity.location) : '';
-    
-    return (
-      entity.name.toLowerCase().includes(searchLower) ||
-      (entity.description && entity.description.toLowerCase().includes(searchLower)) ||
-      (locationString && locationString.toLowerCase().includes(searchLower))
-    );
-  });
-    
-  // Handle clicking on an organization card
-  const handleViewOrganization = (orgId: string) => {
-    const orgDetailUrl = generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId });
-    navigate(orgDetailUrl);
-  };
-  
-  // Handle tag selection - same as community page
+  // Handle tag selection
   const handleTagSelect = (tag: Tag) => {
     logger.debug(`Organizations: Tag selected: ${tag.id}`);
     if (tag.id === "") {
@@ -69,17 +35,14 @@ const OrganizationsList = () => {
     }
   };
 
-  // Find selected tag for filter pills
-  const selectedTag = selectedTagId ? organizationEntities
-    .flatMap(entity => entity.tags || [])
-    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
-
   // Prepare filter pills
   const filterPills = [];
-  if (selectedTag) {
+  if (selectedTagId) {
+    // Note: We'll need to get the tag name from the entities once they're loaded
+    // For now, just show the tag ID
     filterPills.push({
-      id: selectedTag.id,
-      label: selectedTag.name,
+      id: selectedTagId,
+      label: `Tag: ${selectedTagId}`,
       onRemove: () => setSelectedTagId(null)
     });
   }
@@ -112,7 +75,6 @@ const OrganizationsList = () => {
               </div>
             </div>
             
-            {/* Tag selector moved to same row as search */}
             <div className="md:w-64">
               <TagSelector
                 targetType={EntityType.ORGANIZATION}
@@ -127,71 +89,18 @@ const OrganizationsList = () => {
       </Card>
 
       <FilterPills filters={filterPills} />
-      
-      {isLoading ? (
-        <div className="text-center py-12">Loading organizations...</div>
-      ) : filteredOrganizations.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredOrganizations.map((organization) => (
-            <OrganizationCard 
-              key={organization.id} 
-              organization={organization} 
-              onClick={() => handleViewOrganization(organization.id)} 
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">
-            {selectedTagId 
-              ? "No organizations found matching the selected tag and search criteria" 
-              : "No organizations found matching your search criteria"
-            }
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
 
-const OrganizationCard = ({ 
-  organization, 
-  onClick 
-}: { 
-  organization: any;
-  onClick: () => void;
-}) => {
-  const orgInitials = organization.name
-    .split(' ')
-    .map((word: string) => word[0])
-    .join('')
-    .substring(0, 2)
-    .toUpperCase();
-  
-  const locationString = organization.location ? formatLocation(organization.location) : '';
-  
-  return (
-    <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
-      <CardContent className="p-6">
-        <div className="flex space-x-4">
-          <Avatar className="h-16 w-16 flex-shrink-0">
-            <AvatarImage src={organization.imageUrl || ""} />
-            <AvatarFallback className="bg-chosen-blue text-white">
-              {orgInitials}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">{organization.name}</h3>
-            {locationString && (
-              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{locationString}</p>
-            )}
-          </div>
-        </div>
-        {organization.description && (
-          <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">{organization.description}</p>
-        )}
-      </CardContent>
-    </Card>
+      <EntityFeed
+        defaultEntityTypes={[EntityType.ORGANIZATION]}
+        showTabs={false}
+        showTagFilter={false}
+        tagId={selectedTagId}
+        search={searchTerm}
+        isApproved={true}
+        emptyMessage={selectedTagId ? "No organizations match the selected tag and search criteria" : "No organizations found matching your search criteria"}
+        className="mt-6"
+      />
+    </div>
   );
 };
 
