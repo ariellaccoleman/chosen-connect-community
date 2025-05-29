@@ -29,9 +29,9 @@ export const tagBusinessOperations = {
   /**
    * Find or create a tag - complex business logic that combines find and create
    */
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
+  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
     // First try to find existing tag by name
-    const existing = await tagBase.getAll({ filters: { name: data.name } }, providedClient);
+    const existing = await tagBase.getAll({ filters: { name: data.name } });
     if (existing.error) {
       return {
         data: null,
@@ -49,45 +49,6 @@ export const tagBusinessOperations = {
     }
     
     // Create new tag if not found
-    if (providedClient) {
-      try {
-        const { data: newTag, error } = await providedClient
-          .from('tags')
-          .insert(data)
-          .select()
-          .single();
-        
-        if (error) {
-          return {
-            data: null,
-            error,
-            status: 'error'
-          };
-        }
-        
-        const transformedData = {
-          id: newTag.id,
-          name: newTag.name,
-          description: newTag.description,
-          created_by: newTag.created_by,
-          created_at: newTag.created_at,
-          updated_at: newTag.updated_at
-        };
-        
-        return {
-          data: transformedData,
-          error: null,
-          status: 'success'
-        };
-      } catch (error) {
-        return {
-          data: null,
-          error,
-          status: 'error'
-        };
-      }
-    }
-    
     return tagBase.create(data as any);
   }
 };

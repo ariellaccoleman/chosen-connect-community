@@ -17,14 +17,14 @@ export const extendedTagApi = {
   ...tagCoreOperations,
   ...tagBusinessOperations,
   // Add convenience methods that use base operations
-  findByName: (name: string, providedClient?: any) => {
-    return tagCoreOperations.getAll({ filters: { name } }, providedClient);
+  findByName: (name: string) => {
+    return tagCoreOperations.getAll({ filters: { name } });
   },
-  searchByName: (searchQuery: string, providedClient?: any) => {
-    return tagCoreOperations.getAll({ search: searchQuery }, providedClient);
+  searchByName: (searchQuery: string) => {
+    return tagCoreOperations.getAll({ search: searchQuery });
   },
-  getByEntityType: (entityType: EntityType, providedClient?: any) => {
-    return tagCoreOperations.getAll({ filters: { entity_type: entityType } }, providedClient);
+  getByEntityType: (entityType: EntityType) => {
+    return tagCoreOperations.getAll({ filters: { entity_type: entityType } });
   }
 };
 
@@ -32,13 +32,13 @@ export const extendedTagAssignmentApi = {
   ...tagAssignmentCoreOperations,
   ...tagAssignmentBusinessOperations,
   // Add convenience method that uses base operations
-  getForEntity: (entityId: string, entityType: EntityType, providedClient?: any) => {
+  getForEntity: (entityId: string, entityType: EntityType) => {
     return tagAssignmentCoreOperations.getAll({ 
       filters: { 
         target_id: entityId, 
         target_type: entityType 
       } 
-    }, providedClient);
+    });
   }
 };
 
@@ -55,20 +55,20 @@ export function createTagAssignmentApiFactory() {
 }
 
 // Individual function exports for backward compatibility - now much simpler
-export const getAllTags = (optionsOrClient?: any, providedClient?: any) => tagApi.getAll(optionsOrClient, providedClient);
-export const getTagById = (id: string, providedClient?: any) => tagApi.getById(id, providedClient);
-export const findTagByName = (name: string, providedClient?: any) => extendedTagApi.findByName(name, providedClient);
-export const searchTags = (searchQuery: string, providedClient?: any) => extendedTagApi.searchByName(searchQuery, providedClient);
-export const createTag = (data: any, providedClient?: any) => tagApi.create(data, providedClient);
-export const updateTag = (id: string, data: any, providedClient?: any) => tagApi.update(id, data, providedClient);
-export const deleteTag = (id: string, providedClient?: any) => tagApi.delete(id, providedClient);
-export const findOrCreateTag = (data: any, entityType?: EntityType, providedClient?: any) => tagBusinessOperations.findOrCreate(data, entityType, providedClient);
-export const getTagsByEntityType = (entityType: EntityType, providedClient?: any) => extendedTagApi.getByEntityType(entityType, providedClient);
+export const getAllTags = (optionsOrClient?: any) => tagApi.getAll(optionsOrClient);
+export const getTagById = (id: string) => tagApi.getById(id);
+export const findTagByName = (name: string) => extendedTagApi.findByName(name);
+export const searchTags = (searchQuery: string) => extendedTagApi.searchByName(searchQuery);
+export const createTag = (data: any) => tagApi.create(data);
+export const updateTag = (id: string, data: any) => tagApi.update(id, data);
+export const deleteTag = (id: string) => tagApi.delete(id);
+export const findOrCreateTag = (data: any, entityType?: EntityType) => tagBusinessOperations.findOrCreate(data, entityType);
+export const getTagsByEntityType = (entityType: EntityType) => extendedTagApi.getByEntityType(entityType);
 
 // Tag assignment function exports
-export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityType, providedClient?: any) => extendedTagAssignmentApi.getForEntity(entityId, entityType, providedClient);
-export const createTagAssignment = (tagId: string, entityId: string, entityType: EntityType, providedClient?: any) => tagAssignmentBusinessOperations.create(tagId, entityId, entityType, providedClient);
-export const deleteTagAssignment = (assignmentId: string, providedClient?: any) => tagAssignmentApi.delete(assignmentId, providedClient);
+export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityType) => extendedTagAssignmentApi.getForEntity(entityId, entityType);
+export const createTagAssignment = (tagId: string, entityId: string, entityType: EntityType) => tagAssignmentBusinessOperations.create(tagId, entityId, entityType);
+export const deleteTagAssignment = (assignmentId: string) => tagAssignmentApi.delete(assignmentId);
 
 // Re-export core operations for direct access if needed
 export { tagCoreOperations } from './tagCoreOperations';
