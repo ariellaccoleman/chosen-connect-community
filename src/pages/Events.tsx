@@ -30,6 +30,7 @@ const Events: React.FC = () => {
   // Use tag hook for filtering
   const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.EVENT);
   
+  // Use the dedicated events hook instead of entity feed
   const { data: events = [], isLoading, error, refetch } = useEvents();
   
   // Log page load for debugging
