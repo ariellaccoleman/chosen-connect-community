@@ -6,7 +6,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { extendedTagApi } from '@/api/tags/factory/tagApiFactory';
+import { tagApi } from '@/api/tags/factory/tagApiFactory';
 import { logger } from '@/utils/logger';
 
 /**
@@ -18,7 +18,7 @@ export function useCreateTag() {
   return useMutation({
     mutationFn: async (data: Partial<Tag>) => {
       logger.debug("Creating tag:", data);
-      const response = await extendedTagApi.create(data);
+      const response = await tagApi.create(data);
       if (response.error) {
         throw response.error;
       }
@@ -45,7 +45,7 @@ export function useUpdateTag() {
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Tag> }) => {
       logger.debug(`Updating tag ${id}:`, data);
-      const response = await extendedTagApi.update(id, data);
+      const response = await tagApi.update(id, data);
       if (response.error) {
         throw response.error;
       }
@@ -73,7 +73,7 @@ export function useDeleteTag() {
   return useMutation({
     mutationFn: async (id: string) => {
       logger.debug(`Deleting tag ${id}`);
-      const response = await extendedTagApi.delete(id);
+      const response = await tagApi.delete(id);
       if (response.error) {
         throw response.error;
       }
@@ -105,7 +105,7 @@ export function useFindOrCreateTag() {
       data: Partial<Tag>; 
     }) => {
       logger.debug(`Finding or creating tag:`, data);
-      const response = await extendedTagApi.findOrCreate(data);
+      const response = await tagApi.findOrCreate(data);
       if (response.error) {
         throw response.error;
       }

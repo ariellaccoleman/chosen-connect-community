@@ -22,7 +22,7 @@ import { findOrCreateTag } from "@/utils/tags/tagOperations";
 import { assignTag } from "@/utils/tags/tagAssignments";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
-import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
+import { tagApi } from "@/api/tags/factory/tagApiFactory";
 
 export interface TagSelectorProps {
   targetType: EntityType | string;
@@ -64,7 +64,7 @@ const TagSelector = ({
     if (currentSelectedTagId) {
       const findTag = async () => {
         try {
-          const response = await extendedTagApi.getById(currentSelectedTagId);
+          const response = await tagApi.getById(currentSelectedTagId);
           if (response.error) {
             logger.error("Error fetching selected tag:", response.error);
             return;
@@ -90,7 +90,7 @@ const TagSelector = ({
       
       if (searchValue) {
         // If there's a search query, search by name
-        const response = await extendedTagApi.searchByName(searchValue);
+        const response = await tagApi.searchByName(searchValue);
         if (response.error) {
           logger.error("Error searching tags:", response.error);
           setTags([]);
@@ -99,7 +99,7 @@ const TagSelector = ({
         fetchedTags = response.data || [];
       } else {
         // Otherwise get tags for entity type
-        const response = await extendedTagApi.getByEntityType(targetType as EntityType);
+        const response = await tagApi.getByEntityType(targetType as EntityType);
         if (response.error) {
           logger.error("Error loading tags:", response.error);
           setTags([]);

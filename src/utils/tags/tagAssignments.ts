@@ -1,9 +1,8 @@
-
 import { TagAssignment } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
-import { extendedTagAssignmentApi } from "@/api/tags/factory/tagApiFactory";
+import { tagAssignmentApi } from "@/api/tags/factory/tagApiFactory";
 
 /**
  * Assign a tag to an entity
@@ -23,7 +22,7 @@ export const assignTag = async (
     
     logger.debug(`Assigning tag ${tagId} to ${entityType} ${entityId}`);
 
-    const response = await extendedTagAssignmentApi.create(tagId, entityId, entityType as EntityType);
+    const response = await tagAssignmentApi.create(tagId, entityId, entityType as EntityType);
     
     if (response.error) {
       logger.error("Error assigning tag:", response.error);
@@ -70,7 +69,7 @@ export const assignTags = async (
  */
 export const removeTagAssignment = async (assignmentId: string): Promise<boolean> => {
   try {
-    const response = await extendedTagAssignmentApi.delete(assignmentId);
+    const response = await tagAssignmentApi.delete(assignmentId);
 
     if (response.error) {
       logger.error("Error removing tag assignment:", response.error);
@@ -104,7 +103,7 @@ export const fetchEntityTags = async (
       return [];
     }
 
-    const response = await extendedTagAssignmentApi.getAll({
+    const response = await tagAssignmentApi.getAll({
       filters: {
         target_id: entityId,
         target_type: entityType
@@ -139,7 +138,7 @@ export const fetchEntitiesWithTag = async (
       return [];
     }
 
-    const response = await extendedTagAssignmentApi.getEntitiesByTagId(tagId, entityType as EntityType);
+    const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType as EntityType);
 
     if (response.error) {
       logger.error("Error fetching entities with tag:", response.error);

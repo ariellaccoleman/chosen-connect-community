@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
@@ -10,7 +9,7 @@ import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
-import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
+import { tagApi } from "@/api/tags/factory/tagApiFactory";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -52,7 +51,7 @@ const TagSelectorComponent = ({
       const findSelectedTag = async () => {
         try {
           setIsLoading(true);
-          const response = await extendedTagApi.getById(currentSelectedTagId);
+          const response = await tagApi.getById(currentSelectedTagId);
           if (response.error) {
             logger.error("Error fetching selected tag:", response.error);
             return;
@@ -95,7 +94,7 @@ const TagSelectorComponent = ({
       
       if (searchValue) {
         // Search by name
-        const response = await extendedTagApi.searchByName(searchValue);
+        const response = await tagApi.searchByName(searchValue);
         if (response.error) {
           logger.error("Error searching tags:", response.error);
           setTags([]);
@@ -104,7 +103,7 @@ const TagSelectorComponent = ({
         fetchedTags = response.data || [];
       } else {
         // Get tags for entity type
-        const response = await extendedTagApi.getByEntityType(targetType);
+        const response = await tagApi.getByEntityType(targetType);
         if (response.error) {
           logger.error("Error loading tags:", response.error);
           setTags([]);

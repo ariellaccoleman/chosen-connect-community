@@ -1,7 +1,7 @@
 
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { extendedTagApi } from "@/api/tags/factory/tagApiFactory";
+import { tagApi } from "@/api/tags/factory/tagApiFactory";
 import { Tag } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -23,8 +23,8 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the extendedTagApi and unwrap the response
-        const response = await extendedTagApi.getAll();
+        // Use the tagApi and unwrap the response
+        const response = await tagApi.getAll();
         if (response.error) {
           logger.error("Error in useSelectionTags:", response.error);
           return {

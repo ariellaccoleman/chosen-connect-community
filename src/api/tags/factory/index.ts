@@ -6,6 +6,5 @@ export {
   createTagApiFactory,
   createTagAssignmentApiFactory,
   tagApi,
-  tagAssignmentApi,
-  extendedTagApi
+  tagAssignmentApi
 } from './tagApiFactory';

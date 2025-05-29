@@ -3,7 +3,7 @@ import {
   getSelectionTags, 
   getFilterTags 
 } from "@/api/tags/getTagsApi"; 
-import { extendedTagApi } from "@/api/tags/factory/tagApiFactory"; 
+import { tagApi } from "@/api/tags/factory/tagApiFactory"; 
 import { Tag } from "./types";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -84,7 +84,7 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
   try {
     const { created_by, ...cleanTagData } = tagData;
     
-    const response = await extendedTagApi.findOrCreate(cleanTagData);
+    const response = await tagApi.findOrCreate(cleanTagData);
     if (response.error) {
       logger.error("Error finding or creating tag:", response.error);
       throw response.error;
@@ -102,7 +102,7 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
     const { created_by, ...cleanTagData } = tagData;
     
-    const response = await extendedTagApi.create(cleanTagData);
+    const response = await tagApi.create(cleanTagData);
     if (response.error) {
       logger.error("Error creating tag:", response.error);
       throw response.error;
@@ -123,7 +123,7 @@ export const updateTag = async (
   try {
     logger.debug(`Updating tag ${tagId} with:`, updates);
     
-    const response = await extendedTagApi.update(tagId, updates);
+    const response = await tagApi.update(tagId, updates);
     if (response.error) {
       logger.error("Error updating tag:", response.error);
       throw response.error;
@@ -142,7 +142,7 @@ export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
     logger.debug(`Deleting tag ${tagId}`);
     
-    const response = await extendedTagApi.delete(tagId);
+    const response = await tagApi.delete(tagId);
     if (response.error) {
       logger.error("Error deleting tag:", response.error);
       throw response.error;
