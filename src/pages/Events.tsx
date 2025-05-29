@@ -17,14 +17,13 @@ import { Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterByTag } from "@/hooks/tags";
 import { toast } from "sonner";
-import TagSelector from "@/components/tags/TagSelector";
-import { Tag } from "@/utils/tags";
+import TagFilter from "@/components/filters/TagFilter";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   
-  // State for selected tag
+  // State for selected tag - same as community page
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
   // Use tag hook for filtering
@@ -100,15 +99,10 @@ const Events: React.FC = () => {
     navigate(eventUrl);
   };
   
-  // Handle tag selection
-  const handleTagSelected = (tag: Tag) => {
-    setSelectedTagId(tag.id || null);
-    logger.debug(`Selected tag: ${tag.name} (${tag.id})`);
-  };
-  
-  // Clear tag filter
-  const clearTagFilter = () => {
-    setSelectedTagId(null);
+  // Handle tag selection - same as community page
+  const handleTagSelect = (tagId: string | null) => {
+    setSelectedTagId(tagId);
+    logger.debug(`Events: Tag selected: ${tagId}`);
   };
 
   return (
@@ -136,7 +130,7 @@ const Events: React.FC = () => {
       
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -148,22 +142,15 @@ const Events: React.FC = () => {
                 />
               </div>
             </div>
-            <div className="md:w-64">
-              <TagSelector 
+            
+            {/* Tag filter - same as community page */}
+            <div className="mb-4 sm:mb-6">
+              <TagFilter
+                selectedTagId={selectedTagId}
+                onTagSelect={handleTagSelect}
                 targetType={EntityType.EVENT}
-                onTagSelected={handleTagSelected}
-                currentSelectedTagId={selectedTagId}
+                label="Filter events by tag"
               />
-              {selectedTagId && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearTagFilter}
-                  className="mt-2"
-                >
-                  Clear filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
@@ -199,6 +186,15 @@ const Events: React.FC = () => {
                 : "Your events will appear here. Refresh to check for new events."
             }
           </p>
+          {selectedTagId && (
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedTagId(null)}
+              className="mt-2"
+            >
+              Clear tag filter
+            </Button>
+          )}
         </div>
       ) : (
         <>

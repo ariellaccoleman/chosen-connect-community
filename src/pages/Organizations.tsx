@@ -19,11 +19,11 @@ const OrganizationsList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
-  // Use the entity feed hook to fetch organizations
+  // Use the entity feed hook to fetch organizations - same as community page
   const { entities: organizationEntities, isLoading, error } = useEntityFeed({
     entityTypes: [EntityType.ORGANIZATION],
     tagId: selectedTagId,
-    limit: 100 // Increase limit for organizations page
+    limit: 100
   });
   
   // Log page load for debugging
@@ -53,15 +53,14 @@ const OrganizationsList = () => {
     
   // Handle clicking on an organization card
   const handleViewOrganization = (orgId: string) => {
-    // Use generatePath to correctly create the URL with parameters
     const orgDetailUrl = generatePath(APP_ROUTES.ORGANIZATION_DETAIL, { orgId });
     navigate(orgDetailUrl);
   };
   
-  // Handle tag selection
+  // Handle tag selection - same as community page
   const handleTagSelect = (tagId: string | null) => {
+    logger.debug(`Organizations: Tag selected: ${tagId}`);
     setSelectedTagId(tagId);
-    logger.debug(`Tag selected: ${tagId}`);
   };
 
   return (
@@ -79,7 +78,7 @@ const OrganizationsList = () => {
       
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-4">
+          <div className="flex flex-col gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -91,12 +90,14 @@ const OrganizationsList = () => {
                 />
               </div>
             </div>
-            <div className="md:w-64">
+            
+            {/* Tag filter - same as community page */}
+            <div className="mb-4 sm:mb-6">
               <TagFilter
                 selectedTagId={selectedTagId}
                 onTagSelect={handleTagSelect}
                 targetType={EntityType.ORGANIZATION}
-                label="Filter by tag"
+                label="Filter organizations by tag"
               />
             </div>
           </div>
@@ -142,7 +143,7 @@ const OrganizationCard = ({
   organization, 
   onClick 
 }: { 
-  organization: any; // Entity type from useEntityFeed
+  organization: any;
   onClick: () => void;
 }) => {
   const orgInitials = organization.name
