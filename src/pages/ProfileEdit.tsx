@@ -62,9 +62,9 @@ const ProfileEdit = () => {
     
     try {
       await addOrganizationRelationship.mutateAsync({
-        profile_id: user.id,
-        organization_id: data.organizationId,
-        connection_type: data.connectionType,
+        profileId: user.id,
+        organizationId: data.organizationId,
+        connectionType: data.connectionType,
         department: data.department,
         notes: data.notes
       });

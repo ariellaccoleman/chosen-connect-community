@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAddOrganizationRelationship } from "@/hooks/organizations";
 import { toast } from "@/components/ui/sonner";
@@ -59,9 +60,9 @@ const OrganizationConnectionDialog = ({
     
     try {
       await addRelationship.mutateAsync({
-        profile_id: userId,
-        organization_id: orgId,
-        connection_type: connectionType,
+        profileId: userId,
+        organizationId: orgId,
+        connectionType: connectionType,
         department: null,
         notes: null
       });
