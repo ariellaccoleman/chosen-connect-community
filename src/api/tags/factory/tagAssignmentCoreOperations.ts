@@ -2,7 +2,7 @@
 /**
  * Tag assignment core operations using the API factory pattern
  */
-import { createApiFactory } from '@/api/core/factory/apiFactory';
+import { createApiFactory, createViewApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from './types';
 
 /**
@@ -27,12 +27,12 @@ export function createTagAssignmentCoreOperations(client?: any) {
 
 /**
  * Factory function to create enriched tag assignment operations with tag details
+ * Uses view factory for read-only operations on the view
  */
 export function createEnrichedTagAssignmentOperations(client?: any) {
-  return createApiFactory<any>({
-    tableName: 'entity_tag_assignments_view',
+  return createViewApiFactory<any>({
+    viewName: 'entity_tag_assignments_view' as any, // Cast to bypass type checking for now
     entityName: 'EnrichedTagAssignment',
-    useMutationOperations: false, // View is read-only
     defaultSelect: '*',
     transformResponse: (item: any) => ({
       id: item.id,

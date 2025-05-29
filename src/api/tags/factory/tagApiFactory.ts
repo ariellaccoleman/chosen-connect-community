@@ -20,7 +20,7 @@ export function createTagApi(client?: any): ApiOperations<any> {
     // Core CRUD operations only - standardized interface
     getAll: coreOps.getAll,
     getById: coreOps.getById,
-    getByIds: coreOps.getByIds, // Added missing method for ApiOperations compliance
+    getByIds: coreOps.getByIds,
     create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete
@@ -56,14 +56,13 @@ export function createExtendedTagApi(client?: any) {
  */
 export function createTagAssignmentApi(client?: any): ApiOperations<any> {
   const coreOps = createTagAssignmentCoreOperations(client);
-  const enrichedOps = createEnrichedTagAssignmentOperations(client);
   
   return {
     // Core CRUD operations only - standardized interface
-    getAll: enrichedOps.getAll, // Use enriched version for tag assignments
+    getAll: coreOps.getAll,
     getById: coreOps.getById,
-    getByIds: coreOps.getByIds, // Added missing method for ApiOperations compliance
-    create: coreOps.create, // Standard create signature (data: Partial<T>)
+    getByIds: coreOps.getByIds,
+    create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete
   };
@@ -79,26 +78,30 @@ export function createExtendedTagAssignmentApi(client?: any) {
   
   return {
     // Core CRUD operations - standardized interface
-    getAll: enrichedOps.getAll, // Use enriched version for tag assignments
+    getAll: coreOps.getAll,
     getById: coreOps.getById,
     getByIds: coreOps.getByIds,
-    create: (tagId: string, entityId: string, entityType: EntityType) => 
-      businessOps.create(tagId, entityId, entityType),
+    create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete,
     
     // Business operations with proper typing
+    createAssignment: (tagId: string, entityId: string, entityType: EntityType) => 
+      businessOps.create(tagId, entityId, entityType),
     getEntitiesByTagId: businessOps.getEntitiesByTagId,
     deleteByTagAndEntity: businessOps.deleteByTagAndEntity,
     deleteForEntity: businessOps.deleteForEntity,
-    isTagAssigned: businessOps.isTagAssigned
+    isTagAssigned: businessOps.isTagAssigned,
+    
+    // Enriched operations (read-only from view)
+    getAllEnriched: enrichedOps.getAll
   };
 }
 
 // DEPRECATED: Default exports - will be removed in next phase
 // These cause repositories to be created at import time with unauthenticated client
-export const tagApi = createTagApi();
-export const tagAssignmentApi = createTagAssignmentApi();
+export const tagApi = createExtendedTagApi(); // Use extended for backward compatibility
+export const tagAssignmentApi = createExtendedTagAssignmentApi(); // Use extended for backward compatibility
 
 // Factory functions for creating API instances (for testing and custom usage)
 export function createTagApiFactory(client?: any) {
@@ -117,9 +120,9 @@ export const createTag = tagApi.create;
 export const updateTag = tagApi.update;
 export const deleteTag = tagApi.delete;
 export const findTagByName = (name: string) => tagApi.getAll({ filters: { name } });
-export const searchTags = (tagApi as any).searchByName;
-export const findOrCreateTag = (tagApi as any).findOrCreate;
-export const getTagsByEntityType = (tagApi as any).getByEntityType;
+export const searchTags = tagApi.searchByName;
+export const findOrCreateTag = tagApi.findOrCreate;
+export const getTagsByEntityType = tagApi.getByEntityType;
 
 // Tag assignment function exports
 export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityType) => 
@@ -130,7 +133,7 @@ export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityT
     } 
   });
 
-export const createTagAssignment = (tagApi as any).create;
+export const createTagAssignment = tagAssignmentApi.createAssignment;
 export const deleteTagAssignment = tagAssignmentApi.delete;
 
 // Re-export core operations for direct access if needed

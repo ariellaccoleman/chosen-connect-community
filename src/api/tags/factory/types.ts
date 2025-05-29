@@ -1,7 +1,9 @@
-
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse } from '@/api/core/types';
+
+// Re-export TagAssignment for this module
+export { TagAssignment } from '@/utils/tags/types';
 
 /**
  * Options for configuring the tag API

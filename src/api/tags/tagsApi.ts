@@ -1,13 +1,17 @@
 
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { tagApi, tagAssignmentApi } from './factory/tagApiFactory';
+import { createExtendedTagApi, createExtendedTagAssignmentApi } from './factory/tagApiFactory';
+
+// Use extended APIs that have business operations
+const extendedTagApi = createExtendedTagApi();
+const extendedTagAssignmentApi = createExtendedTagAssignmentApi();
 
 /**
  * Get all tags
  */
 export const getAllTags = async (): Promise<Tag[]> => {
-  const response = await tagApi.getAll();
+  const response = await extendedTagApi.getAll();
   if (response.error) {
     throw response.error;
   }
@@ -18,7 +22,7 @@ export const getAllTags = async (): Promise<Tag[]> => {
  * Get tag by ID
  */
 export const getTagById = async (id: string): Promise<Tag | null> => {
-  const response = await tagApi.getById(id);
+  const response = await extendedTagApi.getById(id);
   if (response.error) {
     throw response.error;
   }
@@ -29,7 +33,7 @@ export const getTagById = async (id: string): Promise<Tag | null> => {
  * Find tag by name
  */
 export const findTagByName = async (name: string): Promise<Tag | null> => {
-  const response = await tagApi.getAll({ filters: { name } });
+  const response = await extendedTagApi.getAll({ filters: { name } });
   if (response.error) {
     throw response.error;
   }
@@ -40,7 +44,7 @@ export const findTagByName = async (name: string): Promise<Tag | null> => {
  * Create a new tag
  */
 export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
-  const response = await tagApi.create(data);
+  const response = await extendedTagApi.create(data);
   if (response.error) {
     throw response.error;
   }
@@ -54,7 +58,7 @@ export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
  * Update an existing tag
  */
 export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
-  const response = await tagApi.update(id, data);
+  const response = await extendedTagApi.update(id, data);
   if (response.error) {
     throw response.error;
   }
@@ -68,7 +72,7 @@ export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> =>
  * Delete a tag
  */
 export const deleteTag = async (id: string): Promise<boolean> => {
-  const response = await tagApi.delete(id);
+  const response = await extendedTagApi.delete(id);
   if (response.error) {
     throw response.error;
   }
@@ -79,7 +83,7 @@ export const deleteTag = async (id: string): Promise<boolean> => {
  * Find or create a tag
  */
 export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
-  const response = await tagApi.findOrCreate(data, entityType);
+  const response = await extendedTagApi.findOrCreate(data);
   if (response.error) {
     throw response.error;
   }
@@ -93,7 +97,7 @@ export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityTyp
  * Get tags by entity type
  */
 export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
-  const response = await tagApi.getByEntityType(entityType);
+  const response = await extendedTagApi.getByEntityType(entityType);
   if (response.error) {
     throw response.error;
   }
@@ -104,7 +108,7 @@ export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]
  * Get tag assignments for an entity
  */
 export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
-  const response = await tagAssignmentApi.getAll({ 
+  const response = await extendedTagAssignmentApi.getAll({ 
     filters: { 
       target_id: entityId, 
       target_type: entityType 
@@ -120,7 +124,7 @@ export const getTagAssignmentsForEntity = async (entityId: string, entityType: E
  * Create a tag assignment
  */
 export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
-  const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+  const response = await extendedTagAssignmentApi.createAssignment(tagId, entityId, entityType);
   if (response.error) {
     throw response.error;
   }
@@ -134,7 +138,7 @@ export const createTagAssignment = async (tagId: string, entityId: string, entit
  * Delete a tag assignment
  */
 export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
-  const response = await tagAssignmentApi.delete(assignmentId);
+  const response = await extendedTagAssignmentApi.delete(assignmentId);
   if (response.error) {
     throw response.error;
   }
