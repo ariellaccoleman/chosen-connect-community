@@ -23,6 +23,30 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
     this.client = client || supabase;
     this.schema = schema;
     
+    // Enhanced logging for debugging
+    console.log(`[ViewRepository] Creating ViewRepository for view: ${viewName}`);
+    console.log(`[ViewRepository] Client type:`, typeof this.client);
+    console.log(`[ViewRepository] Client exists:`, !!this.client);
+    console.log(`[ViewRepository] Client.from exists:`, !!(this.client && this.client.from));
+    console.log(`[ViewRepository] Schema:`, schema);
+    
+    // Test the client.from method immediately
+    try {
+      const testQuery = this.client.from(viewName);
+      console.log(`[ViewRepository] Test client.from(${viewName}) result:`, testQuery);
+      console.log(`[ViewRepository] Test query type:`, typeof testQuery);
+      console.log(`[ViewRepository] Test query has select:`, !!(testQuery && testQuery.select));
+      
+      if (testQuery && testQuery.select) {
+        const testSelectQuery = testQuery.select('*');
+        console.log(`[ViewRepository] Test select query:`, testSelectQuery);
+        console.log(`[ViewRepository] Test select query type:`, typeof testSelectQuery);
+        console.log(`[ViewRepository] Test select query has eq:`, !!(testSelectQuery && testSelectQuery.eq));
+      }
+    } catch (error) {
+      console.error(`[ViewRepository] Error testing client.from:`, error);
+    }
+    
     if (this.options.enableLogging) {
       logger.debug(`Created ViewRepository for view ${viewName} with schema ${schema}`);
     }
@@ -46,10 +70,17 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
    * @returns Promise with the record or null if not found
    */
   async getById(id: string | number): Promise<T | null> {
+    console.log(`[ViewRepository.getById] Starting getById for ID: ${id}`);
+    
     try {
-      const result = await this.select()
-        .eq(this.options.idField, id)
-        .maybeSingle();
+      const query = this.select();
+      console.log(`[ViewRepository.getById] Created base query:`, query);
+      
+      const eqQuery = query.eq(this.options.idField, id);
+      console.log(`[ViewRepository.getById] Created eq query:`, eqQuery);
+      
+      const result = await eqQuery.maybeSingle();
+      console.log(`[ViewRepository.getById] Query result:`, result);
       
       if (this.options.enableLogging) {
         logger.debug(`ViewRepository.getById(${id})`, {
@@ -60,6 +91,7 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
       
       return result.data as T | null;
     } catch (error) {
+      console.error(`[ViewRepository.getById] Error:`, error);
       this.handleError('getById', error, { id });
       return null;
     }
@@ -70,8 +102,14 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
    * @returns Promise with an array of records
    */
   async getAll(): Promise<T[]> {
+    console.log(`[ViewRepository.getAll] Starting getAll`);
+    
     try {
-      const result = await this.select().execute();
+      const query = this.select();
+      console.log(`[ViewRepository.getAll] Created select query:`, query);
+      
+      const result = await query.execute();
+      console.log(`[ViewRepository.getAll] Execute result:`, result);
       
       if (this.options.enableLogging) {
         logger.debug(`ViewRepository.getAll()`, {
@@ -83,6 +121,7 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
       
       return result.data as T[] || [];
     } catch (error) {
+      console.error(`[ViewRepository.getAll] Error:`, error);
       this.handleError('getAll', error);
       return [];
     }
@@ -94,6 +133,10 @@ export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
    * @returns Query builder that can be further chained
    */
   select(select: string = '*'): ViewRepositoryQuery<T> {
+    console.log(`[ViewRepository.select] Creating select query with fields: ${select}`);
+    console.log(`[ViewRepository.select] Client type:`, typeof this.client);
+    console.log(`[ViewRepository.select] Client exists:`, !!this.client);
+    
     return new ViewRepositoryQuery<T>(this.client, this.tableName, select, this.options);
   }
 
@@ -124,22 +167,48 @@ class ViewRepositoryQuery<T> implements ReadOnlyRepositoryQuery<T> {
   private client: any;
 
   constructor(client: any, viewName: string, select: string, options: Record<string, any>) {
+    console.log(`[ViewRepositoryQuery] Constructor called`);
+    console.log(`[ViewRepositoryQuery] Client type:`, typeof client);
+    console.log(`[ViewRepositoryQuery] Client exists:`, !!client);
+    console.log(`[ViewRepositoryQuery] ViewName:`, viewName);
+    console.log(`[ViewRepositoryQuery] Select:`, select);
+    
     this.client = client;
     this.tableName = viewName;
     this.options = options;
     
     // Initialize the base query - handle potential undefined gracefully
     try {
-      this.baseQuery = client.from(viewName).select(select);
+      console.log(`[ViewRepositoryQuery] Attempting client.from(${viewName})`);
+      const fromResult = client.from(viewName);
+      console.log(`[ViewRepositoryQuery] client.from result:`, fromResult);
+      console.log(`[ViewRepositoryQuery] fromResult type:`, typeof fromResult);
+      
+      if (fromResult && fromResult.select) {
+        console.log(`[ViewRepositoryQuery] Attempting select(${select})`);
+        this.baseQuery = fromResult.select(select);
+        console.log(`[ViewRepositoryQuery] baseQuery result:`, this.baseQuery);
+        console.log(`[ViewRepositoryQuery] baseQuery type:`, typeof this.baseQuery);
+        console.log(`[ViewRepositoryQuery] baseQuery has eq:`, !!(this.baseQuery && this.baseQuery.eq));
+      } else {
+        console.warn(`[ViewRepositoryQuery] fromResult or fromResult.select is undefined`);
+        this.baseQuery = null;
+      }
     } catch (error) {
+      console.error(`[ViewRepositoryQuery] Error in constructor:`, error);
       // If client.from fails, create a fallback that will handle errors gracefully
       this.baseQuery = null;
     }
+    
+    console.log(`[ViewRepositoryQuery] Final baseQuery:`, this.baseQuery);
   }
 
   private createSafeQuery(): any {
+    console.log(`[ViewRepositoryQuery.createSafeQuery] baseQuery exists:`, !!this.baseQuery);
+    
     // If we don't have a base query, create a safe wrapper that handles method calls
     if (!this.baseQuery) {
+      console.log(`[ViewRepositoryQuery.createSafeQuery] Creating failsafe wrapper`);
       return this.createFailsafeQueryWrapper();
     }
     return this.baseQuery;
@@ -252,9 +321,17 @@ class ViewRepositoryQuery<T> implements ReadOnlyRepositoryQuery<T> {
   }
 
   eq(column: string, value: any): ViewRepositoryQuery<T> {
+    console.log(`[ViewRepositoryQuery.eq] Called with column: ${column}, value: ${value}`);
+    
     const query = this.createSafeQuery();
+    console.log(`[ViewRepositoryQuery.eq] Safe query:`, query);
+    console.log(`[ViewRepositoryQuery.eq] Safe query has eq:`, !!(query && query.eq));
+    
     if (query.eq) {
       this.baseQuery = query.eq(column, value);
+      console.log(`[ViewRepositoryQuery.eq] Updated baseQuery:`, this.baseQuery);
+    } else {
+      console.warn(`[ViewRepositoryQuery.eq] Query does not have eq method`);
     }
     return this;
   }
@@ -374,14 +451,17 @@ class ViewRepositoryQuery<T> implements ReadOnlyRepositoryQuery<T> {
   }
 
   async single(): Promise<ReadOnlyRepositoryResponse<T>> {
+    console.log(`[ViewRepositoryQuery.single] Executing single query`);
     return this.executeQuerySingle(this.baseQuery);
   }
 
   async maybeSingle(): Promise<ReadOnlyRepositoryResponse<T | null>> {
+    console.log(`[ViewRepositoryQuery.maybeSingle] Executing maybeSingle query`);
     return this.executeQueryMaybeSingle(this.baseQuery);
   }
 
   async execute(): Promise<ReadOnlyRepositoryResponse<T[]>> {
+    console.log(`[ViewRepositoryQuery.execute] Executing query`);
     return this.executeQuery(this.baseQuery);
   }
 
