@@ -1,17 +1,16 @@
 
 /**
- * Tag operations using the API factory pattern - cleaned up version
+ * Tag core operations using the API factory pattern - base CRUD operations
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 
-// Create tag API using the factory pattern - this provides all standard CRUD and query operations
+// Create tag API using the factory pattern - this provides all standard CRUD operations
 export const tagCoreOperations = createApiFactory<Tag>({
   tableName: 'tags',
   entityName: 'Tag',
   useMutationOperations: true,
   defaultSelect: '*',
-  defaultOrderBy: 'name',
   transformResponse: (item: any): Tag => ({
     id: item.id,
     name: item.name,
@@ -23,5 +22,4 @@ export const tagCoreOperations = createApiFactory<Tag>({
 });
 
 // Note: All standard CRUD operations (getAll, getById, create, update, delete)
-// and query operations (findByName, searchByName, getByEntityType) are now
-// provided by the base factory and don't need to be duplicated here.
+// are now provided by the base factory and don't need to be duplicated here.

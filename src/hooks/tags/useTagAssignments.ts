@@ -24,11 +24,13 @@ export function useEntityTagAssignments(entityId: string, entityType: EntityType
       }
       
       try {
+        logger.debug(`useEntityTagAssignments: Fetching assignments for ${entityType} ${entityId}`);
         const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
         if (response.error) {
           logger.error(`Error fetching tag assignments for entity ${entityId}:`, response.error);
           throw response.error;
         }
+        logger.debug(`useEntityTagAssignments: Found ${response.data?.length || 0} assignments for ${entityId}`);
         return response.data || [];
       } catch (error) {
         logger.error(`Error fetching tag assignments for entity ${entityId}:`, error);
@@ -66,6 +68,7 @@ export function useAssignTag() {
       if (response.error) {
         throw response.error;
       }
+      logger.debug(`Successfully assigned tag ${variables.tagId} to entity ${variables.entityId}`);
       queryClient.invalidateQueries({ 
         queryKey: ["entity", variables.entityId, "tag-assignments"] 
       });
@@ -91,6 +94,7 @@ export function useRemoveTagAssignment() {
       if (response.error) {
         throw response.error;
       }
+      logger.debug(`Successfully removed tag assignment`);
       queryClient.invalidateQueries({ queryKey: ["entity"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     }

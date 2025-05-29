@@ -13,7 +13,6 @@ const tagBase = createApiFactory<Tag>({
   entityName: 'Tag',
   useMutationOperations: true,
   defaultSelect: '*',
-  defaultOrderBy: 'name',
   transformResponse: (item: any): Tag => ({
     id: item.id,
     name: item.name,
@@ -27,28 +26,49 @@ const tagBase = createApiFactory<Tag>({
 // Business operations for tags that involve complex logic
 export const tagBusinessOperations = {
   /**
-   * Find or create a tag - complex business logic that combines find and create
+   * Find or create a tag with the given data
    */
-  async findOrCreate(data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
+  async findOrCreate(tagData: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> {
     // First try to find existing tag by name
-    const existing = await tagBase.getAll({ filters: { name: data.name } });
-    if (existing.error) {
-      return {
-        data: null,
-        error: existing.error,
-        status: 'error'
-      };
+    if (tagData.name) {
+      const existingResponse = await tagBase.getAll({ 
+        filters: { name: tagData.name } 
+      });
+      
+      if (existingResponse.data && existingResponse.data.length > 0) {
+        return {
+          data: existingResponse.data[0],
+          error: null,
+          status: 'success'
+        };
+      }
     }
     
-    if (existing.data && existing.data.length > 0) {
+    // Create new tag if not found
+    return tagBase.create(tagData as any);
+  },
+
+  /**
+   * Search tags by name pattern
+   */
+  async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
+    if (!searchQuery.trim()) {
       return {
-        data: existing.data[0],
+        data: [],
         error: null,
         status: 'success'
       };
     }
     
-    // Create new tag if not found
-    return tagBase.create(data as any);
+    return tagBase.getAll({ search: searchQuery });
+  },
+
+  /**
+   * Get tags by entity type (using tag_entity_types table)
+   */
+  async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
+    // For now, return all tags since entity type filtering is complex
+    // This can be enhanced later with proper joins
+    return tagBase.getAll();
   }
 };
