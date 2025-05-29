@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Tag as TagIcon } from "lucide-react";
@@ -9,7 +10,7 @@ import CreateTagDialog from "./CreateTagDialog";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
-import { tagApi } from "@/api/tags/factory/tagApiFactory";
+import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags/useTagFactoryHooks";
 
 interface TagSelectorComponentProps {
   targetType: EntityType;
@@ -31,97 +32,33 @@ const TagSelectorComponent = ({
 }: TagSelectorComponentProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [tags, setTags] = useState<Tag[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
   const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(false);
 
-  // Load tags when search criteria changes or when popover opens
-  useEffect(() => {
-    if (open || searchValue) {
-      loadTagsWithDebounce();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchValue, targetType, isAdmin, user?.id, open]);
+  // Use factory-based hooks instead of direct API calls
+  const { data: tagsResponse, isLoading, refetch } = useSelectionTags(targetType);
+  const { createTag, isCreating } = useTagCrudMutations();
+
+  // Extract tags from the API response
+  const tags = tagsResponse || [];
 
   // Find and set the selected tag when currentSelectedTagId changes
   useEffect(() => {
-    if (currentSelectedTagId) {
-      const findSelectedTag = async () => {
-        try {
-          setIsLoading(true);
-          const response = await tagApi.getById(currentSelectedTagId);
-          if (response.error) {
-            logger.error("Error fetching selected tag:", response.error);
-            return;
-          }
-          if (response.data) {
-            setSelectedTag(response.data);
-          }
-        } catch (err) {
-          logger.error("Error fetching selected tag:", err);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      
-      findSelectedTag();
+    if (currentSelectedTagId && tags.length > 0) {
+      const foundTag = tags.find(tag => tag.id === currentSelectedTagId);
+      if (foundTag) {
+        setSelectedTag(foundTag);
+      }
     } else {
       setSelectedTag(null);
     }
-  }, [currentSelectedTagId]);
-  
-  /**
-   * Load tags with debounce to prevent excessive API calls
-   */
-  const loadTagsWithDebounce = () => {
-    const timeoutId = setTimeout(async () => {
-      await loadTagsBasedOnSearch();
-    }, 300);
-    
-    return () => clearTimeout(timeoutId);
-  };
+  }, [currentSelectedTagId, tags]);
 
-  /**
-   * Load tags based on search criteria
-   */
-  const loadTagsBasedOnSearch = async () => {
-    setIsLoading(true);
-    try {
-      logger.debug(`Loading tags for entity type: ${targetType}`);
-      let fetchedTags: Tag[] = [];
-      
-      if (searchValue) {
-        // Search by name
-        const response = await tagApi.searchByName(searchValue);
-        if (response.error) {
-          logger.error("Error searching tags:", response.error);
-          setTags([]);
-          return;
-        }
-        fetchedTags = response.data || [];
-      } else {
-        // Get tags for entity type
-        const response = await tagApi.getByEntityType(targetType);
-        if (response.error) {
-          logger.error("Error loading tags:", response.error);
-          setTags([]);
-          return;
-        }
-        fetchedTags = response.data || [];
-      }
-      
-      logger.debug("Fetched tags:", fetchedTags);
-      setTags(fetchedTags);
-    } catch (err) {
-      logger.error("Error fetching tags:", err);
-      toast.error("Failed to load tags. Please try again.");
-      setTags([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Filter tags based on search value
+  const filteredTags = tags.filter(tag => 
+    tag.name.toLowerCase().includes(searchValue.toLowerCase())
+  );
 
   /**
    * Open tag creation dialog
@@ -144,7 +81,7 @@ const TagSelectorComponent = ({
     onTagSelected(tag);
     
     // Reload tags to include the new one
-    loadTagsBasedOnSearch();
+    refetch();
   };
 
   /**
@@ -185,7 +122,7 @@ const TagSelectorComponent = ({
           <TagSearch 
             searchValue={searchValue}
             setSearchValue={setSearchValue}
-            tags={tags}
+            tags={filteredTags}
             targetType={targetType}
             onTagSelected={handleTagSelection}
             handleOpenCreateDialog={handleOpenCreateDialog}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Check, ChevronsUpDown, Loader2, Plus, Tag as TagIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,9 @@ import {
 } from "@/components/ui/popover";
 import { EntityType } from "@/types/entityTypes";
 import { Tag } from "@/utils/tags";
-import { useSelectionTags } from "@/hooks/tags";
-import { findOrCreateTag } from "@/utils/tags/tagOperations";
-import { assignTag } from "@/utils/tags/tagAssignments";
+import { useSelectionTags, useTagCrudMutations } from "@/hooks/tags/useTagFactoryHooks";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
-import { tagApi } from "@/api/tags/factory/tagApiFactory";
 
 export interface TagSelectorProps {
   targetType: EntityType | string;
@@ -47,76 +45,26 @@ const TagSelector = ({
 }: TagSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
-  const [isCreatingTag, setIsCreatingTag] = useState(false);
   const [selectedTag, setSelectedTag] = useState<Tag | null>(null);
-  const [tags, setTags] = useState<Tag[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   
-  // Load tags on init or when search changes
-  useEffect(() => {
-    if (open || searchValue) {
-      loadTags();
-    }
-  }, [open, searchValue, targetType]);
+  // Use factory-based hooks instead of direct API calls
+  const { data: tagsResponse, isLoading, refetch } = useSelectionTags(targetType as EntityType);
+  const { createTag, isCreating } = useTagCrudMutations();
+  
+  // Extract tags from the API response
+  const tags = tagsResponse || [];
   
   // Set the selected tag when currentSelectedTagId changes
   useEffect(() => {
-    if (currentSelectedTagId) {
-      const findTag = async () => {
-        try {
-          const response = await tagApi.getById(currentSelectedTagId);
-          if (response.error) {
-            logger.error("Error fetching selected tag:", response.error);
-            return;
-          }
-          if (response.data) {
-            setSelectedTag(response.data);
-          }
-        } catch (err) {
-          logger.error("Error fetching selected tag:", err);
-        }
-      };
-      
-      findTag();
+    if (currentSelectedTagId && tags.length > 0) {
+      const foundTag = tags.find(tag => tag.id === currentSelectedTagId);
+      if (foundTag) {
+        setSelectedTag(foundTag);
+      }
     } else {
       setSelectedTag(null);
     }
-  }, [currentSelectedTagId]);
-  
-  const loadTags = async () => {
-    setIsLoading(true);
-    try {
-      let fetchedTags: Tag[] = [];
-      
-      if (searchValue) {
-        // If there's a search query, search by name
-        const response = await tagApi.searchByName(searchValue);
-        if (response.error) {
-          logger.error("Error searching tags:", response.error);
-          setTags([]);
-          return;
-        }
-        fetchedTags = response.data || [];
-      } else {
-        // Otherwise get tags for entity type
-        const response = await tagApi.getByEntityType(targetType as EntityType);
-        if (response.error) {
-          logger.error("Error loading tags:", response.error);
-          setTags([]);
-          return;
-        }
-        fetchedTags = response.data || [];
-      }
-      
-      logger.debug(`TagSelector loaded ${fetchedTags.length} tags for entity type ${targetType}`);
-      setTags(fetchedTags);
-    } catch (error) {
-      logger.error("Error loading tags:", error);
-      setTags([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [currentSelectedTagId, tags]);
 
   const handleTagSelect = (tagId: string) => {
     const selectedTag = tags.find(tag => tag.id === tagId);
@@ -131,32 +79,32 @@ const TagSelector = ({
   const handleCreateTag = async () => {
     if (!searchValue.trim()) return;
     
-    setIsCreatingTag(true);
-    
     try {
-      // Create or find the tag - no need to pass user ID
-      const newTag = await findOrCreateTag({ 
-        name: searchValue.trim() 
+      // Use the factory-based hook for tag creation
+      await createTag({ 
+        name: searchValue.trim(),
+        description: null
       });
       
+      // Refresh tag list to include the new tag
+      await refetch();
+      
+      // Find the newly created tag and select it
+      const newTags = await refetch();
+      const newTag = newTags.data?.find(tag => tag.name === searchValue.trim());
+      
       if (newTag) {
-        logger.debug(`Created/found tag: ${newTag.name} (${newTag.id})`);
-        
-        // Just call onTagSelected - let the parent handle assignment
+        logger.debug(`Created tag: ${newTag.name} (${newTag.id})`);
         setSelectedTag(newTag);
         onTagSelected(newTag);
         setSearchValue("");
         setOpen(false);
-        // Refresh tag list
-        loadTags();
       } else {
         toast.error("Failed to create tag");
       }
     } catch (error) {
       logger.error("Error creating tag:", error);
       toast.error("Failed to create tag");
-    } finally {
-      setIsCreatingTag(false);
     }
   };
 
@@ -234,9 +182,9 @@ const TagSelector = ({
                         size="sm"
                         className="mx-auto flex items-center"
                         onClick={handleCreateTag}
-                        disabled={!searchValue.trim() || isCreatingTag}
+                        disabled={!searchValue.trim() || isCreating}
                       >
-                        {isCreatingTag ? (
+                        {isCreating ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
                         ) : (
                           <Plus className="h-4 w-4 mr-1" />
