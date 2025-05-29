@@ -7,7 +7,8 @@ import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizat
 import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
-import EntityTagDisplay from "@/components/tags/EntityTagDisplay";
+import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
+import TagList from "@/components/tags/TagList";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -35,12 +36,28 @@ const ProfileView = () => {
     isLoading: isLoadingOrgs 
   } = usePublicProfileOrganizations(profileId);
 
+  // Fetch tags for this profile
+  const { 
+    data: tagAssignments, 
+    isLoading: isLoadingTags 
+  } = useEntityTags(profileId, EntityType.PERSON);
+
   useEffect(() => {
     if (profileError) {
       logger.error("Error loading profile:", profileError);
       toast.error("Failed to load profile information.");
     }
   }, [profileError]);
+
+  // Log tag data for debugging
+  useEffect(() => {
+    if (profileId) {
+      logger.info(`ProfileView: Loading tags for profile ${profileId}`);
+      if (tagAssignments) {
+        logger.info(`ProfileView: Found ${tagAssignments.length} tag assignments:`, tagAssignments);
+      }
+    }
+  }, [profileId, tagAssignments]);
 
   // Update to use browser history instead of hardcoded route
   const handleBack = () => {
@@ -103,12 +120,19 @@ const ProfileView = () => {
           />
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4 dark:text-white">Tags</h3>
-            {profileId && (
-              <EntityTagDisplay
-                entityId={profileId}
-                entityType={EntityType.PERSON}
+            {isLoadingTags ? (
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
+                <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
+              </div>
+            ) : tagAssignments && tagAssignments.length > 0 ? (
+              <TagList 
+                tagAssignments={tagAssignments}
                 className="flex flex-wrap gap-2"
+                showDebugInfo={true}
               />
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">No tags assigned</p>
             )}
           </div>
         </div>
