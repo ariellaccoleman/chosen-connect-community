@@ -6,13 +6,13 @@ import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 /**
- * Hook to fetch all tags
+ * Hook to fetch all tags using the updated API with views
  */
 export function useTags() {
   return useQuery({
     queryKey: ["tags", "all"],
     queryFn: async () => {
-      logger.debug("useTags: Fetching all tags");
+      logger.debug("useTags: Fetching all tags from view");
       const response = await extendedTagApi.getAll();
       if (response.error) {
         logger.error("useTags: Error fetching tags:", response.error);
@@ -25,16 +25,17 @@ export function useTags() {
 }
 
 /**
- * Hook to fetch tags by entity type
+ * Hook to fetch tags by entity type using the filtered view
  */
 export function useTagsByEntityType(entityType: EntityType) {
   return useQuery({
     queryKey: ["tags", "byEntityType", entityType],
     queryFn: async () => {
       if (!isValidEntityType(entityType)) {
-        throw new Error(`Invalid entity type: ${entityType}`);
+        logger.warn(`Invalid entity type: ${entityType}`);
+        return [];
       }
-      logger.debug(`useTagsByEntityType: Fetching tags for entity type ${entityType}`);
+      logger.debug(`useTagsByEntityType: Fetching tags for entity type ${entityType} using view`);
       const response = await extendedTagApi.getByEntityType(entityType);
       if (response.error) {
         logger.error(`useTagsByEntityType: Error fetching tags for ${entityType}:`, response.error);
@@ -69,7 +70,7 @@ export function useTag(id: string | null | undefined) {
 }
 
 /**
- * Hook to search tags by name
+ * Hook to search tags by name using business operations
  */
 export function useTagSearch(searchQuery: string) {
   return useQuery({

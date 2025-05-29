@@ -1,9 +1,10 @@
 
 /**
  * Tag API Factory - Main entry point using factory configuration
+ * Updated to use proper database views and remove problematic methods
  */
 import { tagCoreOperations } from './tagCoreOperations';
-import { tagAssignmentCoreOperations } from './tagAssignmentCoreOperations';
+import { tagAssignmentCoreOperations, enrichedTagAssignmentOperations } from './tagAssignmentCoreOperations';
 import { tagBusinessOperations } from './tagBusinessOperations';
 import { tagAssignmentBusinessOperations } from './tagAssignmentBusinessOperations';
 import { EntityType } from '@/types/entityTypes';
@@ -12,33 +13,41 @@ import { EntityType } from '@/types/entityTypes';
 export const tagApi = tagCoreOperations;
 export const tagAssignmentApi = tagAssignmentCoreOperations;
 
-// Export business operations separately
+// Export business operations separately with proper view support
 export const extendedTagApi = {
   ...tagCoreOperations,
   ...tagBusinessOperations,
-  // Add convenience methods that use base operations
+  // Add convenience methods that use business operations
   findByName: (name: string) => {
     return tagCoreOperations.getAll({ filters: { name } });
   },
   searchByName: (searchQuery: string) => {
-    return tagCoreOperations.getAll({ search: searchQuery });
+    return tagBusinessOperations.searchByName(searchQuery);
   },
   getByEntityType: (entityType: EntityType) => {
-    return tagCoreOperations.getAll({ filters: { entity_type: entityType } });
+    return tagBusinessOperations.getByEntityType(entityType);
   }
 };
 
 export const extendedTagAssignmentApi = {
   ...tagAssignmentCoreOperations,
   ...tagAssignmentBusinessOperations,
-  // Add convenience method that uses base operations
+  // Add convenience method that uses enriched view for better data
   getForEntity: (entityId: string, entityType: EntityType) => {
-    return tagAssignmentCoreOperations.getAll({ 
+    return enrichedTagAssignmentOperations.getAll({ 
       filters: { 
         target_id: entityId, 
         target_type: entityType 
       } 
     });
+  },
+  // Method to get entities by tag using the enriched view
+  getEntitiesByTagId: (tagId: string, entityType?: EntityType) => {
+    const filters: any = { tag_id: tagId };
+    if (entityType) {
+      filters.target_type = entityType;
+    }
+    return enrichedTagAssignmentOperations.getAll({ filters });
   }
 };
 
