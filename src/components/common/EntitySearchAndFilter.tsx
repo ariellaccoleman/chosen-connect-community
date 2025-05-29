@@ -108,7 +108,7 @@ const EntitySearchAndFilter = ({
             variant="ghost" 
             size="sm" 
             onClick={clearTagFilter}
-            className="ml-4"
+            className="ml-4 self-center"
           >
             Clear filter
           </Button>
