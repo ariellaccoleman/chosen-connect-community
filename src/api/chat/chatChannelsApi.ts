@@ -13,37 +13,59 @@ import { TagAssignment } from '@/utils/tags/types';
 type ChatChannelRow = Tables<"chat_channels">;
 
 /**
+ * Cached chat channels API instance
+ */
+let cachedChatChannelsApi: any = null;
+
+/**
  * Create API operations for chat channels using the factory pattern
  */
-export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannelCreate, ChatChannelUpdate>({
-  tableName: 'chat_channels',
-  entityName: 'chatChannel',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: ChatChannelRow) => ({
-    id: data.id,
-    name: data.name || null,
-    description: data.description || null,
-    is_public: data.is_public !== false, // Default to true if null
-    created_at: data.created_at || '',
-    updated_at: data.updated_at || data.created_at || '',
-    created_by: data.created_by || null,
-    channel_type: data.channel_type === 'group' ? 'group' : 'announcement'
-  }),
-  transformRequest: (data) => {
-    const transformed: Record<string, any> = {};
-    
-    // Pass through relevant fields
-    if (data.name !== undefined) transformed.name = data.name;
-    if (data.description !== undefined) transformed.description = data.description;
-    if (data.is_public !== undefined) transformed.is_public = data.is_public;
-    if (data.channel_type !== undefined) transformed.channel_type = data.channel_type;
-    if (data.created_by !== undefined) transformed.created_by = data.created_by;
-    
-    return transformed;
-  },
-  useMutationOperations: true,
-  useBatchOperations: false
-});
+function createChatChannelsApiInstance(providedClient?: any) {
+  return createApiFactory<ChatChannel, string, ChatChannelCreate, ChatChannelUpdate>({
+    tableName: 'chat_channels',
+    entityName: 'chatChannel',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: ChatChannelRow) => ({
+      id: data.id,
+      name: data.name || null,
+      description: data.description || null,
+      is_public: data.is_public !== false, // Default to true if null
+      created_at: data.created_at || '',
+      updated_at: data.updated_at || data.created_at || '',
+      created_by: data.created_by || null,
+      channel_type: data.channel_type === 'group' ? 'group' : 'announcement'
+    }),
+    transformRequest: (data) => {
+      const transformed: Record<string, any> = {};
+      
+      // Pass through relevant fields
+      if (data.name !== undefined) transformed.name = data.name;
+      if (data.description !== undefined) transformed.description = data.description;
+      if (data.is_public !== undefined) transformed.is_public = data.is_public;
+      if (data.channel_type !== undefined) transformed.channel_type = data.channel_type;
+      if (data.created_by !== undefined) transformed.created_by = data.created_by;
+      
+      return transformed;
+    },
+    useMutationOperations: true,
+    useBatchOperations: false
+  }, providedClient);
+}
+
+// Initialize with default client
+if (!cachedChatChannelsApi) {
+  cachedChatChannelsApi = createChatChannelsApiInstance();
+}
+
+export const chatChannelsApi = cachedChatChannelsApi;
+
+/**
+ * Reset chat channels API with authenticated client
+ */
+export function resetChatChannelsApi(authenticatedClient: any) {
+  cachedChatChannelsApi = createChatChannelsApiInstance(authenticatedClient);
+  return cachedChatChannelsApi;
+}
 
 // Extract individual operations for direct usage
 export const {
@@ -52,7 +74,7 @@ export const {
   create: createChatChannel,
   update: updateChatChannel,
   delete: deleteChatChannel
-} = chatChannelsApi;
+} = cachedChatChannelsApi;
 
 /**
  * Get chat channel with tags and creator details
