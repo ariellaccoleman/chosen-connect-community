@@ -79,23 +79,28 @@ export function createViewRepositoryInstance<T>(
   options: { 
     schema?: string;
     enableLogging?: boolean;
-  } = {}
+  } = {},
+  providedClient?: any // Add client parameter
 ): ViewRepository<T> {
   const schema = options.schema || 'public';
   console.log(`Creating view repository for view: ${viewName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
+  // Use provided client or fall back to default supabase client
+  const clientToUse = providedClient || supabase;
+  
+  // Verify client is available
+  if (!clientToUse) {
     throw new Error(`Supabase client is not available for view ${viewName}`);
   }
   
-  console.log('View repository Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase
+  console.log('View repository client verification:', {
+    hasClient: !!clientToUse,
+    hasFrom: !!(clientToUse && clientToUse.from),
+    clientType: typeof clientToUse,
+    isProvidedClient: !!providedClient
   });
   
-  const viewRepo = createViewRepository<T>(viewName, supabase, schema);
+  const viewRepo = createViewRepository<T>(viewName, clientToUse, schema);
   
   if (options.enableLogging) {
     viewRepo.setOptions({ enableLogging: true });
@@ -112,28 +117,33 @@ export function createTestingViewRepository<T>(
   options: { 
     schema?: string;
     enableLogging?: boolean;
-  } = {}
+  } = {},
+  providedClient?: any // Add client parameter
 ): ViewRepository<T> {
   const schema = options.schema || 'testing';
   console.log(`Creating testing view repository for view: ${viewName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
+  // Use provided client or fall back to default supabase client
+  const clientToUse = providedClient || supabase;
+  
+  // Verify client is available
+  if (!clientToUse) {
     throw new Error(`Supabase client is not available for testing view ${viewName}`);
   }
   
-  console.log('Testing view repository Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase,
-    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
+  console.log('Testing view repository client verification:', {
+    hasClient: !!clientToUse,
+    hasFrom: !!(clientToUse && clientToUse.from),
+    clientType: typeof clientToUse,
+    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser',
+    isProvidedClient: !!providedClient
   });
   
   // Always use a real Supabase view repository with the specified schema
   return createViewRepositoryInstance<T>(viewName, { 
     schema: schema,
     enableLogging: options.enableLogging || true
-  });
+  }, clientToUse);
 }
 
 // Export repository types for easier imports

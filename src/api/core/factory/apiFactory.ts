@@ -8,8 +8,8 @@ import {
   createEnhancedRepository,
   DataRepository, 
   EnhancedRepositoryType,
-  createViewRepositoryInstance,
-  ViewRepository
+  ViewRepository,
+  createViewRepository
 } from "../repository";
 
 /**
@@ -318,16 +318,14 @@ export function createViewApiFactory<
   }
   
   // Create ViewRepository instance with proper client injection
-  const viewRepository: ViewRepository<T> = createViewRepositoryInstance<T>(
-    viewName as string, 
-    {
-      schema: 'public',
-      enableLogging: options.enableLogging || false
-    }
+  const viewRepository: ViewRepository<T> = createViewRepository<T>(
+    viewName as string,
+    providedClient, // Pass the provided client here
+    'public'
   );
   
   // Set repository options if provided
-  if (options.idField || options.defaultSelect || options.transformResponse) {
+  if (options.idField || options.defaultSelect || options.transformResponse || options.enableLogging) {
     viewRepository.setOptions({
       idField: options.idField || 'id',
       defaultSelect: options.defaultSelect || '*',
