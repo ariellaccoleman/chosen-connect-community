@@ -13,14 +13,10 @@ import { logger } from "@/utils/logger";
 
 const Feed: React.FC = () => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(EntityType.POST);
-  const tags = tagsResponse?.data || [];
   const { user } = useAuth();
   
-  logger.debug("Feed page rendering with tags:", { 
-    tagsCount: tags.length, 
-    selectedTagId, 
-    isLoading: tagsLoading 
+  logger.debug("Feed page rendering with selected tag:", { 
+    selectedTagId
   });
 
   const handleTagSelect = (tagId: string | null) => {
@@ -55,8 +51,7 @@ const Feed: React.FC = () => {
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={handleTagSelect}
-            tags={tags}
-            isLoading={tagsLoading}
+            targetType={EntityType.POST}
             label="Filter posts by tag"
           />
         </div>

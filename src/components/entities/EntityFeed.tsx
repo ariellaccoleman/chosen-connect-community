@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
@@ -62,11 +63,6 @@ const EntityFeed = ({
     ? availableEntityTypes 
     : [activeTab];
   
-  // Fetch tags for filtering - use our consolidated hook
-  const { data: tagsResponse, isLoading: tagsLoading } = useSelectionTags(
-    activeTab !== "all" ? activeTab : undefined
-  );
-  
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   
@@ -103,9 +99,6 @@ const EntityFeed = ({
   // Make sure we don't allow changing the tag if it's fixed via props
   const onTagSelect = tagId ? undefined : setSelectedTagId;
   
-  // Extract tags from the response - ensuring we have an array
-  const tags = tagsResponse?.data || [];
-  
   return (
     <div className={className}>
       {title && <h2 className="text-2xl font-bold mb-6">{title}</h2>}
@@ -128,8 +121,6 @@ const EntityFeed = ({
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={onTagSelect}
-            tags={tags}
-            isLoading={tagsLoading}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />
         )}
