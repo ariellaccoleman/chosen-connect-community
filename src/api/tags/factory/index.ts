@@ -1,10 +1,13 @@
 
 /**
- * Export tag API factories
+ * Export tag API factories - Updated for ApiOperations compliance
  */
 export { 
   createTagApiFactory,
   createTagAssignmentApiFactory,
+  createTagApi,
+  createTagAssignmentApi,
+  // DEPRECATED: Will be removed in next phase
   tagApi,
   tagAssignmentApi
 } from './tagApiFactory';
