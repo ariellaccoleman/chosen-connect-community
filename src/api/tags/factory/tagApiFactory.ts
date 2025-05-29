@@ -32,6 +32,28 @@ export function createTagApi(client?: any): ApiOperations<any> {
 }
 
 /**
+ * Extended factory function to create tag API with full business operations interface
+ */
+export function createExtendedTagApi(client?: any) {
+  const coreOps = createTagCoreOperations(client);
+  const businessOps = createTagBusinessOperations(client);
+  
+  return {
+    // Core CRUD operations - standardized interface
+    getAll: coreOps.getAll,
+    getById: coreOps.getById,
+    create: coreOps.create,
+    update: coreOps.update,
+    delete: coreOps.delete,
+    
+    // Business operations with proper typing
+    findOrCreate: businessOps.findOrCreate,
+    searchByName: businessOps.searchByName,
+    getByEntityType: businessOps.getByEntityType
+  };
+}
+
+/**
  * Factory function to create tag assignment API with ApiOperations interface compliance
  */
 export function createTagAssignmentApi(client?: any): ApiOperations<any> {
@@ -43,13 +65,37 @@ export function createTagAssignmentApi(client?: any): ApiOperations<any> {
     // Core CRUD operations - standardized interface
     getAll: enrichedOps.getAll, // Use enriched version for tag assignments
     getById: coreOps.getById,
-    create: (tagId: string, entityId: string, entityType: EntityType) => 
-      coreOps.create(tagId, entityId, entityType),
+    create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete,
     
     // Business operations - accessible via extended interface
     getEntitiesByTagId: businessOps.getEntitiesByTagId
+  };
+}
+
+/**
+ * Extended factory function to create tag assignment API with full business operations interface
+ */
+export function createExtendedTagAssignmentApi(client?: any) {
+  const coreOps = createTagAssignmentCoreOperations(client);
+  const businessOps = createTagAssignmentBusinessOperations(client);
+  const enrichedOps = createEnrichedTagAssignmentOperations(client);
+  
+  return {
+    // Core CRUD operations - standardized interface
+    getAll: enrichedOps.getAll, // Use enriched version for tag assignments
+    getById: coreOps.getById,
+    create: (tagId: string, entityId: string, entityType: EntityType) => 
+      businessOps.create(tagId, entityId, entityType),
+    update: coreOps.update,
+    delete: coreOps.delete,
+    
+    // Business operations with proper typing
+    getEntitiesByTagId: businessOps.getEntitiesByTagId,
+    deleteByTagAndEntity: businessOps.deleteByTagAndEntity,
+    deleteForEntity: businessOps.deleteForEntity,
+    isTagAssigned: businessOps.isTagAssigned
   };
 }
 
