@@ -463,7 +463,7 @@ export function createViewApiFactory<
       const record = await viewRepository.getById(id as string | number);
       
       // Apply transform function if provided
-      let transformedRecord = record;
+      let transformedRecord: T | null = record;
       if (options.transformResponse && record) {
         transformedRecord = options.transformResponse(record);
       }
