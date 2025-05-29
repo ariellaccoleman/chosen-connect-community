@@ -22,193 +22,197 @@ This plan outlines the implementation of standardized `resetApi` functions acros
 - **Impact**: Tests cannot easily switch to authenticated API instances
 - **Result**: Authentication timing issues persist
 
-## Comprehensive Reset Function Implementation Plan
+## Implementation Status
 
-### 1. **Standardize Reset Function Names**
-All reset functions should be named `resetApi` for consistency across all factories.
+### Phase 1: Core Infrastructure (COMPLETE)
+✅ **Update core repository factories** - Added client parameter support to `createRepository` functions
 
-### 2. **Core Factory Functions to Update**
+### Phase 2: API Factory Updates (COMPLETE)
+✅ **Added reset functions to API factories** - All major API factories now have `resetApi(client)` functions
 
-#### **A. API Factories (`createApiFactory`)**
-- **Files to modify:**
-  - `src/api/profiles/profileApiFactory.ts`
-  - `src/api/organizations/organizationApiFactory.ts` 
-  - `src/api/events/eventApiFactory.ts`
-  - `src/api/hubs/hubApiFactory.ts`
-  - `src/api/locations/locationsApi.ts`
-  - `src/api/chat/chatChannelsApi.ts`
-  - `src/api/chat/chatMessageApiFactory.ts`
+### Current Build Issues Identified
+- Repository factory functions don't accept client parameter yet
+- Service functions need client parameter support
+- Export conflicts from multiple `resetApi` exports
+- Chat message service functions need client parameter updates
 
-- **Implementation:** Add `resetApi(client)` function that recreates the API factory with the provided authenticated client, returning the same export structure as the original factory.
+## Phase 3: Infrastructure Updates and Conflict Resolution (CURRENT)
 
-#### **B. View Factories (`createViewApiFactory`)**
-- **Files to check:** Any files using `createViewApiFactory` or `createViewRepositoryInstance`
-- **Implementation:** Add `resetApi(client)` function that recreates view operations with authenticated client for read-only operations.
+### 3.1 Repository Factory Updates
+**Files to modify:**
+- `src/api/core/repository/repositoryFactory.ts` - Add client parameter support
+- `src/api/core/factory/apiFactory.ts` - Update to handle client injection properly
 
-#### **C. Complex Tag Factory Structure**
-- **File:** `src/api/tags/factory/tagApiFactory.ts`
-- **Challenge:** This file has multiple factory functions:
-  - `createTagApi` and `createExtendedTagApi`
-  - `createTagAssignmentApi` and `createExtendedTagAssignmentApi`
-  - `createTagAssignmentRelationshipApi`
-- **Implementation:** Single `resetApi(client)` that recreates all tag-related APIs and returns an object matching all current exports.
-
-### 3. **Repository Factory Functions**
-
-#### **A. Core Repository Factory**
-- **File:** `src/api/core/repository/repositoryFactory.ts`
-- **Functions to update:**
-  - `createRepository<T>()` - add client parameter support
-  - `createTestingRepository<T>()` - add client parameter support  
-  - `createViewRepositoryInstance<T>()` - already has client parameter
-  - `createTestingViewRepository<T>()` - already has client parameter
-
-#### **B. Enhanced Repository Factory**
-- **File:** `src/api/core/repository/enhancedRepositoryFactory.ts`
-- **Update:** Ensure all repository creation methods support client injection
-
-### 4. **Central Reset Utility**
-
-#### **A. Create Central Reset Function**
-- **File:** `src/api/core/apiResetUtils.ts`
-- **Function:** `resetAllApis(client)` that calls all individual `resetApi` functions
-- **Exports:** Individual reset functions for granular control
-
-#### **B. Integration Points**
-- **File:** `src/api/core/testing/testAuthUtils.ts` (create if doesn't exist)
-- **Integration:** Call `resetAllApis` in `setupTestAuth` after authentication
-
-### 5. **Return Value Consistency**
-
-Each `resetApi` function should return an object that matches the exact same export structure as the original factory:
-
+**Changes needed:**
 ```typescript
-// Original exports
-export const { getAll, getById, create, update, delete } = someApi;
+// Update RepositoryOptions to include client
+export interface RepositoryOptions {
+  schema?: string;
+  enableLogging?: boolean;
+  initialData?: any[];
+  client?: any; // Add client parameter
+}
 
-// Reset function should return
-export const resetApi = (client) => {
-  const newApi = createApiFactory(config, client);
-  return {
-    // Same destructured exports
-    getAll: newApi.getAll,
-    getById: newApi.getById,
-    create: newApi.create,
-    update: newApi.update,
-    delete: newApi.delete,
-    // Plus any additional exports the original had
-  };
-};
+// Update createRepository to accept and use client
+export function createRepository<T>(
+  tableName: string,
+  options: RepositoryOptions = {},
+  providedClient?: any // Add client parameter
+): BaseRepository<T>
 ```
 
-### 6. **Special Cases to Handle**
+### 3.2 Service Function Updates
+**Files to modify:**
+- `src/api/chat/chatMessageService.ts` - Add client parameter to all functions
 
-#### **A. Chat Message Service**
-- **File:** `src/api/chat/chatMessageService.ts`
-- Uses `createRepository('chats')` directly in functions
-- **Solution:** Add client parameter to service functions and update to use provided client
+**Changes needed:**
+- Update `getChannelMessages(channelId, limit?, offset?, client?)`
+- Update `getThreadReplies(messageId, limit?, offset?, client?)`
+- Update `sendChatMessage(channelId, message, userId, parentId?, client?)`
+- Update `getChannelMessagePreviews(channelId, client?)`
 
-#### **B. Files with Multiple Repository Creations**
-- Files that call `createRepository` multiple times in different functions
-- **Solution:** Ensure all repository creation calls can accept an optional client parameter
+### 3.3 Export Conflict Resolution Strategy
 
-#### **C. Hook Factory Integration**
-- **File:** `src/hooks/core/factory/viewHookFactory.ts`
-- Ensure view hook factories work with reset view operations
+**DECISION: Rename Factory Reset Functions**
 
-### 7. **Implementation Order**
+To resolve export conflicts while maintaining clarity, I'm implementing this strategy:
 
-1. **Update core repository factories** to support client injection
-2. **Add reset functions to each API factory** one by one
-3. **Create central reset utility** that orchestrates all resets
-4. **Update service files** that create repositories directly
-5. **Integration testing** to ensure all resets work properly
+1. **Rename all factory `resetApi` functions** to be factory-specific:
+   - `profileApiFactory.ts` → `resetProfileApi(client)`
+   - `organizationApiFactory.ts` → `resetOrganizationApi(client)`
+   - `eventApiFactory.ts` → `resetEventApi(client)`
+   - `hubApiFactory.ts` → `resetHubApi(client)`
+   - `locationsApi.ts` → `resetLocationsApi(client)`
+   - `chatChannelsApi.ts` → `resetChatChannelsApi(client)`
+   - `chatMessageApiFactory.ts` → `resetChatMessageApi(client)`
+   - `tagApiFactory.ts` → `resetTagApi(client)`
 
-### 8. **Testing Strategy**
+2. **Create a central reset utility** that imports and re-exports all specific reset functions:
 
-- Each `resetApi` function should be testable independently
-- Central `resetAllApis` should reset all APIs at once
-- Verify that reset APIs work with authenticated clients in test environment
-- Ensure no breaking changes to existing functionality
+```typescript
+// src/api/core/apiResetUtils.ts
+export { resetProfileApi } from '../profiles/profileApiFactory';
+export { resetOrganizationApi } from '../organizations/organizationApiFactory';
+export { resetEventApi } from '../events/eventApiFactory';
+export { resetHubApi } from '../hubs/hubApiFactory';
+export { resetLocationsApi } from '../locations/locationsApi';
+export { resetChatChannelsApi } from '../chat/chatChannelsApi';
+export { resetChatMessageApi } from '../chat/chatMessageApiFactory';
+export { resetTagApi } from '../tags/factory/tagApiFactory';
 
-## Implementation Priority
+// Central function that resets all APIs
+export const resetAllApis = (client: any) => ({
+  profile: resetProfileApi(client),
+  organization: resetOrganizationApi(client),
+  event: resetEventApi(client),
+  hub: resetHubApi(client),
+  locations: resetLocationsApi(client),
+  chatChannels: resetChatChannelsApi(client),
+  chatMessage: resetChatMessageApi(client),
+  tag: resetTagApi(client)
+});
+```
 
-### Phase 1: Core Infrastructure (Priority: HIGH)
-1. **Update core repository factories** (1-2 days)
-   - Add client parameter support to `createRepository` functions
-   - Ensure backward compatibility
+3. **Update index.ts files** to avoid conflicts:
+   - Remove `export *` statements that cause conflicts
+   - Use explicit exports for non-reset functions only
+   - Keep reset functions isolated to the central utility
 
-2. **Create central reset utility** (1 day)
-   - Implement `resetAllApis` function
-   - Create individual reset function exports
+### 3.4 Testing Integration
+**File to create:**
+- `src/api/core/testing/testAuthUtils.ts`
 
-### Phase 2: API Factory Updates (Priority: HIGH)
-3. **Add reset functions to API factories** (2-3 days)
-   - Profile, Organization, Event, Hub API factories
-   - Chat API factories
-   - Complex tag factory structure
+**Integration points:**
+- Call individual reset functions as needed in tests
+- Use `resetAllApis` for comprehensive test setup
+- Ensure proper cleanup between tests
 
-4. **Update service files** (1-2 days)
-   - Chat message service
-   - Other files with direct repository creation
+## Implementation Priority for Phase 3
 
-### Phase 3: Integration and Testing (Priority: MEDIUM)
-5. **Test integration** (1-2 days)
-   - Verify all reset functions work independently
-   - Test central reset utility
-   - Ensure no breaking changes
+### Step 1: Fix Repository Infrastructure (1-2 hours)
+1. Update `RepositoryOptions` interface to include client parameter
+2. Update `createRepository` function to accept and use client
+3. Update `createTestingRepository` and other factory functions
+4. Update `apiFactory.ts` to properly handle client injection
 
-6. **Documentation and cleanup** (1 day)
-   - Update testing guidelines
-   - Remove deprecated patterns
+### Step 2: Update Service Functions (1 hour)
+1. Add client parameter to chat message service functions
+2. Update function signatures to be optional for backward compatibility
+3. Use provided client or fall back to default supabase client
+
+### Step 3: Resolve Export Conflicts (1 hour)
+1. Rename all `resetApi` functions to be factory-specific
+2. Create central reset utility
+3. Update index.ts files to remove conflicting exports
+4. Test that all imports still work correctly
+
+### Step 4: Create Testing Integration (30 minutes)
+1. Create `testAuthUtils.ts` with reset utility integration
+2. Document usage patterns for tests
+3. Verify all reset functions work independently
+
+## Alternative Approaches Considered
+
+### Option A: Namespace Exports (REJECTED)
+```typescript
+export const profileApi = { ...operations, resetApi };
+export const organizationApi = { ...operations, resetApi };
+```
+**Rejected because:** Would require changing all existing imports throughout the codebase.
+
+### Option B: Generic Reset Function (REJECTED)
+```typescript
+export const resetApi = (apiType: string, client: any) => { ... }
+```
+**Rejected because:** Type safety issues and less intuitive API.
+
+### Option C: Factory-Specific Names (SELECTED)
+```typescript
+export const resetProfileApi = (client: any) => { ... }
+export const resetOrganizationApi = (client: any) => { ... }
+```
+**Selected because:** Clear, type-safe, no conflicts, maintains backward compatibility.
+
+## Expected Timeline
+
+- **Step 1**: 1-2 hours (Repository infrastructure)
+- **Step 2**: 1 hour (Service functions)
+- **Step 3**: 1 hour (Export conflicts)
+- **Step 4**: 30 minutes (Testing integration)
+- **Total**: 3.5-4.5 hours
 
 ## Success Metrics
 
 ### Immediate Success
-- [ ] All API factories have standardized `resetApi` functions
-- [ ] Central `resetAllApis` utility works correctly
-- [ ] No breaking changes to existing functionality
-- [ ] All tests can use authenticated API instances
+- [ ] All build errors resolved
+- [ ] All API factories have working reset functions
+- [ ] No export conflicts in index files
+- [ ] Repository factories accept client parameter
+- [ ] Service functions accept client parameter
 
 ### Long-term Success
-- [ ] Zero authentication timing issues in tests
-- [ ] Consistent pattern for API reset across codebase
-- [ ] Clean separation between production and test API management
-- [ ] Reliable test execution without RLS violations
+- [ ] Tests can use authenticated API instances reliably
+- [ ] Central reset utility works for comprehensive test setup
+- [ ] Individual reset functions work for granular test control
+- [ ] No breaking changes to existing functionality
 
-## Risk Assessment
+## Risk Mitigation
 
-### High Risk
-- **Breaking Changes**: Modifying core repository factory signatures
-- **Integration Complexity**: Ensuring all reset functions work together
+### High Risk Items
+- **Repository signature changes**: Maintain backward compatibility with optional parameters
+- **Service function updates**: Keep existing function signatures working
 
-### Medium Risk
-- **Test Stability**: During implementation, some tests may be temporarily unstable
-- **Backward Compatibility**: Ensuring existing code continues to work
+### Medium Risk Items
+- **Export conflicts**: Systematic renaming approach minimizes confusion
+- **Type safety**: Ensure all client parameters are properly typed
 
-### Low Risk
-- **Performance**: Minimal impact on production performance
-- **User Experience**: No user-facing changes
-
-## Technical Debt Reduction
-
-This plan addresses several technical debt items:
-1. **Inconsistent Patterns**: Standardizing API reset across all factories
-2. **Test Reliability**: Eliminating authentication timing issues
-3. **Code Organization**: Better separation of concerns between API and auth
-4. **Maintainability**: Clearer patterns for API client management
-
-## Next Steps
-
-1. **Review and Approve Plan**: Team review of this document
-2. **Create Implementation Tasks**: Break down into specific tickets
-3. **Begin Phase 1**: Start with core infrastructure updates
-4. **Iterative Implementation**: Validate each phase before proceeding
-5. **Testing and Documentation**: Ensure all changes are properly tested and documented
+### Low Risk Items
+- **Performance**: Minimal impact on production code
+- **User experience**: No user-facing changes
 
 ---
 
-**Document Version**: 2.0  
+**Document Version**: 3.0  
 **Last Updated**: 2025-05-29  
-**Owner**: Development Team  
-**Reviewers**: Technical Lead, QA Lead
+**Current Phase**: 3 (Infrastructure Updates and Conflict Resolution)  
+**Next Steps**: Execute Step 1 (Repository Infrastructure Updates)
