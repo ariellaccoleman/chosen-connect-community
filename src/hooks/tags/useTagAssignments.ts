@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType, isValidEntityType } from '@/types/entityTypes';
-import { extendedTagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
+import { tagAssignmentApi } from '@/api/tags/factory/tagApiFactory';
 import { logger } from '@/utils/logger';
 
 /**
@@ -25,7 +25,7 @@ export function useEntityTagAssignments(entityId: string, entityType: EntityType
       
       try {
         logger.debug(`useEntityTagAssignments: Fetching assignments for ${entityType} ${entityId} using enriched view`);
-        const response = await extendedTagAssignmentApi.getAllEnriched({ 
+        const response = await tagAssignmentApi.getAllEnriched({ 
           filters: { 
             target_id: entityId, 
             target_type: entityType 
@@ -67,7 +67,7 @@ export function useAssignTag() {
       }
       
       logger.debug(`Assigning tag ${tagId} to entity ${entityId} of type ${entityType}`);
-      return extendedTagAssignmentApi.create(tagId, entityId, entityType);
+      return tagAssignmentApi.create(tagId, entityId, entityType);
     },
     onSuccess: (response, variables) => {
       if (response.error) {
@@ -93,7 +93,7 @@ export function useRemoveTagAssignment() {
   return useMutation({
     mutationFn: (assignmentId: string) => {
       logger.debug(`Removing tag assignment ${assignmentId}`);
-      return extendedTagAssignmentApi.delete(assignmentId);
+      return tagAssignmentApi.delete(assignmentId);
     },
     onSuccess: (response) => {
       if (response.error) {

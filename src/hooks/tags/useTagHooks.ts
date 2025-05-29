@@ -2,8 +2,8 @@
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  extendedTagApi,
-  extendedTagAssignmentApi
+  tagApi,
+  tagAssignmentApi
 } from "@/api/tags/factory/tagApiFactory";
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
@@ -25,8 +25,8 @@ export function useSelectionTags(entityType?: EntityType) {
           };
         }
         
-        // Use the extendedTagApi and handle wrapped response
-        const response = await extendedTagApi.getAll();
+        // Use the simplified tagApi
+        const response = await tagApi.getAll();
         if (response.error) {
           logger.error("Error in useSelectionTags:", response.error);
           return {
@@ -74,8 +74,8 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         // Log for debugging filters
         logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
         
-        // Use the extendedTagAssignmentApi and handle wrapped response
-        const response = await extendedTagAssignmentApi.getEntitiesByTagId(tagId, entityType);
+        // Use the simplified tagAssignmentApi
+        const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
         if (response.error) {
           logger.error(`useFilterByTag: Error fetching tag assignments for tag ${tagId}:`, response.error);
           return [];
@@ -105,7 +105,7 @@ export function useTagCrudMutations() {
   
   const createTagMutation = useMutation({
     mutationFn: async (data: Partial<Tag>) => {
-      const response = await extendedTagApi.create(data);
+      const response = await tagApi.create(data);
       if (response.error) {
         throw response.error;
       }
@@ -118,7 +118,7 @@ export function useTagCrudMutations() {
   
   const updateTagMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<Tag> }) => {
-      const response = await extendedTagApi.update(id, data);
+      const response = await tagApi.update(id, data);
       if (response.error) {
         throw response.error;
       }
@@ -131,7 +131,7 @@ export function useTagCrudMutations() {
   
   const deleteTagMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await extendedTagApi.delete(id);
+      const response = await tagApi.delete(id);
       if (response.error) {
         throw response.error;
       }
@@ -168,8 +168,8 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
       }
       
       try {
-        // Use extendedTagAssignmentApi and handle wrapped response
-        const response = await extendedTagAssignmentApi.getAll({ 
+        // Use simplified tagAssignmentApi
+        const response = await tagAssignmentApi.getAll({ 
           filters: { 
             target_id: entityId, 
             target_type: entityType 
@@ -214,8 +214,8 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Create assignment using new API with wrapped response
-      const response = await extendedTagAssignmentApi.create(tagId, entityId, entityType);
+      // Create assignment using simplified API
+      const response = await tagAssignmentApi.create(tagId, entityId, entityType);
       if (response.error) {
         throw response.error;
       }
@@ -229,8 +229,8 @@ export function useTagAssignmentMutations() {
   
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
-      // Delete assignment using new API with wrapped response
-      const response = await extendedTagAssignmentApi.delete(assignmentId);
+      // Delete assignment using simplified API
+      const response = await tagAssignmentApi.delete(assignmentId);
       if (response.error) {
         throw response.error;
       }

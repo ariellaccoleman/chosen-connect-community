@@ -1,35 +1,25 @@
 
 /**
- * Re-export all tag API functionality
- * Updated to use simplified structure
+ * Main tag API exports - simplified structure
  */
-export * from './getTagsApi';
-export * from './tagCrudApi';
-export * from './tagEntityTypesApi';
-export * from './assignmentApi';
-export * from './entityTagsApi';
-export * from './organizationTagsApi';
-export * from './cacheApi';
-export * from './invalidateCache';
 
-// Export the simplified factory module
-export * from './factory';
-
-// Export the main APIs with clear separation
-import {
+// Export the two main APIs
+export {
   tagApi,
   tagAssignmentApi,
-  extendedTagApi,
-  extendedTagAssignmentApi,
   createTagApiFactory,
-  createTagAssignmentApiFactory,
+  createTagAssignmentApiFactory
+} from './factory/tagApiFactory';
+
+// Export simplified function interface for direct usage
+export {
   getAllTags,
   getTagById,
-  findTagByName,
-  searchTags,
   createTag,
   updateTag,
   deleteTag,
+  findTagByName,
+  searchTags,
   findOrCreateTag,
   getTagsByEntityType,
   getTagAssignmentsForEntity,
@@ -37,34 +27,10 @@ import {
   deleteTagAssignment
 } from './factory/tagApiFactory';
 
-export {
-  // Base factory APIs (support client injection)
-  tagApi,
-  tagAssignmentApi,
-  // Extended APIs with business operations
-  extendedTagApi,
-  extendedTagAssignmentApi,
-  // Factory functions
-  createTagApiFactory,
-  createTagAssignmentApiFactory,
-  // Individual function exports (simplified)
-  getAllTags,
-  getTagById,
-  findTagByName,
-  searchTags,
-  createTag,
-  updateTag,
-  deleteTag,
-  findOrCreateTag,
-  getTagsByEntityType,
-  getTagAssignmentsForEntity,
-  createTagAssignment,
-  deleteTagAssignment
-};
+// Export cache utilities
+export * from './cacheApi';
+export * from './invalidateCache';
 
-// For backward compatibility, we export the legacy APIs with different names
-import * as legacyTagsApi from './tagsApi';
-
-export {
-  legacyTagsApi as legacyTagOperations
-};
+// For backward compatibility with legacy code, export the old tagsApi functions
+// These will be removed in a future version
+export * from './tagsApi';
