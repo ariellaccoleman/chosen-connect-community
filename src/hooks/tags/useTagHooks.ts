@@ -1,7 +1,14 @@
 /**
  * @deprecated This file contains hooks with direct API imports that cause test failures.
  * Use hooks from useTagFactoryHooks.ts instead, which use the factory pattern.
- * This file will be removed in a future version.
+ * 
+ * MIGRATION NOTICE: This file will be removed in a future version.
+ * Please migrate to the factory-based hooks:
+ * - useSelectionTags -> import from useTagFactoryHooks
+ * - useFilterByTag -> import from useTagFactoryHooks  
+ * - useTagCrudMutations -> import from useTagFactoryHooks
+ * - useEntityTags -> import from useTagFactoryHooks
+ * - useTagAssignmentMutations -> import from useTagFactoryHooks
  */
 
 import { useCallback } from "react";
@@ -16,8 +23,11 @@ import { logger } from "@/utils/logger";
 
 /**
  * Hook to fetch tags for selection lists
+ * @deprecated Use useSelectionTags from useTagFactoryHooks instead
  */
 export function useSelectionTags(entityType?: EntityType) {
+  console.warn('DEPRECATED: useSelectionTags from useTagHooks is deprecated. Use useSelectionTags from useTagFactoryHooks instead.');
+  
   return useQuery({
     queryKey: ["tags", "selection", entityType],
     queryFn: async () => {
@@ -63,8 +73,11 @@ export function useSelectionTags(entityType?: EntityType) {
 
 /**
  * Hook to filter entities by a selected tag
+ * @deprecated Use useFilterByTag from useTagFactoryHooks instead
  */
 export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
+  console.warn('DEPRECATED: useFilterByTag from useTagHooks is deprecated. Use useFilterByTag from useTagFactoryHooks instead.');
+  
   return useQuery({
     queryKey: ["tag-assignments", tagId, entityType],
     queryFn: async () => {
@@ -104,8 +117,11 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
 
 /**
  * Hook for CRUD operations on tags
+ * @deprecated Use useTagCrudMutations from useTagFactoryHooks instead
  */
 export function useTagCrudMutations() {
+  console.warn('DEPRECATED: useTagCrudMutations from useTagHooks is deprecated. Use useTagCrudMutations from useTagFactoryHooks instead.');
+  
   const queryClient = useQueryClient();
   
   const createTagMutation = useMutation({
@@ -160,8 +176,11 @@ export function useTagCrudMutations() {
 
 /**
  * Hook to fetch tags for a specific entity
+ * @deprecated Use useEntityTags from useTagFactoryHooks instead
  */
 export function useEntityTags(entityId: string, entityType: EntityType) {
+  console.warn('DEPRECATED: useEntityTags from useTagHooks is deprecated. Use useEntityTags from useTagFactoryHooks instead.');
+  
   return useQuery({
     queryKey: ["entity", entityId, "tags"],
     queryFn: async () => {
@@ -200,8 +219,11 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
 
 /**
  * Hook for tag assignment operations
+ * @deprecated Use useTagAssignmentMutations from useTagFactoryHooks instead
  */
 export function useTagAssignmentMutations() {
+  console.warn('DEPRECATED: useTagAssignmentMutations from useTagHooks is deprecated. Use useTagAssignmentMutations from useTagFactoryHooks instead.');
+  
   const queryClient = useQueryClient();
   
   const assignTagMutation = useMutation({
@@ -261,7 +283,7 @@ export function useTagAssignmentMutations() {
  * @deprecated Use useFilterByTag instead
  */
 export function useFilterTags(tagId: string | null, entityType?: EntityType) {
-  console.warn('useFilterTags is deprecated, use useFilterByTag instead');
+  console.warn('DEPRECATED: useFilterTags is deprecated, use useFilterByTag instead');
   return useFilterByTag(tagId, entityType);
 }
 
@@ -270,6 +292,6 @@ export function useFilterTags(tagId: string | null, entityType?: EntityType) {
  * @deprecated Use useSelectionTags instead
  */
 export function useTags(entityType?: EntityType) {
-  console.warn('useTags is deprecated, use useSelectionTags instead');
+  console.warn('DEPRECATED: useTags is deprecated, use useSelectionTags instead');
   return useSelectionTags(entityType);
 }
