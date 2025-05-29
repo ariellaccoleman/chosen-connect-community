@@ -40,8 +40,8 @@ const TagSelectorComponent = ({
   const { data: tagsResponse, isLoading, refetch } = useSelectionTags(targetType);
   const { createTag, isCreating } = useTagCrudMutations();
 
-  // Extract tags from the API response
-  const tags = tagsResponse || [];
+  // Extract tags from the API response - handle both array and ApiResponse formats
+  const tags = Array.isArray(tagsResponse) ? tagsResponse : (tagsResponse?.data || []);
 
   // Find and set the selected tag when currentSelectedTagId changes
   useEffect(() => {

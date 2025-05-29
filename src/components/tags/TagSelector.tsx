@@ -51,8 +51,8 @@ const TagSelector = ({
   const { data: tagsResponse, isLoading, refetch } = useSelectionTags(targetType as EntityType);
   const { createTag, isCreating } = useTagCrudMutations();
   
-  // Extract tags from the API response
-  const tags = tagsResponse || [];
+  // Extract tags from the API response - handle both array and ApiResponse formats
+  const tags = Array.isArray(tagsResponse) ? tagsResponse : (tagsResponse?.data || []);
   
   // Set the selected tag when currentSelectedTagId changes
   useEffect(() => {
@@ -91,7 +91,8 @@ const TagSelector = ({
       
       // Find the newly created tag and select it
       const newTags = await refetch();
-      const newTag = newTags.data?.find(tag => tag.name === searchValue.trim());
+      const newTagsData = Array.isArray(newTags.data) ? newTags.data : (newTags.data?.data || []);
+      const newTag = newTagsData.find(tag => tag.name === searchValue.trim());
       
       if (newTag) {
         logger.debug(`Created tag: ${newTag.name} (${newTag.id})`);
