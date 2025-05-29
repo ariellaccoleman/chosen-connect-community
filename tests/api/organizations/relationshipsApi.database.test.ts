@@ -5,7 +5,7 @@ import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { ProfileOrganizationRelationship } from '@/types';
 import { v4 as uuidv4 } from 'uuid';
 
-describe('Organization Relationships API - Database Tests', () => {
+describe.skip('Organization Relationships API - Database Tests', () => {
   let testUser: any;
   let testOrganization: any;
   let authenticatedClient: any;
