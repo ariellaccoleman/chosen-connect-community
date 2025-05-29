@@ -79,7 +79,7 @@ export const fetchSelectionTags = async (options: {
 // Legacy function - alias to fetchSelectionTags
 export const fetchTags = fetchSelectionTags;
 
-// Find or create a tag - now uses factory API
+// Find or create a tag - now uses business operations
 export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
     const { created_by, ...cleanTagData } = tagData;
@@ -97,7 +97,7 @@ export const findOrCreateTag = async (tagData: Partial<Tag>): Promise<Tag | null
   }
 };
 
-// Create a new tag - now uses factory API
+// Create a new tag - now uses core operations
 export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   try {
     const { created_by, ...cleanTagData } = tagData;
@@ -115,7 +115,7 @@ export const createTag = async (tagData: Partial<Tag>): Promise<Tag | null> => {
   }
 };
 
-// Update an existing tag - now uses factory API
+// Update an existing tag - now uses core operations
 export const updateTag = async (
   tagId: string,
   updates: Partial<Tag>
@@ -137,7 +137,7 @@ export const updateTag = async (
   }
 };
 
-// Delete a tag - now uses factory API
+// Delete a tag - now uses core operations
 export const deleteTag = async (tagId: string): Promise<boolean> => {
   try {
     logger.debug(`Deleting tag ${tagId}`);
