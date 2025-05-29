@@ -4,10 +4,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { usePublicProfile } from "@/hooks/usePublicProfile";
 import { usePublicProfileOrganizations } from "@/hooks/usePublicProfileOrganizations";
-import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
+import EntityTagDisplay from "@/components/tags/EntityTagDisplay";
 import EntityTagManager from "@/components/tags/EntityTagManager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -35,12 +35,6 @@ const ProfileView = () => {
     data: organizations = [], 
     isLoading: isLoadingOrgs 
   } = usePublicProfileOrganizations(profileId);
-  
-  const { 
-    data: tagAssignments, 
-    isLoading: isLoadingTags,
-    refetch: refetchTags
-  } = useEntityTags(profileId, EntityType.PERSON);
 
   useEffect(() => {
     if (profileError) {
@@ -52,16 +46,6 @@ const ProfileView = () => {
   // Update to use browser history instead of hardcoded route
   const handleBack = () => {
     navigate(-1);
-  };
-
-  // Handle tag operations success
-  const handleTagSuccess = () => {
-    logger.info("Tag operation successful, refreshing tag data");
-    refetchTags();
-  };
-
-  const handleTagError = (error: Error) => {
-    logger.error("Tag operation failed:", error);
   };
 
   // Check if current user can edit tags (admin or viewing own profile)
@@ -124,15 +108,23 @@ const ProfileView = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4 dark:text-white">Tags</h3>
             {profileId && (
-              <EntityTagManager 
-                entityId={profileId} 
-                entityType={EntityType.PERSON} 
-                isAdmin={canEditTags}
-                isEditing={canEditTags}
-                onTagSuccess={handleTagSuccess}
-                onTagError={handleTagError}
-                className="w-full"
-              />
+              <>
+                {canEditTags ? (
+                  <EntityTagManager 
+                    entityId={profileId} 
+                    entityType={EntityType.PERSON} 
+                    isAdmin={canEditTags}
+                    isEditing={canEditTags}
+                    className="w-full"
+                  />
+                ) : (
+                  <EntityTagDisplay
+                    entityId={profileId}
+                    entityType={EntityType.PERSON}
+                    className="flex flex-wrap gap-2"
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
