@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file contains hooks with direct API imports that cause test failures.
+ * Use hooks from useOrganizationFactoryHooks.ts instead, which use the factory pattern.
+ * This file will be removed in a future version.
+ */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';

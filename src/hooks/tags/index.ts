@@ -1,18 +1,26 @@
 
 /**
- * Export all tag-related hooks
+ * Export all tag-related hooks - Updated to use factory pattern
  */
-// Export all hooks from their dedicated modules
+
+// Export factory-based hooks to prevent direct repository instantiation
+export * from './useTagFactoryHooks';
+
+// Export existing hooks for backward compatibility
 export * from './useTagQuery';
 export * from './useTagMutations';
 export * from './useTagAssignments';
 
+// Export from relationship hooks
+export * from './useTagAssignmentRelationshipHooks';
+
 // Export from useTagHooks with unique names to avoid conflicts
+// Note: These are now deprecated in favor of factory-based hooks
 export { 
-  useTagCrudMutations as useTagCrudOperations,
-  useTagAssignmentMutations as useTagAssignmentOperations,
-  useSelectionTags,
-  useFilterByTag
+  useTagCrudMutations as useTagCrudOperationsLegacy,
+  useTagAssignmentMutations as useTagAssignmentOperationsLegacy,
+  useSelectionTags as useSelectionTagsLegacy,
+  useFilterByTag as useFilterByTagLegacy
 } from './useTagHooks';
 
 // For backward compatibility with existing code

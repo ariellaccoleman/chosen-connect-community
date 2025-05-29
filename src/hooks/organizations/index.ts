@@ -1,21 +1,12 @@
 
 /**
- * Re-export all organization related hooks
+ * Re-export all organization related hooks - Updated to use factory pattern
  */
-export {
-  useOrganizationList,
-  useOrganizationById,
-  useOrganizationsByIds,
-  useCreateOrganization,
-  useUpdateOrganization,
-  useDeleteOrganization,
-  useOrganizations,
-  useOrganization,
-  useUserOrganizationRelationships,
-  useCreateOrganizationWithRelationships
-} from "./useOrganizationHooks";
 
-// Re-export organization admin hooks
+// Export factory-based hooks to prevent direct repository instantiation
+export * from './useOrganizationFactoryHooks';
+
+// Export organization admin hooks
 export {
   useOrganizationAdmins,
   useOrganizationAdminsByOrg,
@@ -28,10 +19,13 @@ export {
   useDeleteAdminRequest
 } from "./useOrganizationAdminHooks";
 
-// Re-export organization relationship mutation hooks
-export {
-  useAddOrganizationRelationship,
-  useUpdateOrganizationRelationship,
-  useDeleteOrganizationRelationship
-} from "./useOrganizationRelationshipHooks";
+// Export relationship hooks
+export * from "./useOrganizationRelationshipHooks";
 
+// Legacy exports (deprecated, but kept for backward compatibility)
+export {
+  useOrganizations as useOrganizationsLegacy,
+  useOrganization as useOrganizationLegacy,
+  useUserOrganizationRelationships as useUserOrganizationRelationshipsLegacy,
+  useCreateOrganizationWithRelationships
+} from "./useOrganizationHooks";

@@ -1,3 +1,8 @@
+/**
+ * @deprecated This file contains hooks with direct API imports that cause test failures.
+ * Use hooks from useTagFactoryHooks.ts instead, which use the factory pattern.
+ * This file will be removed in a future version.
+ */
 
 import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";

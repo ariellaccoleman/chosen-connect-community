@@ -3,7 +3,7 @@ import {
   useCreateOrganization, 
   useUpdateOrganization, 
   useAddOrganizationRelationship 
-} from '@/hooks/organizations';
+} from '@/hooks/organizations/useOrganizationFactoryHooks';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as organizationApi from '@/api/organizations/organizationApiFactory';
 import * as relationshipsApi from '@/api/organizations/relationshipsApi';
@@ -38,7 +38,7 @@ const createWrapper = () => {
   );
 };
 
-describe.skip('Organization Mutation Hooks', () => {
+describe('Organization Mutation Hooks - Factory Based', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
