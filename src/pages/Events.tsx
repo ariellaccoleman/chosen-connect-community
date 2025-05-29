@@ -3,7 +3,6 @@ import React, { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Video, AlertCircle, RefreshCw, ExternalLink } from "lucide-react";
-import { useEvents } from "@/hooks/events";
 import { format } from "date-fns";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EventWithDetails } from "@/types";
@@ -15,27 +14,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterByTag } from "@/hooks/tags";
 import { toast } from "sonner";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags/types";
+import { useEntityFeed } from "@/hooks/useEntityFeed";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   
-  // State for selected tag - same as community page
+  // State for selected tag - same as community and organizations pages
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   
-  // Use tag hook for filtering
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.EVENT);
-  
-  // Use the dedicated events hook instead of entity feed
-  const { data: events = [], isLoading, error, refetch } = useEvents();
+  // Use the entity feed hook to fetch events - same as organizations page
+  const { entities: eventEntities, isLoading, error } = useEntityFeed({
+    entityTypes: [EntityType.EVENT],
+    tagId: selectedTagId,
+    limit: 100
+  });
   
   // Log page load for debugging
   logger.info("Events page mounted");
-  logger.debug("Events data:", { count: events.length, hasTagData: events.some(e => e.tags && e.tags.length > 0) });
+  logger.debug("Events data:", { count: eventEntities.length, hasTagData: eventEntities.some(e => e.tags && e.tags.length > 0) });
   
   // Show error toast if events loading fails
   if (error) {
@@ -43,27 +43,22 @@ const Events: React.FC = () => {
     toast.error("Failed to load events. Please try again.");
   }
 
-  // First filter by search term
-  const searchFilteredEvents = events.filter((event) => {
-    return event.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (event.description && event.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (event.location?.full_name && event.location.full_name.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filter by search term
+  const filteredEvents = eventEntities.filter((entity) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      entity.name.toLowerCase().includes(searchLower) ||
+      (entity.description && entity.description.toLowerCase().includes(searchLower)) ||
+      ((entity as any).location?.full_name && (entity as any).location.full_name.toLowerCase().includes(searchLower))
+    );
   });
-  
-  // Then filter by tag id if selected
-  const filteredEvents = selectedTagId
-    ? searchFilteredEvents.filter(event => {
-        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
-        return taggedIds.has(event.id);
-      })
-    : searchFilteredEvents;
     
   // Debug filtered events
   React.useEffect(() => {
     if (selectedTagId) {
-      logger.debug(`Filtered to ${filteredEvents.length} events out of ${events.length}`);
+      logger.debug(`Filtered to ${filteredEvents.length} events out of ${eventEntities.length}`);
     }
-  }, [filteredEvents.length, events.length, selectedTagId]);
+  }, [filteredEvents.length, eventEntities.length, selectedTagId]);
 
   const formatEventDate = (dateString: string) => {
     try {
@@ -74,7 +69,7 @@ const Events: React.FC = () => {
     }
   };
 
-  const renderLocationInfo = (event: EventWithDetails) => {
+  const renderLocationInfo = (event: any) => {
     if (event.is_virtual) {
       return (
         <div className="flex items-center text-gray-500 text-sm">
@@ -101,10 +96,15 @@ const Events: React.FC = () => {
     navigate(eventUrl);
   };
   
-  // Handle tag selection - same as community page
+  // Handle tag selection - same as community and organizations pages
   const handleTagSelect = (tag: Tag) => {
     setSelectedTagId(tag.id === "" ? null : tag.id);
     logger.debug(`Events: Tag selected: ${tag.id}`);
+  };
+
+  const refetch = () => {
+    // For now, just reload the page since we don't have a direct refetch from useEntityFeed
+    window.location.reload();
   };
 
   return (
@@ -114,7 +114,7 @@ const Events: React.FC = () => {
         <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => refetch()}
+            onClick={refetch}
             className="flex items-center gap-2"
           >
             <RefreshCw className="h-4 w-4" />
@@ -145,7 +145,7 @@ const Events: React.FC = () => {
               </div>
             </div>
             
-            {/* Tag selector - same as community page */}
+            {/* Tag selector - same as community and organizations pages */}
             <div className="mb-4 sm:mb-6">
               <div className="text-sm text-muted-foreground mb-2">
                 Filter events by tag:
@@ -176,7 +176,7 @@ const Events: React.FC = () => {
           <p className="text-red-500 mb-4">{error instanceof Error ? error.message : "Failed to load events. Please try again later."}</p>
           <Button 
             variant="outline" 
-            onClick={() => refetch()}
+            onClick={refetch}
             className="text-red-600 border-red-300 hover:bg-red-50"
           >
             Try Again
@@ -232,12 +232,12 @@ const Events: React.FC = () => {
                   </Button>
                 </div>
                 
-                <h3 className="font-semibold text-lg mb-2 pr-24">{event.title}</h3>
+                <h3 className="font-semibold text-lg mb-2 pr-24">{event.name}</h3>
                 <p className="text-gray-700 text-sm mb-3 line-clamp-2">{event.description}</p>
                 
                 <div className="text-sm text-gray-600 mb-2 flex items-center">
                   <Calendar className="h-3 w-3 mr-1" />
-                  {event.start_time && formatEventDate(event.start_time)}
+                  {(event as any).start_time && formatEventDate((event as any).start_time)}
                 </div>
                 
                 {renderLocationInfo(event)}
@@ -250,7 +250,7 @@ const Events: React.FC = () => {
                 
                 <div className="mt-3 pt-3 border-t">
                   <div className="text-sm text-gray-500">
-                    {event.host && `Hosted by: ${event.host.first_name} ${event.host.last_name}`}
+                    {(event as any).host && `Hosted by: ${(event as any).host.first_name} ${(event as any).host.last_name}`}
                   </div>
                 </div>
               </div>
