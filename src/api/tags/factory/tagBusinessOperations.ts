@@ -1,7 +1,7 @@
 
 /**
  * Tag business operations - complex operations that combine multiple steps
- * Updated to use direct API client for view queries with client injection support
+ * Updated to use apiClient.query pattern for proper client injection
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
@@ -16,7 +16,6 @@ import { createTagCoreOperations } from './tagCoreOperations';
 export function createTagBusinessOperations(client?: any) {
   // Get client-aware core operations
   const tagBase = createTagCoreOperations(client);
-  const effectiveClient = client || apiClient;
 
   return {
     /**
@@ -62,7 +61,7 @@ export function createTagBusinessOperations(client?: any) {
      */
     async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
       try {
-        return await effectiveClient.query(async (queryClient: any) => {
+        return await apiClient.query(async (queryClient: any) => {
           const { data, error } = await queryClient
             .from('filtered_entity_tags_view' as any)
             .select('*')
@@ -81,7 +80,7 @@ export function createTagBusinessOperations(client?: any) {
           }));
 
           return createSuccessResponse(transformedData);
-        });
+        }, client);
       } catch (error) {
         return createErrorResponse(error);
       }

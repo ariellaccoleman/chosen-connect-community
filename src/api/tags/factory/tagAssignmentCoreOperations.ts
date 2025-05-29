@@ -1,7 +1,7 @@
 
 /**
  * Tag assignment operations using the API factory pattern - cleaned up version
- * Updated to use tag_assignments table for mutations and direct queries for views with client injection support
+ * Updated to use apiClient.query pattern for proper client injection
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from '@/utils/tags/types';
@@ -47,8 +47,7 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
       select?: string;
     } = {}): Promise<ApiResponse<any[]>> {
       try {
-        const effectiveClient = client || apiClient;
-        return await effectiveClient.query(async (queryClient: any) => {
+        return await apiClient.query(async (queryClient: any) => {
           const {
             filters = {},
             orderBy = 'created_at',
@@ -103,7 +102,7 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
           }));
           
           return createSuccessResponse(transformedData);
-        });
+        }, client);
       } catch (error) {
         return createErrorResponse(error);
       }
