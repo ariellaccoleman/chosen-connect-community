@@ -14,6 +14,7 @@ import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags";
+import FilterPills from "@/components/filters/FilterPills";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -135,6 +136,21 @@ const CommunityDirectory = () => {
     setSelectedTagId(null);
   };
 
+  // Find selected tag for filter pills
+  const selectedTag = selectedTagId ? allProfiles
+    .flatMap(profile => profile.tags || [])
+    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
+
+  // Prepare filter pills
+  const filterPills = [];
+  if (selectedTag) {
+    filterPills.push({
+      id: selectedTag.id,
+      label: selectedTag.name,
+      onRemove: () => setSelectedTagId(null)
+    });
+  }
+
   return (
     <div className="container max-w-6xl px-4 py-8">
       <div className="flex justify-between items-center mb-6">
@@ -169,6 +185,8 @@ const CommunityDirectory = () => {
           </div>
         </CardContent>
       </Card>
+
+      <FilterPills filters={filterPills} />
 
       <ProfileGrid 
         profiles={filteredProfiles} 
