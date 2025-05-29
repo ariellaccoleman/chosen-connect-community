@@ -1,13 +1,13 @@
 
 /**
  * Tag business operations - complex operations that combine multiple steps
- * Updated to use apiClient.query pattern for proper client injection
+ * Updated to use repository layer for proper client injection
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
-import { apiClient } from '@/api/core/apiClient';
+import { createSupabaseRepository } from '@/api/core/repository/SupabaseRepository';
 import { createTagCoreOperations } from './tagCoreOperations';
 
 /**
@@ -61,26 +61,29 @@ export function createTagBusinessOperations(client?: any) {
      */
     async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
       try {
-        return await apiClient.query(async (queryClient: any) => {
-          const { data, error } = await queryClient
-            .from('filtered_entity_tags_view' as any)
-            .select('*')
-            .eq('entity_type', entityType);
+        // Create a repository for the view with client injection
+        const viewRepo = createSupabaseRepository('filtered_entity_tags_view', client);
+        
+        const result = await viewRepo
+          .select('*')
+          .eq('entity_type', entityType)
+          .execute();
 
-          if (error) throw error;
+        if (result.isError()) {
+          return createErrorResponse(result.error);
+        }
 
-          const transformedData = (data || []).map((item: any): Tag => ({
-            id: item.id,
-            name: item.name,
-            description: item.description,
-            created_by: item.created_by,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            entity_types: [entityType]
-          }));
+        const transformedData = (result.data || []).map((item: any): Tag => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          entity_types: [entityType]
+        }));
 
-          return createSuccessResponse(transformedData);
-        }, client);
+        return createSuccessResponse(transformedData);
       } catch (error) {
         return createErrorResponse(error);
       }
