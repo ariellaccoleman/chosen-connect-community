@@ -21,7 +21,7 @@ const FilterPills = ({ filters, className }: FilterPillsProps) => {
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-2 mb-4", className)}>
+    <div className={cn("flex flex-wrap gap-2", className)}>
       <span className="text-sm text-gray-500 font-medium">Active filters:</span>
       {filters.map((filter) => (
         <Badge

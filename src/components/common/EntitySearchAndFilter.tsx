@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -102,19 +101,17 @@ const EntitySearchAndFilter = ({
       </Card>
 
       <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
-          <FilterPills filters={filterPills} />
-          {selectedTagId && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={clearTagFilter}
-              className="flex-shrink-0"
-            >
-              Clear filter
-            </Button>
-          )}
-        </div>
+        <FilterPills filters={filterPills} />
+        {selectedTagId && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearTagFilter}
+            className="flex-shrink-0"
+          >
+            Clear filter
+          </Button>
+        )}
       </div>
     </div>
   );
