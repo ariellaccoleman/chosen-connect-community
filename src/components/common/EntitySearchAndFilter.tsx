@@ -102,17 +102,19 @@ const EntitySearchAndFilter = ({
       </Card>
 
       <div className="flex items-center justify-between mb-4">
-        <FilterPills filters={filterPills} />
-        {selectedTagId && (
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={clearTagFilter}
-            className="ml-4 self-center"
-          >
-            Clear filter
-          </Button>
-        )}
+        <div className="flex items-center gap-4">
+          <FilterPills filters={filterPills} />
+          {selectedTagId && (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearTagFilter}
+              className="flex-shrink-0"
+            >
+              Clear filter
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
