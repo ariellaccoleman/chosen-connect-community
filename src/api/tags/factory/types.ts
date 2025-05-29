@@ -2,6 +2,7 @@
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse } from '@/api/core/types';
+import { RelationshipApiOperations } from '@/api/core/types';
 
 // Re-export TagAssignment for this module
 export type { TagAssignment } from '@/utils/tags/types';
@@ -114,4 +115,40 @@ export interface TagAssignmentOperations {
    * Check if a tag is assigned to an entity
    */
   isTagAssigned(tagId: string, entityId: string, entityType: EntityType, providedClient?: any): Promise<boolean>;
+}
+
+/**
+ * Tag Assignment Relationship Operations Interface
+ * Extends RelationshipApiOperations with tag assignment-specific methods
+ */
+export interface TagAssignmentRelationshipOperations extends RelationshipApiOperations<TagAssignment, string, Partial<TagAssignment>, Partial<TagAssignment>> {
+  /**
+   * Create a tag assignment with relationship-specific validation
+   */
+  createAssignment(tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment>>;
+  
+  /**
+   * Get tag assignments for an entity
+   */
+  getForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>>;
+  
+  /**
+   * Get entities that have a specific tag assigned
+   */
+  getEntitiesByTagId(tagId: string, entityType?: EntityType): Promise<ApiResponse<TagAssignment[]>>;
+  
+  /**
+   * Delete tag assignment by tag and entity
+   */
+  deleteByTagAndEntity(tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<boolean>>;
+  
+  /**
+   * Delete all tag assignments for an entity
+   */
+  deleteForEntity(entityId: string, entityType: EntityType): Promise<ApiResponse<boolean>>;
+  
+  /**
+   * Check if a tag is assigned to an entity
+   */
+  isTagAssigned(tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<boolean>>;
 }

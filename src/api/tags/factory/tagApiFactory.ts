@@ -8,6 +8,9 @@ import { createTagBusinessOperations } from './tagBusinessOperations';
 import { createTagAssignmentBusinessOperations } from './tagAssignmentBusinessOperations';
 import { EntityType } from '@/types/entityTypes';
 import { ApiOperations } from '@/api/core/types';
+import { createRelationshipApiFactory } from '@/api/core/factory/apiFactory';
+import { TagAssignmentRelationshipOperations } from './types';
+import { TagAssignment } from '@/utils/tags/types';
 
 /**
  * Factory function to create tag API with ApiOperations interface compliance
@@ -65,6 +68,60 @@ export function createTagAssignmentApi(client?: any): ApiOperations<any> {
     create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete
+  };
+}
+
+/**
+ * Factory function to create tag assignment relationship API
+ * Uses RelationshipApiOperations interface with relationship-specific methods
+ */
+export function createTagAssignmentRelationshipApi(client?: any): TagAssignmentRelationshipOperations {
+  // Create the base relationship operations (RUD only, no generic create)
+  const relationshipOps = createRelationshipApiFactory<TagAssignment>({
+    tableName: 'tag_assignments',
+    entityName: 'TagAssignment',
+    useMutationOperations: true,
+    defaultSelect: '*',
+    transformResponse: (item: any): TagAssignment => ({
+      id: item.id,
+      tag_id: item.tag_id,
+      target_id: item.target_id,
+      target_type: item.target_type,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }),
+    // Relationship-specific configuration
+    validateRelationship: (tagId: string, entityId: string, entityType?: string) => {
+      return !!(tagId && entityId && entityType);
+    },
+    preventDuplicates: true,
+    sourceEntityType: 'tag',
+    targetEntityType: 'entity'
+  }, client);
+  
+  // Get business operations for relationship-specific methods
+  const businessOps = createTagAssignmentBusinessOperations(client);
+  
+  // Combine relationship operations with business-specific methods
+  return {
+    ...relationshipOps,
+    
+    // Relationship-specific creation method
+    createAssignment: businessOps.create,
+    
+    // Business-specific query methods
+    getForEntity: (entityId: string, entityType: EntityType) => 
+      relationshipOps.getAll({ 
+        filters: { 
+          target_id: entityId, 
+          target_type: entityType 
+        } 
+      }),
+    
+    getEntitiesByTagId: businessOps.getEntitiesByTagId,
+    deleteByTagAndEntity: businessOps.deleteByTagAndEntity,
+    deleteForEntity: businessOps.deleteForEntity,
+    isTagAssigned: businessOps.isTagAssigned
   };
 }
 
