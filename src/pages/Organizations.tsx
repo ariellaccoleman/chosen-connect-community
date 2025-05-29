@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,6 +13,7 @@ import TagSelector from "@/components/tags/TagSelector";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import { formatLocation } from "@/utils/formatters/locationFormatters";
 import { Tag } from "@/utils/tags/types";
+import FilterPills from "@/components/filters/FilterPills";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -69,6 +69,21 @@ const OrganizationsList = () => {
     }
   };
 
+  // Find selected tag for filter pills
+  const selectedTag = selectedTagId ? organizationEntities
+    .flatMap(entity => entity.tags || [])
+    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
+
+  // Prepare filter pills
+  const filterPills = [];
+  if (selectedTag) {
+    filterPills.push({
+      id: selectedTag.id,
+      label: selectedTag.name,
+      onRemove: () => setSelectedTagId(null)
+    });
+  }
+
   return (
     <div className="container mx-auto py-6 px-4 max-w-7xl">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
@@ -106,20 +121,12 @@ const OrganizationsList = () => {
                 placeholder="Select a tag to filter organizations"
                 currentSelectedTagId={selectedTagId}
               />
-              {selectedTagId && (
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => setSelectedTagId(null)}
-                  className="mt-2"
-                >
-                  Clear filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <FilterPills filters={filterPills} />
       
       {isLoading ? (
         <div className="text-center py-12">Loading organizations...</div>
@@ -141,15 +148,6 @@ const OrganizationsList = () => {
               : "No organizations found matching your search criteria"
             }
           </p>
-          {selectedTagId && (
-            <Button 
-              variant="ghost" 
-              onClick={() => setSelectedTagId(null)}
-              className="mt-2"
-            >
-              Clear tag filter
-            </Button>
-          )}
         </div>
       )}
     </div>

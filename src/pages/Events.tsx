@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import TagSelector from "@/components/tags/TagSelector";
 import { Tag } from "@/utils/tags/types";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
+import FilterPills from "@/components/filters/FilterPills";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
@@ -102,10 +103,20 @@ const Events: React.FC = () => {
     logger.debug(`Events: Tag selected: ${tag.id}`);
   };
 
-  const refetch = () => {
-    // For now, just reload the page since we don't have a direct refetch from useEntityFeed
-    window.location.reload();
-  };
+  // Find selected tag for filter pills
+  const selectedTag = selectedTagId ? eventEntities
+    .flatMap(entity => entity.tags || [])
+    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
+
+  // Prepare filter pills
+  const filterPills = [];
+  if (selectedTag) {
+    filterPills.push({
+      id: selectedTag.id,
+      label: selectedTag.name,
+      onRemove: () => setSelectedTagId(null)
+    });
+  }
 
   return (
     <div className="container py-8">
@@ -144,20 +155,12 @@ const Events: React.FC = () => {
                 placeholder="Select a tag to filter events"
                 currentSelectedTagId={selectedTagId}
               />
-              {selectedTagId && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => setSelectedTagId(null)}
-                  className="mt-2"
-                >
-                  Clear filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      <FilterPills filters={filterPills} />
       
       {isLoading ? (
         <div className="space-y-4">
@@ -171,13 +174,6 @@ const Events: React.FC = () => {
             <h3 className="font-medium">Error loading events</h3>
           </div>
           <p className="text-red-500 mb-4">{error instanceof Error ? error.message : "Failed to load events. Please try again later."}</p>
-          <Button 
-            variant="outline" 
-            onClick={refetch}
-            className="text-red-600 border-red-300 hover:bg-red-50"
-          >
-            Try Again
-          </Button>
         </div>
       ) : filteredEvents.length === 0 ? (
         <div className="text-center py-12">
@@ -189,15 +185,6 @@ const Events: React.FC = () => {
                 : "Your events will appear here. Refresh to check for new events."
             }
           </p>
-          {selectedTagId && (
-            <Button 
-              variant="ghost" 
-              onClick={() => setSelectedTagId(null)}
-              className="mt-2"
-            >
-              Clear tag filter
-            </Button>
-          )}
         </div>
       ) : (
         <>
