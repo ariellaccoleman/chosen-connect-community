@@ -234,9 +234,207 @@ export function createQueryOperations<
     }
   };
 
+  /**
+   * Find a single entity by exact name match
+   */
+  const findByName = async (name: string, filters?: any): Promise<ApiResponse<T | null>> => {
+    try {
+      logger.debug(`Finding ${entityName} by name: ${name}`);
+      
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        let query = repository.select(defaultSelect).eq('name', name);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value as any[]);
+              } else {
+                query = query.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        const result = await query.maybeSingle();
+        
+        if (result.error) throw result.error;
+        
+        return createSuccessResponse(result.data ? transformResponse(result.data) : null);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
+        let selectQuery = client.from(tableName).select(defaultSelect).eq('name', name);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                selectQuery = selectQuery.in(key, value as any);
+              } else {
+                selectQuery = selectQuery.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        const { data, error } = await selectQuery.maybeSingle();
+        if (error) throw error;
+        
+        return createSuccessResponse(data ? transformResponse(data) : null);
+      });
+    } catch (error) {
+      logger.error(`Error finding ${entityName} by name:`, error);
+      return createErrorResponse(error);
+    }
+  };
+
+  /**
+   * Search entities using case-insensitive pattern matching on name field
+   */
+  const searchByName = async (searchQuery: string, filters?: any): Promise<ApiResponse<T[]>> => {
+    try {
+      logger.debug(`Searching ${entityName} by name: ${searchQuery}`);
+      
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        let query = repository.select(defaultSelect).ilike('name', `%${searchQuery}%`);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value as any[]);
+              } else {
+                query = query.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        // Apply default ordering
+        query = query.order('name', { ascending: true });
+        
+        const result = await query.execute();
+        
+        if (result.error) throw result.error;
+        
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
+        return createSuccessResponse(transformedData);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
+        let selectQuery = client.from(tableName).select(defaultSelect).ilike('name', `%${searchQuery}%`);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                selectQuery = selectQuery.in(key, value as any);
+              } else {
+                selectQuery = selectQuery.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        // Apply default ordering
+        selectQuery = selectQuery.order('name', { ascending: true });
+        
+        const { data, error } = await selectQuery;
+        if (error) throw error;
+        
+        const transformedData = data ? data.map(transformResponse) : [];
+        return createSuccessResponse(transformedData);
+      });
+    } catch (error) {
+      logger.error(`Error searching ${entityName} by name:`, error);
+      return createErrorResponse(error);
+    }
+  };
+
+  /**
+   * Get entities filtered by entity type
+   */
+  const getByEntityType = async (entityType: string, filters?: any): Promise<ApiResponse<T[]>> => {
+    try {
+      logger.debug(`Getting ${entityName} by entity type: ${entityType}`);
+      
+      // Use repository if provided, otherwise use apiClient
+      if (repository) {
+        let query = repository.select(defaultSelect).eq('entity_type', entityType);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value as any[]);
+              } else {
+                query = query.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        // Apply default ordering
+        const sortField = typedDefaultOrderBy;
+        query = query.order(sortField, { ascending: false });
+        
+        const result = await query.execute();
+        
+        if (result.error) throw result.error;
+        
+        const transformedData = result.data ? result.data.map(transformResponse) : [];
+        return createSuccessResponse(transformedData);
+      }
+      
+      // Legacy implementation using apiClient
+      return await apiClient.query(async (client) => {
+        let selectQuery = client.from(tableName).select(defaultSelect).eq('entity_type', entityType);
+        
+        // Apply additional filters if provided
+        if (filters) {
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                selectQuery = selectQuery.in(key, value as any);
+              } else {
+                selectQuery = selectQuery.eq(key, value as any);
+              }
+            }
+          });
+        }
+        
+        // Apply default ordering
+        const sortField = typedDefaultOrderBy;
+        selectQuery = selectQuery.order(sortField, { ascending: false });
+        
+        const { data, error } = await selectQuery;
+        if (error) throw error;
+        
+        const transformedData = data ? data.map(transformResponse) : [];
+        return createSuccessResponse(transformedData);
+      });
+    } catch (error) {
+      logger.error(`Error getting ${entityName} by entity type:`, error);
+      return createErrorResponse(error);
+    }
+  };
+
   return {
     getAll,
     getById,
-    getByIds
+    getByIds,
+    findByName,
+    searchByName,
+    getByEntityType
   };
 }
