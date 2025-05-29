@@ -41,6 +41,7 @@ export const EntityCardFactory: React.FC<EntityCardFactoryProps> = ({
       // Convert Entity to ProfileWithDetails format for ProfileCard
       const profileData = {
         ...entity,
+        entityType: EntityType.PERSON, // Explicitly set to PERSON type
         first_name: entity.name.split(' ')[0] || '',
         last_name: entity.name.split(' ').slice(1).join(' ') || '',
         full_name: entity.name, // Add the required full_name field
