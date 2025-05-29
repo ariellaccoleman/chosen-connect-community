@@ -232,15 +232,18 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
       return;
     }
 
+    // NOTE: API factory is now created at execution time to ensure proper client context
+    const orgRelApi = organizationRelationshipsApi; // This uses default client injection
+
     // 1. Start with no relationships
     console.log('🧪 Fetching initial relationships...');
-    let result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
+    let result = await orgRelApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
 
     // 2. Create a relationship
     console.log('🧪 Creating relationship...');
-    const createResult = await organizationRelationshipsApi.addOrganizationRelationship({
+    const createResult = await orgRelApi.addOrganizationRelationship({
       profile_id: testUser.id,
       organization_id: testOrganization.id,
       connection_type: 'current',
@@ -258,7 +261,7 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
 
     // 3. Verify relationship exists
     console.log('🧪 Verifying relationship exists...');
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
+    result = await orgRelApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     
     console.log('🔍 VERIFY RESULT:', {
       status: result.status,
@@ -279,7 +282,7 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
 
     // 4. Update the relationship
     console.log('🧪 Updating relationship...');
-    const updateResult = await organizationRelationshipsApi.updateOrganizationRelationship(
+    const updateResult = await orgRelApi.updateOrganizationRelationship(
       relationship.id,
       {
         connection_type: 'former',
@@ -299,7 +302,7 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
 
     // 5. Verify the update
     console.log('🧪 Verifying update...');
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
+    result = await orgRelApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     
     console.log('🔍 VERIFICATION RESULT:', {
       status: result.status,
@@ -314,27 +317,30 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
     expect(result.data[0].department).toBe('Product');
 
     // 6. Delete the relationship
-    const deleteResult = await organizationRelationshipsApi.deleteOrganizationRelationship(relationship.id, authenticatedClient);
+    const deleteResult = await orgRelApi.deleteOrganizationRelationship(relationship.id, authenticatedClient);
     expect(deleteResult.status).toBe('success');
 
     // 7. Verify deletion
-    result = await organizationRelationshipsApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
+    result = await orgRelApi.getUserOrganizationRelationships(testUser.id, authenticatedClient);
     expect(result.status).toBe('success');
     expect(result.data).toEqual([]);
   }, 30000); // Increased timeout for debugging
 
   test('handles invalid data gracefully', async () => {
+    // NOTE: API factory is now created at execution time
+    const orgRelApi = organizationRelationshipsApi;
+    
     // Test with invalid UUIDs
-    let result = await organizationRelationshipsApi.getUserOrganizationRelationships('not-a-valid-uuid', authenticatedClient);
+    let result = await orgRelApi.getUserOrganizationRelationships('not-a-valid-uuid', authenticatedClient);
     expect(result.status).toBe('error');
 
     // Test adding relationship without required fields
-    result = await organizationRelationshipsApi.addOrganizationRelationship({} as any, authenticatedClient);
+    result = await orgRelApi.addOrganizationRelationship({} as any, authenticatedClient);
     expect(result.status).toBe('error');
 
     // Test updating non-existent relationship with valid UUID
     // This SHOULD fail because the relationship doesn't exist
-    result = await organizationRelationshipsApi.updateOrganizationRelationship(
+    result = await orgRelApi.updateOrganizationRelationship(
       uuidv4(),
       { connection_type: 'former' },
       authenticatedClient
@@ -350,8 +356,11 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
       return;
     }
 
+    // NOTE: API factory is now created at execution time
+    const orgRelApi = organizationRelationshipsApi;
+
     // Test that relationship requires valid organization
-    const result = await organizationRelationshipsApi.addOrganizationRelationship({
+    const result = await orgRelApi.addOrganizationRelationship({
       profile_id: testUser.id,
       organization_id: uuidv4(), // Non-existent org
       connection_type: 'current'
@@ -368,9 +377,12 @@ describe.skip('Organization Relationships API - Integration Tests', () => {
       return;
     }
 
+    // NOTE: API factory is now created at execution time
+    const orgRelApi = organizationRelationshipsApi;
+
     // Test creating relationship for non-existent profile
     const nonExistentProfileId = uuidv4();
-    const result = await organizationRelationshipsApi.addOrganizationRelationship({
+    const result = await orgRelApi.addOrganizationRelationship({
       profile_id: nonExistentProfileId,
       organization_id: testOrganization.id,
       connection_type: 'current'

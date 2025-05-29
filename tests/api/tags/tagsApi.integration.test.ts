@@ -7,8 +7,6 @@ import { EntityType } from '@/types/entityTypes';
 describe('Tag Operations API Integration Tests', () => {
   let testUser: any;
   let authenticatedClient: any;
-  let tagApiWithClient: any;
-  let tagAssignmentApiWithClient: any;
   let createdTagIds: string[] = [];
   let createdAssignmentIds: string[] = [];
   let createdOrganizationIds: string[] = [];
@@ -52,9 +50,8 @@ describe('Tag Operations API Integration Tests', () => {
     
     console.log(`✅ Test user authenticated: ${testUser.email}`);
     
-    // Create API instances with authenticated client
-    tagApiWithClient = createTagApi(authenticatedClient);
-    tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+    // NOTE: API factories are now created at execution time in individual tests
+    // This ensures repositories are created with the proper authenticated client context
     
     // Set up test data ONLY after confirmed authentication
     await setupTestData();
@@ -203,6 +200,9 @@ describe('Tag Operations API Integration Tests', () => {
 
   describe('Tag API Operations', () => {
     test('should create a new tag', async () => {
+      // Create API instance at execution time with authenticated client
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const tagName = `API Test Tag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const response = await tagApiWithClient.findOrCreate({
@@ -224,6 +224,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should get all tags', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const createResponse = await tagApiWithClient.findOrCreate({
         name: `GetAll Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getAll operation',
@@ -251,6 +253,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should get tag by ID', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const createResponse = await tagApiWithClient.findOrCreate({
         name: `GetByID Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for getById operation',
@@ -277,6 +281,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should find tag by name', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const tagName = `FindByName Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const createResponse = await tagApiWithClient.findOrCreate({
@@ -306,6 +312,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should search tags', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const uniqueSearchTerm = `SearchTest${Date.now()}`;
       
       const createResponse1 = await tagApiWithClient.findOrCreate({
@@ -347,6 +355,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should find or create tag without entity type parameter', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const tagName = `FindOrCreate Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
       const createResponse1 = await tagApiWithClient.findOrCreate({
@@ -379,6 +389,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should update tag', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const createResponse = await tagApiWithClient.findOrCreate({
         name: `Update Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Original description',
@@ -407,6 +419,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should delete tag', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      
       const createResponse = await tagApiWithClient.findOrCreate({
         name: `Delete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Tag to be deleted',
@@ -434,6 +448,9 @@ describe('Tag Operations API Integration Tests', () => {
 
   describe('Tag Assignment API Operations', () => {
     test('should automatically create entity type when assignment is made', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       const createTagResponse = await tagApiWithClient.findOrCreate({
         name: `Assignment Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for assignment',
@@ -488,6 +505,9 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should create and delete tag assignment', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       const createTagResponse = await tagApiWithClient.findOrCreate({
         name: `CreateDelete Test ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for create/delete assignment',
@@ -546,6 +566,9 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should handle multiple assignments to same entity', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       const createTag1Response = await tagApiWithClient.findOrCreate({
         name: `MultiAssign1 ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'First test tag for multiple assignments',
@@ -606,6 +629,9 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should get entities by tag ID', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       const createTagResponse = await tagApiWithClient.findOrCreate({
         name: `EntityByTag ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for finding entities',
@@ -652,6 +678,9 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should automatically clean up entity types when last assignment is deleted', async () => {
+      const tagApiWithClient = createTagApi(authenticatedClient);
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       const createTagResponse = await tagApiWithClient.findOrCreate({
         name: `CleanupTest ${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         description: 'Test tag for entity type cleanup',
@@ -707,6 +736,8 @@ describe('Tag Operations API Integration Tests', () => {
     });
 
     test('should handle edge cases gracefully', async () => {
+      const tagAssignmentApiWithClient = createTagAssignmentApi(authenticatedClient);
+      
       // Use valid UUIDs that don't exist in the database instead of invalid format strings
       const nonExistentEntityId = '00000000-0000-0000-0000-000000000000';
       const nonExistentTagId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee';
