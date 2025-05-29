@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,9 +9,10 @@ import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/sonner";
-import TagFilter from "@/components/filters/TagFilter";
+import TagSelector from "@/components/tags/TagSelector";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import { formatLocation } from "@/utils/formatters/locationFormatters";
+import { Tag } from "@/utils/tags/types";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -58,9 +58,14 @@ const OrganizationsList = () => {
   };
   
   // Handle tag selection - same as community page
-  const handleTagSelect = (tagId: string | null) => {
-    logger.debug(`Organizations: Tag selected: ${tagId}`);
-    setSelectedTagId(tagId);
+  const handleTagSelect = (tag: Tag) => {
+    logger.debug(`Organizations: Tag selected: ${tag.id}`);
+    if (tag.id === "") {
+      // Empty tag means clear filter
+      setSelectedTagId(null);
+    } else {
+      setSelectedTagId(tag.id);
+    }
   };
 
   return (
@@ -91,13 +96,17 @@ const OrganizationsList = () => {
               </div>
             </div>
             
-            {/* Tag filter - same as community page */}
+            {/* Tag selector - same as community page */}
             <div className="mb-4 sm:mb-6">
-              <TagFilter
-                selectedTagId={selectedTagId}
-                onTagSelect={handleTagSelect}
+              <div className="text-sm text-muted-foreground mb-2">
+                Filter organizations by tag:
+              </div>
+              <TagSelector
                 targetType={EntityType.ORGANIZATION}
-                label="Filter organizations by tag"
+                onTagSelected={handleTagSelect}
+                isAdmin={false}
+                placeholder="Select a tag to filter organizations"
+                currentSelectedTagId={selectedTagId}
               />
             </div>
           </div>

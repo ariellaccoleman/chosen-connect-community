@@ -17,7 +17,8 @@ import { Search } from "lucide-react";
 import { EntityType } from "@/types/entityTypes";
 import { useFilterByTag } from "@/hooks/tags";
 import { toast } from "sonner";
-import TagFilter from "@/components/filters/TagFilter";
+import TagSelector from "@/components/tags/TagSelector";
+import { Tag } from "@/utils/tags/types";
 
 const Events: React.FC = () => {
   const navigate = useNavigate();
@@ -100,9 +101,9 @@ const Events: React.FC = () => {
   };
   
   // Handle tag selection - same as community page
-  const handleTagSelect = (tagId: string | null) => {
-    setSelectedTagId(tagId);
-    logger.debug(`Events: Tag selected: ${tagId}`);
+  const handleTagSelect = (tag: Tag) => {
+    setSelectedTagId(tag.id === "" ? null : tag.id);
+    logger.debug(`Events: Tag selected: ${tag.id}`);
   };
 
   return (
@@ -143,13 +144,17 @@ const Events: React.FC = () => {
               </div>
             </div>
             
-            {/* Tag filter - same as community page */}
+            {/* Tag selector - same as community page */}
             <div className="mb-4 sm:mb-6">
-              <TagFilter
-                selectedTagId={selectedTagId}
-                onTagSelect={handleTagSelect}
+              <div className="text-sm text-muted-foreground mb-2">
+                Filter events by tag:
+              </div>
+              <TagSelector
                 targetType={EntityType.EVENT}
-                label="Filter events by tag"
+                onTagSelected={handleTagSelect}
+                isAdmin={false}
+                placeholder="Select a tag to filter events"
+                currentSelectedTagId={selectedTagId}
               />
             </div>
           </div>
