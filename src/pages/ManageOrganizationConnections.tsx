@@ -15,13 +15,12 @@ const ManageOrganizationConnections = () => {
   const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   
-  // Fetch user's organization relationships
+  // Fetch user's organization relationships - now properly handles React Query object
   const { 
-    data: relationshipsResponse,
+    data: relationships = [],
     isLoading: relationshipsLoading,
     error: relationshipsError
   } = useUserOrganizationRelationships(user?.id);
-  const relationships = relationshipsResponse?.data || [];
   
   // Fetch all organizations for connecting
   const { 

@@ -39,11 +39,10 @@ const ProfileOrganizationLinks = ({ form }: ProfileOrganizationLinksProps) => {
   const { data: organizationsResponse } = useOrganizations();
   const organizations = organizationsResponse?.data || [];
   
-  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
-  const relationships = relationshipsResponse?.data || [];
+  // Now properly handles React Query object
+  const { data: relationships = [], isLoading: isLoadingRelationships } = useUserOrganizationRelationships(user?.id);
   
   const isLoadingOrgs = false; // We'll simplify this for now
-  const isLoadingRelationships = false; // We'll simplify this for now
   
   // Use our utility functions to format and filter organizations
   const formattedRelationships = formatOrganizationRelationships(relationships);

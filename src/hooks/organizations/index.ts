@@ -19,8 +19,17 @@ export {
   useDeleteAdminRequest
 } from "./useOrganizationAdminHooks";
 
-// Export relationship hooks
-export * from "./useOrganizationRelationshipHooks";
+// Export relationship hooks (avoiding conflicts)
+export {
+  useCreateOrganizationRelationship as useCreateOrgRelationshipFromRelationshipHooks,
+  useUpdateOrganizationRelationship as useUpdateOrgRelationshipFromRelationshipHooks,
+  useDeleteOrganizationRelationship as useDeleteOrgRelationshipFromRelationshipHooks,
+  useOrganizationRelationshipsForProfile,
+  useProfileRelationshipsForOrganization,
+  useGetAllOrganizationRelationships,
+  useGetOrganizationRelationshipById,
+  useGetOrganizationRelationshipsByIds
+} from "./useOrganizationRelationshipHooks";
 
 // Legacy exports (deprecated, but kept for backward compatibility)
 export {

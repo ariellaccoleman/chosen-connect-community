@@ -5,6 +5,7 @@ import { organizationApi } from '@/api/organizations/organizationApiFactory';
 import { createOrganizationRelationshipApi } from '@/api/organizations/relationshipApiFactory';
 import { OrganizationWithLocation, ProfileOrganizationRelationshipWithDetails } from '@/types';
 import { ConnectionType } from '@/types';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * Factory-based organization hooks that don't instantiate repositories at import time
@@ -89,6 +90,25 @@ export const useDeleteOrganization = () => {
 };
 
 /**
+ * Hook for fetching organization relationships for a user (factory-based)
+ * Returns proper React Query object instead of Promise
+ */
+export const useUserOrganizationRelationships = (profileId?: string) => {
+  return useQuery({
+    queryKey: ['organization-relationships', profileId],
+    queryFn: async () => {
+      if (!profileId) {
+        return { data: [], error: null, status: 'success' as const };
+      }
+      const orgRelationshipApi = createOrganizationRelationshipApi();
+      return await orgRelationshipApi.getForProfile(profileId);
+    },
+    enabled: !!profileId,
+    select: (response) => response.data || []
+  });
+};
+
+/**
  * Organization relationship hooks (factory-based)
  */
 export const useCreateOrganizationRelationship = createRelationshipMutationHook(
@@ -119,14 +139,6 @@ export const useUpdateOrganizationRelationship = () => {
 export const useDeleteOrganizationRelationship = () => {
   const orgRelationshipHooks = createOrgRelationshipHooks();
   return orgRelationshipHooks.useDelete();
-};
-
-/**
- * Hook for fetching organization relationships for a user (factory-based)
- */
-export const useUserOrganizationRelationships = (profileId?: string) => {
-  const orgRelationshipApi = createOrganizationRelationshipApi();
-  return orgRelationshipApi.getForProfile(profileId || '');
 };
 
 // Backward compatibility aliases

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,9 +28,8 @@ const RequestAdminAccessButton = ({
   const createRequest = useCreateAdminRequest();
   const { data: existingRequests = [] } = useUserAdminRequests(user?.id);
   
-  // Fetch user's relationship with this organization
-  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
-  const relationships = relationshipsResponse?.data || [];
+  // Fetch user's relationship with this organization - now properly handles React Query object
+  const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
   
   // Check if the user already has a relationship with this organization
   const hasRelationship = relationships.some(rel => rel.organization_id === organizationId);

@@ -30,9 +30,8 @@ const OrganizationDetail = () => {
   const { data: isOrgAdmin = false } = useIsOrganizationAdmin(user?.id, orgId);
   const { data: userRole } = useOrganizationRole(user?.id, orgId);
   
-  // Get user's relationships with the fixed hook usage
-  const { data: relationshipsResponse } = useUserOrganizationRelationships(user?.id);
-  const relationships = relationshipsResponse?.data || [];
+  // Get user's relationships with the fixed hook usage - now properly handles React Query object
+  const { data: relationships = [] } = useUserOrganizationRelationships(user?.id);
 
   // Log organization data for debugging
   useEffect(() => {
