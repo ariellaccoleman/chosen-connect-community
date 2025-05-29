@@ -1,58 +1,52 @@
 
 import { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
-import { useOrganizations } from "@/hooks/organizations";
-import { useFilterByTag } from "@/hooks/tags";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Briefcase, Search } from "lucide-react";
-import { OrganizationWithLocation } from "@/types";
 import { EntityType } from "@/types/entityTypes";
 import { APP_ROUTES } from "@/config/routes";
 import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/sonner";
-import TagSelector from "@/components/tags/TagSelector";
-import { Tag } from "@/utils/tags";
+import TagFilter from "@/components/filters/TagFilter";
+import { useEntityFeed } from "@/hooks/useEntityFeed";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
-  const { data: organizationsResponse, isLoading, error } = useOrganizations();
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  
+  // Use the entity feed hook to fetch organizations
+  const { entities: organizationEntities, isLoading, error } = useEntityFeed({
+    entityTypes: [EntityType.ORGANIZATION],
+    tagId: selectedTagId,
+    limit: 100 // Increase limit for organizations page
+  });
   
   // Log page load for debugging
   logger.info("Organizations - Component mounted", {
-    path: window.location.pathname
+    path: window.location.pathname,
+    organizationCount: organizationEntities.length,
+    selectedTagId
   });
   
-  // Extract organizations from the response
-  const organizations = organizationsResponse?.data || [];
-  
-  // Use tag hooks directly
-  const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
-  const { data: tagAssignments = [] } = useFilterByTag(selectedTagId, EntityType.ORGANIZATION);
-
   // Show error toast if organization loading fails
   if (error) {
     console.error("Error fetching organizations:", error);
     toast.error("Failed to load organizations. Please try again.");
   }
 
-  // First filter by search term
-  const searchFilteredOrgs = organizations.filter((org: OrganizationWithLocation) => {
-    return org.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      (org.description && org.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (org.location?.formatted_location && org.location.formatted_location.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Filter by search term
+  const filteredOrganizations = organizationEntities.filter((entity) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      entity.name.toLowerCase().includes(searchLower) ||
+      (entity.description && entity.description.toLowerCase().includes(searchLower)) ||
+      (entity.location && entity.location.toLowerCase().includes(searchLower))
+    );
   });
-  
-  // Filter by tag id if selected
-  const filteredOrganizations = selectedTagId
-    ? searchFilteredOrgs.filter(org => {
-        const taggedIds = new Set(tagAssignments.map((ta) => ta.target_id));
-        return taggedIds.has(org.id);
-      })
-    : searchFilteredOrgs;
     
   // Handle clicking on an organization card
   const handleViewOrganization = (orgId: string) => {
@@ -62,14 +56,9 @@ const OrganizationsList = () => {
   };
   
   // Handle tag selection
-  const handleTagSelected = (tag: Tag) => {
-    setSelectedTagId(tag.id || null);
-    logger.debug(`Tag selected: ${tag.name} (${tag.id})`);
-  };
-  
-  // Clear tag filter
-  const clearTagFilter = () => {
-    setSelectedTagId(null);
+  const handleTagSelect = (tagId: string | null) => {
+    setSelectedTagId(tagId);
+    logger.debug(`Tag selected: ${tagId}`);
   };
 
   return (
@@ -100,21 +89,12 @@ const OrganizationsList = () => {
               </div>
             </div>
             <div className="md:w-64">
-              <TagSelector
+              <TagFilter
+                selectedTagId={selectedTagId}
+                onTagSelect={handleTagSelect}
                 targetType={EntityType.ORGANIZATION}
-                onTagSelected={handleTagSelected}
-                currentSelectedTagId={selectedTagId}
+                label="Filter by tag"
               />
-              {selectedTagId && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearTagFilter}
-                  className="mt-2"
-                >
-                  Clear filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
@@ -134,7 +114,21 @@ const OrganizationsList = () => {
         </div>
       ) : (
         <div className="text-center py-12">
-          <p className="text-gray-500 dark:text-gray-400">No organizations found matching your criteria</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            {selectedTagId 
+              ? "No organizations found matching the selected tag and search criteria" 
+              : "No organizations found matching your search criteria"
+            }
+          </p>
+          {selectedTagId && (
+            <Button 
+              variant="ghost" 
+              onClick={() => setSelectedTagId(null)}
+              className="mt-2"
+            >
+              Clear tag filter
+            </Button>
+          )}
         </div>
       )}
     </div>
@@ -145,12 +139,12 @@ const OrganizationCard = ({
   organization, 
   onClick 
 }: { 
-  organization: OrganizationWithLocation;
+  organization: any; // Entity type from useEntityFeed
   onClick: () => void;
 }) => {
   const orgInitials = organization.name
     .split(' ')
-    .map(word => word[0])
+    .map((word: string) => word[0])
     .join('')
     .substring(0, 2)
     .toUpperCase();
@@ -160,7 +154,7 @@ const OrganizationCard = ({
       <CardContent className="p-6">
         <div className="flex space-x-4">
           <Avatar className="h-16 w-16 flex-shrink-0">
-            <AvatarImage src={organization.logoUrl || organization.logoApiUrl || ""} />
+            <AvatarImage src={organization.imageUrl || ""} />
             <AvatarFallback className="bg-chosen-blue text-white">
               {orgInitials}
             </AvatarFallback>
@@ -168,7 +162,7 @@ const OrganizationCard = ({
           <div className="min-w-0">
             <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">{organization.name}</h3>
             {organization.location && (
-              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{organization.location.formatted_location}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{organization.location}</p>
             )}
           </div>
         </div>

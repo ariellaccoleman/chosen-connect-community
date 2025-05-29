@@ -30,7 +30,7 @@ const TagFilter: React.FC<TagFilterProps> = ({
   targetType,
   label
 }) => {
-  const { data: tagsResponse, isLoading } = useSelectionTags(targetType as EntityType);
+  const { data: tagsResponse, isLoading, error } = useSelectionTags(targetType as EntityType);
   
   // Extract tags from the API response - handle both array and ApiResponse formats
   const tags = Array.isArray(tagsResponse) ? tagsResponse : (tagsResponse?.data || []);
@@ -42,13 +42,26 @@ const TagFilter: React.FC<TagFilterProps> = ({
       selectedTagId,
       selectedTagIds,
       targetType,
-      mode: selectedTagIds ? 'multi' : 'single'
+      mode: selectedTagIds ? 'multi' : 'single',
+      error: error?.message
     });
     
     if (tags.length > 0) {
       logger.debug(`Available tags:`, tags.map(tag => ({ id: tag.id, name: tag.name })));
     }
-  }, [tags, selectedTagId, selectedTagIds, targetType]);
+  }, [tags, selectedTagId, selectedTagIds, targetType, error]);
+
+  // Show error state if tags failed to load
+  if (error) {
+    logger.error("TagFilter: Failed to load tags", error);
+    return (
+      <div className="mb-4">
+        <div className="text-sm text-red-500 mb-2">
+          Failed to load tags. Please try again.
+        </div>
+      </div>
+    );
+  }
 
   // Determine if we're in single or multi-select mode
   const isMultiSelectMode = selectedTagIds !== undefined && onTagsSelect !== undefined;
@@ -69,7 +82,17 @@ const TagFilter: React.FC<TagFilterProps> = ({
   }
 
   if (!tags || tags.length === 0) {
-    return null;
+    logger.debug("TagFilter: No tags available");
+    return (
+      <div className="mb-4">
+        <div className="text-sm text-muted-foreground mb-2">
+          {label || "Filter by tag:"}
+        </div>
+        <div className="text-sm text-gray-500">
+          No tags available
+        </div>
+      </div>
+    );
   }
 
   const clearFilter = () => {

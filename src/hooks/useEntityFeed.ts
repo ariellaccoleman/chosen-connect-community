@@ -1,3 +1,4 @@
+
 import { useQuery } from "@tanstack/react-query";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
@@ -63,6 +64,26 @@ export const useEntityFeed = ({
           try {
             let items: any[] = [];
             
+            // Map EntityType enum to database target_type values
+            const getTargetType = (entityType: EntityType): string => {
+              switch (entityType) {
+                case EntityType.PERSON:
+                  return 'person';
+                case EntityType.ORGANIZATION:
+                  return 'organization';
+                case EntityType.EVENT:
+                  return 'event';
+                case EntityType.POST:
+                  return 'post';
+                case EntityType.HUB:
+                  return 'hub';
+                default:
+                  return entityType.toLowerCase();
+              }
+            };
+
+            const targetType = getTargetType(type);
+            
             // Fetch the appropriate data based on entity type
             switch (type) {
               case EntityType.PERSON:
@@ -77,13 +98,13 @@ export const useEntityFeed = ({
                 }
                 
                 // Apply tag filtering if we have tagged person IDs
-                if (tagId && taggedEntityIds['person']?.length) {
-                  peopleQuery = peopleQuery.in('id', taggedEntityIds['person']);
-                  logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds['person'].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds['person']?.length) {
-                  // If we're filtering by tag but no people have this tag, return empty
-                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}`);
-                  return;
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  peopleQuery = peopleQuery.in('id', taggedEntityIds[targetType]);
+                  logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds[targetType]?.length) {
+                  // If we're filtering by tag but no people have this tag, skip this type but continue with others
+                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}, continuing with other types`);
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 // Apply limit and get results
@@ -91,7 +112,7 @@ export const useEntityFeed = ({
                   
                 if (profilesError) {
                   logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesError);
-                  return;
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 items = profiles || [];
@@ -105,13 +126,13 @@ export const useEntityFeed = ({
                 let orgsQuery = supabase.from('organizations').select('*');
                 
                 // Apply tag filtering if we have tagged organization IDs
-                if (tagId && taggedEntityIds['organization']?.length) {
-                  orgsQuery = orgsQuery.in('id', taggedEntityIds['organization']);
-                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds['organization'].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds['organization']?.length) {
-                  // If we're filtering by tag but no organizations have this tag, return empty
-                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}`);
-                  return;
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  orgsQuery = orgsQuery.in('id', taggedEntityIds[targetType]);
+                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds[targetType]?.length) {
+                  // If we're filtering by tag but no organizations have this tag, skip this type but continue with others
+                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}, continuing with other types`);
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 // Apply limit and get results
@@ -119,7 +140,7 @@ export const useEntityFeed = ({
                   
                 if (orgsError) {
                   logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsError);
-                  return;
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 items = organizations || [];
@@ -133,13 +154,13 @@ export const useEntityFeed = ({
                 let eventsQuery = supabase.from('events').select('*');
                 
                 // Apply tag filtering if we have tagged event IDs
-                if (tagId && taggedEntityIds['event']?.length) {
-                  eventsQuery = eventsQuery.in('id', taggedEntityIds['event']);
-                  logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds['event'].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds['event']?.length) {
-                  // If we're filtering by tag but no events have this tag, return empty
-                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}`);
-                  return;
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  eventsQuery = eventsQuery.in('id', taggedEntityIds[targetType]);
+                  logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                } else if (tagId && !taggedEntityIds[targetType]?.length) {
+                  // If we're filtering by tag but no events have this tag, skip this type but continue with others
+                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}, continuing with other types`);
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 // Apply limit and get results
@@ -147,7 +168,7 @@ export const useEntityFeed = ({
                   
                 if (eventsError) {
                   logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsError);
-                  return;
+                  break; // Continue to next entity type instead of returning
                 }
                 
                 items = events || [];
@@ -156,7 +177,7 @@ export const useEntityFeed = ({
                 
               default:
                 logger.warn(`Unsupported entity type: ${type}`);
-                return;
+                break; // Continue to next entity type instead of returning
             }
             
             // Convert each item to an Entity and add to results
