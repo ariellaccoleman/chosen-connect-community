@@ -17,22 +17,12 @@ export const organizationApi = createApiFactory<
   idField: 'id',
   defaultSelect: `
     *, 
-    location:locations(*),
-    tag_assignments:tag_assignments(
-      id,
-      created_at,
-      updated_at,
-      tag:tags(*)
-    )
+    location:locations(*)
   `,
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => {
     const formatted = formatOrganizationWithLocation(data);
-    // Add tags from tag_assignments
-    if (data.tag_assignments) {
-      formatted.tags = data.tag_assignments;
-    }
     return formatted;
   },
   transformRequest: (data) => {
