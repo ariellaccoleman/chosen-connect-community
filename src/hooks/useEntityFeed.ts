@@ -43,7 +43,7 @@ export const useEntityFeed = ({
         
         // Get all entities tagged with this tag ID
         const { data: tagAssignments, error: tagError } = await supabase
-          .from('entity_tag_assignments_view')
+          .from('tag_assignments')
           .select('target_id, target_type')
           .eq('tag_id', tagId);
           
@@ -89,6 +89,12 @@ export const useEntityFeed = ({
 
             const targetType = getTargetType(type);
             
+            // If we have a tag filter and no entities of this type have this tag, skip
+            if (tagId && (!taggedEntityIds[targetType] || taggedEntityIds[targetType].length === 0)) {
+              logger.debug(`EntityFeed: No ${type} entities found with tagId=${tagId}, skipping`);
+              return;
+            }
+            
             // Fetch the appropriate data based on entity type
             switch (type) {
               case EntityType.PERSON:
@@ -119,10 +125,6 @@ export const useEntityFeed = ({
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   peopleQuery = peopleQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no people have this tag, skip this type
-                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}, skipping`);
-                  break;
                 }
                 
                 // Apply limit and get results
@@ -155,10 +157,6 @@ export const useEntityFeed = ({
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   orgsQuery = orgsQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no organizations have this tag, skip this type
-                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}, skipping`);
-                  break;
                 }
                 
                 // Apply limit and get results
@@ -191,10 +189,6 @@ export const useEntityFeed = ({
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   eventsQuery = eventsQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no events have this tag, skip this type
-                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}, skipping`);
-                  break;
                 }
                 
                 // Apply limit and get results
@@ -256,8 +250,11 @@ export const useEntityFeed = ({
           // since we already filtered by tag
           for (const entity of allEntities) {
             const { data: tagAssignments, error: tagError } = await supabase
-              .from('entity_tag_assignments_view')
-              .select('*, tag:tag_id(id, name, description)')
+              .from('tag_assignments')
+              .select(`
+                *,
+                tag:tags(*)
+              `)
               .eq('target_id', entity.id)
               .eq('target_type', entity.entityType);
               
