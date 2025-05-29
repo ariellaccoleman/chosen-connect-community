@@ -1,3 +1,4 @@
+
 import { ApiOperations, RelationshipApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
 import { createBatchOperations } from "./operations/batchOperations";
@@ -442,8 +443,14 @@ export function createViewApiFactory<
         throw new Error(result.getErrorMessage());
       }
       
+      // Apply transform function to each item if provided
+      let transformedData = result.data || [];
+      if (options.transformResponse && Array.isArray(transformedData)) {
+        transformedData = transformedData.map(item => options.transformResponse!(item));
+      }
+      
       return {
-        data: result.data || [],
+        data: transformedData,
         error: null,
         status: 'success' as const
       };
@@ -455,8 +462,14 @@ export function createViewApiFactory<
     async getById(id: TId) {
       const record = await viewRepository.getById(id as string | number);
       
+      // Apply transform function if provided
+      let transformedRecord = record;
+      if (options.transformResponse && record) {
+        transformedRecord = options.transformResponse(record);
+      }
+      
       return {
-        data: record,
+        data: transformedRecord,
         error: null,
         status: 'success' as const
       };
@@ -473,8 +486,14 @@ export function createViewApiFactory<
         throw new Error(result.getErrorMessage());
       }
       
+      // Apply transform function to each item if provided
+      let transformedData = result.data || [];
+      if (options.transformResponse && Array.isArray(transformedData)) {
+        transformedData = transformedData.map(item => options.transformResponse!(item));
+      }
+      
       return {
-        data: result.data || [],
+        data: transformedData,
         error: null,
         status: 'success' as const
       };
