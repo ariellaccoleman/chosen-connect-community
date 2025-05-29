@@ -3,7 +3,7 @@
  * Tag assignment operations using the API factory pattern - cleaned up version
  * Updated to use repository layer for proper client injection
  */
-import { createApiFactory } from '@/api/core/factory/apiFactory';
+import { createApiFactory, createViewApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from '@/utils/tags/types';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 
@@ -31,11 +31,10 @@ export function createTagAssignmentCoreOperations(client?: any) {
  * Factory function to create enriched tag assignment operations with optional client injection
  */
 export function createEnrichedTagAssignmentOperations(client?: any) {
-  // Create a factory for the entity_tag_assignments_view that properly handles client injection
-  const viewFactory = createApiFactory<any>({
-    tableName: 'entity_tag_assignments_view',
+  // Create a view factory for the entity_tag_assignments_view that properly handles client injection
+  const viewFactory = createViewApiFactory<any>({
+    viewName: 'entity_tag_assignments_view',
     entityName: 'EntityTagAssignment',
-    useMutationOperations: false,
     defaultSelect: '*',
     transformResponse: (item: any) => item
   }, client);
@@ -48,7 +47,6 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
       filters?: Record<string, any>;
       search?: string;
       searchColumns?: string[];
-      orderBy?: string;
       ascending?: boolean;
       limit?: number;
       offset?: number;
@@ -57,7 +55,6 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
       try {
         const {
           filters = {},
-          orderBy = 'created_at',
           ascending = false,
           limit,
           offset,
@@ -67,7 +64,6 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
         // Use the view factory with proper client injection
         const result = await viewFactory.getAll({
           filters,
-          orderBy,
           ascending,
           limit,
           offset,

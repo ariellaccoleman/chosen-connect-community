@@ -3,7 +3,7 @@
  * Tag business operations - complex operations that combine multiple steps
  * Updated to use repository layer for proper client injection
  */
-import { createApiFactory } from '@/api/core/factory/apiFactory';
+import { createApiFactory, createViewApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
@@ -16,11 +16,10 @@ export function createTagBusinessOperations(client?: any) {
   // Get client-aware core operations
   const tagBase = createTagCoreOperations(client);
 
-  // Create a factory for the filtered_entity_tags_view that properly handles client injection
-  const viewFactory = createApiFactory<any>({
-    tableName: 'filtered_entity_tags_view',
+  // Create a view factory for the filtered_entity_tags_view that properly handles client injection
+  const viewFactory = createViewApiFactory<any>({
+    viewName: 'filtered_entity_tags_view',
     entityName: 'FilteredEntityTag',
-    useMutationOperations: false,
     defaultSelect: '*',
     transformResponse: (item: any) => item
   }, client);
