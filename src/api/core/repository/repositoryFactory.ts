@@ -1,7 +1,7 @@
+
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
 import { createMockRepository } from './MockRepository';
-import { supabase } from '@/integrations/supabase/client';
 import { ViewRepository, createViewRepository } from './ViewRepository';
 
 /**
@@ -14,27 +14,28 @@ export interface RepositoryOptions {
 }
 
 /**
- * Factory function to create data repositories
+ * Factory function to create data repositories with mandatory client
  */
 export function createRepository<T>(
   tableName: string,
+  client: any, // Mandatory client parameter
   options: RepositoryOptions = {}
 ): BaseRepository<T> {
   const schema = options.schema || 'public';
   console.log(`Creating repository for table: ${tableName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
-    throw new Error(`Supabase client is not available for table ${tableName}`);
+  // Verify client is provided
+  if (!client) {
+    throw new Error(`Client is required for table ${tableName}`);
   }
   
-  console.log('Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase
+  console.log('Client verification:', {
+    hasClient: !!client,
+    hasFrom: !!(client && client.from),
+    clientType: typeof client
   });
   
-  return createSupabaseRepository<T>(tableName, supabase, schema);
+  return createSupabaseRepository<T>(tableName, client, schema);
 }
 
 /**
@@ -42,6 +43,7 @@ export function createRepository<T>(
  */
 export function createTestingRepository<T>(
   tableName: string,
+  client: any, // Mandatory client parameter
   options: { 
     schema?: string;
     initialData?: any[];
@@ -51,21 +53,20 @@ export function createTestingRepository<T>(
   const schema = options.schema || 'testing';
   console.log(`Creating testing repository for table: ${tableName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
-    throw new Error(`Supabase client is not available for testing table ${tableName}`);
+  // Verify client is provided
+  if (!client) {
+    throw new Error(`Client is required for testing table ${tableName}`);
   }
   
-  console.log('Testing repository Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase,
+  console.log('Testing repository client verification:', {
+    hasClient: !!client,
+    hasFrom: !!(client && client.from),
+    clientType: typeof client,
     environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
   });
   
   // Always use a real Supabase repository with the specified schema
-  // Never use mock repositories, even in test environments
-  return createRepository<T>(tableName, { 
+  return createRepository<T>(tableName, client, { 
     schema: schema,
     enableLogging: options.enableLogging || true
   });
@@ -76,31 +77,27 @@ export function createTestingRepository<T>(
  */
 export function createViewRepositoryInstance<T>(
   viewName: string,
+  client: any, // Mandatory client parameter
   options: { 
     schema?: string;
     enableLogging?: boolean;
-  } = {},
-  providedClient?: any // Add client parameter
+  } = {}
 ): ViewRepository<T> {
   const schema = options.schema || 'public';
   console.log(`Creating view repository for view: ${viewName}, schema: ${schema}`);
   
-  // Use provided client or fall back to default supabase client
-  const clientToUse = providedClient || supabase;
-  
-  // Verify client is available
-  if (!clientToUse) {
-    throw new Error(`Supabase client is not available for view ${viewName}`);
+  // Verify client is provided
+  if (!client) {
+    throw new Error(`Client is required for view ${viewName}`);
   }
   
   console.log('View repository client verification:', {
-    hasClient: !!clientToUse,
-    hasFrom: !!(clientToUse && clientToUse.from),
-    clientType: typeof clientToUse,
-    isProvidedClient: !!providedClient
+    hasClient: !!client,
+    hasFrom: !!(client && client.from),
+    clientType: typeof client
   });
   
-  const viewRepo = createViewRepository<T>(viewName, clientToUse, schema);
+  const viewRepo = createViewRepository<T>(viewName, client, schema);
   
   if (options.enableLogging) {
     viewRepo.setOptions({ enableLogging: true });
@@ -114,36 +111,32 @@ export function createViewRepositoryInstance<T>(
  */
 export function createTestingViewRepository<T>(
   viewName: string,
+  client: any, // Mandatory client parameter
   options: { 
     schema?: string;
     enableLogging?: boolean;
-  } = {},
-  providedClient?: any // Add client parameter
+  } = {}
 ): ViewRepository<T> {
   const schema = options.schema || 'testing';
   console.log(`Creating testing view repository for view: ${viewName}, schema: ${schema}`);
   
-  // Use provided client or fall back to default supabase client
-  const clientToUse = providedClient || supabase;
-  
-  // Verify client is available
-  if (!clientToUse) {
-    throw new Error(`Supabase client is not available for testing view ${viewName}`);
+  // Verify client is provided
+  if (!client) {
+    throw new Error(`Client is required for testing view ${viewName}`);
   }
   
   console.log('Testing view repository client verification:', {
-    hasClient: !!clientToUse,
-    hasFrom: !!(clientToUse && clientToUse.from),
-    clientType: typeof clientToUse,
-    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser',
-    isProvidedClient: !!providedClient
+    hasClient: !!client,
+    hasFrom: !!(client && client.from),
+    clientType: typeof client,
+    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
   });
   
   // Always use a real Supabase view repository with the specified schema
-  return createViewRepositoryInstance<T>(viewName, { 
+  return createViewRepositoryInstance<T>(viewName, client, { 
     schema: schema,
     enableLogging: options.enableLogging || true
-  }, clientToUse);
+  });
 }
 
 // Export repository types for easier imports

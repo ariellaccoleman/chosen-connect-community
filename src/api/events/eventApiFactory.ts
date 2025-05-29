@@ -4,46 +4,65 @@ import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { extendApiOperations } from "@/api/core/apiExtension";
 
 /**
- * Factory for event API operations  
+ * Create event API with client injection support
+ * Now uses lazy client resolution to avoid early instantiation
  */
-export const eventApi = createApiFactory<
-  Event,
-  string,
-  Partial<Event>,
-  Partial<Event>
->({
-  tableName: 'events',
-  entityName: 'Event',
-  idField: 'id',
-  defaultSelect: `
-    *,
-    location:locations(*),
-    tag:tags(*)
-  `,
-  useMutationOperations: true,
-  useBatchOperations: false,
-  transformResponse: (data) => {
-    return {
-      ...data,
-      // Ensure proper formatting of related data
-      location: data.location || null,
-      tag: data.tag || null
-    };
-  },
-  transformRequest: (data) => {
-    // Clean up data for insert/update
-    const cleanedData: Record<string, any> = { ...data };
-    
-    // Remove nested objects that should not be sent to the database
-    delete cleanedData.location;
-    delete cleanedData.tag;
-    
-    // Ensure updated_at is set for updates
-    if (!cleanedData.updated_at) {
-      cleanedData.updated_at = new Date().toISOString();
+const createEventApi = (providedClient?: any) => {
+  return createApiFactory<
+    Event,
+    string,
+    Partial<Event>,
+    Partial<Event>
+  >({
+    tableName: 'events',
+    entityName: 'Event',
+    idField: 'id',
+    defaultSelect: `
+      *,
+      location:locations(*),
+      tag:tags(*)
+    `,
+    useMutationOperations: true,
+    useBatchOperations: false,
+    transformResponse: (data) => {
+      return {
+        ...data,
+        // Ensure proper formatting of related data
+        location: data.location || null,
+        tag: data.tag || null
+      };
+    },
+    transformRequest: (data) => {
+      // Clean up data for insert/update
+      const cleanedData: Record<string, any> = { ...data };
+      
+      // Remove nested objects that should not be sent to the database
+      delete cleanedData.location;
+      delete cleanedData.tag;
+      
+      // Ensure updated_at is set for updates
+      if (!cleanedData.updated_at) {
+        cleanedData.updated_at = new Date().toISOString();
+      }
+      
+      return cleanedData;
     }
-    
-    return cleanedData;
+  }, providedClient);
+};
+
+// For backward compatibility - lazy-loaded instance
+let _eventApiInstance: any = null;
+
+/**
+ * Lazy-loaded event API instance
+ * Only created when first accessed to avoid early instantiation
+ */
+export const eventApi = new Proxy({} as any, {
+  get(target, prop) {
+    if (!_eventApiInstance) {
+      _eventApiInstance = createEventApi();
+    }
+    return _eventApiInstance[prop];
   }
 });
 
@@ -64,12 +83,10 @@ export const extendedEventApi = extendApiOperations(eventApi, {
   }
 });
 
-// Export specific operations for more granular imports
-export const {
-  getAll: getAllEvents,
-  getById: getEventById,
-  getByIds: getEventsByIds,
-  create: createEvent,
-  update: updateEvent,
-  delete: deleteEvent
-} = eventApi;
+// Export specific operations for more granular imports - these will also be lazy
+export const getAllEvents = (...args: any[]) => eventApi.getAll(...args);
+export const getEventById = (...args: any[]) => eventApi.getById(...args);
+export const getEventsByIds = (...args: any[]) => eventApi.getByIds(...args);
+export const createEvent = (...args: any[]) => eventApi.create(...args);
+export const updateEvent = (...args: any[]) => eventApi.update(...args);
+export const deleteEvent = (...args: any[]) => eventApi.delete(...args);

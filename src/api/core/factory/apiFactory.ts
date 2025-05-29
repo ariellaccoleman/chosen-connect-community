@@ -191,47 +191,57 @@ export function createApiFactory<
     throw new Error('tableName is required to create API operations');
   }
   
-  // Get repository based on provided options
-  let dataRepository: DataRepository<T>;
-  
-  if (repository) {
-    if (typeof repository === 'function') {
-      dataRepository = repository();
-    } else if ('select' in repository && typeof repository.select === 'function') {
-      // It's a repository instance
-      dataRepository = repository as DataRepository<T>;
-    } else {
-      // It's a repository config
-      const repoConfig = repository as RepositoryConfig<T>;
-      
-      if (repoConfig.enhanced) {
-        dataRepository = createEnhancedRepository<T>(
-          tableName as string, 
-          repoConfig.type,
-          repoConfig.initialData,
-          {
-            idField: options.idField,
-            defaultSelect: options.defaultSelect,
-            transformResponse: options.transformResponse,
-            transformRequest: options.transformRequest,
-            softDelete: options.softDelete,
-            enableLogging: repoConfig.enableLogging
-          }
-        );
+  // Lazy repository creation function that requires client
+  const createLazyRepository = () => {
+    if (repository) {
+      if (typeof repository === 'function') {
+        return repository();
+      } else if ('select' in repository && typeof repository.select === 'function') {
+        // It's a repository instance
+        return repository as DataRepository<T>;
       } else {
-        dataRepository = createRepository<T>(
-          tableName as string, 
-          { schema: 'public' }
-        );
+        // It's a repository config - need client for creation
+        const repoConfig = repository as RepositoryConfig<T>;
+        
+        if (repoConfig.enhanced) {
+          return createEnhancedRepository<T>(
+            tableName as string, 
+            repoConfig.type,
+            repoConfig.initialData,
+            {
+              idField: options.idField,
+              defaultSelect: options.defaultSelect,
+              transformResponse: options.transformResponse,
+              transformRequest: options.transformRequest,
+              softDelete: options.softDelete,
+              enableLogging: repoConfig.enableLogging
+            }
+          );
+        } else {
+          // Need to get client lazily
+          const getClient = async () => {
+            if (providedClient) return providedClient;
+            const { supabase } = await import("@/integrations/supabase/client");
+            return supabase;
+          };
+          
+          return {
+            // Lazy repository methods that get client when called
+            select: () => {
+              throw new Error('Repository requires lazy initialization with client');
+            }
+          } as DataRepository<T>;
+        }
       }
+    } else {
+      // Return lazy repository that will be initialized with client when needed
+      return {
+        select: () => {
+          throw new Error('Repository requires lazy initialization with client');
+        }
+      } as DataRepository<T>;
     }
-  } else {
-    // Create default repository
-    dataRepository = createRepository<T>(tableName as string);
-  }
-  
-  // Create client-aware repository that can handle both repository and direct client access
-  const clientAwareRepository = createClientAwareRepository(dataRepository, tableName as string, providedClient);
+  };
   
   // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
@@ -239,13 +249,13 @@ export function createApiFactory<
       tableName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
       'Entity');
   
-  // Base operations are always included - includes query operations by default
+  // Base operations are always included - use lazy client resolution
   const baseOps = createBaseOperations<T, TId, TCreate, TUpdate, Table>(
     entity,
     tableName,
     {
       ...options,
-      repository: clientAwareRepository
+      repository: createLazyRepository()
     },
     providedClient
   );
@@ -267,7 +277,7 @@ export function createApiFactory<
         softDelete: options.softDelete,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: clientAwareRepository
+        repository: createLazyRepository()
       },
       providedClient
     );
@@ -284,7 +294,7 @@ export function createApiFactory<
         defaultSelect: options.defaultSelect,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: clientAwareRepository
+        repository: createLazyRepository()
       },
       providedClient
     );
@@ -365,149 +375,25 @@ export function createViewApiFactory<
     throw new Error('viewName is required to create view operations');
   }
   
-  // Create ViewRepository instance with proper client injection
-  const viewRepository: ViewRepository<T> = createViewRepository<T>(
-    viewName as string,
-    providedClient, // Pass the provided client here
-    'public'
-  );
-  
-  // Set repository options if provided
-  if (options.idField || options.defaultSelect || options.transformResponse || options.enableLogging) {
-    viewRepository.setOptions({
-      idField: options.idField || 'id',
-      defaultSelect: options.defaultSelect || '*',
-      transformResponse: options.transformResponse,
-      enableLogging: options.enableLogging || false
-    });
-  }
-  
-  // Use entityName or generate from viewName (with safety check)
-  const entity = entityName || 
-    (typeof viewName === 'string' ? 
-      viewName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
-      'ViewEntity');
-  
-  // Create view operations using the ViewRepository
-  const viewOperations: ViewOperations<T, TId> = {
-    /**
-     * Get all records from the view
-     */
-    async getAll(params: {
-      filters?: Record<string, any>;
-      search?: string;
-      searchColumns?: string[];
-      ascending?: boolean;
-      limit?: number;
-      offset?: number;
-      select?: string;
-    } = {}) {
-      const {
-        filters = {},
-        ascending = false,
-        limit,
-        offset,
-        select = '*'
-      } = params;
-
-      let query = viewRepository.select(select);
-      
-      // Apply filters
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          if (Array.isArray(value)) {
-            query = query.in(key, value);
-          } else {
-            query = query.eq(key, value);
-          }
-        }
-      });
-      
-      // Apply ordering
-      if (options.defaultOrderBy) {
-        query = query.order(options.defaultOrderBy, { ascending });
-      }
-      
-      // Apply pagination
-      if (limit) {
-        query = query.limit(limit);
-      }
-      
-      if (offset) {
-        query = query.offset(offset);
-      }
-      
-      const result = await query.execute();
-      
-      if (result.isError()) {
-        throw new Error(result.getErrorMessage());
-      }
-      
-      // Apply transform function to each item if provided
-      let transformedData = result.data || [];
-      if (options.transformResponse && Array.isArray(transformedData)) {
-        transformedData = transformedData.map(item => options.transformResponse!(item));
-      }
-      
-      return {
-        data: transformedData,
-        error: null,
-        status: 'success' as const
-      };
-    },
-
-    /**
-     * Get a record by ID from the view
-     */
-    async getById(id: TId) {
-      const record = await viewRepository.getById(id as string | number);
-      
-      // Apply transform function if provided
-      let transformedRecord: T | null = record;
-      if (options.transformResponse && record) {
-        transformedRecord = options.transformResponse(record);
-      }
-      
-      return {
-        data: transformedRecord,
-        error: null,
-        status: 'success' as const
-      };
-    },
-
-    /**
-     * Get multiple records by IDs from the view
-     */
-    async getByIds(ids: TId[]) {
-      const query = viewRepository.select().in('id', ids as (string | number)[]);
-      const result = await query.execute();
-      
-      if (result.isError()) {
-        throw new Error(result.getErrorMessage());
-      }
-      
-      // Apply transform function to each item if provided
-      let transformedData = result.data || [];
-      if (options.transformResponse && Array.isArray(transformedData)) {
-        transformedData = transformedData.map(item => options.transformResponse!(item));
-      }
-      
-      return {
-        data: transformedData,
-        error: null,
-        status: 'success' as const
-      };
-    },
-
-    viewName: viewName as string
+  // Lazy view repository creation that requires client
+  const createLazyViewRepository = async (): Promise<ViewRepository<T>> => {
+    const client = providedClient || (await import("@/integrations/supabase/client")).supabase;
+    return createViewRepository<T>(
+      viewName as string,
+      client,
+      'public'
+    );
   };
   
-  return viewOperations;
+  // Return view operations that use lazy client resolution
+  return {
+    async getAll(params) {
+      const viewRepo = await createLazyViewRepository();
+      return viewRepo.getAll(params);
+    },
+    async getById(id) {
+      const viewRepo = await createLazyViewRepository();
+      return viewRepo.getById(id as string);
+    }
+  } as ViewOperations<T, TId>;
 }
-
-/**
- * Alias for createApiFactory for backwards compatibility
- */
-export const createApiOperations = createApiFactory;
-
-export * from "./types";
