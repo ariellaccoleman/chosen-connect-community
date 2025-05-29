@@ -20,6 +20,7 @@ export function createTagApi(client?: any): ApiOperations<any> {
     // Core CRUD operations only - standardized interface
     getAll: coreOps.getAll,
     getById: coreOps.getById,
+    getByIds: coreOps.getByIds, // Added missing method for ApiOperations compliance
     create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete
@@ -37,6 +38,7 @@ export function createExtendedTagApi(client?: any) {
     // Core CRUD operations - standardized interface
     getAll: coreOps.getAll,
     getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
     create: coreOps.create,
     update: coreOps.update,
     delete: coreOps.delete,
@@ -60,6 +62,7 @@ export function createTagAssignmentApi(client?: any): ApiOperations<any> {
     // Core CRUD operations only - standardized interface
     getAll: enrichedOps.getAll, // Use enriched version for tag assignments
     getById: coreOps.getById,
+    getByIds: coreOps.getByIds, // Added missing method for ApiOperations compliance
     create: coreOps.create, // Standard create signature (data: Partial<T>)
     update: coreOps.update,
     delete: coreOps.delete
@@ -78,6 +81,7 @@ export function createExtendedTagAssignmentApi(client?: any) {
     // Core CRUD operations - standardized interface
     getAll: enrichedOps.getAll, // Use enriched version for tag assignments
     getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
     create: (tagId: string, entityId: string, entityType: EntityType) => 
       businessOps.create(tagId, entityId, entityType),
     update: coreOps.update,
