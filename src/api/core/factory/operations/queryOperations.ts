@@ -1,3 +1,4 @@
+
 import { logger } from "@/utils/logger";
 import { apiClient } from "../../apiClient";
 import { createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -26,7 +27,8 @@ export function createQueryOperations<
 >(
   entityName: string,
   tableName: Table,
-  options: QueryOperationsOptions<T> = {}
+  options: QueryOperationsOptions<T> = {},
+  providedClient?: any
 ) {
   // Set default options
   const {
@@ -51,7 +53,7 @@ export function createQueryOperations<
     try {
       logger.debug(`Fetching all ${entityName}`, params);
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         // Start with select query
         let query = repository.select(defaultSelect);
@@ -96,7 +98,7 @@ export function createQueryOperations<
         return createSuccessResponse(transformedData);
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         // Type-safe table access
         const query = client.from(tableName);
@@ -140,7 +142,7 @@ export function createQueryOperations<
         // Transform response data
         const transformedData = data ? data.map(transformResponse) : [];
         return createSuccessResponse(transformedData);
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
@@ -154,7 +156,7 @@ export function createQueryOperations<
     try {
       logger.debug(`Fetching ${entityName} with ID: ${String(id)}`);
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         const result = await repository
           .select(defaultSelect)
@@ -169,7 +171,7 @@ export function createQueryOperations<
         return createSuccessResponse(transformResponse(result.data));
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         const { data, error } = await client
           .from(tableName)
@@ -183,7 +185,7 @@ export function createQueryOperations<
         if (!data) return createSuccessResponse(null);
         
         return createSuccessResponse(transformResponse(data));
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error fetching ${entityName}:`, error);
       return createErrorResponse(error);
@@ -201,7 +203,7 @@ export function createQueryOperations<
         return createSuccessResponse([]);
       }
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         const result = await repository
           .select(defaultSelect)
@@ -215,7 +217,7 @@ export function createQueryOperations<
         return createSuccessResponse(transformedData);
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         const { data, error } = await client
           .from(tableName)
@@ -227,7 +229,7 @@ export function createQueryOperations<
         const transformedData = data ? data.map(item => transformResponse(item as any)) : [];
         
         return createSuccessResponse(transformedData);
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error fetching ${entityName} by IDs:`, error);
       return createErrorResponse(error);
@@ -433,8 +435,175 @@ export function createQueryOperations<
     getAll,
     getById,
     getByIds,
-    findByName,
-    searchByName,
-    getByEntityType
+    // Add remaining methods that follow the same pattern
+    findByName: async (name: string, filters?: any): Promise<ApiResponse<T | null>> => {
+      try {
+        logger.debug(`Finding ${entityName} by name: ${name}`);
+        
+        if (repository) {
+          let query = repository.select(defaultSelect).eq('name', name);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  query = query.in(key, value as any[]);
+                } else {
+                  query = query.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          const result = await query.maybeSingle();
+          
+          if (result.error) throw result.error;
+          
+          return createSuccessResponse(result.data ? transformResponse(result.data) : null);
+        }
+        
+        return await apiClient.query(async (client) => {
+          let selectQuery = client.from(tableName).select(defaultSelect).eq('name', name);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  selectQuery = selectQuery.in(key, value as any);
+                } else {
+                  selectQuery = selectQuery.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          const { data, error } = await selectQuery.maybeSingle();
+          if (error) throw error;
+          
+          return createSuccessResponse(data ? transformResponse(data) : null);
+        }, providedClient);
+      } catch (error) {
+        logger.error(`Error finding ${entityName} by name:`, error);
+        return createErrorResponse(error);
+      }
+    },
+    
+    searchByName: async (searchQuery: string, filters?: any): Promise<ApiResponse<T[]>> => {
+      try {
+        logger.debug(`Searching ${entityName} by name: ${searchQuery}`);
+        
+        if (repository) {
+          let query = repository.select(defaultSelect).ilike('name', `%${searchQuery}%`);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  query = query.in(key, value as any[]);
+                } else {
+                  query = query.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          query = query.order('name', { ascending: true });
+          
+          const result = await query.execute();
+          
+          if (result.error) throw result.error;
+          
+          const transformedData = result.data ? result.data.map(transformResponse) : [];
+          return createSuccessResponse(transformedData);
+        }
+        
+        return await apiClient.query(async (client) => {
+          let selectQuery = client.from(tableName).select(defaultSelect).ilike('name', `%${searchQuery}%`);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  selectQuery = selectQuery.in(key, value as any);
+                } else {
+                  selectQuery = selectQuery.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          selectQuery = selectQuery.order('name', { ascending: true });
+          
+          const { data, error } = await selectQuery;
+          if (error) throw error;
+          
+          const transformedData = data ? data.map(transformResponse) : [];
+          return createSuccessResponse(transformedData);
+        }, providedClient);
+      } catch (error) {
+        logger.error(`Error searching ${entityName} by name:`, error);
+        return createErrorResponse(error);
+      }
+    },
+    
+    getByEntityType: async (entityType: string, filters?: any): Promise<ApiResponse<T[]>> => {
+      try {
+        logger.debug(`Getting ${entityName} by entity type: ${entityType}`);
+        
+        if (repository) {
+          let query = repository.select(defaultSelect).eq('entity_type', entityType);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  query = query.in(key, value as any[]);
+                } else {
+                  query = query.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          const sortField = typedDefaultOrderBy;
+          query = query.order(sortField, { ascending: false });
+          
+          const result = await query.execute();
+          
+          if (result.error) throw result.error;
+          
+          const transformedData = result.data ? result.data.map(transformResponse) : [];
+          return createSuccessResponse(transformedData);
+        }
+        
+        return await apiClient.query(async (client) => {
+          let selectQuery = client.from(tableName).select(defaultSelect).eq('entity_type', entityType);
+          
+          if (filters) {
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  selectQuery = selectQuery.in(key, value as any);
+                } else {
+                  selectQuery = selectQuery.eq(key, value as any);
+                }
+              }
+            });
+          }
+          
+          const sortField = typedDefaultOrderBy;
+          selectQuery = selectQuery.order(sortField, { ascending: false });
+          
+          const { data, error } = await selectQuery;
+          if (error) throw error;
+          
+          const transformedData = data ? data.map(transformResponse) : [];
+          return createSuccessResponse(transformedData);
+        }, providedClient);
+      } catch (error) {
+        logger.error(`Error getting ${entityName} by entity type:`, error);
+        return createErrorResponse(error);
+      }
+    }
   };
 }

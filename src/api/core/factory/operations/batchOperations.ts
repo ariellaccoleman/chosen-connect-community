@@ -1,7 +1,9 @@
+
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
 import { ApiResponse, createSuccessResponse, createErrorResponse } from "../../errorHandler";
+import { apiClient } from "../../apiClient";
 
 /**
  * Creates standardized batch operations for a specific entity type
@@ -22,7 +24,8 @@ export function createBatchOperations<
     transformRequest?: (item: any) => Record<string, any>;
     repository?: DataRepository<T>;
     softDelete?: boolean;
-  } = {}
+  } = {},
+  providedClient?: any
 ) {
   // Extract options with defaults
   const {
@@ -48,17 +51,34 @@ export function createBatchOperations<
         // Transform items if needed
         const requestData = items.map((item) => transformRequest(item as unknown as Record<string, any>));
         
-        // Execute the query and wait for the result
-        const result = await repository.insert(requestData).select(select).execute();
-        
-        if (result.error) throw result.error;
-        
-        // Transform each result if needed
-        const transformedData = Array.isArray(result.data) 
-          ? result.data.map(transformResponse)
-          : [];
+        // Use repository if provided, otherwise use apiClient with optional client injection
+        if (repository) {
+          const result = await repository.insert(requestData).select(select).execute();
           
-        return createSuccessResponse(transformedData);
+          if (result.error) throw result.error;
+          
+          const transformedData = Array.isArray(result.data) 
+            ? result.data.map(transformResponse)
+            : [];
+            
+          return createSuccessResponse(transformedData);
+        }
+        
+        // Use apiClient with optional client injection
+        return await apiClient.query(async (client) => {
+          const { data, error } = await client
+            .from(tableName)
+            .insert(requestData as any)
+            .select(select);
+          
+          if (error) throw error;
+          
+          const transformedData = Array.isArray(data) 
+            ? data.map(transformResponse)
+            : [];
+            
+          return createSuccessResponse(transformedData);
+        }, providedClient);
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -70,7 +90,7 @@ export function createBatchOperations<
     async batchUpdate(
       items: (TUpdate & { [key: string]: TId })[],
       select: string = defaultSelect
-    ): Promise<ApiResponse<T[]>> {
+    ): Promise<ApiResponse<T[]>> => {
       try {
         const results: T[] = [];
         
@@ -82,19 +102,38 @@ export function createBatchOperations<
           // Transform data if needed
           const requestData = transformRequest(item as unknown as Record<string, any>);
           
-          // Execute the update
-          const result = await repository
-            .update(requestData)
-            .eq(idField, id as any)
-            .select(select)
-            .execute();
-          
-          if (result.error) throw result.error;
-          
-          if (result.data) {
-            // Transform result if needed
-            const transformedItem = Array.isArray(result.data) ? result.data[0] : result.data;
-            results.push(transformResponse(transformedItem));
+          // Use repository if provided, otherwise use apiClient with optional client injection
+          if (repository) {
+            const result = await repository
+              .update(requestData)
+              .eq(idField, id as any)
+              .select(select)
+              .execute();
+            
+            if (result.error) throw result.error;
+            
+            if (result.data) {
+              const transformedItem = Array.isArray(result.data) ? result.data[0] : result.data;
+              results.push(transformResponse(transformedItem));
+            }
+          } else {
+            // Use apiClient with optional client injection
+            const apiResult = await apiClient.query(async (client) => {
+              const { data, error } = await client
+                .from(tableName)
+                .update(requestData as any)
+                .eq(idField, id as any)
+                .select(select);
+              
+              if (error) throw error;
+              
+              return data;
+            }, providedClient);
+            
+            if (apiResult.data) {
+              const transformedItem = Array.isArray(apiResult.data) ? apiResult.data[0] : apiResult.data;
+              results.push(transformResponse(transformedItem));
+            }
           }
         }
         
@@ -109,24 +148,44 @@ export function createBatchOperations<
      */
     async batchDelete(
       ids: TId[]
-    ): Promise<ApiResponse<boolean>> {
+    ): Promise<ApiResponse<boolean>> => {
       try {
-        // If softDelete is enabled, update the deleted_at field
-        if (softDelete) {
-          const result = await repository
-            .update({ deleted_at: new Date().toISOString() })
-            .in(idField, ids as any[])
-            .execute();
+        // Use repository if provided, otherwise use apiClient with optional client injection
+        if (repository) {
+          if (softDelete) {
+            const result = await repository
+              .update({ deleted_at: new Date().toISOString() })
+              .in(idField, ids as any[])
+              .execute();
+              
+            if (result.error) throw result.error;
+          } else {
+            const result = await repository
+              .delete()
+              .in(idField, ids as any[])
+              .execute();
             
-          if (result.error) throw result.error;
+            if (result.error) throw result.error;
+          }
         } else {
-          // Otherwise, perform a hard delete
-          const result = await repository
-            .delete()
-            .in(idField, ids as any[])
-            .execute();
-          
-          if (result.error) throw result.error;
+          // Use apiClient with optional client injection
+          await apiClient.query(async (client) => {
+            if (softDelete) {
+              const { error } = await client
+                .from(tableName)
+                .update({ deleted_at: new Date().toISOString() } as any)
+                .in(idField, ids as any[]);
+                
+              if (error) throw error;
+            } else {
+              const { error } = await client
+                .from(tableName)
+                .delete()
+                .in(idField, ids as any[]);
+              
+              if (error) throw error;
+            }
+          }, providedClient);
         }
         
         return createSuccessResponse(true);

@@ -30,7 +30,8 @@ export function createBaseOperations<
 >(
   entityName: string,
   tableName: Table,
-  options: BaseOperationsOptions<T> = {}
+  options: BaseOperationsOptions<T> = {},
+  providedClient?: any
 ) {
   // Create query operations (getAll, getById, getByIds)
   const queryOperations = createQueryOperations<T, TId, Table>(
@@ -42,7 +43,8 @@ export function createBaseOperations<
       defaultOrderBy: options.defaultOrderBy,
       transformResponse: options.transformResponse,
       repository: options.repository
-    }
+    },
+    providedClient
   );
   
   // Create mutation operations (create, update, delete)
@@ -56,7 +58,8 @@ export function createBaseOperations<
       transformResponse: options.transformResponse,
       transformRequest: options.transformRequest,
       repository: options.repository
-    }
+    },
+    providedClient
   );
   
   // Combine all operations

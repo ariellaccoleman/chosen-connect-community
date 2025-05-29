@@ -57,9 +57,111 @@ export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'reposit
 }
 
 /**
+ * Create a client-aware repository wrapper that can use either repository or direct client access
+ */
+function createClientAwareRepository<T>(
+  baseRepository: DataRepository<T>, 
+  tableName: string,
+  providedClient?: any
+): DataRepository<T> {
+  if (!providedClient) {
+    return baseRepository;
+  }
+  
+  // Return a repository-like interface that uses the provided client
+  return {
+    ...baseRepository,
+    select: (columns: string = '*') => {
+      let query = providedClient.from(tableName).select(columns);
+      return {
+        ...query,
+        eq: (column: string, value: any) => {
+          query = query.eq(column, value);
+          return { ...query, execute: () => query, maybeSingle: () => query.maybeSingle() };
+        },
+        in: (column: string, values: any[]) => {
+          query = query.in(column, values);
+          return { ...query, execute: () => query };
+        },
+        ilike: (column: string, pattern: string) => {
+          query = query.ilike(column, pattern);
+          return { ...query, execute: () => query };
+        },
+        order: (column: string, options: any) => {
+          query = query.order(column, options);
+          return { ...query, execute: () => query };
+        },
+        range: (from: number, to: number) => {
+          query = query.range(from, to);
+          return { ...query, execute: () => query };
+        },
+        execute: () => query,
+        single: () => query.single(),
+        maybeSingle: () => query.maybeSingle()
+      };
+    },
+    insert: (data: any) => {
+      let query = providedClient.from(tableName).insert(data);
+      return {
+        ...query,
+        select: (columns: string = '*') => {
+          query = query.select(columns);
+          return { ...query, execute: () => query, single: () => query.single() };
+        },
+        execute: () => query,
+        single: () => query.single()
+      };
+    },
+    update: (data: any) => {
+      let query = providedClient.from(tableName).update(data);
+      return {
+        ...query,
+        eq: (column: string, value: any) => {
+          query = query.eq(column, value);
+          return { 
+            ...query, 
+            select: (columns: string = '*') => {
+              query = query.select(columns);
+              return { ...query, execute: () => query, single: () => query.single() };
+            },
+            execute: () => query, 
+            single: () => query.single() 
+          };
+        },
+        execute: () => query,
+        single: () => query.single()
+      };
+    },
+    delete: () => {
+      let query = providedClient.from(tableName).delete();
+      return {
+        ...query,
+        eq: (column: string, value: any) => {
+          query = query.eq(column, value);
+          return { 
+            ...query, 
+            select: (columns: string = '*') => {
+              query = query.select(columns);
+              return { ...query, execute: () => query };
+            },
+            execute: () => query 
+          };
+        },
+        in: (column: string, values: any[]) => {
+          query = query.in(column, values);
+          return { ...query, execute: () => query };
+        },
+        execute: () => query
+      };
+    }
+  } as DataRepository<T>;
+}
+
+/**
  * Creates a complete API factory with all operations that support client injection
  * 
  * @param config - Configuration for the API factory
+ * @param providedClient - Optional Supabase client for testing/custom usage
  * @returns API operations for the entity with client injection support
  */
 export function createApiFactory<
@@ -81,7 +183,7 @@ export function createApiFactory<
   repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
   useMutationOperations?: boolean;
   useBatchOperations?: boolean;
-} & ApiFactoryOptions<T>): ApiOperations<T, TId, TCreate, TUpdate> {
+} & ApiFactoryOptions<T>, providedClient?: any): ApiOperations<T, TId, TCreate, TUpdate> {
   // Validate tableName is defined
   if (!tableName) {
     throw new Error('tableName is required to create API operations');
@@ -115,7 +217,6 @@ export function createApiFactory<
           }
         );
       } else {
-        // Fix: Pass only two arguments instead of three
         dataRepository = createRepository<T>(
           tableName as string, 
           { schema: 'public' }
@@ -126,6 +227,9 @@ export function createApiFactory<
     // Create default repository
     dataRepository = createRepository<T>(tableName as string);
   }
+  
+  // Create client-aware repository that can handle both repository and direct client access
+  const clientAwareRepository = createClientAwareRepository(dataRepository, tableName as string, providedClient);
   
   // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
@@ -139,87 +243,14 @@ export function createApiFactory<
     tableName,
     {
       ...options,
-      repository: dataRepository
-    }
+      repository: clientAwareRepository
+    },
+    providedClient
   );
   
-  // Wrap base operations to support providedClient parameter
-  const wrappedBaseOps = {
-    ...baseOps,
-    async getAll(optionsOrClient?: any, providedClient?: any): Promise<any> {
-      // Handle both old signature and new signature with client
-      const actualClient = providedClient || (typeof optionsOrClient === 'object' && optionsOrClient?.auth ? optionsOrClient : undefined);
-      const actualOptions = actualClient ? optionsOrClient : (optionsOrClient || {});
-      
-      if (actualClient) {
-        // Use the provided client by temporarily replacing the repository
-        const originalQuery = dataRepository.select;
-        dataRepository.select = actualClient.from(tableName).select.bind(actualClient.from(tableName));
-        try {
-          return await baseOps.getAll(actualOptions);
-        } finally {
-          dataRepository.select = originalQuery;
-        }
-      }
-      return baseOps.getAll(actualOptions);
-    },
-    
-    async getById(id: TId, providedClient?: any): Promise<any> {
-      if (providedClient) {
-        const originalQuery = dataRepository.select;
-        dataRepository.select = providedClient.from(tableName).select.bind(providedClient.from(tableName));
-        try {
-          return await baseOps.getById(id);
-        } finally {
-          dataRepository.select = originalQuery;
-        }
-      }
-      return baseOps.getById(id);
-    },
-    
-    async create(data: TCreate, providedClient?: any): Promise<any> {
-      if (providedClient) {
-        const originalInsert = dataRepository.insert;
-        dataRepository.insert = providedClient.from(tableName).insert.bind(providedClient.from(tableName));
-        try {
-          return await baseOps.create(data);
-        } finally {
-          dataRepository.insert = originalInsert;
-        }
-      }
-      return baseOps.create(data);
-    },
-    
-    async update(id: TId, data: TUpdate, providedClient?: any): Promise<any> {
-      if (providedClient) {
-        const originalUpdate = dataRepository.update;
-        dataRepository.update = providedClient.from(tableName).update.bind(providedClient.from(tableName));
-        try {
-          return await baseOps.update(id, data);
-        } finally {
-          dataRepository.update = originalUpdate;
-        }
-      }
-      return baseOps.update(id, data);
-    },
-    
-    async delete(id: TId, providedClient?: any): Promise<any> {
-      if (providedClient) {
-        const originalDelete = dataRepository.delete;
-        dataRepository.delete = providedClient.from(tableName).delete.bind(providedClient.from(tableName));
-        try {
-          return await baseOps.delete(id);
-        } finally {
-          dataRepository.delete = originalDelete;
-        }
-      }
-      return baseOps.delete(id);
-    }
-  };
-  
-  // Create a result object with wrapped operations and tableName
+  // Create a result object with base operations and tableName
   const result = {
-    ...wrappedBaseOps,
+    ...baseOps,
     tableName
   } as ApiOperations<T, TId, TCreate, TUpdate>;
   
@@ -234,8 +265,9 @@ export function createApiFactory<
         softDelete: options.softDelete,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: dataRepository
-      }
+        repository: clientAwareRepository
+      },
+      providedClient
     );
     Object.assign(result, mutationOps);
   }
@@ -250,8 +282,9 @@ export function createApiFactory<
         defaultSelect: options.defaultSelect,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: dataRepository
-      }
+        repository: clientAwareRepository
+      },
+      providedClient
     );
     Object.assign(result, batchOps);
   }

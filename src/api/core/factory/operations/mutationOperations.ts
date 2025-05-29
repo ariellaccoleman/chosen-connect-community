@@ -30,7 +30,8 @@ export function createMutationOperations<
 >(
   entityName: string,
   tableName: Table,
-  options: MutationOperationsOptions<T> = {}
+  options: MutationOperationsOptions<T> = {},
+  providedClient?: any
 ) {
   // Set default options
   const {
@@ -57,7 +58,7 @@ export function createMutationOperations<
       
       const transformedData = transformRequest(data as any);
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         const result = await repository
           .insert(transformedData)
@@ -69,7 +70,7 @@ export function createMutationOperations<
         return createSuccessResponse(transformResponse(result.data));
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         const { data: createdData, error } = await client
           .from(tableName)
@@ -80,7 +81,7 @@ export function createMutationOperations<
         if (error) throw error;
         
         return createSuccessResponse(transformResponse(createdData));
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error creating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -96,7 +97,7 @@ export function createMutationOperations<
       
       const transformedData = transformRequest(data as any);
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         const result = await repository
           .update(transformedData)
@@ -109,7 +110,7 @@ export function createMutationOperations<
         return createSuccessResponse(transformResponse(result.data));
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         const { data: updatedData, error } = await client
           .from(tableName)
@@ -121,7 +122,7 @@ export function createMutationOperations<
         if (error) throw error;
         
         return createSuccessResponse(transformResponse(updatedData));
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error updating ${entityName}:`, error);
       return createErrorResponse(error);
@@ -135,7 +136,7 @@ export function createMutationOperations<
     try {
       logger.debug(`Deleting ${entityName} with ID: ${String(id)}`);
       
-      // Use repository if provided, otherwise use apiClient
+      // Use repository if provided, otherwise use apiClient with optional client injection
       if (repository) {
         let result;
         
@@ -168,7 +169,7 @@ export function createMutationOperations<
         return createSuccessResponse(affectedCount > 0);
       }
       
-      // Legacy implementation using apiClient
+      // Use apiClient with optional client injection
       return await apiClient.query(async (client) => {
         let result;
         
@@ -197,7 +198,7 @@ export function createMutationOperations<
         const affectedCount = result.count || (result.data ? result.data.length : 0);
         
         return createSuccessResponse(affectedCount > 0);
-      });
+      }, providedClient);
     } catch (error) {
       logger.error(`Error deleting ${entityName}:`, error);
       return createErrorResponse(error);
