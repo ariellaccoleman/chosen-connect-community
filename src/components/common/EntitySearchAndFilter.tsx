@@ -96,22 +96,24 @@ const EntitySearchAndFilter = ({
                 placeholder={tagPlaceholder}
                 currentSelectedTagId={selectedTagId}
               />
-              {selectedTagId && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={clearTagFilter}
-                  className="mt-2"
-                >
-                  Clear filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
-      <FilterPills filters={filterPills} />
+      <div className="flex items-center justify-between mb-4">
+        <FilterPills filters={filterPills} />
+        {selectedTagId && (
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearTagFilter}
+            className="ml-4"
+          >
+            Clear filter
+          </Button>
+        )}
+      </div>
     </div>
   );
 };
