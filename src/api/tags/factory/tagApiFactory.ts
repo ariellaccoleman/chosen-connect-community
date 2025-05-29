@@ -1,4 +1,3 @@
-
 /**
  * Tag API Factory - Updated to comply with ApiOperations interface for hook factory pattern
  */
@@ -7,7 +6,7 @@ import { createTagAssignmentCoreOperations, createEnrichedTagAssignmentOperation
 import { createTagBusinessOperations } from './tagBusinessOperations';
 import { createTagAssignmentBusinessOperations } from './tagAssignmentBusinessOperations';
 import { EntityType } from '@/types/entityTypes';
-import { ApiOperations } from '@/api/core/factory/types';
+import { ApiOperations } from '@/api/core/types';
 
 /**
  * Factory function to create tag API with ApiOperations interface compliance
