@@ -1,16 +1,32 @@
 
-import { Tag, TagAssignment } from "@/types";
+import { Tag } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
-import { TagWithEntityTypes } from "@/types/tag";
 import { extendApiOperations } from "@/api/core/apiExtension";
 import { EntityType } from "@/types/entityTypes";
+
+// Define TagAssignment interface locally to avoid import issues
+interface TagAssignment {
+  id: string;
+  tag_id: string;
+  target_id: string;
+  target_type: EntityType;
+  created_at: string;
+  updated_at: string;
+  tag?: Tag;
+}
+
+// Define TagWithEntityTypes interface locally
+interface TagWithEntityTypes extends Tag {
+  entity_types: EntityType[];
+  tag_entity_types?: Array<{ entity_type: EntityType }>;
+}
 
 /**
  * Create tag API with client injection support
  * Now uses lazy client resolution to avoid early instantiation
  */
-export const createExtendedTagApi = (providedClient?: any) => {
-  const baseTagApi = createApiFactory<
+const createTagApi = (providedClient?: any) => {
+  return createApiFactory<
     TagWithEntityTypes,
     string,
     Partial<Tag>,
@@ -40,6 +56,42 @@ export const createExtendedTagApi = (providedClient?: any) => {
       return cleanedData;
     }
   }, providedClient);
+};
+
+/**
+ * Create tag assignment API with client injection support
+ * Now uses lazy client resolution to avoid early instantiation
+ */
+const createTagAssignmentApi = (providedClient?: any) => {
+  return createApiFactory<
+    TagAssignment,
+    string,
+    Partial<TagAssignment>,
+    Partial<TagAssignment>
+  >({
+    tableName: 'tag_assignments',
+    entityName: 'TagAssignment',
+    idField: 'id',
+    defaultSelect: `*`,
+    useMutationOperations: true,
+    useBatchOperations: false,
+    transformRequest: (data) => {
+      const cleanedData: Record<string, any> = { ...data };
+      
+      if (!cleanedData.updated_at) {
+        cleanedData.updated_at = new Date().toISOString();
+      }
+      
+      return cleanedData;
+    }
+  }, providedClient);
+};
+
+/**
+ * Create extended tag API with business operations
+ */
+export const createExtendedTagApi = (providedClient?: any) => {
+  const baseTagApi = createTagApi(providedClient);
 
   // Extended operations using the API extension pattern
   return extendApiOperations(baseTagApi, {
@@ -77,32 +129,10 @@ export const createExtendedTagApi = (providedClient?: any) => {
 };
 
 /**
- * Create tag assignment API with client injection support
- * Now uses lazy client resolution to avoid early instantiation
+ * Create extended tag assignment API with business operations
  */
 export const createExtendedTagAssignmentApi = (providedClient?: any) => {
-  const baseTagAssignmentApi = createApiFactory<
-    TagAssignment,
-    string,
-    Partial<TagAssignment>,
-    Partial<TagAssignment>
-  >({
-    tableName: 'tag_assignments',
-    entityName: 'TagAssignment',
-    idField: 'id',
-    defaultSelect: `*`,
-    useMutationOperations: true,
-    useBatchOperations: false,
-    transformRequest: (data) => {
-      const cleanedData: Record<string, any> = { ...data };
-      
-      if (!cleanedData.updated_at) {
-        cleanedData.updated_at = new Date().toISOString();
-      }
-      
-      return cleanedData;
-    }
-  }, providedClient);
+  const baseTagAssignmentApi = createTagAssignmentApi(providedClient);
 
   // Extended operations using the API extension pattern
   return extendApiOperations(baseTagAssignmentApi, {
@@ -154,3 +184,23 @@ export const tagAssignmentApi = new Proxy({} as any, {
     return _tagAssignmentApiInstance[prop];
   }
 });
+
+// Export specific operations for more granular imports - these will also be lazy
+export const getAllTags = (...args: any[]) => tagApi.getAll(...args);
+export const getTagById = (...args: any[]) => tagApi.getById(...args);
+export const getTagsByIds = (...args: any[]) => tagApi.getByIds(...args);
+export const createTag = (...args: any[]) => tagApi.create(...args);
+export const updateTag = (...args: any[]) => tagApi.update(...args);
+export const deleteTag = (...args: any[]) => tagApi.delete(...args);
+export const findTagByName = (...args: any[]) => tagApi.searchByName(...args);
+export const searchTags = (...args: any[]) => tagApi.searchByName(...args);
+export const findOrCreateTag = (...args: any[]) => tagApi.findOrCreate(...args);
+export const getTagsByEntityType = (...args: any[]) => tagApi.getAll(...args);
+
+export const getTagAssignmentsForEntity = (...args: any[]) => tagAssignmentApi.getAll(...args);
+export const createTagAssignment = (...args: any[]) => tagAssignmentApi.createAssignment(...args);
+export const deleteTagAssignment = (...args: any[]) => tagAssignmentApi.delete(...args);
+
+// Export factory functions
+export const createTagApiFactory = createTagApi;
+export const createTagAssignmentApiFactory = createTagAssignmentApi;

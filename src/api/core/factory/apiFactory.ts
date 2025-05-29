@@ -62,17 +62,31 @@ export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'reposit
  * Create a client-aware repository wrapper that can use either repository or direct client access
  */
 function createClientAwareRepository<T>(
-  baseRepository: DataRepository<T>, 
   tableName: string,
   providedClient?: any
 ): DataRepository<T> {
   if (!providedClient) {
-    return baseRepository;
+    // Return a lazy repository that will be initialized when client is available
+    return {
+      select: () => {
+        throw new Error('Repository requires client to be initialized');
+      },
+      insert: () => {
+        throw new Error('Repository requires client to be initialized');
+      },
+      update: () => {
+        throw new Error('Repository requires client to be initialized');
+      },
+      delete: () => {
+        throw new Error('Repository requires client to be initialized');
+      },
+      tableName,
+      schema: 'public'
+    } as DataRepository<T>;
   }
   
   // Return a repository-like interface that uses the provided client
   return {
-    ...baseRepository,
     select: (columns: string = '*') => {
       let query = providedClient.from(tableName).select(columns);
       return {
@@ -155,7 +169,9 @@ function createClientAwareRepository<T>(
         },
         execute: () => query
       };
-    }
+    },
+    tableName,
+    schema: 'public'
   } as DataRepository<T>;
 }
 
@@ -191,7 +207,7 @@ export function createApiFactory<
     throw new Error('tableName is required to create API operations');
   }
   
-  // Lazy repository creation function that requires client
+  // Create lazy repository creation function
   const createLazyRepository = () => {
     if (repository) {
       if (typeof repository === 'function') {
@@ -200,13 +216,14 @@ export function createApiFactory<
         // It's a repository instance
         return repository as DataRepository<T>;
       } else {
-        // It's a repository config - need client for creation
+        // It's a repository config - create enhanced repository
         const repoConfig = repository as RepositoryConfig<T>;
         
         if (repoConfig.enhanced) {
           return createEnhancedRepository<T>(
             tableName as string, 
             repoConfig.type,
+            providedClient,
             repoConfig.initialData,
             {
               idField: options.idField,
@@ -217,30 +234,12 @@ export function createApiFactory<
               enableLogging: repoConfig.enableLogging
             }
           );
-        } else {
-          // Need to get client lazily
-          const getClient = async () => {
-            if (providedClient) return providedClient;
-            const { supabase } = await import("@/integrations/supabase/client");
-            return supabase;
-          };
-          
-          return {
-            // Lazy repository methods that get client when called
-            select: () => {
-              throw new Error('Repository requires lazy initialization with client');
-            }
-          } as DataRepository<T>;
         }
       }
-    } else {
-      // Return lazy repository that will be initialized with client when needed
-      return {
-        select: () => {
-          throw new Error('Repository requires lazy initialization with client');
-        }
-      } as DataRepository<T>;
     }
+    
+    // Create client-aware repository
+    return createClientAwareRepository<T>(tableName as string, providedClient);
   };
   
   // Use entityName or generate from tableName (with safety check)
@@ -394,6 +393,11 @@ export function createViewApiFactory<
     async getById(id) {
       const viewRepo = await createLazyViewRepository();
       return viewRepo.getById(id as string);
-    }
+    },
+    async getByIds(ids) {
+      const viewRepo = await createLazyViewRepository();
+      return viewRepo.getByIds(ids as string[]);
+    },
+    viewName: viewName as string
   } as ViewOperations<T, TId>;
 }
