@@ -6,10 +6,15 @@
 // Export factory-based hooks to prevent direct repository instantiation
 export * from './useTagFactoryHooks';
 
-// Export existing hooks for backward compatibility
+// Export existing hooks for backward compatibility with renamed exports to avoid conflicts
 export * from './useTagQuery';
-export * from './useTagMutations';
-export * from './useTagAssignments';
+export { 
+  useTagCrudMutations as useTagCrudMutationsLegacy,
+  useTagAssignmentMutations as useTagAssignmentMutationsLegacy 
+} from './useTagMutations';
+export { 
+  useTagAssignmentMutations as useTagAssignmentOperationsLegacy 
+} from './useTagAssignments';
 
 // Export from relationship hooks
 export * from './useTagAssignmentRelationshipHooks';
