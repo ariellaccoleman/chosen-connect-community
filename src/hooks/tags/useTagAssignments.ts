@@ -67,7 +67,7 @@ export function useAssignTag() {
       }
       
       logger.debug(`Assigning tag ${tagId} to entity ${entityId} of type ${entityType}`);
-      return tagAssignmentApi.create(tagId, entityId, entityType);
+      return tagAssignmentApi.createAssignment(tagId, entityId, entityType);
     },
     onSuccess: (response, variables) => {
       if (response.error) {

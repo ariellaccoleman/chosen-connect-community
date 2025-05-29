@@ -1,3 +1,4 @@
+
 import { TagAssignment } from "./types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
@@ -22,7 +23,7 @@ export const assignTag = async (
     
     logger.debug(`Assigning tag ${tagId} to ${entityType} ${entityId}`);
 
-    const response = await tagAssignmentApi.create(tagId, entityId, entityType as EntityType);
+    const response = await tagAssignmentApi.createAssignment(tagId, entityId, entityType as EntityType);
     
     if (response.error) {
       logger.error("Error assigning tag:", response.error);

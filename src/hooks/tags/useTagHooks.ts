@@ -214,8 +214,8 @@ export function useTagAssignmentMutations() {
         throw new Error(`Invalid entity type: ${entityType}`);
       }
       
-      // Create assignment using simplified API
-      const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+      // Create assignment using business operation method
+      const response = await tagAssignmentApi.createAssignment(tagId, entityId, entityType);
       if (response.error) {
         throw response.error;
       }
