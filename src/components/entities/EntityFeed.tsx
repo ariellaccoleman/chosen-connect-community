@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
@@ -71,6 +72,12 @@ const EntityFeed = ({
   
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
+  
+  // Sync local tag state with prop changes - THIS IS THE FIX
+  useEffect(() => {
+    setSelectedTagId(tagId || null);
+    logger.debug(`EntityFeed: Tag prop changed, updating selectedTagId to ${tagId}`);
+  }, [tagId]);
   
   // Log when selectedTagId changes
   useEffect(() => {
