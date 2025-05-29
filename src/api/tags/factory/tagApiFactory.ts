@@ -1,3 +1,4 @@
+
 /**
  * Tag API Factory - Updated to comply with ApiOperations interface for hook factory pattern
  */
@@ -10,23 +11,18 @@ import { ApiOperations } from '@/api/core/types';
 
 /**
  * Factory function to create tag API with ApiOperations interface compliance
+ * ONLY includes standard CRUD operations to comply with ApiOperations interface
  */
 export function createTagApi(client?: any): ApiOperations<any> {
   const coreOps = createTagCoreOperations(client);
-  const businessOps = createTagBusinessOperations(client);
   
   return {
-    // Core CRUD operations - standardized interface
+    // Core CRUD operations only - standardized interface
     getAll: coreOps.getAll,
     getById: coreOps.getById,
     create: coreOps.create,
     update: coreOps.update,
-    delete: coreOps.delete,
-    
-    // Business operations - accessible via extended interface
-    findOrCreate: businessOps.findOrCreate,
-    searchByName: businessOps.searchByName,
-    getByEntityType: businessOps.getByEntityType
+    delete: coreOps.delete
   };
 }
 
@@ -54,22 +50,19 @@ export function createExtendedTagApi(client?: any) {
 
 /**
  * Factory function to create tag assignment API with ApiOperations interface compliance
+ * ONLY includes standard CRUD operations to comply with ApiOperations interface
  */
 export function createTagAssignmentApi(client?: any): ApiOperations<any> {
   const coreOps = createTagAssignmentCoreOperations(client);
-  const businessOps = createTagAssignmentBusinessOperations(client);
   const enrichedOps = createEnrichedTagAssignmentOperations(client);
   
   return {
-    // Core CRUD operations - standardized interface
+    // Core CRUD operations only - standardized interface
     getAll: enrichedOps.getAll, // Use enriched version for tag assignments
     getById: coreOps.getById,
-    create: coreOps.create,
+    create: coreOps.create, // Standard create signature (data: Partial<T>)
     update: coreOps.update,
-    delete: coreOps.delete,
-    
-    // Business operations - accessible via extended interface
-    getEntitiesByTagId: businessOps.getEntitiesByTagId
+    delete: coreOps.delete
   };
 }
 
