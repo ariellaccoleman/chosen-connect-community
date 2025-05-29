@@ -50,7 +50,7 @@ export const eventApi = createApiFactory<
 /**
  * Reset event API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetEventApi = (client?: any) => {
   const newApi = createApiFactory<
     Event,
     string,

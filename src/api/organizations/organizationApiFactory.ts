@@ -46,7 +46,7 @@ export const organizationApi = createApiFactory<
 /**
  * Reset organization API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetOrganizationApi = (client?: any) => {
   const newApi = createApiFactory<
     OrganizationWithLocation,
     string,
