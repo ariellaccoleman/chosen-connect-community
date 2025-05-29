@@ -1,5 +1,3 @@
-
-
 # Tag Hooks Factory Migration Plan
 
 ## Overview
@@ -35,7 +33,7 @@ Migrate tag-related hooks to use the new hook factory pattern while implementing
 - [x] Tag assignment hooks are using the new relationship operations interface via `tagAssignmentApi`
 - [x] Type safety prevents calling generic `create` method (uses `createAssignment` instead)
 - [x] Existing hook signatures maintained for backward compatibility
-- [ ] **PENDING**: Need dedicated relationship hook factories for cleaner separation
+- [x] **COMPLETED in Phase 4**: Created dedicated relationship hook factories for cleaner separation
 
 ### Phase 3: Implement Organization Relationship Operations ✅ COMPLETED
 **Goal**: Create organization relationship operations using the same pattern
@@ -50,31 +48,32 @@ Migrate tag-related hooks to use the new hook factory pattern while implementing
 - [x] Fixed type compatibility issues between API factory and underlying operations
 - [x] Maintained existing method signatures for backward compatibility
 
-### Phase 4: Create Dedicated Relationship Hook Factories **NEXT STEP**
+### Phase 4: Create Dedicated Relationship Hook Factories ✅ COMPLETED
 **Goal**: Create focused hook modules for relationship operations
 
-#### 4.1 Create Relationship Hook Factory ⏳ PENDING
-- **File**: `src/hooks/core/factory/relationshipHooks.ts` (new)
-- Create `createRelationshipHooks<T, TId, TCreate, TUpdate>()` function
-- Handle relationship-specific mutation hooks (no generic `create`)
-- Support custom creation method signatures like `createAssignment`, `createRelationship`
+#### 4.1 Create Relationship Hook Factory ✅ COMPLETED
+- [x] **File**: `src/hooks/core/factory/relationshipHooks.ts` (new)
+- [x] Create `createRelationshipHooks<T, TId, TCreate, TUpdate>()` function
+- [x] Handle relationship-specific mutation hooks (no generic `create`)
+- [x] Support custom creation method signatures like `createAssignment`, `createRelationship`
+- [x] Create `createRelationshipMutationHook()` helper for custom creation methods
 
-#### 4.2 Create Dedicated Relationship Hook Files ⏳ PENDING
-- **File**: `src/hooks/tags/useTagAssignmentRelationshipHooks.ts` (new)
-- **File**: `src/hooks/organizations/useOrganizationRelationshipHooks.ts` (new)
-- Create focused hooks using the new relationship hook factory
-- Migrate logic from existing hook files to new relationship-specific hooks
-- Maintain backward compatibility by keeping existing hooks as wrappers
+#### 4.2 Create Dedicated Relationship Hook Files ✅ COMPLETED
+- [x] **File**: `src/hooks/tags/useTagAssignmentRelationshipHooks.ts` (new)
+- [x] **File**: `src/hooks/organizations/useOrganizationRelationshipHooks.ts` (new)
+- [x] Create focused hooks using the new relationship hook factory
+- [x] Migrate logic from existing hook files to new relationship-specific hooks
+- [x] Maintain backward compatibility by keeping existing hooks as wrappers
 
-### Phase 5: Clean Up and Optimization
+### Phase 5: Clean Up and Optimization **NEXT STEP**
 **Goal**: Remove deprecated code and optimize the new structure
 
-#### 5.1 Remove Deprecated Exports
+#### 5.1 Remove Deprecated Exports ⏳ PENDING
 - Mark old factory functions as deprecated in `tagApiFactory.ts`
 - Plan removal timeline for deprecated functions
 - Update documentation and migration guides
 
-#### 5.2 Final Testing and Validation
+#### 5.2 Final Testing and Validation ⏳ PENDING
 - Test all tag-related functionality
 - Verify backward compatibility
 - Ensure type safety across all operations
@@ -95,7 +94,7 @@ This migration works hand-in-hand with the RelationshipApiOperations plan:
 
 ---
 
-# Plan: Implement RelationshipApiOperations Pattern ✅ PHASE 2-3 COMPLETED
+# Plan: Implement RelationshipApiOperations Pattern ✅ PHASES 2-4 COMPLETED
 
 ## Overview
 Create a new `RelationshipApiOperations` interface that extends `ApiOperations` but omits the generic `create` method and adds relationship-specific creation methods. This will provide type safety for relationship entities like tag assignments and organization relationships.
@@ -159,18 +158,19 @@ Create a new `RelationshipApiOperations` interface that extends `ApiOperations` 
 
 ## Phase 4: Update Hook Factories **NEXT STEP**
 
-### 4.1 Create Relationship Hook Factory ⏳ PENDING
+### 4.1 Create Relationship Hook Factory ✅ COMPLETED
 - **File**: `src/hooks/core/factory/relationshipHooks.ts` (new)
-- Create `createRelationshipHooks<T, TId, TCreate, TUpdate>()` function
-- Handle relationship-specific mutation hooks
-- Support custom creation method signatures
+- [x] Create `createRelationshipHooks<T, TId, TCreate, TUpdate>()` function
+- [x] Handle relationship-specific mutation hooks
+- [x] Support custom creation method signatures like `createAssignment`, `createRelationship`
+- [x] Create `createRelationshipMutationHook()` helper for custom creation methods
 
-### 4.2 Create Dedicated Relationship Hook Files ⏳ PENDING
-- **File**: `src/hooks/tags/useTagAssignmentRelationshipHooks.ts` (new)
-- **File**: `src/hooks/organizations/useOrganizationRelationshipHooks.ts` (new)
-- Create focused hooks using relationship pattern
-- Migrate logic from existing files to new relationship-specific hooks
-- Maintain backward compatibility
+### 4.2 Create Dedicated Relationship Hook Files ✅ COMPLETED
+- [x] **File**: `src/hooks/tags/useTagAssignmentRelationshipHooks.ts` (new)
+- [x] **File**: `src/hooks/organizations/useOrganizationRelationshipHooks.ts` (new)
+- [x] Create focused hooks using the new relationship hook factory
+- [x] Migrate logic from existing files to new relationship-specific hooks
+- [x] Maintain backward compatibility
 
 ## Phase 5: Update Consumers and Clean Up
 
@@ -219,4 +219,3 @@ This plan coordinates with the Tag Hooks Factory Migration Plan:
 - **Phase 3**: Organization relationships (Week 2) ✅ COMPLETED
 - **Phase 4**: Hook factory updates (Week 2-3) **CURRENT**
 - **Phase 5-6**: Consumer updates and testing (Week 3-4)
-
