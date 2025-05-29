@@ -1,4 +1,3 @@
-
 /**
  * Repository Pattern Module
  * 
@@ -12,6 +11,10 @@ export * from './BaseRepository';
 export * from './EntityRepository';
 export * from './SupabaseRepository';
 export * from './MockRepository';
+
+// Export the new read-only and view repository interfaces
+export * from './ReadOnlyRepository';
+export * from './ViewRepository';
 
 // Export entity-specific repositories from entities folder
 export * from './entities/ProfileRepository';
@@ -54,8 +57,14 @@ export {
   createTestingEntityRepository as createGenericTestingEntityRepository
 } from './entities/factories/entityRepositoryFactory';
 
-// Export from repositoryFactory directly
-export { createRepository, createTestingRepository } from './repositoryFactory';
+// Export from repositoryFactory directly with new view repository functions
+export { 
+  createRepository, 
+  createTestingRepository,
+  createViewRepositoryInstance,
+  createTestingViewRepository
+} from './repositoryFactory';
+
 export type { RepositoryOptions } from './repositoryFactory';
 
 // Export from enhancedRepositoryFactory

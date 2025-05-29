@@ -1,12 +1,14 @@
 
+import { ReadOnlyRepository, ReadOnlyRepositoryQuery, ReadOnlyRepositoryResponse } from './ReadOnlyRepository';
 import { DataRepository, RepositoryQuery, RepositoryResponse } from './DataRepository';
 import { logger } from '@/utils/logger';
 
 /**
  * Base Repository Abstract Class
  * Implements common functionality for all repositories
+ * Now implements ReadOnlyRepository as the base interface
  */
-export abstract class BaseRepository<T = any> implements DataRepository<T> {
+export abstract class BaseRepository<T = any> implements ReadOnlyRepository<T> {
   tableName: string;
   protected options: Record<string, any> = {
     idField: 'id',
@@ -86,11 +88,10 @@ export abstract class BaseRepository<T = any> implements DataRepository<T> {
 
   /**
    * Abstract methods to be implemented by specific repository implementations
+   * Note: For ReadOnlyRepository, only select is required
+   * Write operations will be implemented by DataRepository implementations
    */
-  abstract select(select?: string): RepositoryQuery<T>;
-  abstract insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T>;
-  abstract update(data: Record<string, any>): RepositoryQuery<T>;
-  abstract delete(): RepositoryQuery<T>;
+  abstract select(select?: string): ReadOnlyRepositoryQuery<T>;
 
   /**
    * Standard error handling for repository operations

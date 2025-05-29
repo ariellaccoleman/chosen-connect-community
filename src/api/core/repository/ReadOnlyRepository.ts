@@ -1,46 +1,53 @@
 
-import { ReadOnlyRepository, ReadOnlyRepositoryQuery, ReadOnlyRepositoryResponse, ReadOnlyRepositoryError } from './ReadOnlyRepository';
-
 /**
- * Data Repository Interface
- * Extends ReadOnlyRepository to add write operations
- * Abstracts database operations to make testing easier and improve code organization
+ * Read-Only Repository Interface
+ * Defines only read operations for repositories that don't need write capabilities
  */
-export interface DataRepository<T = any> extends ReadOnlyRepository<T> {
+export interface ReadOnlyRepository<T = any> {
   /**
-   * Insert data into the database
-   * @param data Data to insert
-   * @returns Query builder for insert operation
+   * Get table/view name this repository is working with
    */
-  insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T>;
+  tableName: string;
 
   /**
-   * Update data in the database
-   * @param data Data to update
-   * @returns Query builder for update operation
+   * Get a record by ID
+   * @param id ID of the record to retrieve
+   * @returns Promise with the record or null if not found
    */
-  update(data: Record<string, any>): RepositoryQuery<T>;
+  getById(id: string | number): Promise<T | null>;
 
   /**
-   * Delete records from the database
-   * @returns Query builder for delete operation
+   * Get all records
+   * @returns Promise with an array of records
    */
-  delete(): RepositoryQuery<T>;
+  getAll(): Promise<T[]>;
+
+  /**
+   * Select records from the database
+   * @param select Fields to select
+   * @returns Query builder that can be further chained
+   */
+  select(select?: string): ReadOnlyRepositoryQuery<T>;
+
+  /**
+   * Set repository options
+   * @param options Repository configuration options
+   */
+  setOptions?(options: Record<string, any>): void;
 }
 
 /**
- * Repository Query Interface
- * Extends ReadOnlyRepositoryQuery to add write operations
- * Represents a chainable query builder for repository operations
+ * Read-Only Repository Query Interface
+ * Represents a chainable query builder for read-only repository operations
  */
-export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
+export interface ReadOnlyRepositoryQuery<T = any> {
   /**
    * Filter by equality condition
    * @param column Column name
    * @param value Value to match
    * @returns The query builder for chaining
    */
-  eq(column: string, value: any): RepositoryQuery<T>;
+  eq(column: string, value: any): ReadOnlyRepositoryQuery<T>;
 
   /**
    * Filter by inequality condition
@@ -48,7 +55,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param value Value to not match
    * @returns The query builder for chaining
    */
-  neq(column: string, value: any): RepositoryQuery<T>;
+  neq(column: string, value: any): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter by values in an array
@@ -56,7 +63,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param values Array of values to match
    * @returns The query builder for chaining
    */
-  in(column: string, values: any[]): RepositoryQuery<T>;
+  in(column: string, values: any[]): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter using case-insensitive pattern matching
@@ -64,7 +71,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param pattern Pattern to match
    * @returns The query builder for chaining
    */
-  ilike(column: string, pattern: string): RepositoryQuery<T>;
+  ilike(column: string, pattern: string): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter for NULL values
@@ -72,7 +79,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param isNull Whether the value should be NULL (true) or NOT NULL (false)
    * @returns The query builder for chaining
    */
-  is(column: string, isNull: null | boolean): RepositoryQuery<T>;
+  is(column: string, isNull: null | boolean): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter by greater than
@@ -80,7 +87,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param value Value to compare
    * @returns The query builder for chaining
    */
-  gt(column: string, value: any): RepositoryQuery<T>;
+  gt(column: string, value: any): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter by greater than or equal to
@@ -88,7 +95,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param value Value to compare
    * @returns The query builder for chaining
    */
-  gte(column: string, value: any): RepositoryQuery<T>;
+  gte(column: string, value: any): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter by less than
@@ -96,7 +103,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param value Value to compare
    * @returns The query builder for chaining
    */
-  lt(column: string, value: any): RepositoryQuery<T>;
+  lt(column: string, value: any): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter by less than or equal to
@@ -104,14 +111,14 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param value Value to compare
    * @returns The query builder for chaining
    */
-  lte(column: string, value: any): RepositoryQuery<T>;
+  lte(column: string, value: any): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Filter with OR conditions
    * @param filter A string representing OR conditions in the format "column.operator.value,column.operator.value"
    * @returns The query builder for chaining
    */
-  or(filter: string): RepositoryQuery<T>;
+  or(filter: string): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Order results by a column
@@ -119,21 +126,21 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param options Options for ordering
    * @returns The query builder for chaining
    */
-  order(column: string, options?: { ascending?: boolean }): RepositoryQuery<T>;
+  order(column: string, options?: { ascending?: boolean }): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Limit the number of results
    * @param count Maximum number of results
    * @returns The query builder for chaining
    */
-  limit(count: number): RepositoryQuery<T>;
+  limit(count: number): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Skip a number of results
    * @param count Number of results to skip
    * @returns The query builder for chaining
    */
-  offset(count: number): RepositoryQuery<T>;
+  offset(count: number): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Get a range of results
@@ -141,7 +148,7 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param to Ending index
    * @returns The query builder for chaining
    */
-  range(from: number, to: number): RepositoryQuery<T>;
+  range(from: number, to: number): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Select specific fields
@@ -149,34 +156,34 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
    * @param options Additional options like count
    * @returns The query builder for chaining
    */
-  select(select?: string, options?: { count?: boolean }): RepositoryQuery<T>;
+  select(select?: string, options?: { count?: boolean }): ReadOnlyRepositoryQuery<T>;
   
   /**
    * Get a single result
    * @returns Promise with the repository response
    */
-  single(): Promise<RepositoryResponse<T>>;
+  single(): Promise<ReadOnlyRepositoryResponse<T>>;
   
   /**
    * Get a single result or null if not found
    * @returns Promise with the repository response
    */
-  maybeSingle(): Promise<RepositoryResponse<T | null>>;
+  maybeSingle(): Promise<ReadOnlyRepositoryResponse<T | null>>;
   
   /**
    * Execute the query and get results
    * @returns Promise with the repository response
    */
-  execute(): Promise<RepositoryResponse<T[]>>;
+  execute(): Promise<ReadOnlyRepositoryResponse<T[]>>;
 }
 
 /**
- * Repository Response Interface
- * Standardized response format for repository operations
+ * Read-Only Repository Response Interface
+ * Standardized response format for read-only repository operations
  */
-export interface RepositoryResponse<T> {
+export interface ReadOnlyRepositoryResponse<T> {
   data: T | null;
-  error: RepositoryError | null;
+  error: ReadOnlyRepositoryError | null;
   
   /**
    * Helper method to check if the response was successful
@@ -195,10 +202,10 @@ export interface RepositoryResponse<T> {
 }
 
 /**
- * Repository Error Interface
+ * Read-Only Repository Error Interface
  * Aligned with ApiError for consistency
  */
-export interface RepositoryError {
+export interface ReadOnlyRepositoryError {
   code: string;
   message: string;
   details?: any;

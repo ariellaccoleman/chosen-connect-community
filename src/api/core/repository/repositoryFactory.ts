@@ -1,8 +1,8 @@
-
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
 import { createMockRepository } from './MockRepository';
 import { supabase } from '@/integrations/supabase/client';
+import { ViewRepository, createViewRepository } from './ViewRepository';
 
 /**
  * Repository options interface
@@ -72,8 +72,75 @@ export function createTestingRepository<T>(
 }
 
 /**
- * Export repository types for easier imports
+ * Create a view repository for read-only operations
  */
+export function createViewRepositoryInstance<T>(
+  viewName: string,
+  options: { 
+    schema?: string;
+    enableLogging?: boolean;
+  } = {}
+): ViewRepository<T> {
+  const schema = options.schema || 'public';
+  console.log(`Creating view repository for view: ${viewName}, schema: ${schema}`);
+  
+  // Verify Supabase client is available
+  if (!supabase) {
+    throw new Error(`Supabase client is not available for view ${viewName}`);
+  }
+  
+  console.log('View repository Supabase client verification:', {
+    hasClient: !!supabase,
+    hasFrom: !!(supabase && supabase.from),
+    clientType: typeof supabase
+  });
+  
+  const viewRepo = createViewRepository<T>(viewName, supabase, schema);
+  
+  if (options.enableLogging) {
+    viewRepo.setOptions({ enableLogging: true });
+  }
+  
+  return viewRepo;
+}
+
+/**
+ * Create a view repository for testing with the specified schema
+ */
+export function createTestingViewRepository<T>(
+  viewName: string,
+  options: { 
+    schema?: string;
+    enableLogging?: boolean;
+  } = {}
+): ViewRepository<T> {
+  const schema = options.schema || 'testing';
+  console.log(`Creating testing view repository for view: ${viewName}, schema: ${schema}`);
+  
+  // Verify Supabase client is available
+  if (!supabase) {
+    throw new Error(`Supabase client is not available for testing view ${viewName}`);
+  }
+  
+  console.log('Testing view repository Supabase client verification:', {
+    hasClient: !!supabase,
+    hasFrom: !!(supabase && supabase.from),
+    clientType: typeof supabase,
+    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
+  });
+  
+  // Always use a real Supabase view repository with the specified schema
+  return createViewRepositoryInstance<T>(viewName, { 
+    schema: schema,
+    enableLogging: options.enableLogging || true
+  });
+}
+
+// Export repository types for easier imports
 export * from './DataRepository';
 export * from './BaseRepository';
 export * from './SupabaseRepository';
+
+// Export new view repository types and functions
+export * from './ReadOnlyRepository';
+export * from './ViewRepository';
