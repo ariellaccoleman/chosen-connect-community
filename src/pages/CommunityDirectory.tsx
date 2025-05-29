@@ -9,7 +9,7 @@ import { toast } from "@/components/ui/sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { EntityType } from "@/types/entityTypes";
-import { useFilterByTag } from "@/hooks/tags";
+import { useFilterByTag, useSelectionTags } from "@/hooks/tags";
 import { logger } from "@/utils/logger";
 import { supabase } from "@/integrations/supabase/client";
 import TagSelector from "@/components/tags/TagSelector";
@@ -23,6 +23,9 @@ const CommunityDirectory = () => {
   
   // Use the tag filtering hook
   const { data: tagAssignments = [], isLoading: tagAssignmentsLoading } = useFilterByTag(selectedTagId, EntityType.PERSON);
+  
+  // Get all tags for finding the selected tag name
+  const { data: allTags = [] } = useSelectionTags(EntityType.PERSON);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
@@ -116,7 +119,6 @@ const CommunityDirectory = () => {
         const isIncluded = taggedIds.has(profile.id);
         
         // Debug check for current user's profile
-        // Fix for error #2: Access the id property correctly through the data property
         if (currentUserProfile?.data && profile.id === currentUserProfile.data.id) {
           logger.debug(`Current user (${profile.id}) included in filtered results: ${isIncluded}`);
         }
@@ -136,10 +138,8 @@ const CommunityDirectory = () => {
     setSelectedTagId(null);
   };
 
-  // Find selected tag for filter pills
-  const selectedTag = selectedTagId ? allProfiles
-    .flatMap(profile => profile.tags || [])
-    .find(tagAssignment => tagAssignment.tag?.id === selectedTagId)?.tag : null;
+  // Find selected tag for filter pills using the tags list
+  const selectedTag = selectedTagId ? allTags.find(tag => tag.id === selectedTagId) : null;
 
   // Prepare filter pills
   const filterPills = [];
