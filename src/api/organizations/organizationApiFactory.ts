@@ -1,4 +1,5 @@
 
+
 import { Organization, OrganizationWithLocation } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { formatOrganizationWithLocation } from "@/utils/formatters/organizationFormatters";
@@ -16,7 +17,6 @@ export const organizationApi = createApiFactory<
   entityName: 'Organization',
   idField: 'id',
   defaultSelect: `*, location:locations(*)`,
-  useQueryOperations: true,
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => formatOrganizationWithLocation(data),

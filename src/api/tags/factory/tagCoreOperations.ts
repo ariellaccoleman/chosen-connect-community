@@ -10,7 +10,6 @@ import { ApiResponse } from '@/api/core/errorHandler';
 export const tagCoreOperations = createApiFactory<Tag>({
   tableName: 'tags',
   entityName: 'Tag',
-  useQueryOperations: true,
   useMutationOperations: true,
   defaultSelect: '*',
   defaultOrderBy: 'name',
@@ -240,7 +239,7 @@ export const extendedTagOperations = {
       }
     }
     
-    return tagCoreOperations.create(data);
+    return tagCoreOperations.create(data as any);
   },
   
   // Override base operations to add client support
@@ -395,7 +394,7 @@ export const extendedTagOperations = {
       }
     }
     
-    return tagCoreOperations.create(data);
+    return tagCoreOperations.create(data as any);
   },
   
   async update(id: string, data: Partial<Tag>, providedClient?: any): Promise<ApiResponse<Tag>> {
@@ -439,7 +438,7 @@ export const extendedTagOperations = {
       }
     }
     
-    return tagCoreOperations.update(id, data);
+    return tagCoreOperations.update(id, data as any);
   },
   
   async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {

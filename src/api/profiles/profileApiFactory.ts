@@ -1,4 +1,5 @@
 
+
 import { Profile, ProfileWithDetails } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { formatProfileWithDetails } from "@/utils/formatters/profileFormatters";
@@ -16,7 +17,6 @@ export const profileApi = createApiFactory<
   entityName: 'Profile',
   idField: 'id',
   defaultSelect: `*, location:locations(*)`,
-  useQueryOperations: true,
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => formatProfileWithDetails(data),

@@ -1,4 +1,3 @@
-
 import { createApiFactory } from "@/api/core/factory";
 import { extendApiOperations } from "@/api/core/apiExtension";
 import { supabase } from "@/integrations/supabase/client";
@@ -12,7 +11,6 @@ import { logger } from "@/utils/logger";
 const postsBaseApi = createApiFactory<Post>({
   tableName: "posts",
   entityName: "Post",
-  useQueryOperations: true,
   useMutationOperations: true,
   repository: { type: "supabase" }
 });
@@ -21,7 +19,6 @@ const postsBaseApi = createApiFactory<Post>({
 const commentsBaseApi = createApiFactory<PostComment>({
   tableName: "post_comments",
   entityName: "Comment",
-  useQueryOperations: true,
   useMutationOperations: true,
   repository: { type: "supabase" }
 });
@@ -30,7 +27,6 @@ const commentsBaseApi = createApiFactory<PostComment>({
 const postLikesBaseApi = createApiFactory<PostLike>({
   tableName: "post_likes",
   entityName: "PostLike",
-  useQueryOperations: true,
   useMutationOperations: true,
   repository: { type: "supabase" }
 });
@@ -39,7 +35,6 @@ const postLikesBaseApi = createApiFactory<PostLike>({
 const commentLikesBaseApi = createApiFactory<CommentLike>({
   tableName: "comment_likes",
   entityName: "CommentLike",
-  useQueryOperations: true,
   useMutationOperations: true,
   repository: { type: "supabase" }
 });

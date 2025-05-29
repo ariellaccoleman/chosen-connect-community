@@ -1,4 +1,5 @@
 
+
 import { createApiFactory } from '../core/factory';
 import { createRepository } from '../core/repository/repositoryFactory';
 import { ChatMessageWithAuthor } from '@/types/chat';
@@ -16,7 +17,6 @@ import {
 export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
   tableName: 'chats',
   idField: 'id',
-  useQueryOperations: true,
   useMutationOperations: true,
   
   // Configure repository with enhanced features
@@ -38,3 +38,4 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
 
 // Re-export functions from the service
 export { getChannelMessages, getThreadReplies, sendChatMessage, getChannelMessagePreviews };
+

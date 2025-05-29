@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '@/api/core/factory';
 import { ApiResponse } from '@/api/core/types';
 import { createErrorResponse } from '@/api/core/errorHandler';
@@ -9,7 +8,6 @@ import { Hub } from '@/types';
  */
 export const hubApi = createApiFactory<Hub>({
   tableName: 'hubs',
-  useQueryOperations: true,
   useMutationOperations: true,
   repository: {
     type: 'supabase',
@@ -70,7 +68,7 @@ export const getFeaturedHubs = async (): Promise<ApiResponse<Hub[]>> => {
  */
 export const toggleHubFeatured = async (id: string, isFeatured: boolean): Promise<ApiResponse<Hub>> => {
   try {
-    const { data, error } = await hubApi.update(id, { is_featured: isFeatured });
+    const { data, error } = await hubApi.update(id, { is_featured: isFeatured } as any);
 
     if (error) {
       return { status: 'error', error, data: null };

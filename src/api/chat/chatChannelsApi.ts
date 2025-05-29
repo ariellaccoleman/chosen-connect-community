@@ -1,3 +1,4 @@
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { apiClient } from '../core/apiClient';
@@ -40,7 +41,6 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
     
     return transformed;
   },
-  useQueryOperations: true,
   useMutationOperations: true,
   useBatchOperations: false
 });

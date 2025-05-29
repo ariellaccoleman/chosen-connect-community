@@ -1,4 +1,5 @@
 
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { LocationWithDetails } from '@/types/location';
 import { apiClient } from '../core/apiClient';
@@ -32,7 +33,6 @@ export const locationsApi = createApiFactory<LocationWithDetails, string, Partia
       return location;
     },
     
-    useQueryOperations: true,
     useMutationOperations: true,
     useBatchOperations: false
   }

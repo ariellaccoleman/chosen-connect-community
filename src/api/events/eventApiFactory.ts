@@ -1,4 +1,3 @@
-
 import { EventWithDetails, CreateEventInput } from '@/types';
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { formatDateForDb } from '@/utils/formatters';
@@ -18,7 +17,6 @@ export const eventApi = createApiFactory<
   entityName: 'Event',
   idField: 'id',
   defaultSelect: '*, location:locations(*), host:profiles(*)',
-  useQueryOperations: true,
   useMutationOperations: true,
   useBatchOperations: false,
   

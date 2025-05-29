@@ -1,4 +1,3 @@
-
 import { createApiFactory } from "@/api/core/factory";
 import { EventRegistration } from "@/types";
 import { logger } from "@/utils/logger";
@@ -18,7 +17,6 @@ export const eventRegistrationApiFactory = createApiFactory<
 >({
   tableName: "event_registrations",
   entityName: "EventRegistration",
-  useQueryOperations: true,
   useMutationOperations: true,
   transformResponse: (data) => {
     logger.info("Transforming registration response:", data);

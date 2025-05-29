@@ -10,7 +10,6 @@ import { ApiResponse } from '@/api/core/errorHandler';
 const tagAssignmentBase = createApiFactory<TagAssignment>({
   tableName: 'tag_assignments',
   entityName: 'TagAssignment',
-  useQueryOperations: true,
   useMutationOperations: true,
   defaultSelect: '*',
   transformResponse: (item: any): TagAssignment => ({
@@ -73,7 +72,7 @@ export const tagAssignmentCoreOperations = {
       }
     }
     
-    return tagAssignmentBase.create(assignmentData);
+    return tagAssignmentBase.create(assignmentData as any);
   },
   
   async getForEntity(entityId: string, entityType: EntityType, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
@@ -177,7 +176,6 @@ export const tagAssignmentCoreOperations = {
     return tagAssignmentBase.getAll({ filters });
   },
   
-  // Override base operations to add client support
   async getAll(options?: any, providedClient?: any): Promise<ApiResponse<TagAssignment[]>> {
     if (providedClient) {
       try {
@@ -313,7 +311,7 @@ export const tagAssignmentCoreOperations = {
       }
     }
     
-    return tagAssignmentBase.update(id, data);
+    return tagAssignmentBase.update(id, data as any);
   },
   
   async delete(id: string, providedClient?: any): Promise<ApiResponse<boolean>> {
