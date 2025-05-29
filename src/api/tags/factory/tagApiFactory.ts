@@ -12,7 +12,7 @@ import { EntityType } from '@/types/entityTypes';
 export const tagApi = {
   // Core CRUD operations from factory
   ...tagCoreOperations,
-  // Business operations
+  // Business operations (includes findOrCreate, searchByName, getByEntityType)
   ...tagBusinessOperations
 };
 
