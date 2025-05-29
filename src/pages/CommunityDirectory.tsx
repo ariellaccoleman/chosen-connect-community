@@ -25,7 +25,10 @@ const CommunityDirectory = () => {
   const { data: tagAssignments = [], isLoading: tagAssignmentsLoading } = useFilterByTag(selectedTagId, EntityType.PERSON);
   
   // Get all tags for finding the selected tag name
-  const { data: allTags = [] } = useSelectionTags(EntityType.PERSON);
+  const { data: allTagsResponse } = useSelectionTags(EntityType.PERSON);
+  
+  // Extract tags from the API response - handle both array and ApiResponse formats
+  const allTags = Array.isArray(allTagsResponse) ? allTagsResponse : (allTagsResponse?.data || []);
   
   // Use the current user's profile separately to ensure we always display it
   const { data: currentUserProfile } = useCurrentProfile();
