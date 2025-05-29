@@ -1,25 +1,91 @@
 
 import { ReadOnlyRepository, ReadOnlyRepositoryQuery, ReadOnlyRepositoryResponse, ReadOnlyRepositoryError } from './ReadOnlyRepository';
-import { BaseRepository } from './BaseRepository';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
 
 /**
  * View Repository Class
- * Extends BaseRepository but only implements read operations for database views
+ * Implements ReadOnlyRepository interface for database views
  * Throws errors if write operations are attempted
+ * Does NOT extend BaseRepository to avoid inheriting write operations
  */
-export class ViewRepository<T = any> extends BaseRepository<T> implements ReadOnlyRepository<T> {
+export class ViewRepository<T = any> implements ReadOnlyRepository<T> {
+  tableName: string;
   protected client: any;
   protected schema: string;
+  protected options: Record<string, any> = {
+    idField: 'id',
+    defaultSelect: '*',
+    enableLogging: false
+  };
 
   constructor(viewName: string, client?: any, schema: string = 'public') {
-    super(viewName);
+    this.tableName = viewName;
     this.client = client || supabase;
     this.schema = schema;
     
     if (this.options.enableLogging) {
       logger.debug(`Created ViewRepository for view ${viewName} with schema ${schema}`);
+    }
+  }
+
+  /**
+   * Set repository options
+   * @param options Repository configuration options
+   */
+  setOptions(options: Record<string, any>): void {
+    this.options = { ...this.options, ...options };
+    
+    if (this.options.enableLogging) {
+      logger.debug(`Set options for ViewRepository ${this.tableName}`, options);
+    }
+  }
+
+  /**
+   * Get a record by ID
+   * @param id ID of the record to retrieve
+   * @returns Promise with the record or null if not found
+   */
+  async getById(id: string | number): Promise<T | null> {
+    try {
+      const result = await this.select()
+        .eq(this.options.idField, id)
+        .maybeSingle();
+      
+      if (this.options.enableLogging) {
+        logger.debug(`ViewRepository.getById(${id})`, {
+          result: result.isSuccess() ? 'success' : 'error',
+          error: result.error
+        });
+      }
+      
+      return result.data as T | null;
+    } catch (error) {
+      this.handleError('getById', error, { id });
+      return null;
+    }
+  }
+
+  /**
+   * Get all records
+   * @returns Promise with an array of records
+   */
+  async getAll(): Promise<T[]> {
+    try {
+      const result = await this.select().execute();
+      
+      if (this.options.enableLogging) {
+        logger.debug(`ViewRepository.getAll()`, {
+          result: result.isSuccess() ? 'success' : 'error',
+          count: result.data?.length || 0,
+          error: result.error
+        });
+      }
+      
+      return result.data as T[] || [];
+    } catch (error) {
+      this.handleError('getAll', error);
+      return [];
     }
   }
 
@@ -33,24 +99,17 @@ export class ViewRepository<T = any> extends BaseRepository<T> implements ReadOn
   }
 
   /**
-   * Insert operation - throws error for views
+   * Standard error handling for repository operations
+   * @param operation Name of the operation that failed
+   * @param error The error that occurred
+   * @param context Additional context for the error
    */
-  insert(data: Record<string, any> | Record<string, any>[]): never {
-    throw new Error(`Insert operation not supported on view '${this.tableName}'`);
-  }
-
-  /**
-   * Update operation - throws error for views
-   */
-  update(data: Record<string, any>): never {
-    throw new Error(`Update operation not supported on view '${this.tableName}'`);
-  }
-
-  /**
-   * Delete operation - throws error for views
-   */
-  delete(): never {
-    throw new Error(`Delete operation not supported on view '${this.tableName}'`);
+  protected handleError(operation: string, error: any, context: Record<string, any> = {}): void {
+    logger.error(`ViewRepository.${operation} error on view ${this.tableName}`, {
+      error: error?.message || error,
+      context,
+      tableName: this.tableName
+    });
   }
 }
 
