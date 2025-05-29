@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import OrganizationCard from "@/components/organizations/OrganizationCard";
+import RelationshipCard from "./RelationshipCard";
 import { Briefcase } from "lucide-react";
 import { ProfileOrganizationRelationshipWithDetails } from "@/types";
 import EditRelationshipDialog from "@/components/organizations/EditRelationshipDialog";
@@ -117,7 +117,7 @@ const OrganizationGroup = ({ title, relationships, onEditClick }: OrganizationGr
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
       <div className="grid gap-4 sm:grid-cols-2">
         {relationships.map(relationship => (
-          <OrganizationCard 
+          <RelationshipCard 
             key={relationship.id} 
             relationship={relationship} 
             onEditClick={() => onEditClick(relationship)}

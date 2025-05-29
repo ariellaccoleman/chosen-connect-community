@@ -43,6 +43,7 @@ export const EntityCardFactory: React.FC<EntityCardFactoryProps> = ({
         ...entity,
         first_name: entity.name.split(' ')[0] || '',
         last_name: entity.name.split(' ').slice(1).join(' ') || '',
+        full_name: entity.name, // Add the required full_name field
         // Map other entity fields to profile fields as needed
         bio: entity.description || '',
         avatar_url: entity.imageUrl || '',
