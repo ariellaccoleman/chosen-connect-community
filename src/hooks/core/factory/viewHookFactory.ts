@@ -24,7 +24,14 @@ export function createViewQueryHooks<T, ID = string>(
     return useQuery({
       queryKey: [pluralName, options?.filters || {}],
       queryFn: () => viewOperations.getAll(options),
-      select: (response) => response.data || response,
+      select: (response) => {
+        // Extract the data array from the wrapped response
+        if (response && typeof response === 'object' && 'data' in response) {
+          return response.data;
+        }
+        // Fallback for direct array response
+        return Array.isArray(response) ? response : [];
+      },
     });
   };
 
@@ -34,10 +41,17 @@ export function createViewQueryHooks<T, ID = string>(
       queryKey: [name, id],
       queryFn: () => {
         if (!id) throw new Error(`${config.displayName} ID is required`);
-        return viewOperations.getById(id);
+        return viewOperations.getById(id as string);
       },
       enabled: !!id && (options?.enabled !== false),
-      select: (response) => response.data || response,
+      select: (response) => {
+        // Extract the data from the wrapped response
+        if (response && typeof response === 'object' && 'data' in response) {
+          return response.data;
+        }
+        // Fallback for direct response
+        return response;
+      },
     });
   };
 
