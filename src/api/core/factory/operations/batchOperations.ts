@@ -90,7 +90,7 @@ export function createBatchOperations<
     async batchUpdate(
       items: (TUpdate & { [key: string]: TId })[],
       select: string = defaultSelect
-    ): Promise<ApiResponse<T[]>> => {
+    ): Promise<ApiResponse<T[]>> {
       try {
         const results: T[] = [];
         
@@ -148,7 +148,7 @@ export function createBatchOperations<
      */
     async batchDelete(
       ids: TId[]
-    ): Promise<ApiResponse<boolean>> => {
+    ): Promise<ApiResponse<boolean>> {
       try {
         // Use repository if provided, otherwise use apiClient with optional client injection
         if (repository) {
