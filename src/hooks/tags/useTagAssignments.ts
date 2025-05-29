@@ -1,7 +1,7 @@
 
 /**
  * Tag Assignment Hooks
- * Updated to use enriched view operations for better data
+ * Updated to use simplified API structure
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { TagAssignment } from '@/utils/tags/types';
@@ -25,7 +25,12 @@ export function useEntityTagAssignments(entityId: string, entityType: EntityType
       
       try {
         logger.debug(`useEntityTagAssignments: Fetching assignments for ${entityType} ${entityId} using enriched view`);
-        const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
+        const response = await extendedTagAssignmentApi.getAllEnriched({ 
+          filters: { 
+            target_id: entityId, 
+            target_type: entityType 
+          } 
+        });
         if (response.error) {
           logger.error(`Error fetching tag assignments for entity ${entityId}:`, response.error);
           throw response.error;

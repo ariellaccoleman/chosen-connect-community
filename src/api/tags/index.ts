@@ -1,6 +1,7 @@
 
 /**
  * Re-export all tag API functionality
+ * Updated to use simplified structure
  */
 export * from './getTagsApi';
 export * from './tagCrudApi';
@@ -11,13 +12,15 @@ export * from './organizationTagsApi';
 export * from './cacheApi';
 export * from './invalidateCache';
 
-// Export the factory module
+// Export the simplified factory module
 export * from './factory';
 
-// Export the factory-based API, with explicit imports to avoid naming conflicts
+// Export the main APIs with clear separation
 import {
   tagApi,
   tagAssignmentApi,
+  extendedTagApi,
+  extendedTagAssignmentApi,
   createTagApiFactory,
   createTagAssignmentApiFactory,
   getAllTags,
@@ -35,10 +38,16 @@ import {
 } from './factory/tagApiFactory';
 
 export {
+  // Base factory APIs (support client injection)
   tagApi,
   tagAssignmentApi,
+  // Extended APIs with business operations
+  extendedTagApi,
+  extendedTagAssignmentApi,
+  // Factory functions
   createTagApiFactory,
   createTagAssignmentApiFactory,
+  // Individual function exports (simplified)
   getAllTags,
   getTagById,
   findTagByName,

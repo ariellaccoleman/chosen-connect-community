@@ -6,13 +6,13 @@ import { EntityType, isValidEntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
 /**
- * Hook to fetch all tags using the updated API with views
+ * Hook to fetch all tags using the simplified API
  */
 export function useTags() {
   return useQuery({
     queryKey: ["tags", "all"],
     queryFn: async () => {
-      logger.debug("useTags: Fetching all tags from view");
+      logger.debug("useTags: Fetching all tags");
       const response = await extendedTagApi.getAll();
       if (response.error) {
         logger.error("useTags: Error fetching tags:", response.error);
@@ -25,7 +25,7 @@ export function useTags() {
 }
 
 /**
- * Hook to fetch tags by entity type using the filtered view
+ * Hook to fetch tags by entity type using business operations
  */
 export function useTagsByEntityType(entityType: EntityType) {
   return useQuery({
@@ -35,7 +35,7 @@ export function useTagsByEntityType(entityType: EntityType) {
         logger.warn(`Invalid entity type: ${entityType}`);
         return [];
       }
-      logger.debug(`useTagsByEntityType: Fetching tags for entity type ${entityType} using view`);
+      logger.debug(`useTagsByEntityType: Fetching tags for entity type ${entityType}`);
       const response = await extendedTagApi.getByEntityType(entityType);
       if (response.error) {
         logger.error(`useTagsByEntityType: Error fetching tags for ${entityType}:`, response.error);
@@ -99,7 +99,7 @@ export function useTagByName(name: string | null | undefined) {
     queryFn: async () => {
       if (!name) return null;
       logger.debug(`useTagByName: Finding tag with name "${name}"`);
-      const response = await extendedTagApi.findByName(name);
+      const response = await extendedTagApi.getAll({ filters: { name } });
       if (response.error) {
         logger.error(`useTagByName: Error finding tag by name:`, response.error);
         throw response.error;

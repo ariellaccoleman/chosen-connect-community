@@ -20,6 +20,7 @@ interface BaseOperationsOptions<T> {
 
 /**
  * Creates standardized base CRUD operations for a specific entity type
+ * Supports client injection for testing
  */
 export function createBaseOperations<
   T,
@@ -62,9 +63,10 @@ export function createBaseOperations<
     providedClient
   );
   
-  // Combine all operations
+  // Combine all operations with table name for reference
   return {
     ...queryOperations,
-    ...mutationOperations
+    ...mutationOperations,
+    tableName
   };
 }
