@@ -7,7 +7,6 @@ import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
-import { createSupabaseRepository } from '@/api/core/repository/SupabaseRepository';
 import { createTagCoreOperations } from './tagCoreOperations';
 
 /**
@@ -16,6 +15,15 @@ import { createTagCoreOperations } from './tagCoreOperations';
 export function createTagBusinessOperations(client?: any) {
   // Get client-aware core operations
   const tagBase = createTagCoreOperations(client);
+
+  // Create a factory for the filtered_entity_tags_view that properly handles client injection
+  const viewFactory = createApiFactory<any>({
+    tableName: 'filtered_entity_tags_view',
+    entityName: 'FilteredEntityTag',
+    useMutationOperations: false,
+    defaultSelect: '*',
+    transformResponse: (item: any) => item
+  }, client);
 
   return {
     /**
@@ -61,15 +69,12 @@ export function createTagBusinessOperations(client?: any) {
      */
     async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
       try {
-        // Create a repository for the view with client injection
-        const viewRepo = createSupabaseRepository('filtered_entity_tags_view', client);
-        
-        const result = await viewRepo
-          .select('*')
-          .eq('entity_type', entityType)
-          .execute();
+        // Use the view factory with proper client injection
+        const result = await viewFactory.getAll({
+          filters: { entity_type: entityType }
+        });
 
-        if (result.isError()) {
+        if (result.error) {
           return createErrorResponse(result.error);
         }
 

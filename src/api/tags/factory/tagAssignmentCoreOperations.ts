@@ -6,7 +6,6 @@
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from '@/utils/tags/types';
 import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
-import { createSupabaseRepository } from '@/api/core/repository/SupabaseRepository';
 
 /**
  * Factory function to create tag assignment core operations with optional client injection
@@ -32,6 +31,15 @@ export function createTagAssignmentCoreOperations(client?: any) {
  * Factory function to create enriched tag assignment operations with optional client injection
  */
 export function createEnrichedTagAssignmentOperations(client?: any) {
+  // Create a factory for the entity_tag_assignments_view that properly handles client injection
+  const viewFactory = createApiFactory<any>({
+    tableName: 'entity_tag_assignments_view',
+    entityName: 'EntityTagAssignment',
+    useMutationOperations: false,
+    defaultSelect: '*',
+    transformResponse: (item: any) => item
+  }, client);
+
   return {
     /**
      * Get all enriched tag assignments with optional filters
@@ -47,9 +55,6 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
       select?: string;
     } = {}): Promise<ApiResponse<any[]>> {
       try {
-        // Create a repository for the view with client injection
-        const viewRepo = createSupabaseRepository('entity_tag_assignments_view', client);
-        
         const {
           filters = {},
           orderBy = 'created_at',
@@ -59,32 +64,17 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
           select = '*'
         } = options;
 
-        let query = viewRepo.select(select);
-
-        // Apply filters
-        Object.entries(filters).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            if (Array.isArray(value)) {
-              query = query.in(key, value);
-            } else {
-              query = query.eq(key, value);
-            }
-          }
+        // Use the view factory with proper client injection
+        const result = await viewFactory.getAll({
+          filters,
+          orderBy,
+          ascending,
+          limit,
+          offset,
+          select
         });
-
-        // Apply ordering
-        query = query.order(orderBy, { ascending });
-
-        // Apply pagination
-        if (limit !== undefined) {
-          const from = offset || 0;
-          const to = from + limit - 1;
-          query = query.range(from, to);
-        }
-
-        const result = await query.execute();
         
-        if (result.isError()) {
+        if (result.error) {
           return createErrorResponse(result.error);
         }
         
