@@ -12,6 +12,7 @@ import { logger } from "@/utils/logger";
 import { toast } from "@/components/ui/sonner";
 import TagFilter from "@/components/filters/TagFilter";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
+import { formatLocation } from "@/utils/formatters/locationFormatters";
 
 const OrganizationsList = () => {
   const navigate = useNavigate();
@@ -41,10 +42,12 @@ const OrganizationsList = () => {
   // Filter by search term
   const filteredOrganizations = organizationEntities.filter((entity) => {
     const searchLower = searchTerm.toLowerCase();
+    const locationString = entity.location ? formatLocation(entity.location) : '';
+    
     return (
       entity.name.toLowerCase().includes(searchLower) ||
       (entity.description && entity.description.toLowerCase().includes(searchLower)) ||
-      (entity.location && entity.location.toLowerCase().includes(searchLower))
+      (locationString && locationString.toLowerCase().includes(searchLower))
     );
   });
     
@@ -149,6 +152,8 @@ const OrganizationCard = ({
     .substring(0, 2)
     .toUpperCase();
   
+  const locationString = organization.location ? formatLocation(organization.location) : '';
+  
   return (
     <Card className="h-full hover:shadow-md transition-shadow cursor-pointer" onClick={onClick}>
       <CardContent className="p-6">
@@ -161,8 +166,8 @@ const OrganizationCard = ({
           </Avatar>
           <div className="min-w-0">
             <h3 className="text-lg font-semibold mb-1 text-gray-900 dark:text-white">{organization.name}</h3>
-            {organization.location && (
-              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{organization.location}</p>
+            {locationString && (
+              <p className="text-sm text-gray-500 dark:text-gray-300 mb-2">{locationString}</p>
             )}
           </div>
         </div>
