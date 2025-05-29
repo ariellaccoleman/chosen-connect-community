@@ -1,3 +1,4 @@
+
 import { ApiError } from "./errorHandler";
 
 /**
@@ -63,6 +64,18 @@ export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = 
   batchCreate?: (data: TCreate[]) => Promise<ApiResponse<T[]>>;
   batchUpdate?: (items: {id: TId, data: TUpdate}[]) => Promise<ApiResponse<T[]>>;
   batchDelete?: (ids: TId[]) => Promise<ApiResponse<boolean>>;
+}
+
+/**
+ * Relationship-specific operations interface that extends standard API operations
+ * but omits the generic 'create' method to prevent misuse. Relationship entities
+ * should use specific creation methods that enforce proper relationship semantics.
+ */
+export interface RelationshipApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> 
+  extends Omit<ApiOperations<T, TId, TCreate, TUpdate>, 'create'> {
+  // All RUD operations are inherited (Read, Update, Delete)
+  // The generic 'create' method is intentionally omitted
+  // Relationship-specific creation methods should be added by extending interfaces
 }
 
 /**

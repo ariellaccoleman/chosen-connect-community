@@ -38,6 +38,28 @@ export interface ApiFactoryOptions<T> {
   transformRequest?: (item: any) => Record<string, any>;
 }
 
+/**
+ * Options type for relationship API factory functions
+ * Extends ApiFactoryOptions with relationship-specific configuration
+ */
+export interface RelationshipFactoryOptions<T> extends ApiFactoryOptions<T> {
+  // Relationship-specific validation functions
+  validateRelationship?: (sourceId: string, targetId: string, relationshipType?: string) => boolean;
+  
+  // Custom relationship creation logic
+  onRelationshipCreated?: (relationship: T) => void | Promise<void>;
+  onRelationshipDeleted?: (relationshipId: string) => void | Promise<void>;
+  
+  // Cascade options for relationship operations
+  cascadeDelete?: boolean;
+  preventDuplicates?: boolean;
+  
+  // Relationship metadata
+  sourceEntityType?: string;
+  targetEntityType?: string;
+  relationshipDescription?: string;
+}
+
 // Options type for the View factory function (read-only operations)
 export interface ViewFactoryOptions<T> {
   idField?: string;
