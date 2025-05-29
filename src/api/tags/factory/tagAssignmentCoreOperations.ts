@@ -97,7 +97,3 @@ export function createEnrichedTagAssignmentOperations(client?: any) {
     }
   };
 }
-
-// Default exports for backwards compatibility
-export const tagAssignmentCoreOperations = createTagAssignmentCoreOperations();
-export const enrichedTagAssignmentOperations = createEnrichedTagAssignmentOperations();
