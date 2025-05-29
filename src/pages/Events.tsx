@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, generatePath } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -121,7 +122,7 @@ const Events: React.FC = () => {
       
       <Card className="mb-6">
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <div className="flex-1">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -134,11 +135,8 @@ const Events: React.FC = () => {
               </div>
             </div>
             
-            {/* Tag selector - same as community and organizations pages */}
-            <div className="mb-4 sm:mb-6">
-              <div className="text-sm text-muted-foreground mb-2">
-                Filter events by tag:
-              </div>
+            {/* Tag selector moved to same row as search */}
+            <div className="md:w-64">
               <TagSelector
                 targetType={EntityType.EVENT}
                 onTagSelected={handleTagSelect}
@@ -146,6 +144,16 @@ const Events: React.FC = () => {
                 placeholder="Select a tag to filter events"
                 currentSelectedTagId={selectedTagId}
               />
+              {selectedTagId && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setSelectedTagId(null)}
+                  className="mt-2"
+                >
+                  Clear filter
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
