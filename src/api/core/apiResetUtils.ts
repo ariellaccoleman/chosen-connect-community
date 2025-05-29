@@ -7,6 +7,7 @@ export { resetLocationsApi } from '../locations/locationsApi';
 export { resetChatChannelsApi } from '../chat/chatChannelsApi';
 export { resetChatMessageApi } from '../chat/chatMessageApiFactory';
 export { resetTagApi } from '../tags/factory/tagApiFactory';
+export { resetPostsApi } from '../posts/postsApiFactory';
 
 // Central function that resets all APIs
 export const resetAllApis = (client: any) => ({
@@ -17,5 +18,6 @@ export const resetAllApis = (client: any) => ({
   locations: resetLocationsApi(client),
   chatChannels: resetChatChannelsApi(client),
   chatMessage: resetChatMessageApi(client),
-  tag: resetTagApi(client)
+  tag: resetTagApi(client),
+  posts: resetPostsApi(client)
 });
