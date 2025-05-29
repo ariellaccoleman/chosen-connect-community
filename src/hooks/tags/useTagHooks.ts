@@ -169,7 +169,12 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
       
       try {
         // Use extendedTagAssignmentApi and handle wrapped response
-        const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
+        const response = await extendedTagAssignmentApi.getAll({ 
+          filters: { 
+            target_id: entityId, 
+            target_type: entityType 
+          } 
+        });
         if (response.error) {
           logger.error(`Error fetching tags for entity ${entityId}:`, response.error);
           throw response.error;

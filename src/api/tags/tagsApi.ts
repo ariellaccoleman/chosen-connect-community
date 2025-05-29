@@ -29,7 +29,7 @@ export const getTagById = async (id: string): Promise<Tag | null> => {
  * Find tag by name
  */
 export const findTagByName = async (name: string): Promise<Tag | null> => {
-  const response = await extendedTagApi.findByName(name);
+  const response = await extendedTagApi.getAll({ filters: { name } });
   if (response.error) {
     throw response.error;
   }
@@ -104,7 +104,12 @@ export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]
  * Get tag assignments for an entity
  */
 export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
-  const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
+  const response = await extendedTagAssignmentApi.getAll({ 
+    filters: { 
+      target_id: entityId, 
+      target_type: entityType 
+    } 
+  });
   if (response.error) {
     throw response.error;
   }
