@@ -56,7 +56,6 @@ export const EntityCardFactory: React.FC<EntityCardFactoryProps> = ({
         twitter_url: (entity as any).twitter_url || '',
         email: (entity as any).email || '',
         location_id: entity.location?.id || null,
-        timezone: (entity as any).timezone || 'UTC',
         membership_tier: (entity as any).membership_tier || 'free',
         is_approved: (entity as any).is_approved ?? true,
         created_at: entity.created_at || new Date().toISOString(),
