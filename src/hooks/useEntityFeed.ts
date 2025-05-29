@@ -120,9 +120,9 @@ export const useEntityFeed = ({
                   peopleQuery = peopleQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no people have this tag, skip this type but continue with others
-                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}, continuing with other types`);
-                  break; // Continue to next entity type instead of returning
+                  // If we're filtering by tag but no people have this tag, skip this type
+                  logger.debug(`EntityFeed: No PERSON entities found with tagId=${tagId}, skipping`);
+                  break;
                 }
                 
                 // Apply limit and get results
@@ -130,7 +130,7 @@ export const useEntityFeed = ({
                   
                 if (profilesError) {
                   logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesError);
-                  break; // Continue to next entity type instead of returning
+                  break;
                 }
                 
                 items = profiles || [];
@@ -138,19 +138,27 @@ export const useEntityFeed = ({
                 break;
                 
               case EntityType.ORGANIZATION:
-                logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}`);
+                logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}, search=${search}`);
                 
                 // Basic query for organizations
                 let orgsQuery = supabase.from('organizations').select('*');
+                
+                // Apply search filter for organizations
+                if (search && search.trim()) {
+                  const searchTerm = `%${search.toLowerCase()}%`;
+                  orgsQuery = orgsQuery.or(
+                    `name.ilike.${searchTerm},description.ilike.${searchTerm}`
+                  );
+                }
                 
                 // Apply tag filtering if we have tagged organization IDs
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   orgsQuery = orgsQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no organizations have this tag, skip this type but continue with others
-                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}, continuing with other types`);
-                  break; // Continue to next entity type instead of returning
+                  // If we're filtering by tag but no organizations have this tag, skip this type
+                  logger.debug(`EntityFeed: No ORGANIZATION entities found with tagId=${tagId}, skipping`);
+                  break;
                 }
                 
                 // Apply limit and get results
@@ -158,7 +166,7 @@ export const useEntityFeed = ({
                   
                 if (orgsError) {
                   logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsError);
-                  break; // Continue to next entity type instead of returning
+                  break;
                 }
                 
                 items = organizations || [];
@@ -166,19 +174,27 @@ export const useEntityFeed = ({
                 break;
                 
               case EntityType.EVENT:
-                logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}`);
+                logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}, search=${search}`);
                 
                 // Basic query for events
                 let eventsQuery = supabase.from('events').select('*');
+                
+                // Apply search filter for events
+                if (search && search.trim()) {
+                  const searchTerm = `%${search.toLowerCase()}%`;
+                  eventsQuery = eventsQuery.or(
+                    `title.ilike.${searchTerm},description.ilike.${searchTerm}`
+                  );
+                }
                 
                 // Apply tag filtering if we have tagged event IDs
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   eventsQuery = eventsQuery.in('id', taggedEntityIds[targetType]);
                   logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 } else if (tagId && !taggedEntityIds[targetType]?.length) {
-                  // If we're filtering by tag but no events have this tag, skip this type but continue with others
-                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}, continuing with other types`);
-                  break; // Continue to next entity type instead of returning
+                  // If we're filtering by tag but no events have this tag, skip this type
+                  logger.debug(`EntityFeed: No EVENT entities found with tagId=${tagId}, skipping`);
+                  break;
                 }
                 
                 // Apply limit and get results
@@ -186,7 +202,7 @@ export const useEntityFeed = ({
                   
                 if (eventsError) {
                   logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsError);
-                  break; // Continue to next entity type instead of returning
+                  break;
                 }
                 
                 items = events || [];
@@ -195,7 +211,7 @@ export const useEntityFeed = ({
                 
               default:
                 logger.warn(`Unsupported entity type: ${type}`);
-                break; // Continue to next entity type instead of returning
+                break;
             }
             
             // Convert each item to an Entity and add to results
