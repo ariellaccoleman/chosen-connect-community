@@ -38,7 +38,7 @@ export const chatMessageApi = createApiFactory<ChatMessageWithAuthor, string>({
 /**
  * Reset chat message API with authenticated client
  */
-export const resetChatMessageApi = (client?: any) => {
+export const resetApi = (client?: any) => {
   const newApi = createApiFactory<ChatMessageWithAuthor, string>({
     tableName: 'chats',
     idField: 'id',

@@ -359,7 +359,7 @@ export const postsApi = createExtendedPostsApi();
 /**
  * Reset posts API with authenticated client
  */
-export const resetPostsApi = (client?: any) => {
+export const resetApi = (client?: any) => {
   const newPostsApi = createExtendedPostsApi(client);
   const newCommentsApi = createExtendedCommentsApi(client);
   const newPostLikesApi = createExtendedPostLikesApi(client);

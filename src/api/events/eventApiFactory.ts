@@ -1,3 +1,4 @@
+
 import { Event } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { extendApiOperations } from "@/api/core/apiExtension";
@@ -49,7 +50,7 @@ export const eventApi = createApiFactory<
 /**
  * Reset event API with authenticated client
  */
-export const resetEventApi = (client?: any) => {
+export const resetApi = (client?: any) => {
   const newApi = createApiFactory<
     Event,
     string,
