@@ -1,6 +1,7 @@
 
 import { Event } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
+import { extendApiOperations } from "@/api/core/apiExtension";
 
 /**
  * Factory for event API operations  
@@ -43,6 +44,23 @@ export const eventApi = createApiFactory<
     }
     
     return cleanedData;
+  }
+});
+
+/**
+ * Extended event API with additional operations for backward compatibility
+ */
+export const extendedEventApi = extendApiOperations(eventApi, {
+  createEventWithTags: async (eventData: Partial<Event>, hostId: string, tagIds: string[]) => {
+    // First create the event
+    const eventResult = await eventApi.create({ ...eventData, host_id: hostId } as any);
+    
+    if (eventResult.error || !eventResult.data) {
+      return eventResult;
+    }
+    
+    // TODO: Add tag assignment logic here if needed
+    return eventResult;
   }
 });
 
