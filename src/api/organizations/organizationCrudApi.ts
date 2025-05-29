@@ -3,21 +3,76 @@ import { Organization, OrganizationWithLocation } from "@/types";
 import { ApiResponse, createSuccessResponse } from "../core/errorHandler";
 import { formatLocationWithDetails } from "@/utils/formatters/locationFormatters";
 import { logger } from "@/utils/logger";
-import { apiClient } from "../core/apiClient";
+import { createRepository } from "../core/repository/repositoryFactory";
 
 /**
- * Organization CRUD API with client injection support
+ * API module for basic organization operations (get, getById)
  */
 export const organizationCrudApi = {
   /**
-   * Get an organization by ID with location details
+   * Get all organizations
    */
-  async getOrganizationById(id: string, providedClient?: any): Promise<ApiResponse<OrganizationWithLocation | null>> {
-    logger.info(`API call: getOrganizationById for ID: ${id}`);
+  async getAllOrganizations(): Promise<ApiResponse<OrganizationWithLocation[]>> {
+    logger.info("API call: getAllOrganizations");
     
-    return apiClient.query(async (client) => {
-      const { data, error } = await client
-        .from('organizations')
+    try {
+      const repository = createRepository<Organization>('organizations');
+      
+      const { data, error } = await repository
+        .select(`
+          *,
+          location:locations(*)
+        `)
+        .order('name', { ascending: true })
+        .execute();
+      
+      if (error) {
+        logger.error("Error fetching all organizations:", error);
+        throw error;
+      }
+      
+      logger.info(`Successfully fetched ${data?.length || 0} organizations`);
+      
+      // Handle the nested location data that comes from the join
+      const formattedOrganizations = (data || []).map(org => {
+        // TypeScript doesn't know about the 'location' field as it's not in the Organization type
+        // We need to use type assertion to access it
+        const orgWithLocation = org as any;
+        
+        if (orgWithLocation.location) {
+          return {
+            ...org,
+            location: formatLocationWithDetails(orgWithLocation.location)
+          };
+        }
+        return org;
+      }) as OrganizationWithLocation[];
+      
+      return createSuccessResponse(formattedOrganizations);
+    } catch (error) {
+      logger.error("Error in getAllOrganizations:", error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Get organization by ID
+   */
+  async getOrganizationById(id?: string): Promise<ApiResponse<OrganizationWithLocation | null>> {
+    logger.info(`API call: getOrganizationById with ID: "${id}"`);
+    
+    if (!id) {
+      logger.error("getOrganizationById was called with a falsy ID value");
+      return createSuccessResponse(null);
+    }
+    
+    try {
+      const repository = createRepository<Organization>('organizations');
+      
+      // Log the exact query we're about to make
+      logger.info(`Executing query to fetch organization with ID: "${id}"`);
+      
+      const { data, error } = await repository
         .select(`
           *,
           location:locations(*)
@@ -26,65 +81,32 @@ export const organizationCrudApi = {
         .maybeSingle();
       
       if (error) {
-        logger.error(`Error fetching organization ${id}:`, error);
+        logger.error(`Error fetching organization with ID ${id}:`, error);
         throw error;
       }
       
-      if (!data) {
-        logger.info(`Organization ${id} not found`);
+      if (data) {
+        logger.info(`Found organization data for ID ${id}:`, { 
+          name: data.name, 
+          id: data.id 
+        });
+        
+        // Type assertion to handle the nested location data
+        const orgWithLocation = data as any;
+        
+        const formattedOrg = {
+          ...data,
+          location: orgWithLocation.location ? formatLocationWithDetails(orgWithLocation.location) : undefined
+        } as OrganizationWithLocation;
+        
+        return createSuccessResponse(formattedOrg);
+      } else {
+        logger.warn(`No organization found with ID "${id}"`);
         return createSuccessResponse(null);
       }
-
-      // Format the organization with location details
-      const formattedOrg: OrganizationWithLocation = {
-        ...data,
-        location: data.location ? formatLocationWithDetails(data.location) : null
-      };
-      
-      logger.info(`Successfully fetched organization ${id}`);
-      return createSuccessResponse(formattedOrg);
-    }, providedClient);
-  },
-
-  /**
-   * Get all organizations with optional filtering
-   */
-  async getAllOrganizations(filters?: any, providedClient?: any): Promise<ApiResponse<OrganizationWithLocation[]>> {
-    logger.info("API call: getAllOrganizations", filters);
-    
-    return apiClient.query(async (client) => {
-      let query = client
-        .from('organizations')
-        .select(`
-          *,
-          location:locations(*)
-        `)
-        .order('created_at', { ascending: false });
-
-      // Apply filters if provided
-      if (filters?.name) {
-        query = query.ilike('name', `%${filters.name}%`);
-      }
-      
-      if (filters?.location_id) {
-        query = query.eq('location_id', filters.location_id);
-      }
-
-      const { data, error } = await query;
-      
-      if (error) {
-        logger.error("Error fetching organizations:", error);
-        throw error;
-      }
-      
-      // Format organizations with location details
-      const formattedOrgs: OrganizationWithLocation[] = (data || []).map(org => ({
-        ...org,
-        location: org.location ? formatLocationWithDetails(org.location) : null
-      }));
-      
-      logger.info(`Successfully fetched ${formattedOrgs.length} organizations`);
-      return createSuccessResponse(formattedOrgs);
-    }, providedClient);
+    } catch (error) {
+      logger.error(`Error in getOrganizationById for ID ${id}:`, error);
+      throw error;
+    }
   }
 };

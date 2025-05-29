@@ -1,4 +1,5 @@
 
+import { supabase } from "@/integrations/supabase/client";
 import { TestClientFactory } from "@/integrations/supabase/testClient";
 import { handleApiError } from "./errorHandler";
 
@@ -61,7 +62,7 @@ const waitForSessionReady = async (client: any, maxAttempts = 5, delayMs = 100):
 
 /**
  * Get the appropriate Supabase client based on environment
- * Now requires explicit client parameter - no fallback to static imports
+ * Now accepts an optional client parameter for testing with specific users
  */
 const getSupabaseClient = async (providedClient?: any) => {
   // If a client is provided (for testing), use it
@@ -75,8 +76,6 @@ const getSupabaseClient = async (providedClient?: any) => {
     return await TestClientFactory.getSharedTestClient();
   }
   
-  // In production, we need a client to be provided or use lazy import
-  const { supabase } = await import("@/integrations/supabase/client");
   return supabase;
 };
 
@@ -127,7 +126,7 @@ const executeWithSessionVerification = async (client: any, callback: (client: an
 
 /**
  * Core API client that wraps Supabase client with error handling
- * Now requires explicit client parameter for all operations
+ * Now supports optional client parameter for per-user testing
  */
 export const apiClient = {
   // Database operations with error handling and session verification

@@ -5,6 +5,8 @@
 export { 
   createTagApiFactory,
   createTagAssignmentApiFactory,
+  createTagApi,
+  createTagAssignmentApi,
   // Extended factories with full business operations
   createExtendedTagApi,
   createExtendedTagAssignmentApi,

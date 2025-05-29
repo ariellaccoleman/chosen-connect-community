@@ -1,206 +1,198 @@
 
-import { Tag } from "@/types";
-import { createApiFactory } from "@/api/core/factory/apiFactory";
-import { extendApiOperations } from "@/api/core/apiExtension";
-import { EntityType } from "@/types/entityTypes";
+/**
+ * Tag API Factory - Updated to comply with ApiOperations interface for hook factory pattern
+ */
+import { createTagCoreOperations } from './tagCoreOperations';
+import { createTagAssignmentCoreOperations, createEnrichedTagAssignmentOperations } from './tagAssignmentCoreOperations';
+import { createTagBusinessOperations } from './tagBusinessOperations';
+import { createTagAssignmentBusinessOperations } from './tagAssignmentBusinessOperations';
+import { EntityType } from '@/types/entityTypes';
+import { ApiOperations } from '@/api/core/types';
+import { createRelationshipApiFactory } from '@/api/core/factory/apiFactory';
+import { TagAssignmentRelationshipOperations } from './types';
+import { TagAssignment } from '@/utils/tags/types';
 
-// Define TagAssignment interface locally to avoid import issues
-interface TagAssignment {
-  id: string;
-  tag_id: string;
-  target_id: string;
-  target_type: EntityType;
-  created_at: string;
-  updated_at: string;
-  tag?: Tag;
-}
-
-// Define TagWithEntityTypes interface locally
-interface TagWithEntityTypes extends Tag {
-  entity_types: EntityType[];
-  tag_entity_types?: Array<{ entity_type: EntityType }>;
+/**
+ * Factory function to create tag API with ApiOperations interface compliance
+ * ONLY includes standard CRUD operations to comply with ApiOperations interface
+ */
+export function createTagApi(client?: any): ApiOperations<any> {
+  const coreOps = createTagCoreOperations(client);
+  
+  return {
+    // Core CRUD operations only - standardized interface
+    getAll: coreOps.getAll,
+    getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
+    create: coreOps.create,
+    update: coreOps.update,
+    delete: coreOps.delete
+  };
 }
 
 /**
- * Create tag API with client injection support
- * Now uses lazy client resolution to avoid early instantiation
+ * Extended factory function to create tag API with full business operations interface
  */
-const createTagApi = (providedClient?: any) => {
-  return createApiFactory<
-    TagWithEntityTypes,
-    string,
-    Partial<Tag>,
-    Partial<Tag>
-  >({
-    tableName: 'tags',
-    entityName: 'Tag',
-    idField: 'id',
-    defaultSelect: `*, tag_entity_types(entity_type)`,
-    useMutationOperations: true,
-    useBatchOperations: false,
-    transformResponse: (data) => {
-      return {
-        ...data,
-        entity_types: data.tag_entity_types?.map((et: any) => et.entity_type) || []
-      };
-    },
-    transformRequest: (data) => {
-      const cleanedData: Record<string, any> = { ...data };
-      delete cleanedData.entity_types;
-      delete cleanedData.tag_entity_types;
-      
-      if (!cleanedData.updated_at) {
-        cleanedData.updated_at = new Date().toISOString();
-      }
-      
-      return cleanedData;
-    }
-  }, providedClient);
-};
+export function createExtendedTagApi(client?: any) {
+  const coreOps = createTagCoreOperations(client);
+  const businessOps = createTagBusinessOperations(client);
+  
+  return {
+    // Core CRUD operations - standardized interface
+    getAll: coreOps.getAll,
+    getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
+    create: coreOps.create,
+    update: coreOps.update,
+    delete: coreOps.delete,
+    
+    // Business operations with proper typing
+    findOrCreate: businessOps.findOrCreate,
+    searchByName: businessOps.searchByName,
+    getByEntityType: businessOps.getByEntityType
+  };
+}
 
 /**
- * Create tag assignment API with client injection support
- * Now uses lazy client resolution to avoid early instantiation
+ * Factory function to create tag assignment API with ApiOperations interface compliance
+ * ONLY includes standard CRUD operations to comply with ApiOperations interface
  */
-const createTagAssignmentApi = (providedClient?: any) => {
-  return createApiFactory<
-    TagAssignment,
-    string,
-    Partial<TagAssignment>,
-    Partial<TagAssignment>
-  >({
+export function createTagAssignmentApi(client?: any): ApiOperations<any> {
+  const coreOps = createTagAssignmentCoreOperations(client);
+  
+  return {
+    // Core CRUD operations only - standardized interface
+    getAll: coreOps.getAll,
+    getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
+    create: coreOps.create,
+    update: coreOps.update,
+    delete: coreOps.delete
+  };
+}
+
+/**
+ * Factory function to create tag assignment relationship API
+ * Uses RelationshipApiOperations interface with relationship-specific methods
+ */
+export function createTagAssignmentRelationshipApi(client?: any): TagAssignmentRelationshipOperations {
+  // Create the base relationship operations (RUD only, no generic create)
+  const relationshipOps = createRelationshipApiFactory<TagAssignment>({
     tableName: 'tag_assignments',
     entityName: 'TagAssignment',
-    idField: 'id',
-    defaultSelect: `*`,
     useMutationOperations: true,
-    useBatchOperations: false,
-    transformRequest: (data) => {
-      const cleanedData: Record<string, any> = { ...data };
-      
-      if (!cleanedData.updated_at) {
-        cleanedData.updated_at = new Date().toISOString();
-      }
-      
-      return cleanedData;
-    }
-  }, providedClient);
-};
-
-/**
- * Create extended tag API with business operations
- */
-export const createExtendedTagApi = (providedClient?: any) => {
-  const baseTagApi = createTagApi(providedClient);
-
-  // Extended operations using the API extension pattern
-  return extendApiOperations(baseTagApi, {
-    findOrCreate: async (tagData: Partial<Tag> & { entity_type?: EntityType }) => {
-      const { entity_type, ...cleanTagData } = tagData;
-      
-      // Search for existing tag
-      const existingResponse = await baseTagApi.getAll({ 
-        filters: { name: cleanTagData.name } 
-      });
-      
-      if (existingResponse.error) {
-        return existingResponse;
-      }
-      
-      if (existingResponse.data && existingResponse.data.length > 0) {
-        return {
-          data: existingResponse.data[0],
-          error: null
-        };
-      }
-      
-      // Create new tag if not found
-      return baseTagApi.create(cleanTagData as any);
+    defaultSelect: '*',
+    transformResponse: (item: any): TagAssignment => ({
+      id: item.id,
+      tag_id: item.tag_id,
+      target_id: item.target_id,
+      target_type: item.target_type,
+      created_at: item.created_at,
+      updated_at: item.updated_at
+    }),
+    // Relationship-specific configuration
+    validateRelationship: (tagId: string, entityId: string, entityType?: string) => {
+      return !!(tagId && entityId && entityType);
     },
+    preventDuplicates: true,
+    sourceEntityType: 'tag',
+    targetEntityType: 'entity'
+  }, client);
+  
+  // Get business operations for relationship-specific methods
+  const businessOps = createTagAssignmentBusinessOperations(client);
+  
+  // Combine relationship operations with business-specific methods
+  return {
+    ...relationshipOps,
+    
+    // Relationship-specific creation method
+    createAssignment: businessOps.create,
+    
+    // Business-specific query methods
+    getForEntity: (entityId: string, entityType: EntityType) => 
+      relationshipOps.getAll({ 
+        filters: { 
+          target_id: entityId, 
+          target_type: entityType 
+        } 
+      }),
+    
+    getEntitiesByTagId: businessOps.getEntitiesByTagId,
+    deleteByTagAndEntity: businessOps.deleteByTagAndEntity,
+    deleteForEntity: businessOps.deleteForEntity,
+    isTagAssigned: businessOps.isTagAssigned
+  };
+}
 
-    searchByName: async (searchTerm: string) => {
-      return baseTagApi.getAll({
-        filters: {
-          name: `%${searchTerm}%`
-        }
-      });
-    }
+/**
+ * Extended factory function to create tag assignment API with full business operations interface
+ */
+export function createExtendedTagAssignmentApi(client?: any) {
+  const coreOps = createTagAssignmentCoreOperations(client);
+  const businessOps = createTagAssignmentBusinessOperations(client);
+  const enrichedOps = createEnrichedTagAssignmentOperations(client);
+  
+  return {
+    // Core CRUD operations - standardized interface
+    getAll: coreOps.getAll,
+    getById: coreOps.getById,
+    getByIds: coreOps.getByIds,
+    create: coreOps.create,
+    update: coreOps.update,
+    delete: coreOps.delete,
+    
+    // Business operations with proper typing
+    createAssignment: (tagId: string, entityId: string, entityType: EntityType) => 
+      businessOps.create(tagId, entityId, entityType),
+    getEntitiesByTagId: businessOps.getEntitiesByTagId,
+    deleteByTagAndEntity: businessOps.deleteByTagAndEntity,
+    deleteForEntity: businessOps.deleteForEntity,
+    isTagAssigned: businessOps.isTagAssigned,
+    
+    // Enriched operations (read-only from view)
+    getAllEnriched: enrichedOps.getAll
+  };
+}
+
+// DEPRECATED: Default exports - will be removed in next phase
+// These cause repositories to be created at import time with unauthenticated client
+export const tagApi = createExtendedTagApi(); // Use extended for backward compatibility
+export const tagAssignmentApi = createExtendedTagAssignmentApi(); // Use extended for backward compatibility
+
+// Factory functions for creating API instances (for testing and custom usage)
+export function createTagApiFactory(client?: any) {
+  return createTagApi(client);
+}
+
+export function createTagAssignmentApiFactory(client?: any) {
+  return createTagAssignmentApi(client);
+}
+
+// DEPRECATED: Simplified function exports - will be removed in next phase
+// These use the problematic default exports
+export const getAllTags = tagApi.getAll;
+export const getTagById = tagApi.getById;
+export const createTag = tagApi.create;
+export const updateTag = tagApi.update;
+export const deleteTag = tagApi.delete;
+export const findTagByName = (name: string) => tagApi.getAll({ filters: { name } });
+export const searchTags = tagApi.searchByName;
+export const findOrCreateTag = tagApi.findOrCreate;
+export const getTagsByEntityType = tagApi.getByEntityType;
+
+// Tag assignment function exports
+export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityType) => 
+  tagAssignmentApi.getAll({ 
+    filters: { 
+      target_id: entityId, 
+      target_type: entityType 
+    } 
   });
-};
 
-/**
- * Create extended tag assignment API with business operations
- */
-export const createExtendedTagAssignmentApi = (providedClient?: any) => {
-  const baseTagAssignmentApi = createTagAssignmentApi(providedClient);
+export const createTagAssignment = tagAssignmentApi.createAssignment;
+export const deleteTagAssignment = tagAssignmentApi.delete;
 
-  // Extended operations using the API extension pattern
-  return extendApiOperations(baseTagAssignmentApi, {
-    createAssignment: async (tagId: string, targetId: string, targetType: EntityType) => {
-      return baseTagAssignmentApi.create({
-        tag_id: tagId,
-        target_id: targetId,
-        target_type: targetType
-      } as any);
-    },
-
-    getEntitiesByTagId: async (tagId: string, entityType: EntityType) => {
-      return baseTagAssignmentApi.getAll({
-        filters: {
-          tag_id: tagId,
-          target_type: entityType
-        }
-      });
-    }
-  });
-};
-
-// For backward compatibility - these will be lazy-loaded
-let _tagApiInstance: any = null;
-let _tagAssignmentApiInstance: any = null;
-
-/**
- * Lazy-loaded tag API instance
- * Only created when first accessed to avoid early instantiation
- */
-export const tagApi = new Proxy({} as any, {
-  get(target, prop) {
-    if (!_tagApiInstance) {
-      _tagApiInstance = createExtendedTagApi();
-    }
-    return _tagApiInstance[prop];
-  }
-});
-
-/**
- * Lazy-loaded tag assignment API instance
- * Only created when first accessed to avoid early instantiation
- */
-export const tagAssignmentApi = new Proxy({} as any, {
-  get(target, prop) {
-    if (!_tagAssignmentApiInstance) {
-      _tagAssignmentApiInstance = createExtendedTagAssignmentApi();
-    }
-    return _tagAssignmentApiInstance[prop];
-  }
-});
-
-// Export specific operations for more granular imports - these will also be lazy
-export const getAllTags = (...args: any[]) => tagApi.getAll(...args);
-export const getTagById = (...args: any[]) => tagApi.getById(...args);
-export const getTagsByIds = (...args: any[]) => tagApi.getByIds(...args);
-export const createTag = (...args: any[]) => tagApi.create(...args);
-export const updateTag = (...args: any[]) => tagApi.update(...args);
-export const deleteTag = (...args: any[]) => tagApi.delete(...args);
-export const findTagByName = (...args: any[]) => tagApi.searchByName(...args);
-export const searchTags = (...args: any[]) => tagApi.searchByName(...args);
-export const findOrCreateTag = (...args: any[]) => tagApi.findOrCreate(...args);
-export const getTagsByEntityType = (...args: any[]) => tagApi.getAll(...args);
-
-export const getTagAssignmentsForEntity = (...args: any[]) => tagAssignmentApi.getAll(...args);
-export const createTagAssignment = (...args: any[]) => tagAssignmentApi.createAssignment(...args);
-export const deleteTagAssignment = (...args: any[]) => tagAssignmentApi.delete(...args);
-
-// Export factory functions
-export const createTagApiFactory = createTagApi;
-export const createTagAssignmentApiFactory = createTagAssignmentApi;
+// Re-export core operations for direct access if needed
+export { createTagCoreOperations } from './tagCoreOperations';
+export { createTagAssignmentCoreOperations } from './tagAssignmentCoreOperations';
