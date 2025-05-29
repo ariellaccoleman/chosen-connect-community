@@ -17,9 +17,8 @@ interface EntityFeedProps {
   limit?: number;
   className?: string;
   emptyMessage?: string;
-  tagId?: string; // Fixed tagId prop to match what's being passed in HubDetail.tsx
-  excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
-  // Profile-specific props
+  tagId?: string;
+  excludeEntityTypes?: EntityType[];
   search?: string;
   isApproved?: boolean;
 }
@@ -28,14 +27,14 @@ interface EntityFeedProps {
  * Component for displaying a feed of entities, with optional filtering by type and tags
  */
 const EntityFeed = ({
-  title = "", // Changed default from "Entity Feed" to empty string
+  title = "",
   defaultEntityTypes = Object.values(EntityType),
   showTabs = true,
   showTagFilter = true,
   limit,
   className = "",
   emptyMessage = "No items found",
-  tagId, // Add the tagId prop to destructuring
+  tagId,
   excludeEntityTypes = [],
   search = "",
   isApproved = true
@@ -134,7 +133,7 @@ const EntityFeed = ({
           </Tabs>
         )}
         
-        {showTagFilter && !tagId && ( // Only show tag filter if not using a fixed tagId
+        {showTagFilter && !tagId && (
           <TagFilter
             selectedTagId={selectedTagId}
             onTagSelect={onTagSelect}
