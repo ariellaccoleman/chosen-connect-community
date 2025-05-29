@@ -3,7 +3,7 @@ import { useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   extendedTagApi,
-  tagAssignmentApi
+  extendedTagAssignmentApi
 } from "@/api/tags/factory/tagApiFactory";
 import { Tag, TagAssignment } from "@/utils/tags/types";
 import { EntityType, isValidEntityType } from "@/types/entityTypes";
@@ -74,8 +74,8 @@ export function useFilterByTag(tagId: string | null, entityType?: EntityType) {
         // Log for debugging filters
         logger.debug(`useFilterByTag: Fetching entities with tagId=${tagId}, entityType=${entityType || 'all'}`);
         
-        // Use the tagAssignmentApi and handle wrapped response
-        const response = await tagAssignmentApi.getEntitiesByTagId(tagId, entityType);
+        // Use the extendedTagAssignmentApi and handle wrapped response
+        const response = await extendedTagAssignmentApi.getEntitiesByTagId(tagId, entityType);
         if (response.error) {
           logger.error(`useFilterByTag: Error fetching tag assignments for tag ${tagId}:`, response.error);
           return [];
@@ -168,8 +168,8 @@ export function useEntityTags(entityId: string, entityType: EntityType) {
       }
       
       try {
-        // Use tagAssignmentApi and handle wrapped response
-        const response = await tagAssignmentApi.getForEntity(entityId, entityType);
+        // Use extendedTagAssignmentApi and handle wrapped response
+        const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
         if (response.error) {
           logger.error(`Error fetching tags for entity ${entityId}:`, response.error);
           throw response.error;
@@ -210,7 +210,7 @@ export function useTagAssignmentMutations() {
       }
       
       // Create assignment using new API with wrapped response
-      const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+      const response = await extendedTagAssignmentApi.create(tagId, entityId, entityType);
       if (response.error) {
         throw response.error;
       }
@@ -225,7 +225,7 @@ export function useTagAssignmentMutations() {
   const removeTagMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
       // Delete assignment using new API with wrapped response
-      const response = await tagAssignmentApi.delete(assignmentId);
+      const response = await extendedTagAssignmentApi.delete(assignmentId);
       if (response.error) {
         throw response.error;
       }

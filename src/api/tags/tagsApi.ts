@@ -1,7 +1,7 @@
 
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { extendedTagApi, tagAssignmentApi } from './factory/tagApiFactory';
+import { extendedTagApi, extendedTagAssignmentApi } from './factory/tagApiFactory';
 
 /**
  * Get all tags
@@ -33,7 +33,7 @@ export const findTagByName = async (name: string): Promise<Tag | null> => {
   if (response.error) {
     throw response.error;
   }
-  return response.data || null;
+  return response.data?.[0] || null;
 };
 
 /**
@@ -104,7 +104,7 @@ export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]
  * Get tag assignments for an entity
  */
 export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
-  const response = await tagAssignmentApi.getForEntity(entityId, entityType);
+  const response = await extendedTagAssignmentApi.getForEntity(entityId, entityType);
   if (response.error) {
     throw response.error;
   }
@@ -115,7 +115,7 @@ export const getTagAssignmentsForEntity = async (entityId: string, entityType: E
  * Create a tag assignment
  */
 export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
-  const response = await tagAssignmentApi.create(tagId, entityId, entityType);
+  const response = await extendedTagAssignmentApi.create(tagId, entityId, entityType);
   if (response.error) {
     throw response.error;
   }
@@ -129,7 +129,7 @@ export const createTagAssignment = async (tagId: string, entityId: string, entit
  * Delete a tag assignment
  */
 export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
-  const response = await tagAssignmentApi.delete(assignmentId);
+  const response = await extendedTagAssignmentApi.delete(assignmentId);
   if (response.error) {
     throw response.error;
   }

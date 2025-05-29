@@ -88,7 +88,7 @@ export function useTagByName(name: string | null | undefined) {
       if (response.error) {
         throw response.error;
       }
-      return response.data || null;
+      return response.data?.[0] || null;
     },
     enabled: !!name
   });

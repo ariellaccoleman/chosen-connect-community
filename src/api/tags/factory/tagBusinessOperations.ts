@@ -30,8 +30,8 @@ export const tagBusinessOperations = {
    * Find or create a tag - complex business logic that combines find and create
    */
   async findOrCreate(data: Partial<Tag>, entityType?: EntityType, providedClient?: any): Promise<ApiResponse<Tag>> {
-    // First try to find existing tag
-    const existing = await tagBase.findByName(data.name!, providedClient);
+    // First try to find existing tag by name
+    const existing = await tagBase.getAll({ filters: { name: data.name } }, providedClient);
     if (existing.error) {
       return {
         data: null,
@@ -40,9 +40,9 @@ export const tagBusinessOperations = {
       };
     }
     
-    if (existing.data) {
+    if (existing.data && existing.data.length > 0) {
       return {
-        data: existing.data,
+        data: existing.data[0],
         error: null,
         status: 'success'
       };
