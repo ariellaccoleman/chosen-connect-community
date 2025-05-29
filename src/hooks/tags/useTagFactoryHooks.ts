@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { createRelationshipHooks, createRelationshipMutationHook } from '@/hooks/core/factory/relationshipHooks';
+import { createViewQueryHooks } from '@/hooks/core/factory/viewHookFactory';
 import { createTagApiFactory, createTagAssignmentRelationshipApi } from '@/api/tags/factory/tagApiFactory';
 import { createEnrichedTagAssignmentOperations } from '@/api/tags/factory/tagAssignmentCoreOperations';
 import { Tag, TagAssignment } from '@/utils/tags/types';
@@ -39,6 +40,20 @@ const createTagAssignmentHooks = () => {
     },
     additionalInvalidateKeys: ['tags', 'entity-tags']
   });
+};
+
+// Create enriched tag assignment view hooks (lazy instantiation)
+const createEnrichedTagAssignmentHooks = () => {
+  const enrichedOperations = createEnrichedTagAssignmentOperations();
+  return createViewQueryHooks<TagAssignment, string>(
+    {
+      name: 'entity-tag',
+      pluralName: 'entity-tags',
+      displayName: 'Entity Tag',
+      pluralDisplayName: 'Entity Tags'
+    },
+    enrichedOperations
+  );
 };
 
 /**
@@ -121,17 +136,12 @@ export function useTagAssignmentMutations() {
  * Hook to fetch tags for a specific entity (factory-based with enriched data)
  */
 export function useEntityTags(entityId: string, entityType: EntityType) {
-  const enrichedOperations = createEnrichedTagAssignmentOperations();
+  const enrichedHooks = createEnrichedTagAssignmentHooks();
   
-  return useQuery({
-    queryKey: ['entity-tags', entityId, entityType],
-    queryFn: () => enrichedOperations.getAll({ 
-      filters: { 
-        target_id: entityId, 
-        target_type: entityType 
-      } 
-    }),
-    select: (response) => response.data,
-    enabled: !!entityId && !!entityType
+  return enrichedHooks.useList({ 
+    filters: { 
+      target_id: entityId, 
+      target_type: entityType 
+    } 
   });
 }

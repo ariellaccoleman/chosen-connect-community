@@ -15,3 +15,6 @@ export * from './types';
 
 // Export relationship-specific hook factories
 export * from './relationshipHooks';
+
+// Export view-specific hook factories
+export * from './viewHookFactory';
