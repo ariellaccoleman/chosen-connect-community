@@ -1,4 +1,3 @@
-
 import { 
   ProfileOrganizationRelationship, 
   ProfileOrganizationRelationshipWithDetails 
@@ -65,7 +64,7 @@ export const organizationRelationshipsApi = {
   async addOrganizationRelationship(
     relationship: Partial<ProfileOrganizationRelationship>,
     providedClient?: any
-  ): Promise<ApiResponse<boolean>> {
+  ): Promise<ApiResponse<ProfileOrganizationRelationship>> {
     logger.info(`API call: addOrganizationRelationship`, relationship);
     
     return apiClient.query(async (client) => {
@@ -76,7 +75,7 @@ export const organizationRelationshipsApi = {
       // Create relationship directly - let the database handle any profile requirements
       // The test setup should ensure profiles exist, and in production, profiles are created via auth triggers
       logger.info(`Creating organization relationship`, relationship);
-      const { error } = await client
+      const { data, error } = await client
         .from('org_relationships')
         .insert({
           profile_id: relationship.profile_id,
@@ -84,12 +83,14 @@ export const organizationRelationshipsApi = {
           connection_type: relationship.connection_type,
           department: relationship.department,
           notes: relationship.notes
-        });
+        })
+        .select()
+        .single();
       
       if (error) throw error;
       
       logger.info(`Successfully created organization relationship`);
-      return createSuccessResponse(true);
+      return createSuccessResponse(data as ProfileOrganizationRelationship);
     }, providedClient);
   },
   
