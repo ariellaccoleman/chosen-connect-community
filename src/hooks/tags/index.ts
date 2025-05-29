@@ -9,8 +9,7 @@ export * from './useTagFactoryHooks';
 // Export existing hooks for backward compatibility with renamed exports to avoid conflicts
 export * from './useTagQuery';
 export { 
-  useTagCrudMutations as useTagCrudMutationsLegacy,
-  useTagAssignmentMutations as useTagAssignmentMutationsLegacy 
+  useTagCrudMutations as useTagCrudMutationsLegacy
 } from './useTagMutations';
 export { 
   useTagAssignmentMutations as useTagAssignmentOperationsLegacy 
