@@ -8,7 +8,6 @@ import { EntityType } from "@/types/entityTypes";
 import PublicProfileHeader from "@/components/profile/PublicProfileHeader";
 import PublicProfileOrganizations from "@/components/profile/PublicProfileOrganizations";
 import EntityTagDisplay from "@/components/tags/EntityTagDisplay";
-import EntityTagManager from "@/components/tags/EntityTagManager";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -47,9 +46,6 @@ const ProfileView = () => {
   const handleBack = () => {
     navigate(-1);
   };
-
-  // Check if current user can edit tags (admin or viewing own profile)
-  const canEditTags = isAdmin || (user?.id === profileId);
 
   if (isLoadingProfile) {
     return (
@@ -108,23 +104,11 @@ const ProfileView = () => {
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
             <h3 className="text-lg font-semibold mb-4 dark:text-white">Tags</h3>
             {profileId && (
-              <>
-                {canEditTags ? (
-                  <EntityTagManager 
-                    entityId={profileId} 
-                    entityType={EntityType.PERSON} 
-                    isAdmin={canEditTags}
-                    isEditing={canEditTags}
-                    className="w-full"
-                  />
-                ) : (
-                  <EntityTagDisplay
-                    entityId={profileId}
-                    entityType={EntityType.PERSON}
-                    className="flex flex-wrap gap-2"
-                  />
-                )}
-              </>
+              <EntityTagDisplay
+                entityId={profileId}
+                entityType={EntityType.PERSON}
+                className="flex flex-wrap gap-2"
+              />
             )}
           </div>
         </div>
