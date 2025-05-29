@@ -21,7 +21,7 @@ export const hubApi = createApiFactory<Hub>({
 /**
  * Reset hub API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetHubApi = (client?: any) => {
   const newApi = createApiFactory<Hub>({
     tableName: 'hubs',
     useMutationOperations: true,

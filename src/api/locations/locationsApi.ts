@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '../core/factory/apiFactory';
 import { LocationWithDetails } from '@/types/location';
 import { apiClient } from '../core/apiClient';
@@ -40,7 +39,7 @@ export const locationsApi = createApiFactory<LocationWithDetails, string, Partia
 /**
  * Reset locations API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetLocationsApi = (client?: any) => {
   const newApi = createApiFactory<LocationWithDetails, string, Partial<LocationWithDetails>, Partial<LocationWithDetails>, 'locations'>(
     {
       tableName: 'locations',

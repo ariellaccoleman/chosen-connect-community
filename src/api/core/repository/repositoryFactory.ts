@@ -1,3 +1,4 @@
+
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
 import { createMockRepository } from './MockRepository';
@@ -11,6 +12,7 @@ export interface RepositoryOptions {
   schema?: string;
   enableLogging?: boolean;
   initialData?: any[];
+  client?: any; // Add client parameter
 }
 
 /**
@@ -18,23 +20,27 @@ export interface RepositoryOptions {
  */
 export function createRepository<T>(
   tableName: string,
-  options: RepositoryOptions = {}
+  options: RepositoryOptions = {},
+  providedClient?: any // Add client parameter
 ): BaseRepository<T> {
   const schema = options.schema || 'public';
+  const clientToUse = providedClient || options.client || supabase;
+  
   console.log(`Creating repository for table: ${tableName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
+  // Verify client is available
+  if (!clientToUse) {
     throw new Error(`Supabase client is not available for table ${tableName}`);
   }
   
   console.log('Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase
+    hasClient: !!clientToUse,
+    hasFrom: !!(clientToUse && clientToUse.from),
+    clientType: typeof clientToUse,
+    isProvidedClient: !!providedClient
   });
   
-  return createSupabaseRepository<T>(tableName, supabase, schema);
+  return createSupabaseRepository<T>(tableName, clientToUse, schema);
 }
 
 /**
@@ -46,28 +52,34 @@ export function createTestingRepository<T>(
     schema?: string;
     initialData?: any[];
     enableLogging?: boolean;
-  } = {}
+    client?: any; // Add client parameter
+  } = {},
+  providedClient?: any // Add client parameter
 ): BaseRepository<T> {
   const schema = options.schema || 'testing';
+  const clientToUse = providedClient || options.client || supabase;
+  
   console.log(`Creating testing repository for table: ${tableName}, schema: ${schema}`);
   
-  // Verify Supabase client is available
-  if (!supabase) {
+  // Verify client is available
+  if (!clientToUse) {
     throw new Error(`Supabase client is not available for testing table ${tableName}`);
   }
   
   console.log('Testing repository Supabase client verification:', {
-    hasClient: !!supabase,
-    hasFrom: !!(supabase && supabase.from),
-    clientType: typeof supabase,
-    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
+    hasClient: !!clientToUse,
+    hasFrom: !!(clientToUse && clientToUse.from),
+    clientType: typeof clientToUse,
+    environment: typeof window === 'undefined' ? 'Node.js' : 'Browser',
+    isProvidedClient: !!providedClient
   });
   
   // Always use a real Supabase repository with the specified schema
   // Never use mock repositories, even in test environments
   return createRepository<T>(tableName, { 
     schema: schema,
-    enableLogging: options.enableLogging || true
+    enableLogging: options.enableLogging || true,
+    client: clientToUse
   });
 }
 

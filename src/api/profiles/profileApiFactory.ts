@@ -45,7 +45,7 @@ export const profileApi = createApiFactory<
 /**
  * Reset profile API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetProfileApi = (client?: any) => {
   const newApi = createApiFactory<
     ProfileWithDetails,
     string,

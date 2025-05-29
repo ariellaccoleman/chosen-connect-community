@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '../core/factory/apiFactory';
 import { ChatChannel, ChatChannelCreate, ChatChannelUpdate, ChatChannelWithDetails } from '@/types/chat';
 import { apiClient } from '../core/apiClient';
@@ -48,7 +47,7 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
 /**
  * Reset chat channels API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetChatChannelsApi = (client?: any) => {
   const newApi = createApiFactory<ChatChannel, string, ChatChannelCreate, ChatChannelUpdate>({
     tableName: 'chat_channels',
     entityName: 'chatChannel',
@@ -89,7 +88,7 @@ export const resetApi = (client?: any) => {
       return apiClient.query(async () => {
         try {
           // Use repository pattern to get the channel
-          const repository = createRepository('chat_channels', { client });
+          const repository = createRepository('chat_channels', {}, client);
           
           const { data, error } = await repository
             .select(`
@@ -112,7 +111,7 @@ export const resetApi = (client?: any) => {
           };
           
           // Get tags assigned to this channel
-          const tagAssignmentsRepo = createRepository('tag_assignments', { client });
+          const tagAssignmentsRepo = createRepository('tag_assignments', {}, client);
           const { data: tagAssignments, error: tagError } = await tagAssignmentsRepo
             .select(`
               *,
@@ -163,7 +162,7 @@ export const resetApi = (client?: any) => {
     ): Promise<ApiResponse<boolean>> => {
       return apiClient.query(async () => {
         try {
-          const tagAssignmentsRepo = createRepository('tag_assignments', { client });
+          const tagAssignmentsRepo = createRepository('tag_assignments', {}, client);
           
           // Delete existing tag assignments
           const { error: deleteError } = await tagAssignmentsRepo

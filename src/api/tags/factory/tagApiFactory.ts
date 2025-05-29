@@ -159,7 +159,7 @@ export function createExtendedTagAssignmentApi(client?: any) {
  * Reset all tag-related APIs with authenticated client
  * Returns an object matching all current exports from this factory
  */
-export const resetApi = (client?: any) => {
+export const resetTagApi = (client?: any) => {
   // Recreate all APIs with the provided client
   const newTagApi = createExtendedTagApi(client);
   const newTagAssignmentApi = createExtendedTagAssignmentApi(client);
