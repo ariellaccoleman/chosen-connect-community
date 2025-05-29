@@ -1,12 +1,13 @@
 
 /**
  * Tag business operations - complex operations that combine multiple steps
- * Updated to use proper database views for entity type filtering
+ * Updated to use direct API client for view queries
  */
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { Tag } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { ApiResponse } from '@/api/core/errorHandler';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
+import { apiClient } from '@/api/core/apiClient';
 
 // Create tag API using the factory pattern for base operations on the main tags table
 const tagBase = createApiFactory<Tag>({
@@ -20,23 +21,8 @@ const tagBase = createApiFactory<Tag>({
     description: item.description,
     created_by: item.created_by,
     created_at: item.created_at,
-    updated_at: item.updated_at
-  })
-});
-
-// Create a view-based API for filtered entity tags
-const filteredEntityTagsApi = createApiFactory<Tag>({
-  tableName: 'filtered_entity_tags_view',
-  entityName: 'FilteredEntityTag',
-  useMutationOperations: false,
-  defaultSelect: '*',
-  transformResponse: (item: any): Tag => ({
-    id: item.id,
-    name: item.name,
-    description: item.description,
-    created_by: item.created_by,
-    created_at: item.created_at,
-    updated_at: item.updated_at
+    updated_at: item.updated_at,
+    entity_types: item.entity_types || []
   })
 });
 
@@ -66,7 +52,7 @@ export const tagBusinessOperations = {
   },
 
   /**
-   * Search tags by name pattern using the all_tags view
+   * Search tags by name pattern
    */
   async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
     if (!searchQuery.trim()) {
@@ -84,8 +70,29 @@ export const tagBusinessOperations = {
    * Get tags by entity type using the filtered_entity_tags_view
    */
   async getByEntityType(entityType: EntityType): Promise<ApiResponse<Tag[]>> {
-    return filteredEntityTagsApi.getAll({ 
-      filters: { entity_type: entityType } 
-    });
+    try {
+      return await apiClient.query(async (client) => {
+        const { data, error } = await client
+          .from('filtered_entity_tags_view' as any)
+          .select('*')
+          .eq('entity_type', entityType);
+
+        if (error) throw error;
+
+        const transformedData = (data || []).map((item: any): Tag => ({
+          id: item.id,
+          name: item.name,
+          description: item.description,
+          created_by: item.created_by,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          entity_types: [entityType]
+        }));
+
+        return createSuccessResponse(transformedData);
+      });
+    } catch (error) {
+      return createErrorResponse(error);
+    }
   }
 };

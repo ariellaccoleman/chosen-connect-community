@@ -1,13 +1,14 @@
 
 /**
  * Tag API Factory - Main entry point using factory configuration
- * Updated to use proper database views and remove problematic methods
+ * Updated to fix TypeScript errors and use proper types
  */
 import { tagCoreOperations } from './tagCoreOperations';
 import { tagAssignmentCoreOperations, enrichedTagAssignmentOperations } from './tagAssignmentCoreOperations';
 import { tagBusinessOperations } from './tagBusinessOperations';
 import { tagAssignmentBusinessOperations } from './tagAssignmentBusinessOperations';
 import { EntityType } from '@/types/entityTypes';
+import { Tag, TagAssignment } from '@/utils/tags/types';
 
 // Export the factory-based APIs
 export const tagApi = tagCoreOperations;
@@ -68,10 +69,10 @@ export const getAllTags = (optionsOrClient?: any) => tagApi.getAll(optionsOrClie
 export const getTagById = (id: string) => tagApi.getById(id);
 export const findTagByName = (name: string) => extendedTagApi.findByName(name);
 export const searchTags = (searchQuery: string) => extendedTagApi.searchByName(searchQuery);
-export const createTag = (data: any) => tagApi.create(data);
-export const updateTag = (id: string, data: any) => tagApi.update(id, data);
+export const createTag = (data: Partial<Tag>) => tagApi.create(data);
+export const updateTag = (id: string, data: Partial<Tag>) => tagApi.update(id, data);
 export const deleteTag = (id: string) => tagApi.delete(id);
-export const findOrCreateTag = (data: any, entityType?: EntityType) => tagBusinessOperations.findOrCreate(data, entityType);
+export const findOrCreateTag = (data: Partial<Tag>, entityType?: EntityType) => tagBusinessOperations.findOrCreate(data, entityType);
 export const getTagsByEntityType = (entityType: EntityType) => extendedTagApi.getByEntityType(entityType);
 
 // Tag assignment function exports
