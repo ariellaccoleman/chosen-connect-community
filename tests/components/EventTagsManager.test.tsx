@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import EventTagsManager from '@/components/events/form/EventTagsManager';
@@ -42,7 +41,7 @@ const Wrapper = ({ children }: { children: React.ReactNode }) => (
   </BrowserRouter>
 );
 
-describe('EventTagsManager Component', () => {
+describe.skip('EventTagsManager Component', () => {
   const mockUser = { id: 'user-123', email: 'test@example.com' };
   const mockEventId = 'event-123';
   

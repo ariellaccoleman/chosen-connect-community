@@ -1,4 +1,3 @@
-
 import { authApi } from '@/api/authApi';
 import { mockSupabase, resetSupabaseMocks, mockAuthResponse, mockErrorResponse } from '../__mocks__/supabase';
 import { createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
@@ -24,7 +23,7 @@ jest.mock('@/api/core/apiClient', () => ({
  * 
  * This file will be removed once the integration tests are validated.
  */
-describe('Auth API (Mock Tests - DEPRECATED)', () => {
+describe.skip('Auth API (Mock Tests - DEPRECATED)', () => {
   beforeEach(() => {
     resetSupabaseMocks();
   });

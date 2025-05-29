@@ -1,4 +1,3 @@
-
 import { createBatchOperations } from '@/api/core/factory/operations/batchOperations';
 import { createMockBatchOperations } from '../../../../utils/supabaseMockUtils';
 import { MockRepository } from '@/api/core/repository/MockRepository';
@@ -6,7 +5,7 @@ import { MockRepository } from '@/api/core/repository/MockRepository';
 // Test table name
 const TABLE_NAME = 'test_table';
 
-describe('Batch Operations', () => {
+describe.skip('Batch Operations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

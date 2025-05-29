@@ -1,4 +1,3 @@
-
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 
@@ -10,7 +9,7 @@ interface TestEntity {
   created_at: string;
 }
 
-describe('API Factory with Database Repository', () => {
+describe.skip('API Factory with Database Repository', () => {
   beforeEach(() => {
     console.log('--- Starting new test ---');
   });

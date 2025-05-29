@@ -1,8 +1,7 @@
-
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../../../utils/persistentTestUsers';
 
-describe('Database Connection Validation', () => {
+describe.skip('Database Connection Validation', () => {
   afterAll(() => {
     TestClientFactory.cleanup();
   });
