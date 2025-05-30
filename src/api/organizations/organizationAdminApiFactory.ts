@@ -5,6 +5,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { ApiResponse } from "@/api/core/types";
 
 /**
+ * Transform raw organization admin data to the expected format
+ */
+const transformOrganizationAdminResponse = (data: any): OrganizationAdminWithDetails => {
+  return {
+    id: data.id,
+    organization_id: data.organization_id,
+    profile_id: data.profile_id,
+    role: data.role,
+    is_approved: data.is_approved,
+    can_edit_profile: data.can_edit_profile,
+    created_at: data.created_at,
+    profile: data.profile,
+    organization: data.organization
+  };
+};
+
+/**
  * Factory for organization admin API operations
  */
 export const organizationAdminApi = createApiFactory<
@@ -26,19 +43,7 @@ export const organizationAdminApi = createApiFactory<
   `,
   useMutationOperations: true,
   useBatchOperations: false,
-  transformResponse: (data) => {
-    return {
-      id: data.id,
-      organization_id: data.organization_id,
-      profile_id: data.profile_id,
-      role: data.role,
-      is_approved: data.is_approved,
-      can_edit_profile: data.can_edit_profile,
-      created_at: data.created_at,
-      profile: data.profile,
-      organization: data.organization
-    };
-  },
+  transformResponse: transformOrganizationAdminResponse,
   transformRequest: (data) => {
     const cleanedData: Record<string, any> = { ...data };
     
@@ -86,7 +91,7 @@ export const getAllOrganizationAdmins = async (filters: {
       return { data: null, error, status: 'error' };
     }
     
-    const formatted = (data || []).map(admin => organizationAdminApi.transformResponse(admin));
+    const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
     return { data: formatted, error: null, status: 'success' };
   } catch (error) {
     console.error('Error in getAllOrganizationAdmins:', error);
@@ -125,7 +130,7 @@ export const getOrganizationAdminsByOrg = async (
       return { data: null, error, status: 'error' };
     }
     
-    const formatted = (data || []).map(admin => organizationAdminApi.transformResponse(admin));
+    const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
     return { data: formatted, error: null, status: 'success' };
   } catch (error) {
     console.error('Error in getOrganizationAdminsByOrg:', error);
@@ -158,7 +163,7 @@ export const getUserAdminRequests = async (
       return { data: null, error, status: 'error' };
     }
     
-    const formatted = (data || []).map(admin => organizationAdminApi.transformResponse(admin));
+    const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
     return { data: formatted, error: null, status: 'success' };
   } catch (error) {
     console.error('Error in getUserAdminRequests:', error);
