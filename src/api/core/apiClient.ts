@@ -72,8 +72,8 @@ const getSupabaseClient = async (providedClient?: any) => {
   }
 
   if (isTestEnvironment()) {
-    console.log('🧪 Using shared test Supabase client for API operations');
-    return await TestClientFactory.getSharedTestClient();
+    console.log('🧪 Using anon test Supabase client for API operations');
+    return TestClientFactory.getAnonClient();
   }
   
   return supabase;

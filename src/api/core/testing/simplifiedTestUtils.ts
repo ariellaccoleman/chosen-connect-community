@@ -1,3 +1,4 @@
+
 import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
 import { logger } from '@/utils/logger';
 import { v4 as uuidv4 } from 'uuid';
@@ -70,11 +71,11 @@ export class SimplifiedTestContext<T> {
    */
   getClient(authenticated = false, userEmail?: string, userPassword?: string) {
     if (authenticated && userEmail && userPassword) {
-      // Use the shared client pattern - authenticate the shared client
-      return TestClientFactory.authenticateSharedClient(userEmail, userPassword);
+      // Use the new per-user client pattern
+      return TestClientFactory.getUserClient(userEmail, userPassword);
     }
     
-    return TestClientFactory.getSharedTestClient();
+    return TestClientFactory.getAnonClient();
   }
 
   /**
