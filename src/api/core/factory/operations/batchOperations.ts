@@ -15,70 +15,30 @@ export function createBatchOperations<
   TUpdate = Partial<T>,
   Table extends TableNames = TableNames
 >(
-  entityName: string,
-  tableName: Table,
-  options: {
-    idField?: string;
-    defaultSelect?: string;
-    transformResponse?: (item: any) => T;
-    transformRequest?: (item: any) => Record<string, any>;
-    repository?: DataRepository<T>;
-    softDelete?: boolean;
-  } = {},
-  providedClient?: any
+  repository: DataRepository<T>,
+  entityName: string = "Entity"
 ) {
-  // Extract options with defaults
-  const {
-    idField = "id",
-    defaultSelect = "*",
-    transformResponse = (item) => item as T,
-    transformRequest = (item) => item as Record<string, any>,
-    softDelete = false
-  } = options;
-
-  // Get or create repository
-  const repository = options.repository || createRepository<T>(tableName as string);
-
   return {
     /**
      * Batch create entities
      */
     async batchCreate(
-      items: TCreate[],
-      select: string = defaultSelect
+      items: TCreate[]
     ): Promise<ApiResponse<T[]>> {
+      // Handle empty arrays gracefully
+      if (!items || items.length === 0) {
+        return createSuccessResponse([] as T[]);
+      }
+
       try {
-        // Transform items if needed
-        const requestData = items.map((item) => transformRequest(item as unknown as Record<string, any>));
+        const result = await repository.insert(items).execute();
         
-        // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository) {
-          const result = await repository.insert(requestData).select(select).execute();
-          
-          if (result.error) throw result.error;
-          
-          const transformedData = Array.isArray(result.data) 
-            ? result.data.map(transformResponse)
-            : [];
-            
-          return createSuccessResponse(transformedData);
+        if (result.isError()) {
+          throw result.error;
         }
         
-        // Use apiClient with optional client injection
-        return await apiClient.query(async (client) => {
-          const { data, error } = await client
-            .from(tableName)
-            .insert(requestData as any)
-            .select(select);
-          
-          if (error) throw error;
-          
-          const transformedData = Array.isArray(data) 
-            ? data.map(transformResponse)
-            : [];
-            
-          return createSuccessResponse(transformedData);
-        }, providedClient);
+        const data = Array.isArray(result.data) ? result.data : (result.data ? [result.data] : []);
+        return createSuccessResponse(data as T[]);
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -88,51 +48,34 @@ export function createBatchOperations<
      * Batch update entities
      */
     async batchUpdate(
-      items: (TUpdate & { [key: string]: TId })[],
-      select: string = defaultSelect
+      items: (TUpdate & { id: TId })[]
     ): Promise<ApiResponse<T[]>> {
+      // Handle empty arrays gracefully
+      if (!items || items.length === 0) {
+        return createSuccessResponse([] as T[]);
+      }
+
       try {
         const results: T[] = [];
         
         // Process updates one by one to maintain individual references
         for (const item of items) {
-          const id = item[idField as keyof typeof item] as unknown as TId;
-          if (!id) throw new Error(`Missing ${idField} in update item`);
+          const { id, ...updateData } = item;
+          if (!id) throw new Error(`Missing id in update item`);
           
-          // Transform data if needed
-          const requestData = transformRequest(item as unknown as Record<string, any>);
+          const result = await repository
+            .update(updateData)
+            .eq('id', id as any)
+            .execute();
           
-          // Use repository if provided, otherwise use apiClient with optional client injection
-          if (repository) {
-            const result = await repository
-              .update(requestData)
-              .eq(idField, id as any)
-              .select(select)
-              .execute();
-            
-            if (result.error) throw result.error;
-            
-            if (result.data) {
-              const transformedItem = Array.isArray(result.data) ? result.data[0] : result.data;
-              results.push(transformResponse(transformedItem));
-            }
-          } else {
-            // Use apiClient with optional client injection
-            const apiResult = await apiClient.query(async (client) => {
-              const { data, error } = await client
-                .from(tableName)
-                .update(requestData as any)
-                .eq(idField, id as any)
-                .select(select);
-              
-              if (error) throw error;
-              
-              return data;
-            }, providedClient);
-            
-            if (apiResult.data) {
-              const transformedItem = Array.isArray(apiResult.data) ? apiResult.data[0] : apiResult.data;
-              results.push(transformResponse(transformedItem));
+          if (result.isError()) {
+            throw result.error;
+          }
+          
+          if (result.data) {
+            const updatedItem = Array.isArray(result.data) ? result.data[0] : result.data;
+            if (updatedItem) {
+              results.push(updatedItem as T);
             }
           }
         }
@@ -149,46 +92,62 @@ export function createBatchOperations<
     async batchDelete(
       ids: TId[]
     ): Promise<ApiResponse<boolean>> {
+      // Handle empty arrays gracefully
+      if (!ids || ids.length === 0) {
+        return createSuccessResponse(true);
+      }
+
       try {
-        // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository) {
-          if (softDelete) {
-            const result = await repository
-              .update({ deleted_at: new Date().toISOString() })
-              .in(idField, ids as any[])
-              .execute();
-              
-            if (result.error) throw result.error;
-          } else {
-            const result = await repository
-              .delete()
-              .in(idField, ids as any[])
-              .execute();
-            
-            if (result.error) throw result.error;
-          }
-        } else {
-          // Use apiClient with optional client injection
-          await apiClient.query(async (client) => {
-            if (softDelete) {
-              const { error } = await client
-                .from(tableName)
-                .update({ deleted_at: new Date().toISOString() } as any)
-                .in(idField, ids as any[]);
-                
-              if (error) throw error;
-            } else {
-              const { error } = await client
-                .from(tableName)
-                .delete()
-                .in(idField, ids as any[]);
-              
-              if (error) throw error;
-            }
-          }, providedClient);
+        const result = await repository
+          .delete()
+          .in('id', ids as any[])
+          .execute();
+        
+        if (result.isError()) {
+          throw result.error;
         }
         
         return createSuccessResponse(true);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+
+    /**
+     * Batch upsert (insert or update) entities
+     */
+    async batchUpsert(
+      items: (Partial<T> & { id?: TId })[]
+    ): Promise<ApiResponse<T[]>> {
+      // Handle empty arrays gracefully
+      if (!items || items.length === 0) {
+        return createSuccessResponse([] as T[]);
+      }
+
+      try {
+        // Separate items with IDs (updates) and without IDs (inserts)
+        const itemsWithIds = items.filter(item => item.id) as (TUpdate & { id: TId })[];
+        const itemsWithoutIds = items.filter(item => !item.id) as TCreate[];
+        
+        const results: T[] = [];
+        
+        // Process inserts
+        if (itemsWithoutIds.length > 0) {
+          const createResponse = await this.batchCreate(itemsWithoutIds);
+          if (!createResponse.error && Array.isArray(createResponse.data)) {
+            results.push(...createResponse.data);
+          }
+        }
+        
+        // Process updates
+        if (itemsWithIds.length > 0) {
+          const updateResponse = await this.batchUpdate(itemsWithIds);
+          if (!updateResponse.error && Array.isArray(updateResponse.data)) {
+            results.push(...updateResponse.data);
+          }
+        }
+        
+        return createSuccessResponse(results);
       } catch (error) {
         return createErrorResponse(error);
       }
