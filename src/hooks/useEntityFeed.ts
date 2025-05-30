@@ -127,7 +127,6 @@ export const useEntityFeed = ({
                 const profilesResponse = await profileApi.getAll({
                   filters: peopleFilters,
                   search: search || undefined,
-                  searchColumns: ['first_name', 'last_name', 'bio', 'headline', 'email'],
                   limit
                 });
                   
@@ -156,7 +155,6 @@ export const useEntityFeed = ({
                 const orgsResponse = await organizationApi.getAll({
                   filters: orgFilters,
                   search: search || undefined,
-                  searchColumns: ['name', 'description'],
                   limit
                 });
                   
@@ -185,7 +183,6 @@ export const useEntityFeed = ({
                 const eventsResponse = await eventApi.getAll({
                   filters: eventFilters,
                   search: search || undefined,
-                  searchColumns: ['title', 'description'],
                   limit
                 });
                   
