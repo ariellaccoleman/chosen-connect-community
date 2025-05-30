@@ -55,8 +55,7 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId, searchQuery = "" }) 
     if (searchQuery.trim()) {
       const searchLower = searchQuery.toLowerCase();
       const contentMatch = post.content?.toLowerCase().includes(searchLower);
-      const authorMatch = post.author?.first_name?.toLowerCase().includes(searchLower) ||
-                         post.author?.last_name?.toLowerCase().includes(searchLower);
+      const authorMatch = post.author?.name?.toLowerCase().includes(searchLower);
       
       return contentMatch || authorMatch;
     }
