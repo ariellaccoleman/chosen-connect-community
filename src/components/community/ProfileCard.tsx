@@ -37,7 +37,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
     }
   }, [profile]);
 
-  // Convert the new tags structure to the format expected by TagList
+  // Convert the tag objects from people_with_tags view to TagAssignment format
   const tagAssignments = profile.tags && Array.isArray(profile.tags) 
     ? profile.tags
         .filter((tag: any) => tag && typeof tag === 'object' && tag.id && tag.name)
