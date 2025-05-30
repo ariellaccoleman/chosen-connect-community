@@ -1,65 +1,40 @@
-import { DataRepository } from '../repository/DataRepository';
-import { createMockRepository } from '../repository/MockRepository';
+
 import { BaseRepository } from '../repository/BaseRepository';
+import { createTestingRepository } from '../repository/repositoryFactory';
 import { createMockDataGenerator, MockDataGenerator } from './mockDataGenerator';
 
 /**
- * Enhanced mock repository with testing utilities
+ * Enhanced test repository with testing utilities for schema-based testing
  */
-export interface EnhancedMockRepository<T> extends BaseRepository<T> {
+export interface EnhancedTestRepository<T> extends BaseRepository<T> {
   /**
-   * Original mock data array reference
+   * Reset the repository to a clean state
    */
-  mockData: T[];
+  reset: () => Promise<void>;
   
   /**
-   * Spies for repository methods
+   * Add items to the repository
    */
-  spies: Record<string, jest.SpyInstance<any> | null>;
-  
-  /**
-   * Reset all spies on the mock repository
-   */
-  resetSpies: () => void;
-  
-  /**
-   * Add items to the mock repository
-   */
-  addItems: (items: T | T[]) => void;
+  addItems: (items: T | T[]) => Promise<T[]>;
   
   /**
    * Clear all items from the repository
    */
-  clearItems: () => void;
+  clearItems: () => Promise<void>;
   
   /**
    * Find an item by ID
    */
-  findById: (id: string) => T | undefined;
-  
-  /**
-   * Update an item directly in the mock data
-   */
-  updateItem: (id: string, updates: Partial<T>) => T | undefined;
-  
-  /**
-   * Mock a specific error response for an operation
-   */
-  mockError: (operation: string, code: string, message: string) => void;
-  
-  /**
-   * Mock a specific success response for an operation
-   */
-  mockSuccess: (operation: string, data: any) => void;
+  findById: (id: string) => Promise<T | null>;
   
   /**
    * Create snapshot of the current repository state
    */
-  createSnapshot: () => T[];
+  createSnapshot: () => Promise<T[]>;
 }
 
 /**
- * TestRepository configuration options
+ * TestRepository configuration options for schema-based testing
  */
 export interface TestRepositoryOptions<T> {
   /**
@@ -73,7 +48,7 @@ export interface TestRepositoryOptions<T> {
   initialData?: T[];
   
   /**
-   * Entity type for generating mock data
+   * Entity type for generating test data
    */
   entityType?: string;
   
@@ -96,164 +71,126 @@ export interface TestRepositoryOptions<T> {
    * Schema name for database operations (defaults to 'testing')
    */
   schema?: string;
+  
+  /**
+   * Client to use for database operations
+   */
+  client?: any;
 }
 
 /**
- * Creates an enhanced test repository with additional testing utilities
+ * Creates an enhanced test repository using schema-based testing
  */
 export function createTestRepository<T>(
   options: TestRepositoryOptions<T>
-): EnhancedMockRepository<T> {
+): EnhancedTestRepository<T> {
   const { 
     tableName, 
     initialData = [], 
     entityType,
     idField = 'id',
     debug = true,
-    schema = 'testing'
+    schema = 'testing',
+    client
   } = options;
   
   if (debug) {
-    console.log(`[createTestRepository] Creating repository for ${tableName}`);
-    console.log(`[createTestRepository] Initial data: ${JSON.stringify(initialData)}`);
+    console.log(`[createTestRepository] Creating schema-based repository for ${tableName}`);
+    console.log(`[createTestRepository] Using schema: ${schema}`);
   }
   
-  // Create deep clone of initial data to avoid reference issues
-  const clonedData = JSON.parse(JSON.stringify(initialData));
-  
-  // Create the base mock repository
-  const mockRepo = createMockRepository<T>(tableName, clonedData);
+  // Create the base testing repository using schema-based approach
+  const baseRepo = createTestingRepository<T>(tableName, { 
+    schema,
+    enableLogging: debug,
+    client
+  }, client);
   
   // Create data generator if entity type is provided
   const dataGenerator = options.dataGenerator || 
     (entityType ? createMockDataGenerator<T>(entityType) : undefined);
   
-  // Check if Jest is available and create spies if it is
-  const hasJest = typeof jest !== 'undefined' && jest !== null;
-  
-  // Create spies for repository methods if jest is available
-  const selectSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'select') : null;
-  const insertSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'insert') : null;
-  const updateSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'update') : null;
-  const deleteSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'delete') : null;
-  const getByIdSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getById') : null;
-  const getAllSpy = hasJest && typeof jest.spyOn === 'function' ? jest.spyOn(mockRepo, 'getAll') : null;
-  
   // Create an enhanced repository with test utilities
-  const enhancedRepo = mockRepo as EnhancedMockRepository<T>;
-  
-  // Get the actual mockData reference directly from the repository to ensure we're
-  // using the same reference throughout the code, avoiding any data synchronization issues
-  enhancedRepo.mockData = (mockRepo as any).mockData[tableName];
-  
-  if (debug) {
-    console.log(`[createTestRepository] Setting up enhanced repo with mockData (length: ${enhancedRepo.mockData.length})`);
-    if (enhancedRepo.mockData.length > 0) {
-      console.log(`[createTestRepository] First item: ${JSON.stringify(enhancedRepo.mockData[0])}`);
-    }
-  }
-  
-  // Setup spies for monitoring method calls
-  enhancedRepo.spies = {
-    select: selectSpy,
-    insert: insertSpy,
-    update: updateSpy,
-    delete: deleteSpy,
-    getById: getByIdSpy,
-    getAll: getAllSpy
-  };
+  const enhancedRepo = baseRepo as EnhancedTestRepository<T>;
   
   // Add test utility methods
-  enhancedRepo.resetSpies = () => {
-    Object.values(enhancedRepo.spies).forEach(spy => {
-      if (spy && typeof spy.mockClear === 'function') {
-        spy.mockClear();
-      }
-    });
-  };
-  
-  // Method to add items to the mock data
-  enhancedRepo.addItems = (items: T | T[]) => {
-    if (debug) console.log(`[${tableName}] Adding items to repository`);
+  enhancedRepo.reset = async () => {
+    if (debug) console.log(`[${tableName}] Resetting repository`);
     
-    if (Array.isArray(items)) {
-      enhancedRepo.mockData.push(...items);
-    } else {
-      enhancedRepo.mockData.push(items);
+    // Clear all data from the table
+    await baseRepo.delete().execute();
+    
+    // Re-insert initial data if provided
+    if (initialData.length > 0) {
+      await baseRepo.insert(initialData).execute();
     }
     
-    if (debug) console.log(`[${tableName}] Repository now has ${enhancedRepo.mockData.length} items`);
+    if (debug) console.log(`[${tableName}] Repository reset complete`);
+  };
+  
+  // Method to add items to the repository
+  enhancedRepo.addItems = async (items: T | T[]) => {
+    if (debug) console.log(`[${tableName}] Adding items to repository`);
+    
+    const itemsArray = Array.isArray(items) ? items : [items];
+    const result = await baseRepo.insert(itemsArray).execute();
+    
+    if (result.isError()) {
+      throw new Error(`Failed to add items: ${result.getErrorMessage()}`);
+    }
+    
+    const addedItems = Array.isArray(result.data) ? result.data : [result.data];
+    if (debug) console.log(`[${tableName}] Added ${addedItems.length} items`);
+    
+    return addedItems;
   };
   
   // Method to clear all items
-  enhancedRepo.clearItems = () => {
+  enhancedRepo.clearItems = async () => {
     if (debug) console.log(`[${tableName}] Clearing all items from repository`);
-    enhancedRepo.mockData.length = 0;
+    
+    const result = await baseRepo.delete().execute();
+    
+    if (result.isError()) {
+      throw new Error(`Failed to clear items: ${result.getErrorMessage()}`);
+    }
+    
+    if (debug) console.log(`[${tableName}] All items cleared`);
   };
   
   // Find an item by ID
-  enhancedRepo.findById = (id: string) => {
+  enhancedRepo.findById = async (id: string) => {
     if (debug) console.log(`[${tableName}] Finding item by ID: ${id}`);
-    const item = enhancedRepo.mockData.find(item => 
-      (item as any)[idField] === id
-    );
+    
+    const result = await baseRepo.select().eq(idField, id).maybeSingle();
+    
+    if (result.isError()) {
+      if (debug) console.log(`[${tableName}] Error finding item: ${result.getErrorMessage()}`);
+      return null;
+    }
+    
     if (debug) {
-      if (item) console.log(`[${tableName}] Found item: ${JSON.stringify(item)}`);
+      if (result.data) console.log(`[${tableName}] Found item: ${JSON.stringify(result.data)}`);
       else console.log(`[${tableName}] No item found with ID: ${id}`);
     }
-    return item;
-  };
-  
-  // Update an item directly
-  enhancedRepo.updateItem = (id: string, updates: Partial<T>) => {
-    if (debug) console.log(`[${tableName}] Updating item ${id} with: ${JSON.stringify(updates)}`);
     
-    const index = enhancedRepo.mockData.findIndex(
-      item => (item as any)[idField] === id
-    );
-    
-    if (index === -1) {
-      if (debug) console.log(`[${tableName}] No item found with ID: ${id} for update`);
-      return undefined;
-    }
-    
-    enhancedRepo.mockData[index] = { 
-      ...enhancedRepo.mockData[index], 
-      ...updates 
-    };
-    
-    if (debug) console.log(`[${tableName}] Updated item: ${JSON.stringify(enhancedRepo.mockData[index])}`);
-    return enhancedRepo.mockData[index];
-  };
-  
-  // Mock specific error responses
-  enhancedRepo.mockError = (operation: string, code: string, message: string) => {
-    if (debug) console.log(`[${tableName}] Mocking error for ${operation}: ${code} - ${message}`);
-    (mockRepo as any).setMockResponse(operation, {
-      data: null,
-      error: { code, message },
-      isSuccess: () => false,
-      isError: () => true,
-      getErrorMessage: () => message
-    });
-  };
-  
-  // Mock specific success responses
-  enhancedRepo.mockSuccess = (operation: string, data: any) => {
-    if (debug) console.log(`[${tableName}] Mocking success for ${operation} with data: ${JSON.stringify(data)}`);
-    (mockRepo as any).setMockResponse(operation, {
-      data,
-      error: null,
-      isSuccess: () => true,
-      isError: () => false,
-      getErrorMessage: () => ''
-    });
+    return result.data;
   };
   
   // Create snapshot of current data
-  enhancedRepo.createSnapshot = () => {
+  enhancedRepo.createSnapshot = async () => {
     if (debug) console.log(`[${tableName}] Creating snapshot of repository data`);
-    return [...enhancedRepo.mockData];
+    
+    const result = await baseRepo.select().execute();
+    
+    if (result.isError()) {
+      throw new Error(`Failed to create snapshot: ${result.getErrorMessage()}`);
+    }
+    
+    const data = result.data || [];
+    if (debug) console.log(`[${tableName}] Snapshot created with ${data.length} items`);
+    
+    return data;
   };
   
   /**
@@ -266,38 +203,44 @@ export function createTestRepository<T>(
       return data;
     };
     
-    (enhancedRepo as any).generateAndAddTestData = (count: number, overrides?: Partial<T>) => {
+    (enhancedRepo as any).generateAndAddTestData = async (count: number, overrides?: Partial<T>) => {
       if (debug) console.log(`[${tableName}] Generating and adding ${count} test items`);
       const data = dataGenerator.generateMany(count, overrides);
-      enhancedRepo.addItems(data);
-      return data;
+      return await enhancedRepo.addItems(data);
     };
   }
   
-  if (debug && clonedData.length > 0) {
-    console.log(`[createTestRepository] First item in repository: ${JSON.stringify(clonedData[0])}`);
+  // Initialize with initial data if provided
+  if (initialData.length > 0) {
+    // We'll add the initial data in the setup phase
+    (enhancedRepo as any).initialData = initialData;
   }
   
   return enhancedRepo;
 }
 
 /**
- * Create a test context for easy setup and cleanup of repository tests
+ * Create a test context for easy setup and cleanup of schema-based repository tests
  */
 export function createRepositoryTestContext<T>(
   options: TestRepositoryOptions<T>
 ) {
-  let repository: EnhancedMockRepository<T>;
+  let repository: EnhancedTestRepository<T>;
   
-  const setup = () => {
+  const setup = async () => {
     repository = createTestRepository<T>(options);
+    
+    // Initialize with initial data if provided
+    if (options.initialData && options.initialData.length > 0) {
+      await repository.addItems(options.initialData);
+    }
+    
     return repository;
   };
   
-  const cleanup = () => {
+  const cleanup = async () => {
     if (repository) {
-      repository.resetSpies();
-      repository.clearItems();
+      await repository.clearItems();
     }
   };
   
@@ -315,67 +258,18 @@ export function createRepositoryTestContext<T>(
     cleanup,
     generateData,
     get repository() {
-      if (!repository) setup();
+      if (!repository) {
+        throw new Error('Repository not initialized. Call setup() first.');
+      }
       return repository;
     }
   };
 }
 
 /**
- * Mock the repository factory to return test repositories
- */
-export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
-  // Check if jest is available in the environment
-  const hasJest = typeof jest !== 'undefined' && jest !== null;
-  if (!hasJest) {
-    console.warn('Jest is not available in the current environment. mockRepositoryFactory requires Jest.');
-    return;
-  }
-  
-  // Mock the createSupabaseRepository function
-  jest.mock('../repository/repositoryFactory', () => ({
-    createSupabaseRepository: jest.fn((tableName: string, client: any, schema: string = 'testing') => {
-      return createTestRepository({
-        tableName,
-        initialData: mockData[tableName] || [],
-        idField: 'id',
-        schema
-      });
-    }),
-    // Maintain other exports
-    createRepository: jest.fn((tableName: string, type: string, initialData: any[] = [], options = {}) => {
-      const schema = options.schema || 'testing';
-      
-      if (type === 'mock') {
-        return createTestRepository({
-          tableName,
-          initialData: initialData || mockData[tableName] || [],
-          idField: 'id',
-          schema
-        });
-      } else {
-        return createTestRepository({
-          tableName,
-          initialData: initialData || mockData[tableName] || [],
-          idField: 'id',
-          schema
-        });
-      }
-    }),
-  }));
-}
-
-/**
- * Reset repository factory mocks
+ * Reset repository factory mocks - no longer needed with schema-based testing
+ * @deprecated Use schema-based testing instead
  */
 export function resetRepositoryFactoryMock() {
-  // Check if jest is available in the environment
-  const hasJest = typeof jest !== 'undefined' && jest !== null;
-  if (!hasJest) {
-    console.warn('Jest is not available in the current environment. resetRepositoryFactoryMock requires Jest.');
-    return;
-  }
-  
-  jest.resetModules();
-  jest.dontMock('../repository/repositoryFactory');
+  console.warn('resetRepositoryFactoryMock is deprecated. Use schema-based testing instead.');
 }

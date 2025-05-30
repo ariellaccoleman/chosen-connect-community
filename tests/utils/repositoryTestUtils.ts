@@ -1,105 +1,92 @@
 
-import { DataRepository } from '@/api/core/repository/DataRepository';
-import { createMockRepository } from '@/api/core/repository/MockRepository';
+import { createTestingRepository } from '@/api/core/repository/repositoryFactory';
+import { BaseRepository } from '@/api/core/repository/BaseRepository';
 
 /**
- * Creates a consistent mock repository for testing
+ * Creates a consistent schema-based repository for testing
  * 
  * @param tableName Name of the table
- * @param initialData Initial data to populate the mock repository
- * @returns A mock repository instance with additional spies for monitoring
+ * @param initialData Initial data to populate the repository
+ * @param client Optional client to use for the repository
+ * @returns A schema-based repository instance for testing
  */
-export function createTestMockRepository<T>(tableName: string, initialData: T[] = []): DataRepository<T> & { 
-  mockData: T[],
-  spies: Record<string, jest.SpyInstance>
-} {
-  console.log(`[createTestMockRepository] Creating test repository for ${tableName} with ${initialData.length} items`);
+export function createTestRepository<T>(
+  tableName: string, 
+  initialData: T[] = [],
+  client?: any
+): BaseRepository<T> {
+  console.log(`[createTestRepository] Creating schema-based repository for ${tableName} with ${initialData.length} items`);
   
-  // Deep clone initial data to prevent modifications affecting the source
-  const clonedData = JSON.parse(JSON.stringify(initialData));
+  // Create the schema-based testing repository
+  const repo = createTestingRepository<T>(tableName, {
+    schema: 'testing',
+    enableLogging: true,
+    client
+  }, client);
   
-  // Create the mock repository with initial data
-  const mockRepo = createMockRepository<T>(tableName, clonedData);
-  
-  // Store the mock data for test assertions
-  const mockData = clonedData;
-
-  // Create spies for repository methods
-  const selectSpy = jest.spyOn(mockRepo, 'select');
-  const insertSpy = jest.spyOn(mockRepo, 'insert');
-  const updateSpy = jest.spyOn(mockRepo, 'update');
-  const deleteSpy = jest.spyOn(mockRepo, 'delete');
-  
-  // Create an enhanced repository with spies for monitoring
-  const enhancedRepo = mockRepo as DataRepository<T> & { 
-    mockData: T[],
-    spies: Record<string, jest.SpyInstance>
-  };
-  
-  enhancedRepo.mockData = mockData;
-  enhancedRepo.spies = {
-    select: selectSpy,
-    insert: insertSpy,
-    update: updateSpy,
-    delete: deleteSpy
-  };
-  
-  console.log(`[createTestMockRepository] Test repository created for ${tableName}`);
-  // Log mock data for debugging
+  // If initial data is provided, we'll seed it during test setup
   if (initialData.length > 0) {
-    console.log(`[createTestMockRepository] First item: ${JSON.stringify(initialData[0])}`);
+    console.log(`[createTestRepository] Initial data will be seeded during test setup`);
   }
   
-  return enhancedRepo;
+  console.log(`[createTestRepository] Schema-based repository created for ${tableName}`);
+  
+  return repo;
 }
 
 /**
- * Mock the repository factory to return a test mock repository
+ * Seed initial data into a repository
  * 
- * @param mockData Optional mock data keyed by table name
+ * @param repository The repository to seed
+ * @param data The data to seed
+ */
+export async function seedRepository<T>(
+  repository: BaseRepository<T>,
+  data: T[]
+): Promise<void> {
+  if (data.length === 0) return;
+  
+  console.log(`[seedRepository] Seeding ${data.length} items`);
+  
+  const result = await repository.insert(data).execute();
+  
+  if (result.isError()) {
+    throw new Error(`Failed to seed repository: ${result.getErrorMessage()}`);
+  }
+  
+  console.log(`[seedRepository] Successfully seeded ${data.length} items`);
+}
+
+/**
+ * Clear all data from a repository
+ * 
+ * @param repository The repository to clear
+ */
+export async function clearRepository<T>(
+  repository: BaseRepository<T>
+): Promise<void> {
+  console.log(`[clearRepository] Clearing repository data`);
+  
+  const result = await repository.delete().execute();
+  
+  if (result.isError()) {
+    throw new Error(`Failed to clear repository: ${result.getErrorMessage()}`);
+  }
+  
+  console.log(`[clearRepository] Repository cleared successfully`);
+}
+
+/**
+ * @deprecated Use schema-based testing instead of mock repositories
  */
 export function mockRepositoryFactory(mockData: Record<string, any[]> = {}) {
-  console.log(`[mockRepositoryFactory] Mocking repository factory with data for tables: ${Object.keys(mockData).join(', ')}`);
-  
-  // Mock the createSupabaseRepository function
-  jest.mock('@/api/core/repository/repositoryFactory', () => {
-    const factories = {
-      createSupabaseRepository: jest.fn((tableName: string, client?: any, schema: string = 'testing') => {
-        console.log(`[Mock Factory] Creating repository for ${tableName} with schema ${schema}`);
-        const repo = createMockRepository(tableName, mockData[tableName] || []);
-        // Log the mock data for debugging
-        if (mockData[tableName]?.length > 0) {
-          console.log(`[Mock Factory] First item in ${tableName}: ${JSON.stringify(mockData[tableName][0])}`);
-        }
-        return repo;
-      }),
-      createRepository: jest.fn((tableName: string, type?: string, initialData?: any[], options = {}) => {
-        const schema = options.schema || 'testing';
-        console.log(`[Mock Factory] Creating ${type || 'default'} repository for ${tableName} with schema ${schema}`);
-        const data = initialData || mockData[tableName] || [];
-        const repo = createMockRepository(tableName, data);
-        if (data.length > 0) {
-          console.log(`[Mock Factory] First item in ${tableName}: ${JSON.stringify(data[0])}`);
-        }
-        return repo;
-      }),
-      createTestingRepository: jest.fn((tableName: string, type?: string, initialData?: any[]) => {
-        console.log(`[Mock Factory] Creating testing repository for ${tableName}`);
-        const data = initialData || mockData[tableName] || [];
-        const repo = createMockRepository(tableName, data);
-        return repo;
-      })
-    };
-    
-    return factories;
-  });
+  console.warn('mockRepositoryFactory is deprecated. Use schema-based testing with createTestRepository instead.');
+  throw new Error('Mock repositories are no longer supported. Use schema-based testing.');
 }
 
 /**
- * Reset repository factory mocks
+ * @deprecated Use schema-based testing instead of mock repositories
  */
 export function resetRepositoryFactoryMock() {
-  console.log('[resetRepositoryFactoryMock] Resetting repository factory mocks');
-  jest.resetModules();
-  jest.dontMock('@/api/core/repository/repositoryFactory');
+  console.warn('resetRepositoryFactoryMock is deprecated. Use schema-based testing instead.');
 }
