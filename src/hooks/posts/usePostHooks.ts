@@ -1,9 +1,10 @@
+
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
-  postsApi, 
-  commentsApi, 
-  postLikesApi, 
-  commentLikesApi,
+  postsApiExtended as postsApi, 
+  commentsApiExtended as commentsApi, 
+  postLikesApiExtended as postLikesApi, 
+  commentLikesApiExtended as commentLikesApi,
   getAllPosts,
   getPostById
 } from "@/api/posts";

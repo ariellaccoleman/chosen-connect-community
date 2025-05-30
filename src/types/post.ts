@@ -49,6 +49,24 @@ export interface Post {
   has_liked?: boolean;
 }
 
+// Add the missing type exports
+export interface PostCreate {
+  content: string;
+  author_id: string;
+  has_media: boolean;
+}
+
+export interface PostUpdate {
+  content?: string;
+  has_media?: boolean;
+}
+
+export interface PostWithDetails extends Post {
+  author: Author;
+  likes: PostLike[];
+  comments: Array<PostComment & { likes: CommentLike[] }>;
+}
+
 export interface CreatePostRequest {
   content: string;
   has_media: boolean;
