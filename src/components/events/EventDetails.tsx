@@ -7,8 +7,8 @@ import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { logger } from "@/utils/logger";
 import EventRegistrationButton from "./EventRegistrationButton";
-import { useEventRegistrants } from "@/hooks/events/useEventRegistrants";
-import EventRegistrantsList from "./EventRegistrantsList"; // Add this import
+import { useEventRegistrants } from "@/hooks/events/useEventRegistration";
+import EventRegistrantsList from "./EventRegistrantsList";
 
 interface EventDetailsProps {
   event: EventWithDetails;

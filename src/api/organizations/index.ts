@@ -15,10 +15,3 @@ export {
   deleteOrganization
 } from "./organizationApiFactory";
 export { organizationRelationshipsApi } from "./relationshipsApi";
-
-/**
- * @deprecated Legacy exports maintained for backward compatibility.
- * Please use organizationApi directly.
- */
-export { organizationCrudApi } from "./organizationsApi";
-

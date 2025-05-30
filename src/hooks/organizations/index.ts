@@ -30,3 +30,6 @@ export {
   useGetOrganizationRelationshipById,
   useGetOrganizationRelationshipsByIds
 } from "./useOrganizationRelationshipHooks";
+
+// Add the missing hook alias for backward compatibility
+export { useCreateOrganizationRelationship as useCreateOrganizationWithRelationships } from "./useOrganizationRelationshipHooks";
