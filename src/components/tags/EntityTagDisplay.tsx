@@ -1,6 +1,7 @@
 
 import React from "react";
 import TagList from "./TagList";
+import { TagAssignment } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,16 +40,12 @@ const EntityTagDisplay = ({
     return null;
   }
 
-  // Extract tags from TagAssignments for display
-  const tags = tagAssignments
-    .filter(assignment => assignment.tag)
-    .map(assignment => assignment.tag!);
-
   return (
     <TagList 
-      tags={tags}
+      tagAssignments={tagAssignments}
       className={className}
       maxTags={maxTags}
+      showDebugInfo={showDebugInfo}
     />
   );
 };

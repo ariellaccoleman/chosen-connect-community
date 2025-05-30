@@ -5,9 +5,11 @@ import { ProfileInfo } from "./ProfileInfo";
 import { ProfileBio } from "./ProfileBio";
 import { ProfileSocialLinks } from "./ProfileSocialLinks";
 import { Link } from "react-router-dom";
-import SimpleTagList from "../tags/SimpleTagList";
+import TagList from "../tags/TagList";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from 'react-router-dom';
+import { logger } from '@/utils/logger';
+import { useEffect } from "react";
 
 interface ProfileCardProps {
   profile: ProfileWithDetails;
@@ -17,6 +19,20 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Generate the correct profile URL using the APP_ROUTES constant and ID parameter 
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
+  
+  // Debug profile tags - enhanced to show more details
+  useEffect(() => {
+    // Only log detailed information for the specific profile we're interested in
+    if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
+      logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
+        tags: profile.tags?.map(t => ({
+          id: t.id,
+          tag_id: t.tag_id,
+          tag_name: t.tag ? t.tag.name : 'undefined'
+        }))
+      });
+    }
+  }, [profile]);
 
   // Check if profile has tags to determine layout
   const hasTags = profile.tags && profile.tags.length > 0;
@@ -35,9 +51,10 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
           {hasTags && (
             <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
-                <SimpleTagList 
-                  tags={profile.tags}
+                <TagList 
+                  tagAssignments={profile.tags} 
                   className="flex flex-wrap gap-2" 
+                  showDebugInfo={profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85"}
                 />
               </div>
             </div>

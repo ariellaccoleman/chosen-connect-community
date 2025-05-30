@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Video, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Entity } from "@/types/entity";
-import SimpleTagList from "@/components/tags/SimpleTagList";
+import TagList from "@/components/tags/TagList";
 import EventCardRegistrationButton from "./EventCardRegistrationButton";
 
 interface EventCardProps {
@@ -75,7 +75,7 @@ const EventCard = ({ event, onViewEvent }: EventCardProps) => {
       
       {event.tags && event.tags.length > 0 && (
         <div className="mt-2 mb-2">
-          <SimpleTagList tags={event.tags} />
+          <TagList tagAssignments={event.tags} />
         </div>
       )}
       
