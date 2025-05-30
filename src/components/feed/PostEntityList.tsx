@@ -62,7 +62,7 @@ const PostEntityList = ({
         },
         likes_count: 0,
         comments_count: 0,
-        tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
+        tags: []
       };
     }
     
@@ -77,15 +77,24 @@ const PostEntityList = ({
       author: postData.author,
       likes_count: postData.likes?.length || 0,
       comments_count: postData.comments?.length || 0,
-      // Map the entity tags to the format expected by PostCard, preserving tag objects
-      tags: entity.tags ? entity.tags.map(tagAssignment => ({
-        id: tagAssignment.tag?.id || '',
-        name: tagAssignment.tag?.name || '',
-        description: tagAssignment.tag?.description || null,
-        created_by: null,
-        created_at: '',
-        updated_at: ''
-      })).filter(tag => tag.name) : []
+      // Map the entity tags to the format expected by PostCard
+      tags: entity.tags && entity.tags.length > 0 
+        ? entity.tags.map(tagAssignment => {
+            // Check if we have the tag object
+            if (tagAssignment.tag) {
+              return {
+                id: tagAssignment.tag.id,
+                name: tagAssignment.tag.name,
+                description: tagAssignment.tag.description || null,
+                created_by: tagAssignment.tag.created_by || null,
+                created_at: tagAssignment.tag.created_at || '',
+                updated_at: tagAssignment.tag.updated_at || ''
+              };
+            }
+            // Fallback if tag object is not populated
+            return null;
+          }).filter(Boolean) // Remove null entries
+        : []
     };
   });
 
