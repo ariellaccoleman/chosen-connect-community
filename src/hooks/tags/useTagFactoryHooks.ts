@@ -58,10 +58,33 @@ const createEnrichedTagAssignmentHooks = () => {
 
 /**
  * Hook to fetch tags for selection lists (factory-based)
+ * Now properly filters by entity type when provided
  */
 export function useSelectionTags(entityType?: EntityType) {
-  const tagHooks = createTagHooks();
-  return tagHooks.useList();
+  return useQuery({
+    queryKey: entityType ? ['tags', 'selection', entityType] : ['tags', 'selection', 'all'],
+    queryFn: async () => {
+      const tagApi = createTagApiFactory();
+      
+      if (entityType) {
+        // Get tags filtered by entity type
+        const response = await tagApi.getByEntityType(entityType);
+        if (response.error) {
+          throw new Error(response.error.message || 'Failed to fetch tags for entity type');
+        }
+        return response.data || [];
+      } else {
+        // Get all tags when no entity type is specified
+        const response = await tagApi.getAll();
+        if (response.error) {
+          throw new Error(response.error.message || 'Failed to fetch all tags');
+        }
+        return response.data || [];
+      }
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+  });
 }
 
 /**
