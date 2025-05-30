@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createQueryHooks } from '@/hooks/core/factory/queryHookFactory';
 import { createRelationshipHooks, createRelationshipMutationHook } from '@/hooks/core/factory/relationshipHooks';
 import { createViewQueryHooks } from '@/hooks/core/factory/viewHookFactory';
-import { createTagApiFactory, createTagAssignmentRelationshipApi } from '@/api/tags/factory/tagApiFactory';
+import { createExtendedTagApi, createTagAssignmentRelationshipApi } from '@/api/tags/factory/tagApiFactory';
 import { createEnrichedTagAssignmentOperations } from '@/api/tags/factory/tagAssignmentCoreOperations';
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
@@ -14,7 +14,7 @@ import { EntityType } from '@/types/entityTypes';
 
 // Create tag API factory instance (lazy instantiation)
 const createTagHooks = () => {
-  const tagApi = createTagApiFactory();
+  const tagApi = createExtendedTagApi();
   return createQueryHooks<Tag, string>(
     {
       name: 'tag',
@@ -64,7 +64,7 @@ export function useSelectionTags(entityType?: EntityType) {
   return useQuery({
     queryKey: entityType ? ['tags', 'selection', entityType] : ['tags', 'selection', 'all'],
     queryFn: async () => {
-      const tagApi = createTagApiFactory();
+      const tagApi = createExtendedTagApi();
       
       if (entityType) {
         // Get tags filtered by entity type
