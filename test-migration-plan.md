@@ -12,25 +12,26 @@ This plan outlines the migration of skipped tests from mock-based testing to dat
 2. tagsApi.integration
    - correctly implemented test
    - api implemented with factory pattern
-   - model for other testing3. apiFactory
+   - model for other testing
 3. relationshipsApi
     - check if api uses relationships factory like tag assignment does
 4. relationshipsApi.database
     - determine if needed
-5. apiFactoryWithRepo
-6. authApi
-7. batchOperation
-8. CreateEvent
-9. databaseConnection
-10. errorHandler
-11. EventTagsManager
-12. formUtils
-13. organizationsApi
-14. queryHookFactory
-15. repository
-16. testProjectValidation
-17. useFormError
-18. useOrganizationMutations
+5. apiFactory
+6. apiFactoryWithRepo
+7. authApi
+8. batchOperation
+9. CreateEvent
+10. databaseConnection
+11. errorHandler
+12. EventTagsManager
+13. formUtils
+14. organizationsApi
+15. queryHookFactory
+16. repository
+17. testProjectValidation
+18. useFormError
+19. useOrganizationMutations
 
 
 ### Currently Passing Integration Tests ✅
