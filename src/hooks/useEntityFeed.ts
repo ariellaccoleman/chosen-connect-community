@@ -88,14 +88,14 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
   const offset = (currentPage - 1) * itemsPerPage;
   const actualLimit = limit || itemsPerPage;
 
-  // Create query key that includes pagination for separate caching
+  // Create query key that includes all parameters that affect the data
   const queryKey = ['entity-feed', {
     entityTypes: validEntityTypes.sort(),
     tagId,
     search,
     isApproved,
-    page: currentPage,
-    itemsPerPage
+    limit: actualLimit,
+    offset
   }];
 
   const query = useQuery({
@@ -132,12 +132,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                     })
                   },
                   search,
-                  searchColumns: ['first_name', 'last_name', 'headline'],
-                  orderBy: 'created_at',
-                  ascending: false,
+                  sortBy: 'created_at',
+                  sortDirection: 'desc',
                   limit: actualLimit,
-                  offset: offset,
-                  select: profileQuery
+                  page: Math.floor(offset / actualLimit) + 1
                 });
 
                 if (profilesResult.error) {
@@ -163,12 +161,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                     })
                   },
                   search,
-                  searchColumns: ['name', 'description'],
-                  orderBy: 'created_at',
-                  ascending: false,
+                  sortBy: 'created_at',
+                  sortDirection: 'desc',
                   limit: actualLimit,
-                  offset: offset,
-                  select: orgQuery
+                  page: Math.floor(offset / actualLimit) + 1
                 });
 
                 if (orgsResult.error) {
@@ -194,12 +190,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                     })
                   },
                   search,
-                  searchColumns: ['title', 'description'],
-                  orderBy: 'created_at',
-                  ascending: false,
+                  sortBy: 'created_at',
+                  sortDirection: 'desc',
                   limit: actualLimit,
-                  offset: offset,
-                  select: eventQuery
+                  page: Math.floor(offset / actualLimit) + 1
                 });
 
                 if (eventsResult.error) {
@@ -236,16 +230,15 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
           return dateB.getTime() - dateA.getTime();
         });
 
-        // For mixed entity types, we might get more than itemsPerPage results
-        // so slice to the exact amount requested
-        const paginatedEntities = allEntities.slice(0, itemsPerPage);
+        // For server-side pagination, determine if there's a next page
+        const hasNextPage = allEntities.length === actualLimit;
 
-        logger.debug(`EntityFeed: Returning ${paginatedEntities.length} entities for page ${currentPage}, total found: ${totalCount}`);
+        logger.debug(`EntityFeed: Returning ${allEntities.length} entities for page ${currentPage}, total found: ${totalCount}`);
 
         return {
-          entities: paginatedEntities,
+          entities: allEntities,
           totalCount,
-          hasNextPage: paginatedEntities.length === itemsPerPage,
+          hasNextPage,
           currentPage
         };
 
@@ -254,7 +247,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
         throw error;
       }
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes - shorter since we're paginating
+    staleTime: 1000 * 60 * 2, // 2 minutes
   });
 
   return {
