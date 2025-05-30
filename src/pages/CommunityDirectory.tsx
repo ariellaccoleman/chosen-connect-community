@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { EntityType } from "@/types/entityTypes";
 import EntityFeed from "@/components/entities/EntityFeed";
 import EntitySearchAndFilter from "@/components/common/EntitySearchAndFilter";
@@ -20,7 +20,7 @@ const CommunityDirectory = () => {
   });
 
   // Reset to first page when search or filter changes
-  const handleSearchChange = (search: string) => {
+  const handleSearchChange = useCallback((search: string) => {
     logger.debug("CommunityDirectory handleSearchChange:", { 
       oldSearch: searchQuery, 
       newSearch: search, 
@@ -32,9 +32,9 @@ const CommunityDirectory = () => {
       searchQuery: search, 
       currentPage: 1 
     });
-  };
+  }, [searchQuery, currentPage]);
 
-  const handleTagChange = (tagId: string | null) => {
+  const handleTagChange = useCallback((tagId: string | null) => {
     logger.debug("CommunityDirectory handleTagChange:", { 
       oldTagId: selectedTagId, 
       newTagId: tagId, 
@@ -46,9 +46,9 @@ const CommunityDirectory = () => {
       selectedTagId: tagId, 
       currentPage: 1 
     });
-  };
+  }, [selectedTagId, currentPage]);
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = useCallback((page: number) => {
     logger.debug("CommunityDirectory handlePageChange called:", { 
       oldPage: currentPage, 
       newPage: page,
@@ -61,7 +61,27 @@ const CommunityDirectory = () => {
     logger.debug("CommunityDirectory after page change:", { 
       currentPage: page 
     });
-  };
+  }, [currentPage, searchQuery, selectedTagId]);
+
+  // Memoize the renderPagination callback to prevent unnecessary re-renders
+  const renderPagination = useCallback((totalItems: number, totalPages: number, hasNextPage: boolean) => {
+    logger.debug("CommunityDirectory renderPagination called:", { 
+      totalItems, 
+      totalPages, 
+      hasNextPage, 
+      currentPageProp: currentPage 
+    });
+    return (
+      <CommunityPagination
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={handlePageChange}
+        itemsPerPage={itemsPerPage}
+        totalItems={totalItems}
+        hasNextPage={hasNextPage}
+      />
+    );
+  }, [currentPage, handlePageChange, itemsPerPage]);
 
   return (
     <div className="container max-w-6xl px-4 py-8">
@@ -90,24 +110,7 @@ const CommunityDirectory = () => {
         className="mt-6"
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
-        renderPagination={(totalItems, totalPages, hasNextPage) => {
-          logger.debug("CommunityDirectory renderPagination called:", { 
-            totalItems, 
-            totalPages, 
-            hasNextPage, 
-            currentPageProp: currentPage 
-          });
-          return (
-            <CommunityPagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              itemsPerPage={itemsPerPage}
-              totalItems={totalItems}
-              hasNextPage={hasNextPage}
-            />
-          );
-        }}
+        renderPagination={renderPagination}
       />
     </div>
   );

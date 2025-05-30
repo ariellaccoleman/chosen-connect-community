@@ -1,4 +1,3 @@
-
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -105,15 +104,15 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     actualLimit
   });
 
-  // Create query key that includes all parameters that affect the data
+  // Create more stable query key that properly isolates different page requests
   const queryKey = ['entity-feed', {
-    entityTypes: validEntityTypes.sort(),
-    tagId,
-    search,
+    entityTypes: validEntityTypes.sort().join(','), // Convert to string for better stability
+    tagId: tagId || 'none',
+    search: search || 'empty',
     isApproved,
     limit: actualLimit,
-    offset,
-    currentPage // Include currentPage in query key to ensure proper cache invalidation
+    page: currentPage, // Use page instead of offset for cleaner cache keys
+    itemsPerPage
   }];
 
   logger.debug("useEntityFeed query key:", queryKey);
@@ -314,7 +313,15 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
     // Keep previous data while loading new page to prevent flickering
-    placeholderData: keepPreviousData
+    placeholderData: keepPreviousData,
+    // Add retry configuration to prevent unnecessary retries on pagination
+    retry: (failureCount, error) => {
+      if (failureCount < 3) {
+        logger.debug(`useEntityFeed retry attempt ${failureCount + 1}:`, error);
+        return true;
+      }
+      return false;
+    }
   });
 
   const hookResult = {
