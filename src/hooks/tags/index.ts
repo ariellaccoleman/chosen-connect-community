@@ -13,8 +13,8 @@ export * from './useTagAssignmentRelationshipHooks';
 // Export specific hooks from useTagAssignments, excluding useTagAssignmentMutations to avoid conflict
 export { 
   useEntityTagAssignments,
-  useTagAssignmentsByTag,
-  useTagAssignmentsByEntity 
+  useAssignTag,
+  useRemoveTagAssignment
 } from './useTagAssignments';
 
 // Note: useTagCrudMutations and useTagAssignmentMutations are already exported from useTagFactoryHooks
