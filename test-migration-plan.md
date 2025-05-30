@@ -7,26 +7,30 @@ This plan outlines the migration of skipped tests from mock-based testing to dat
 
 ## Current State Analysis (18 Test Suites)
 ### Current tests
-apiFactory
-apiFactoryWithRepo
-authApi
-batchOperation
-CreateEvent
-databaseConnection
-errorHandler
-EventTagsManager
-formUtils
-organizationsApi
-queryHookFactory
-relationshipsApi
-relationshipsApi.database
-repository
-tagsApi.integration
-testProjectValidation
-useFormError
-useOrganizationMutations
-verify-env
- - dynamically generated to verify test environment works
+1. verify-env
+   - dynamically generated to verify test environment works
+2. tagsApi.integration
+   - correctly implemented test
+   - api implemented with factory pattern
+   - model for other testing3. apiFactory
+3. relationshipsApi
+    - check if api uses relationships factory like tag assignment does
+4. relationshipsApi.database
+    - determine if needed
+5. apiFactoryWithRepo
+6. authApi
+7. batchOperation
+8. CreateEvent
+9. databaseConnection
+10. errorHandler
+11. EventTagsManager
+12. formUtils
+13. organizationsApi
+14. queryHookFactory
+15. repository
+16. testProjectValidation
+17. useFormError
+18. useOrganizationMutations
 
 
 ### Currently Passing Integration Tests ✅
