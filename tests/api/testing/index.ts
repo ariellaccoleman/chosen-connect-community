@@ -20,6 +20,6 @@ export * from './validationUtils';
 // Database testing utilities
 export * from './databaseTestUtils';
 
-// Legacy test utilities (for backwards compatibility)
+// Test utilities
 export * from '../utils/testAuthUtils';
 export * from '../utils/persistentTestUsers';
