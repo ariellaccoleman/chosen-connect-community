@@ -1,9 +1,8 @@
 
 import { useQueryClient, useMutation } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/types';
-import { toast } from 'sonner';
 import { createMutationHandlers } from '@/utils/toastUtils';
+import { profileApi } from '@/api/profiles';
 
 // Import the MembershipTier type
 type MembershipTier = "free" | "community" | "pro" | "partner";
@@ -44,51 +43,40 @@ export const useUpdateProfile = () => {
       }
       
       // First check if the profile exists
-      const { data: existingProfile, error: checkError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('id', profileId)
-        .maybeSingle();
+      const existingProfileResponse = await profileApi.getById(profileId);
       
-      if (checkError) {
-        console.error('Error checking profile existence:', checkError);
-        throw checkError;
+      if (existingProfileResponse.error) {
+        console.error('Error checking profile existence:', existingProfileResponse.error);
+        throw existingProfileResponse.error;
       }
       
       let result;
       
-      if (!existingProfile) {
+      if (!existingProfileResponse.data) {
         // Profile doesn't exist, create it
         console.log('Profile does not exist, creating new profile');
-        const { data, error: insertError } = await supabase
-          .from('profiles')
-          .insert({ 
-            id: profileId, 
-            ...cleanedProfileData 
-          })
-          .select();
+        const createResponse = await profileApi.create({ 
+          id: profileId, 
+          ...cleanedProfileData 
+        });
           
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-          throw insertError;
+        if (createResponse.error) {
+          console.error('Error creating profile:', createResponse.error);
+          throw createResponse.error;
         }
         
-        result = data;
+        result = createResponse.data;
       } else {
         // Profile exists, update it
         console.log('Profile exists, updating');
-        const { data, error: updateError } = await supabase
-          .from('profiles')
-          .update(cleanedProfileData)
-          .eq('id', profileId)
-          .select();
+        const updateResponse = await profileApi.update(profileId, cleanedProfileData);
         
-        if (updateError) {
-          console.error('Error updating profile:', updateError);
-          throw updateError;
+        if (updateResponse.error) {
+          console.error('Error updating profile:', updateResponse.error);
+          throw updateResponse.error;
         }
         
-        result = data;
+        result = updateResponse.data;
       }
       
       console.log('Operation successful, response:', result);
