@@ -11,7 +11,6 @@ export * from './DataRepository';
 export * from './BaseRepository';
 export * from './EntityRepository';
 export * from './SupabaseRepository';
-export * from './MockRepository';
 
 // Export the new read-only and view repository interfaces
 export * from './ReadOnlyRepository';

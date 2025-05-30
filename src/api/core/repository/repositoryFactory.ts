@@ -1,7 +1,6 @@
 
 import { BaseRepository } from './BaseRepository';
 import { createSupabaseRepository } from './SupabaseRepository';
-import { createMockRepository } from './MockRepository';
 import { supabase } from '@/integrations/supabase/client';
 import { ViewRepository, createViewRepository } from './ViewRepository';
 

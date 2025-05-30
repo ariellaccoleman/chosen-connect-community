@@ -2,13 +2,12 @@
 import { supabase } from "@/integrations/supabase/client";
 import { BaseRepository } from "./BaseRepository";
 import { SupabaseRepository } from "./SupabaseRepository";
-import { MockRepository } from "./MockRepository";
 import { EntityRepository } from "./EntityRepository";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 
-export type EnhancedRepositoryType = "supabase" | "mock";
+export type EnhancedRepositoryType = "supabase";
 
 export interface EnhancedRepositoryOptions<T> {
   /**
@@ -63,7 +62,7 @@ export interface EnhancedRepositoryOptions<T> {
  * Creates an enhanced repository for accessing a table with additional functionality
  * 
  * @param tableName Name of the table
- * @param type Repository type (supabase or mock)
+ * @param type Repository type (only supabase supported)
  * @param options Repository configuration options
  * @returns A BaseRepository instance
  */
@@ -78,12 +77,8 @@ export function createEnhancedRepository<T>(
   
   const schema = options.schema || 'public';
   
-  // Initialize the repository based on type
-  if (type === "mock") {
-    repository = new MockRepository<T>(tableName, initialData || []);
-  } else {
-    repository = new SupabaseRepository<T>(tableName, supabase, schema);
-  }
+  // Initialize the repository (only Supabase supported now)
+  repository = new SupabaseRepository<T>(tableName, supabase, schema);
   
   // Log repository creation in development
   if (process.env.NODE_ENV === "development" && options.enableLogging) {
@@ -115,8 +110,8 @@ export function createEnhancedRepository<T>(
 export abstract class EntityRepositoryFactory<T extends Entity> {
   /**
    * Create an entity repository
-   * @param type Repository type (supabase or mock)
-   * @param initialData Initial data for mock repositories
+   * @param type Repository type (only supabase supported)
+   * @param initialData Initial data (ignored for schema-based repositories)
    * @returns EntityRepository instance
    */
   abstract createRepository(
@@ -133,15 +128,6 @@ export abstract class EntityRepositoryFactory<T extends Entity> {
    * Get the entity type this factory creates repositories for
    */
   abstract getEntityType(): EntityType;
-  
-  /**
-   * Create a mock repository for testing
-   * @param initialData Initial data
-   * @returns EntityRepository instance
-   */
-  createMockRepository(initialData: T[] = []): EntityRepository<T> {
-    return this.createRepository('mock', initialData);
-  }
   
   /**
    * Create a production Supabase repository
