@@ -17,10 +17,10 @@ This plan outlines the implementation of standardized `resetApi` functions acros
 - **Impact**: Clients are created with default (unauthenticated) context
 - **Result**: Subsequent operations fail authentication checks
 
-### 3. Inconsistent Reset Patterns
-- **Issue**: No standardized way to recreate APIs with authenticated clients
-- **Impact**: Tests cannot easily switch to authenticated API instances
-- **Result**: Authentication timing issues persist
+### 3. Client-Aware Repository Wrapper Problem
+- **Issue**: `createClientAwareRepository` in `apiFactory.ts` bypasses the repository pattern
+- **Impact**: Makes direct Supabase client calls instead of using proper repositories
+- **Result**: Defeats the purpose of having repositories and prevents proper client flow
 
 ## Implementation Status
 
@@ -30,181 +30,111 @@ This plan outlines the implementation of standardized `resetApi` functions acros
 ### Phase 2: API Factory Updates (COMPLETE)
 ✅ **Added reset functions to API factories** - All major API factories now have `resetApi(client)` functions
 
-### Current Build Issues Identified
-- Repository factory functions don't accept client parameter yet
-- Service functions need client parameter support
-- Export conflicts from multiple `resetApi` exports
-- Chat message service functions need client parameter updates
+### Phase 3: Export Conflict Resolution (COMPLETE)
+✅ **Renamed factory reset functions** to be factory-specific:
+- `postsApiFactory.ts` → `resetPostsApi(client)`
+- `chatMessageApiFactory.ts` → `resetChatMessageApi(client)`
+- `organizationApiFactory.ts` → `resetOrganizationApi(client)`
+- `profileApiFactory.ts` → `resetProfileApi(client)`
 
-## Phase 3: Infrastructure Updates and Conflict Resolution (CURRENT)
+✅ **Service function updates** - All service functions now accept client parameters
 
-### 3.1 Repository Factory Updates
-**Files to modify:**
-- `src/api/core/repository/repositoryFactory.ts` - Add client parameter support
-- `src/api/core/factory/apiFactory.ts` - Update to handle client injection properly
+## Current Status Analysis
 
-**Changes needed:**
+### What Works:
+- ✅ Export conflicts are resolved with factory-specific reset function names
+- ✅ Service functions (chat message service) accept client parameters  
+- ✅ Repository factory functions accept client parameters
+- ✅ SupabaseRepository constructor accepts client parameters
+- ✅ All major API factories have reset functions
+
+### Critical Issue Identified:
+**The `createClientAwareRepository` function** in `apiFactory.ts` (lines 58-130) is a problematic implementation that:
+- Bypasses the entire repository pattern
+- Makes direct Supabase client calls
+- Creates a fake "repository-like interface"
+- Prevents the client parameter from flowing through the proper repository chain
+
+### The Real Problem:
+The issue is not that repositories don't support client parameters - they do! The problem is that `createApiFactory` uses this terrible wrapper instead of passing the client to the real `createRepository` function.
+
+## Revised Implementation Plan
+
+### Phase 4: Remove Client-Aware Repository Wrapper (CURRENT PRIORITY)
+
+**Objective**: Delete the problematic wrapper and restore proper repository pattern
+
+**Critical Changes Needed:**
+1. **Delete `createClientAwareRepository` function** from `apiFactory.ts` (lines 58-130)
+2. **Update `createApiFactory`** to pass `providedClient` directly to `createRepository` calls
+3. **Remove all calls** to `createClientAwareRepository` 
+4. **Use the real repository pattern** that already supports client parameters
+
+**The Fix:**
+Instead of:
 ```typescript
-// Update RepositoryOptions to include client
-export interface RepositoryOptions {
-  schema?: string;
-  enableLogging?: boolean;
-  initialData?: any[];
-  client?: any; // Add client parameter
-}
-
-// Update createRepository to accept and use client
-export function createRepository<T>(
-  tableName: string,
-  options: RepositoryOptions = {},
-  providedClient?: any // Add client parameter
-): BaseRepository<T>
+const clientAwareRepository = createClientAwareRepository(dataRepository, tableName, providedClient);
 ```
 
-### 3.2 Service Function Updates
-**Files to modify:**
-- `src/api/chat/chatMessageService.ts` - Add client parameter to all functions
-
-**Changes needed:**
-- Update `getChannelMessages(channelId, limit?, offset?, client?)`
-- Update `getThreadReplies(messageId, limit?, offset?, client?)`
-- Update `sendChatMessage(channelId, message, userId, parentId?, client?)`
-- Update `getChannelMessagePreviews(channelId, client?)`
-
-### 3.3 Export Conflict Resolution Strategy
-
-**DECISION: Rename Factory Reset Functions**
-
-To resolve export conflicts while maintaining clarity, I'm implementing this strategy:
-
-1. **Rename all factory `resetApi` functions** to be factory-specific:
-   - `profileApiFactory.ts` → `resetProfileApi(client)`
-   - `organizationApiFactory.ts` → `resetOrganizationApi(client)`
-   - `eventApiFactory.ts` → `resetEventApi(client)`
-   - `hubApiFactory.ts` → `resetHubApi(client)`
-   - `locationsApi.ts` → `resetLocationsApi(client)`
-   - `chatChannelsApi.ts` → `resetChatChannelsApi(client)`
-   - `chatMessageApiFactory.ts` → `resetChatMessageApi(client)`
-   - `tagApiFactory.ts` → `resetTagApi(client)`
-
-2. **Create a central reset utility** that imports and re-exports all specific reset functions:
-
+Use:
 ```typescript
-// src/api/core/apiResetUtils.ts
-export { resetProfileApi } from '../profiles/profileApiFactory';
-export { resetOrganizationApi } from '../organizations/organizationApiFactory';
-export { resetEventApi } from '../events/eventApiFactory';
-export { resetHubApi } from '../hubs/hubApiFactory';
-export { resetLocationsApi } from '../locations/locationsApi';
-export { resetChatChannelsApi } from '../chat/chatChannelsApi';
-export { resetChatMessageApi } from '../chat/chatMessageApiFactory';
-export { resetTagApi } from '../tags/factory/tagApiFactory';
-
-// Central function that resets all APIs
-export const resetAllApis = (client: any) => ({
-  profile: resetProfileApi(client),
-  organization: resetOrganizationApi(client),
-  event: resetEventApi(client),
-  hub: resetHubApi(client),
-  locations: resetLocationsApi(client),
-  chatChannels: resetChatChannelsApi(client),
-  chatMessage: resetChatMessageApi(client),
-  tag: resetTagApi(client)
-});
+const dataRepository = createRepository<T>(tableName, { schema: 'public' }, providedClient);
 ```
 
-3. **Update index.ts files** to avoid conflicts:
-   - Remove `export *` statements that cause conflicts
-   - Use explicit exports for non-reset functions only
-   - Keep reset functions isolated to the central utility
+### Phase 5: Verify Repository Chain Works
 
-### 3.4 Testing Integration
-**File to create:**
-- `src/api/core/testing/testAuthUtils.ts`
+**Objective**: Ensure client parameters flow through the entire repository chain
 
-**Integration points:**
+**Verification Steps:**
+1. **Verify the complete chain**: `resetApi(client)` → `createApiFactory(client)` → `createRepository(client)` → `SupabaseRepository(client)`
+2. **Test reset functions** work with authenticated clients
+3. **Confirm no functionality is lost**
+
+### Phase 6: Create Testing Integration
+
+**Objective**: Build the testing utilities that were never created
+
+**Files to Create:**
+- `src/api/core/testing/testAuthUtils.ts` - Central reset utility integration
+- Documentation for usage patterns in tests
+
+**Integration Points:**
 - Call individual reset functions as needed in tests
-- Use `resetAllApis` for comprehensive test setup
+- Use centralized utility for comprehensive test setup
 - Ensure proper cleanup between tests
 
-## Implementation Priority for Phase 3
+## What We DON'T Need to Do
 
-### Step 1: Fix Repository Infrastructure (1-2 hours)
-1. Update `RepositoryOptions` interface to include client parameter
-2. Update `createRepository` function to accept and use client
-3. Update `createTestingRepository` and other factory functions
-4. Update `apiFactory.ts` to properly handle client injection
-
-### Step 2: Update Service Functions (1 hour)
-1. Add client parameter to chat message service functions
-2. Update function signatures to be optional for backward compatibility
-3. Use provided client or fall back to default supabase client
-
-### Step 3: Resolve Export Conflicts (1 hour)
-1. Rename all `resetApi` functions to be factory-specific
-2. Create central reset utility
-3. Update index.ts files to remove conflicting exports
-4. Test that all imports still work correctly
-
-### Step 4: Create Testing Integration (30 minutes)
-1. Create `testAuthUtils.ts` with reset utility integration
-2. Document usage patterns for tests
-3. Verify all reset functions work independently
-
-## Alternative Approaches Considered
-
-### Option A: Namespace Exports (REJECTED)
-```typescript
-export const profileApi = { ...operations, resetApi };
-export const organizationApi = { ...operations, resetApi };
-```
-**Rejected because:** Would require changing all existing imports throughout the codebase.
-
-### Option B: Generic Reset Function (REJECTED)
-```typescript
-export const resetApi = (apiType: string, client: any) => { ... }
-```
-**Rejected because:** Type safety issues and less intuitive API.
-
-### Option C: Factory-Specific Names (SELECTED)
-```typescript
-export const resetProfileApi = (client: any) => { ... }
-export const resetOrganizationApi = (client: any) => { ... }
-```
-**Selected because:** Clear, type-safe, no conflicts, maintains backward compatibility.
-
-## Expected Timeline
-
-- **Step 1**: 1-2 hours (Repository infrastructure)
-- **Step 2**: 1 hour (Service functions)
-- **Step 3**: 1 hour (Export conflicts)
-- **Step 4**: 30 minutes (Testing integration)
-- **Total**: 3.5-4.5 hours
+The following items are already complete and working correctly:
+- ✅ Repository factory functions accept client parameter
+- ✅ SupabaseRepository accepts client parameter  
+- ✅ Service functions accept client parameter
+- ✅ Export conflicts are resolved
+- ✅ Reset functions exist for all major APIs
 
 ## Success Metrics
 
 ### Immediate Success
-- [ ] All build errors resolved
-- [ ] All API factories have working reset functions
-- [ ] No export conflicts in index files
-- [ ] Repository factories accept client parameter
-- [ ] Service functions accept client parameter
+- [ ] `createClientAwareRepository` function removed
+- [ ] `createApiFactory` passes client to real `createRepository`
+- [ ] All reset functions work with authenticated clients
+- [ ] No build errors or functionality loss
 
 ### Long-term Success
 - [ ] Tests can use authenticated API instances reliably
-- [ ] Central reset utility works for comprehensive test setup
-- [ ] Individual reset functions work for granular test control
-- [ ] No breaking changes to existing functionality
+- [ ] Repository pattern is properly maintained
+- [ ] Client parameters flow correctly through the entire chain
+- [ ] Testing utilities support both individual and comprehensive reset scenarios
 
 ## Risk Mitigation
 
 ### High Risk Items
-- **Repository signature changes**: Maintain backward compatibility with optional parameters
-- **Service function updates**: Keep existing function signatures working
+- **Repository pattern integrity**: Ensure removing the wrapper doesn't break existing functionality
+- **Client parameter flow**: Verify the entire chain works after the fix
 
 ### Medium Risk Items
-- **Export conflicts**: Systematic renaming approach minimizes confusion
 - **Type safety**: Ensure all client parameters are properly typed
+- **Error handling**: Maintain proper error handling through the repository layer
 
 ### Low Risk Items
 - **Performance**: Minimal impact on production code
@@ -212,7 +142,7 @@ export const resetOrganizationApi = (client: any) => { ... }
 
 ---
 
-**Document Version**: 3.0  
-**Last Updated**: 2025-05-29  
-**Current Phase**: 3 (Infrastructure Updates and Conflict Resolution)  
-**Next Steps**: Execute Step 1 (Repository Infrastructure Updates)
+**Document Version**: 4.0  
+**Last Updated**: 2025-05-30  
+**Current Phase**: 4 (Remove Client-Aware Repository Wrapper)  
+**Next Steps**: Delete the problematic wrapper and restore proper repository pattern
