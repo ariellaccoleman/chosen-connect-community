@@ -40,15 +40,60 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId, searchQuery = "" }) 
   // Extract posts from response and handle error state
   const posts = postsResponse?.data || [];
   
+  // Add detailed logging for debugging tag filtering
+  useEffect(() => {
+    if (posts.length > 0) {
+      logger.debug("Sample post structure:", posts[0]);
+      posts.forEach((post, index) => {
+        logger.debug(`Post ${index + 1} tags:`, {
+          postId: post.id,
+          content: post.content?.substring(0, 50) + "...",
+          tags: post.tags,
+          tagCount: Array.isArray(post.tags) ? post.tags.length : 'not array'
+        });
+      });
+    }
+    
+    if (selectedTagId) {
+      logger.debug("Filtering by tag ID:", selectedTagId);
+      const postsWithSelectedTag = posts.filter(post => {
+        if (!Array.isArray(post.tags)) return false;
+        const hasTag = post.tags.some(tag => {
+          logger.debug("Checking tag:", { tagId: tag?.id, selectedTagId, match: tag?.id === selectedTagId });
+          return tag?.id === selectedTagId;
+        });
+        return hasTag;
+      });
+      logger.debug("Posts matching selected tag:", postsWithSelectedTag.length);
+    }
+  }, [posts, selectedTagId]);
+  
   // Filter posts by selected tag and search query
   const filteredPosts = posts.filter(post => {
     // Filter by tag if a tag is selected
     if (selectedTagId) {
       const hasTags = Array.isArray(post.tags) && post.tags.length > 0;
-      if (!hasTags) return false;
+      if (!hasTags) {
+        logger.debug("Post has no tags:", post.id);
+        return false;
+      }
       
-      const hasSelectedTag = post.tags.some(tag => tag.id === selectedTagId);
-      if (!hasSelectedTag) return false;
+      const hasSelectedTag = post.tags.some(tag => {
+        const match = tag?.id === selectedTagId;
+        if (match) {
+          logger.debug("Found matching tag:", { postId: post.id, tagId: tag.id, tagName: tag.name });
+        }
+        return match;
+      });
+      
+      if (!hasSelectedTag) {
+        logger.debug("Post doesn't have selected tag:", { 
+          postId: post.id, 
+          selectedTagId, 
+          postTags: post.tags.map(t => ({ id: t?.id, name: t?.name }))
+        });
+        return false;
+      }
     }
     
     // Filter by search query if provided
