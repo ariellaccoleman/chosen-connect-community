@@ -4,7 +4,6 @@ import { EntityType } from "@/types/entityTypes";
 import EntityFeed from "@/components/entities/EntityFeed";
 import EntitySearchAndFilter from "@/components/common/EntitySearchAndFilter";
 import CommunityPagination from "@/components/community/CommunityPagination";
-import { logger } from "@/utils/logger";
 
 const CommunityDirectory = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -12,65 +11,25 @@ const CommunityDirectory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12; // Show 12 profiles per page
 
-  logger.debug("CommunityDirectory render:", { 
-    currentPage, 
-    searchQuery, 
-    selectedTagId,
-    itemsPerPage 
-  });
-
   // Reset to first page when search or filter changes
   const handleSearchChange = useCallback((search: string) => {
-    logger.debug("CommunityDirectory handleSearchChange:", { 
-      oldSearch: searchQuery, 
-      newSearch: search, 
-      currentPageBeforeReset: currentPage 
-    });
     setSearchQuery(search);
     setCurrentPage(1);
-    logger.debug("CommunityDirectory after search change:", { 
-      searchQuery: search, 
-      currentPage: 1 
-    });
-  }, [searchQuery, currentPage]);
+  }, []);
 
   const handleTagChange = useCallback((tagId: string | null) => {
-    logger.debug("CommunityDirectory handleTagChange:", { 
-      oldTagId: selectedTagId, 
-      newTagId: tagId, 
-      currentPageBeforeReset: currentPage 
-    });
     setSelectedTagId(tagId);
     setCurrentPage(1);
-    logger.debug("CommunityDirectory after tag change:", { 
-      selectedTagId: tagId, 
-      currentPage: 1 
-    });
-  }, [selectedTagId, currentPage]);
+  }, []);
 
   const handlePageChange = useCallback((page: number) => {
-    logger.debug("CommunityDirectory handlePageChange called:", { 
-      oldPage: currentPage, 
-      newPage: page,
-      searchQuery,
-      selectedTagId
-    });
     setCurrentPage(page);
     // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    logger.debug("CommunityDirectory after page change:", { 
-      currentPage: page 
-    });
-  }, [currentPage, searchQuery, selectedTagId]);
+  }, []);
 
   // Memoize the renderPagination callback to prevent unnecessary re-renders
   const renderPagination = useCallback((totalItems: number, totalPages: number, hasNextPage: boolean) => {
-    logger.debug("CommunityDirectory renderPagination called:", { 
-      totalItems, 
-      totalPages, 
-      hasNextPage, 
-      currentPageProp: currentPage 
-    });
     return (
       <CommunityPagination
         currentPage={currentPage}
