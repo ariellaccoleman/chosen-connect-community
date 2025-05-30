@@ -1,624 +1,272 @@
 
-import { createApiFactory } from "@/api/core/factory";
-import { extendApiOperations } from "@/api/core/apiExtension";
-import { supabase } from "@/integrations/supabase/client";
-import { ApiResponse } from "@/api/core/types";
-import { Post, PostComment, PostLike, CommentLike, CreatePostRequest, CreateCommentRequest } from "@/types/post";
-import { createErrorResponse, createSuccessResponse } from "@/api/core/errorHandler";
-import { EntityType } from "@/types/entityTypes";
-import { logger } from "@/utils/logger";
+import { createApiFactory } from '../core/factory/apiFactory';
+import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
+import { apiClient } from '../core/apiClient';
+import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
+import { logger } from '@/utils/logger';
 
-// Create base operations for posts
-const postsBaseApi = createApiFactory<Post>({
-  tableName: "posts",
-  entityName: "Post",
+// Create the main posts API using the factory
+export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
+  tableName: 'posts',
+  entityName: 'post',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    content: data.content,
+    author_id: data.author_id,
+    has_media: data.has_media || false,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  }),
+  transformRequest: (data: PostCreate | PostUpdate) => ({
+    content: data.content,
+    author_id: data.author_id,
+    has_media: data.has_media || false
+  }),
   useMutationOperations: true,
-  repository: { type: "supabase" }
+  useBatchOperations: false
 });
 
-// Create base operations for comments
-const commentsBaseApi = createApiFactory<PostComment>({
-  tableName: "post_comments",
-  entityName: "Comment",
+// Create the post comments API
+export const postCommentsApi = createApiFactory<any, string>({
+  tableName: 'post_comments',
+  entityName: 'postComment',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    content: data.content,
+    post_id: data.post_id,
+    author_id: data.author_id,
+    created_at: data.created_at,
+    updated_at: data.updated_at
+  }),
   useMutationOperations: true,
-  repository: { type: "supabase" }
+  useBatchOperations: false
 });
 
-// Create base operations for post likes
-const postLikesBaseApi = createApiFactory<PostLike>({
-  tableName: "post_likes",
-  entityName: "PostLike",
+// Create the post likes API
+export const postLikesApi = createApiFactory<any, string>({
+  tableName: 'post_likes',
+  entityName: 'postLike',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    post_id: data.post_id,
+    user_id: data.user_id,
+    created_at: data.created_at
+  }),
   useMutationOperations: true,
-  repository: { type: "supabase" }
+  useBatchOperations: false
 });
 
-// Create base operations for comment likes
-const commentLikesBaseApi = createApiFactory<CommentLike>({
-  tableName: "comment_likes",
-  entityName: "CommentLike",
+// Create the comment likes API
+export const commentLikesApi = createApiFactory<any, string>({
+  tableName: 'comment_likes',
+  entityName: 'commentLike',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    comment_id: data.comment_id,
+    user_id: data.user_id,
+    created_at: data.created_at
+  }),
   useMutationOperations: true,
-  repository: { type: "supabase" }
+  useBatchOperations: false
 });
-
-// Define custom operations interfaces for type safety
-interface PostsCustomOperations {
-  getPostsWithDetails(): Promise<ApiResponse<Post[]>>;
-  createPostWithTags(data: CreatePostRequest): Promise<ApiResponse<Post>>;
-  getPostWithDetails(id: string): Promise<ApiResponse<Post>>;
-}
-
-interface CommentsCustomOperations {
-  getCommentsForPost(postId: string): Promise<ApiResponse<PostComment[]>>;
-  createComment(data: CreateCommentRequest): Promise<ApiResponse<PostComment>>;
-}
-
-interface PostLikesCustomOperations {
-  toggleLike(postId: string): Promise<ApiResponse<boolean>>;
-  hasLiked(postId: string): Promise<ApiResponse<boolean>>;
-}
-
-interface CommentLikesCustomOperations {
-  toggleLike(commentId: string): Promise<ApiResponse<boolean>>;
-  hasLiked(commentId: string): Promise<ApiResponse<boolean>>;
-}
-
-// Helper function to format author data safely
-function formatAuthor(authorData: any) {
-  // Ensure authorData is an object
-  const author = authorData || {};
-  return {
-    id: author.id || '',
-    name: `${author.first_name || ''} ${author.last_name || ''}`.trim() || 'Unknown User',
-    avatar: author.avatar_url || undefined
-  };
-}
-
-// Helper function to create extended posts API
-function createExtendedPostsApi(client?: any) {
-  const baseApi = createApiFactory<Post>({
-    tableName: "posts",
-    entityName: "Post",
-    useMutationOperations: true,
-    repository: { type: "supabase" }
-  }, client);
-
-  return extendApiOperations<Post, string, Partial<Post>, Partial<Post>, PostsCustomOperations>(
-    baseApi,
-    {
-      // Get posts with author details, likes count, comments count and tags
-      async getPostsWithDetails(): Promise<ApiResponse<Post[]>> {
-        try {
-          console.log("Fetching posts with details...");
-          
-          const activeClient = client || supabase;
-          
-          // First, get all posts with author details and counts
-          const { data, error } = await activeClient
-            .from("posts")
-            .select(`
-              *,
-              author:profiles!posts_author_id_fkey(id, first_name, last_name, avatar_url),
-              post_likes(count),
-              post_comments(count)
-            `)
-            .order("created_at", { ascending: false });
-
-          if (error) {
-            console.error("Error fetching posts:", error);
-            throw error;
-          }
-          
-          console.log("Raw posts data:", data);
-          
-          if (!data || data.length === 0) {
-            return createSuccessResponse([]);
-          }
-
-          // Now, get tag assignments for these posts in a separate query
-          const postIds = data.map(post => post.id);
-          const { data: tagAssignments, error: tagError } = await activeClient
-            .from("tag_assignments")
-            .select(`
-              tag_id,
-              target_id,
-              tags:tag_id(id, name)
-            `)
-            .in('target_id', postIds)
-            .eq('target_type', 'post');
-            
-          if (tagError) {
-            console.error("Error fetching tag assignments:", tagError);
-            // Don't throw here, just continue without tags
-          }
-          
-          console.log("Tag assignments:", tagAssignments);
-          
-          // Group tag assignments by post ID
-          const tagsByPostId = (tagAssignments || []).reduce((acc: Record<string, any[]>, curr: any) => {
-            if (!acc[curr.target_id]) {
-              acc[curr.target_id] = [];
-            }
-            if (curr.tags) {
-              acc[curr.target_id].push(curr.tags);
-            }
-            return acc;
-          }, {});
-          
-          const formattedPosts = data.map(post => {
-            // Format the author data using our helper function
-            const author = formatAuthor(post.author);
-
-            // Fix: Properly count likes and comments
-            // The post_likes and post_comments arrays contain objects with count property
-            // We need to extract the actual count value or default to 0
-            const likesCount = post.post_likes && post.post_likes.length > 0 
-              ? (post.post_likes[0].count || 0) 
-              : 0;
-              
-            const commentsCount = post.post_comments && post.post_comments.length > 0 
-              ? (post.post_comments[0].count || 0) 
-              : 0;
-
-            return {
-              ...post,
-              author,
-              likes_count: likesCount,
-              comments_count: commentsCount,
-              tags: tagsByPostId[post.id] || []
-            };
-          });
-          
-          console.log("Formatted posts:", formattedPosts);
-          
-          return createSuccessResponse(formattedPosts || []);
-        } catch (error) {
-          console.error("Error in getPostsWithDetails:", error);
-          return createErrorResponse(error);
-        }
-      },
-
-      // Create post with tags
-      async createPostWithTags(data: CreatePostRequest): Promise<ApiResponse<Post>> {
-        try {
-          logger.info("Creating post with tags:", data);
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          if (!userId) {
-            logger.error("No authenticated user found when creating post");
-            throw new Error("User authentication required");
-          }
-          
-          // Step 1: Create the post
-          const { data: post, error } = await activeClient
-            .from("posts")
-            .insert({
-              content: data.content,
-              author_id: userId,
-              has_media: data.has_media
-            })
-            .select()
-            .single();
-
-          if (error) {
-            logger.error("Error creating post:", error);
-            throw error;
-          }
-
-          logger.info("Post created successfully:", { postId: post.id });
-
-          // Step 2: Assign tags if provided (only if post was created successfully)
-          if (data.tag_ids && data.tag_ids.length > 0 && post) {
-            logger.info("Creating tag assignments for post", { 
-              postId: post.id,
-              tagIds: data.tag_ids
-            });
-            
-            // First ensure all tags are associated with the POST entity type
-            for (const tagId of data.tag_ids) {
-              logger.info(`Ensuring tag ${tagId} is associated with POST entity type`);
-              try {
-                // Check if tag entity type already exists
-                const { data: existingEntityType, error: checkError } = await activeClient
-                  .from("tag_entity_types")
-                  .select("id")
-                  .eq("tag_id", tagId)
-                  .eq("entity_type", EntityType.POST)
-                  .maybeSingle();
-                  
-                if (checkError) {
-                  logger.error("Error checking tag entity type:", checkError);
-                  // Continue despite error
-                }
-                
-                // If no association exists, create it
-                if (!existingEntityType) {
-                  logger.info(`Creating tag entity type for tag ${tagId}`);
-                  const { error: createError } = await activeClient
-                    .from("tag_entity_types")
-                    .insert({
-                      tag_id: tagId,
-                      entity_type: EntityType.POST
-                    });
-                    
-                  if (createError) {
-                    logger.error("Error creating tag entity type:", createError);
-                    // Continue despite error
-                  } else {
-                    logger.info(`Tag entity type created for tag ${tagId}`);
-                  }
-                } else {
-                  logger.info(`Tag ${tagId} already associated with POST entity type`);
-                }
-              } catch (error) {
-                logger.error(`Error ensuring tag entity type for tag ${tagId}:`, error);
-                // Continue to next tag despite error
-              }
-            }
-            
-            // Now create tag assignments
-            const tagAssignments = data.tag_ids.map(tagId => ({
-              target_id: post.id,
-              tag_id: tagId,
-              target_type: EntityType.POST
-            }));
-
-            logger.info("Inserting tag assignments:", tagAssignments);
-            const { data: tagData, error: tagError } = await activeClient
-              .from("tag_assignments")
-              .insert(tagAssignments)
-              .select();
-
-            if (tagError) {
-              logger.error("Error creating tag assignments:", tagError);
-              // Don't fail the whole operation, just log the error
-            } else {
-              logger.info("Tag assignments created successfully:", tagData);
-            }
-          } else {
-            logger.info("No tags to assign for this post");
-          }
-
-          return createSuccessResponse(post);
-        } catch (error) {
-          logger.error("Error in createPostWithTags:", error);
-          return createErrorResponse(error);
-        }
-      },
-
-      // Get post by ID with details
-      async getPostWithDetails(id: string): Promise<ApiResponse<Post>> {
-        try {
-          const activeClient = client || supabase;
-          
-          // First, get the post with author details and counts
-          const { data, error } = await activeClient
-            .from("posts")
-            .select(`
-              *,
-              author:profiles!posts_author_id_fkey(id, first_name, last_name, avatar_url),
-              post_likes(count),
-              post_comments(count)
-            `)
-            .eq("id", id)
-            .single();
-
-          if (error) throw error;
-          
-          // Then get tags in a separate query
-          const { data: tagAssignments, error: tagError } = await activeClient
-            .from("tag_assignments")
-            .select(`
-              tag_id,
-              tags:tag_id(id, name)
-            `)
-            .eq('target_id', id)
-            .eq('target_type', 'post');
-            
-          if (tagError) {
-            console.error("Error fetching tags for post:", tagError);
-            // Don't throw here, just continue without tags
-          }
-
-          // Format the author data with our helper function
-          const author = formatAuthor(data.author);
-          
-          // Extract tags from assignments
-          const tags = (tagAssignments || [])
-            .map((assignment: any) => assignment.tags)
-            .filter(Boolean);
-
-          // Fix: Properly count likes and comments
-          const likesCount = data.post_likes && data.post_likes.length > 0 
-            ? (data.post_likes[0].count || 0) 
-            : 0;
-            
-          const commentsCount = data.post_comments && data.post_comments.length > 0 
-            ? (data.post_comments[0].count || 0) 
-            : 0;
-
-          const formattedPost = {
-            ...data,
-            author,
-            likes_count: likesCount,
-            comments_count: commentsCount,
-            tags: tags || []
-          };
-
-          return createSuccessResponse(formattedPost);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      }
-    }
-  );
-}
-
-// Extend posts API with custom operations
-export const postsApi = createExtendedPostsApi();
 
 /**
- * Reset posts API with authenticated client
+ * Get posts with full details including author, likes, and comments
+ */
+export const getPostsWithDetails = async (
+  limit = 10,
+  offset = 0,
+  client?: any
+): Promise<ApiResponse<PostWithDetails[]>> => {
+  return apiClient.query(async (supabase) => {
+    try {
+      const { data: posts, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          author:profiles!posts_author_id_fkey(
+            id, first_name, last_name, avatar_url
+          ),
+          post_likes(id, user_id),
+          post_comments(
+            id, content, author_id, created_at,
+            author:profiles!post_comments_author_id_fkey(
+              id, first_name, last_name, avatar_url
+            ),
+            comment_likes(id, user_id)
+          )
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        logger.error('Error fetching posts with details:', error);
+        return createErrorResponse(error);
+      }
+
+      const transformedPosts: PostWithDetails[] = (posts || []).map((post: any) => ({
+        id: post.id,
+        content: post.content,
+        author_id: post.author_id,
+        has_media: post.has_media || false,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        author: post.author,
+        likes: post.post_likes || [],
+        comments: (post.post_comments || []).map((comment: any) => ({
+          ...comment,
+          likes: comment.comment_likes || []
+        }))
+      }));
+
+      return createSuccessResponse(transformedPosts);
+    } catch (error) {
+      logger.error('Exception in getPostsWithDetails:', error);
+      return createErrorResponse(error);
+    }
+  }, client);
+};
+
+/**
+ * Get a single post with full details
+ */
+export const getPostWithDetails = async (
+  postId: string,
+  client?: any
+): Promise<ApiResponse<PostWithDetails>> => {
+  return apiClient.query(async (supabase) => {
+    try {
+      const { data: post, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          author:profiles!posts_author_id_fkey(
+            id, first_name, last_name, avatar_url
+          ),
+          post_likes(id, user_id),
+          post_comments(
+            id, content, author_id, created_at,
+            author:profiles!post_comments_author_id_fkey(
+              id, first_name, last_name, avatar_url
+            ),
+            comment_likes(id, user_id)
+          )
+        `)
+        .eq('id', postId)
+        .single();
+
+      if (error) {
+        logger.error('Error fetching post with details:', error);
+        return createErrorResponse(error);
+      }
+
+      const transformedPost: PostWithDetails = {
+        id: post.id,
+        content: post.content,
+        author_id: post.author_id,
+        has_media: post.has_media || false,
+        created_at: post.created_at,
+        updated_at: post.updated_at,
+        author: post.author,
+        likes: post.post_likes || [],
+        comments: (post.post_comments || []).map((comment: any) => ({
+          ...comment,
+          likes: comment.comment_likes || []
+        }))
+      };
+
+      return createSuccessResponse(transformedPost);
+    } catch (error) {
+      logger.error('Exception in getPostWithDetails:', error);
+      return createErrorResponse(error);
+    }
+  }, client);
+};
+
+/**
+ * Reset posts APIs with authenticated client
  */
 export const resetPostsApi = (client?: any) => {
-  const newPostsApi = createExtendedPostsApi(client);
-  const newCommentsApi = createExtendedCommentsApi(client);
-  const newPostLikesApi = createExtendedPostLikesApi(client);
-  const newCommentLikesApi = createExtendedCommentLikesApi(client);
+  const newPostsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
+    tableName: 'posts',
+    entityName: 'post',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      content: data.content,
+      author_id: data.author_id,
+      has_media: data.has_media || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    }),
+    transformRequest: (data: PostCreate | PostUpdate) => ({
+      content: data.content,
+      author_id: data.author_id,
+      has_media: data.has_media || false
+    }),
+    useMutationOperations: true,
+    useBatchOperations: false
+  }, client);
+
+  const newPostCommentsApi = createApiFactory<any, string>({
+    tableName: 'post_comments',
+    entityName: 'postComment',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      content: data.content,
+      post_id: data.post_id,
+      author_id: data.author_id,
+      created_at: data.created_at,
+      updated_at: data.updated_at
+    }),
+    useMutationOperations: true,
+    useBatchOperations: false
+  }, client);
+
+  const newPostLikesApi = createApiFactory<any, string>({
+    tableName: 'post_likes',
+    entityName: 'postLike',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      post_id: data.post_id,
+      user_id: data.user_id,
+      created_at: data.created_at
+    }),
+    useMutationOperations: true,
+    useBatchOperations: false
+  }, client);
+
+  const newCommentLikesApi = createApiFactory<any, string>({
+    tableName: 'comment_likes',
+    entityName: 'commentLike',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      comment_id: data.comment_id,
+      user_id: data.user_id,
+      created_at: data.created_at
+    }),
+    useMutationOperations: true,
+    useBatchOperations: false
+  }, client);
 
   return {
     postsApi: newPostsApi,
-    commentsApi: newCommentsApi,
+    postCommentsApi: newPostCommentsApi,
     postLikesApi: newPostLikesApi,
-    commentLikesApi: newCommentLikesApi
+    commentLikesApi: newCommentLikesApi,
+    getPostsWithDetails: (limit?: number, offset?: number) => 
+      getPostsWithDetails(limit, offset, client),
+    getPostWithDetails: (postId: string) => 
+      getPostWithDetails(postId, client)
   };
 };
-
-// Helper function to create extended comments API
-function createExtendedCommentsApi(client?: any) {
-  const baseApi = createApiFactory<PostComment>({
-    tableName: "post_comments",
-    entityName: "Comment",
-    useMutationOperations: true,
-    repository: { type: "supabase" }
-  }, client);
-
-  return extendApiOperations<PostComment, string, Partial<PostComment>, Partial<PostComment>, CommentsCustomOperations>(
-    baseApi,
-    {
-      // Get comments for a post with author details and likes count
-      async getCommentsForPost(postId: string): Promise<ApiResponse<PostComment[]>> {
-        try {
-          const activeClient = client || supabase;
-          
-          const { data, error } = await activeClient
-            .from("post_comments")
-            .select(`
-              *,
-              author:profiles!post_comments_author_id_fkey(id, first_name, last_name, avatar_url),
-              comment_likes(count)
-            `)
-            .eq("post_id", postId)
-            .order("created_at", { ascending: true });
-
-          if (error) throw error;
-
-          const formattedComments = data?.map(comment => {
-            // Format the author data with our helper function
-            const author = formatAuthor(comment.author);
-
-            return {
-              ...comment,
-              author,
-              likes: comment.comment_likes?.length || 0,
-              timestamp: new Date(comment.created_at)
-            };
-          });
-
-          return createSuccessResponse(formattedComments || []);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      },
-
-      // Create a comment on a post
-      async createComment(data: CreateCommentRequest): Promise<ApiResponse<PostComment>> {
-        try {
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          const { data: comment, error } = await activeClient
-            .from("post_comments")
-            .insert({
-              post_id: data.post_id,
-              content: data.content,
-              author_id: userId
-            })
-            .select(`
-              *,
-              author:profiles!post_comments_author_id_fkey(id, first_name, last_name, avatar_url)
-            `)
-            .single();
-
-          if (error) throw error;
-
-          // Format the comment with our helper function
-          const author = formatAuthor(comment.author);
-          
-          const formattedComment = {
-            ...comment,
-            author,
-            likes: 0,
-            timestamp: new Date(comment.created_at)
-          };
-
-          return createSuccessResponse(formattedComment);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      }
-    }
-  );
-}
-
-// Helper function to create extended post likes API
-function createExtendedPostLikesApi(client?: any) {
-  const baseApi = createApiFactory<PostLike>({
-    tableName: "post_likes",
-    entityName: "PostLike",
-    useMutationOperations: true,
-    repository: { type: "supabase" }
-  }, client);
-
-  return extendApiOperations<PostLike, string, Partial<PostLike>, Partial<PostLike>, PostLikesCustomOperations>(
-    baseApi,
-    {
-      // Toggle like on a post (like if not liked, unlike if already liked)
-      async toggleLike(postId: string): Promise<ApiResponse<boolean>> {
-        try {
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          // Check if user already liked the post
-          const { data: existingLike, error: fetchError } = await activeClient
-            .from("post_likes")
-            .select("id")
-            .eq("post_id", postId)
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (fetchError) throw fetchError;
-
-          if (existingLike) {
-            // Unlike the post
-            const { error: deleteError } = await activeClient
-              .from("post_likes")
-              .delete()
-              .eq("id", existingLike.id);
-
-            if (deleteError) throw deleteError;
-            return createSuccessResponse(false);
-          } else {
-            // Like the post
-            const { error: insertError } = await activeClient
-              .from("post_likes")
-              .insert({
-                post_id: postId,
-                user_id: userId
-              });
-
-            if (insertError) throw insertError;
-            return createSuccessResponse(true);
-          }
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      },
-
-      // Check if user has liked a post
-      async hasLiked(postId: string): Promise<ApiResponse<boolean>> {
-        try {
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          const { data, error } = await activeClient
-            .from("post_likes")
-            .select("id")
-            .eq("post_id", postId)
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (error) throw error;
-          return createSuccessResponse(!!data);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      }
-    }
-  );
-}
-
-// Helper function to create extended comment likes API
-function createExtendedCommentLikesApi(client?: any) {
-  const baseApi = createApiFactory<CommentLike>({
-    tableName: "comment_likes",
-    entityName: "CommentLike",
-    useMutationOperations: true,
-    repository: { type: "supabase" }
-  }, client);
-
-  return extendApiOperations<CommentLike, string, Partial<CommentLike>, Partial<CommentLike>, CommentLikesCustomOperations>(
-    baseApi,
-    {
-      // Toggle like on a comment
-      async toggleLike(commentId: string): Promise<ApiResponse<boolean>> {
-        try {
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          // Check if user already liked the comment
-          const { data: existingLike, error: fetchError } = await activeClient
-            .from("comment_likes")
-            .select("id")
-            .eq("comment_id", commentId)
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (fetchError) throw fetchError;
-
-          if (existingLike) {
-            // Unlike the comment
-            const { error: deleteError } = await activeClient
-              .from("comment_likes")
-              .delete()
-              .eq("id", existingLike.id);
-
-            if (deleteError) throw deleteError;
-            return createSuccessResponse(false);
-          } else {
-            // Like the comment
-            const { error: insertError } = await activeClient
-              .from("comment_likes")
-              .insert({
-                comment_id: commentId,
-                user_id: userId
-              });
-
-            if (insertError) throw insertError;
-            return createSuccessResponse(true);
-          }
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      },
-
-      // Check if user has liked a comment
-      async hasLiked(commentId: string): Promise<ApiResponse<boolean>> {
-        try {
-          const activeClient = client || supabase;
-          const userId = (await activeClient.auth.getUser()).data.user?.id;
-          
-          const { data, error } = await activeClient
-            .from("comment_likes")
-            .select("id")
-            .eq("comment_id", commentId)
-            .eq("user_id", userId)
-            .maybeSingle();
-
-          if (error) throw error;
-          return createSuccessResponse(!!data);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      }
-    }
-  );
-}
-
-// Create other APIs
-export const commentsApi = createExtendedCommentsApi();
-export const postLikesApi = createExtendedPostLikesApi();
-export const commentLikesApi = createExtendedCommentLikesApi();
 
 // Export individual operations for direct usage
 export const {
@@ -630,9 +278,23 @@ export const {
 } = postsApi;
 
 export const {
-  getAll: getAllComments,
-  getById: getCommentById,
-  create: createComment,
-  update: updateComment,
-  delete: deleteComment
-} = commentsApi;
+  getAll: getAllPostComments,
+  getById: getPostCommentById,
+  create: createPostComment,
+  update: updatePostComment,
+  delete: deletePostComment
+} = postCommentsApi;
+
+export const {
+  getAll: getAllPostLikes,
+  getById: getPostLikeById,
+  create: createPostLike,
+  delete: deletePostLike
+} = postLikesApi;
+
+export const {
+  getAll: getAllCommentLikes,
+  getById: getCommentLikeById,
+  create: createCommentLike,
+  delete: deleteCommentLike
+} = commentLikesApi;

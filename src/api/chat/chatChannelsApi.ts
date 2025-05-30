@@ -5,7 +5,6 @@ import { apiClient } from '../core/apiClient';
 import { EntityType } from '@/types/entityTypes';
 import { createSuccessResponse, ApiResponse, createErrorResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
-import { createRepository } from '../core/repository/repositoryFactory';
 import { Tables } from '@/integrations/supabase/types';
 import { Profile } from '@/types/profile';
 import { TagAssignment } from '@/utils/tags/types';
@@ -80,18 +79,12 @@ export const resetApi = (client?: any) => {
   }, client);
 
   return {
-    getAll: newApi.getAll,
-    getById: newApi.getById,
-    create: newApi.create,
-    update: newApi.update,
-    delete: newApi.delete,
+    ...newApi,
     getChatChannelWithDetails: async (channelId: string): Promise<ApiResponse<ChatChannelWithDetails>> => {
-      return apiClient.query(async () => {
+      return apiClient.query(async (supabase) => {
         try {
-          // Use repository pattern to get the channel
-          const repository = createRepository('chat_channels', { client });
-          
-          const { data, error } = await repository
+          const { data, error } = await supabase
+            .from('chat_channels')
             .select(`
               *,
               created_by_profile:profiles!chat_channels_created_by_fkey(
@@ -112,15 +105,14 @@ export const resetApi = (client?: any) => {
           };
           
           // Get tags assigned to this channel
-          const tagAssignmentsRepo = createRepository('tag_assignments', { client });
-          const { data: tagAssignments, error: tagError } = await tagAssignmentsRepo
+          const { data: tagAssignments, error: tagError } = await supabase
+            .from('tag_assignments')
             .select(`
               *,
               tag:tags(*)
             `)
             .eq('target_id', channelId)
-            .eq('target_type', EntityType.CHAT)
-            .execute();
+            .eq('target_type', EntityType.CHAT);
             
           if (tagError) {
             logger.error("Error fetching tag assignments:", tagError);
@@ -155,22 +147,20 @@ export const resetApi = (client?: any) => {
           logger.error("Exception in getChatChannelWithDetails:", error);
           return createErrorResponse(error);
         }
-      });
+      }, client);
     },
     updateChannelTags: async (
       channelId: string, 
       tagIds: string[]
     ): Promise<ApiResponse<boolean>> => {
-      return apiClient.query(async () => {
+      return apiClient.query(async (supabase) => {
         try {
-          const tagAssignmentsRepo = createRepository('tag_assignments', { client });
-          
           // Delete existing tag assignments
-          const { error: deleteError } = await tagAssignmentsRepo
+          const { error: deleteError } = await supabase
+            .from('tag_assignments')
             .delete()
             .eq('target_id', channelId)
-            .eq('target_type', EntityType.CHAT)
-            .execute();
+            .eq('target_type', EntityType.CHAT);
             
           if (deleteError) {
             logger.error("Error deleting existing tag assignments:", deleteError);
@@ -185,9 +175,9 @@ export const resetApi = (client?: any) => {
               target_type: EntityType.CHAT
             }));
             
-            const { error: insertError } = await tagAssignmentsRepo
-              .insert(tagAssignments)
-              .execute();
+            const { error: insertError } = await supabase
+              .from('tag_assignments')
+              .insert(tagAssignments);
               
             if (insertError) {
               logger.error("Error creating new tag assignments:", insertError);
@@ -200,7 +190,7 @@ export const resetApi = (client?: any) => {
           logger.error("Exception in updateChannelTags:", error);
           return createErrorResponse(error);
         }
-      });
+      }, client);
     }
   };
 };
@@ -218,12 +208,10 @@ export const {
  * Get chat channel with tags and creator details
  */
 export const getChatChannelWithDetails = async (channelId: string): Promise<ApiResponse<ChatChannelWithDetails>> => {
-  return apiClient.query(async () => {
+  return apiClient.query(async (supabase) => {
     try {
-      // Use repository pattern to get the channel
-      const repository = createRepository('chat_channels');
-      
-      const { data, error } = await repository
+      const { data, error } = await supabase
+        .from('chat_channels')
         .select(`
           *,
           created_by_profile:profiles!chat_channels_created_by_fkey(
@@ -244,15 +232,14 @@ export const getChatChannelWithDetails = async (channelId: string): Promise<ApiR
       };
       
       // Get tags assigned to this channel
-      const tagAssignmentsRepo = createRepository('tag_assignments');
-      const { data: tagAssignments, error: tagError } = await tagAssignmentsRepo
+      const { data: tagAssignments, error: tagError } = await supabase
+        .from('tag_assignments')
         .select(`
           *,
           tag:tags(*)
         `)
         .eq('target_id', channelId)
-        .eq('target_type', EntityType.CHAT)
-        .execute();
+        .eq('target_type', EntityType.CHAT);
         
       if (tagError) {
         logger.error("Error fetching tag assignments:", tagError);
@@ -297,16 +284,14 @@ export const updateChannelTags = async (
   channelId: string, 
   tagIds: string[]
 ): Promise<ApiResponse<boolean>> => {
-  return apiClient.query(async () => {
+  return apiClient.query(async (supabase) => {
     try {
-      const tagAssignmentsRepo = createRepository('tag_assignments');
-      
       // Delete existing tag assignments
-      const { error: deleteError } = await tagAssignmentsRepo
+      const { error: deleteError } = await supabase
+        .from('tag_assignments')
         .delete()
         .eq('target_id', channelId)
-        .eq('target_type', EntityType.CHAT)
-        .execute();
+        .eq('target_type', EntityType.CHAT);
         
       if (deleteError) {
         logger.error("Error deleting existing tag assignments:", deleteError);
@@ -321,9 +306,9 @@ export const updateChannelTags = async (
           target_type: EntityType.CHAT
         }));
         
-        const { error: insertError } = await tagAssignmentsRepo
-          .insert(tagAssignments)
-          .execute();
+        const { error: insertError } = await supabase
+          .from('tag_assignments')
+          .insert(tagAssignments);
           
         if (insertError) {
           logger.error("Error creating new tag assignments:", insertError);

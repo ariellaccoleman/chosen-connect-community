@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { logger } from '@/utils/logger';
 import { EntityType } from '@/types/entityTypes';
 import { TagAssignment } from '@/utils/tags/types';
+import { apiClient } from '@/api/core/apiClient';
 
 // Create standard CRUD hooks using the factory
 const chatChannelHooks = createQueryHooks(
@@ -138,16 +139,23 @@ export function useChatChannelsByTag(tagId: string | null | undefined) {
         return [];
       }
       
-      // Get all tag assignments for the channels
-      const { createRepository } = await import('@/api/core/repository');
-      const tagAssignmentsRepo = createRepository('tag_assignments');
-      const { data: tagAssignments, error } = await tagAssignmentsRepo
-        .select('*')
-        .eq('tag_id', tagId)
-        .eq('target_type', 'chat')
-        .execute();
+      // Get all tag assignments for the channels using apiClient
+      const tagAssignments = await apiClient.query(async (supabase) => {
+        const { data, error } = await supabase
+          .from('tag_assignments')
+          .select('*')
+          .eq('tag_id', tagId)
+          .eq('target_type', 'chat');
+        
+        if (error) {
+          logger.error("Error fetching tag assignments:", error);
+          return [];
+        }
+        
+        return data || [];
+      });
       
-      if (error || !tagAssignments) {
+      if (!tagAssignments || !Array.isArray(tagAssignments)) {
         return [];
       }
       

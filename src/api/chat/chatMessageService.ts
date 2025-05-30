@@ -5,7 +5,6 @@ import { logger } from '@/utils/logger';
 import { ChatMessage, ChatMessageWithAuthor } from '@/types/chat';
 import { ApiResponse, createErrorResponse, createSuccessResponse } from '../core/errorHandler';
 import { ChatMessageFactory } from '@/utils/chat/ChatMessageFactory';
-import { createRepository } from '../core/repository/repositoryFactory';
 
 /**
  * Chat Message Service
@@ -22,14 +21,12 @@ export class ChatMessageService {
     offset = 0,
     client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
-    return apiClient.query(async () => {
+    return apiClient.query(async (supabase) => {
       try {
         logger.info(`[API] getChannelMessages called for channel ${channelId}`);
         
-        const activeClient = client || supabase;
-        
         // Check authentication
-        const { data: sessionData } = await activeClient.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) {
           logger.error('[API] No authenticated session when fetching messages');
           return createErrorResponse(new Error("Authentication required"));
@@ -41,11 +38,9 @@ export class ChatMessageService {
           return createSuccessResponse([]);
         }
         
-        // Create repository for base message query
-        const repository = createRepository('chats', {}, client);
-        
         // Query messages with author details
-        const query = repository
+        const { data: messagesResult, error } = await supabase
+          .from('chats')
           .select(`
             *,
             author:profiles(
@@ -57,17 +52,13 @@ export class ChatMessageService {
           .order('created_at', { ascending: true })
           .range(offset, offset + limit - 1);
           
-        const result = await query.execute();
-        
-        if (result.error) {
-          logger.error('[API] Error fetching channel messages:', result.error);
-          return createErrorResponse(result.error);
+        if (error) {
+          logger.error('[API] Error fetching channel messages:', error);
+          return createErrorResponse(error);
         }
         
-        const messagesResult = result.data || [];
-        
         // If there are no messages, return empty array
-        if (messagesResult.length === 0) {
+        if (!messagesResult || messagesResult.length === 0) {
           return createSuccessResponse([]);
         }
         
@@ -75,7 +66,7 @@ export class ChatMessageService {
         const messageIds = messagesResult.map((msg: any) => msg.id);
         
         // Get reply counts
-        const replyCounts = await this.getReplyCountsForMessages(messageIds, client);
+        const replyCounts = await this.getReplyCountsForMessages(messageIds, supabase);
         
         // Process messages with our factory
         const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
@@ -91,7 +82,7 @@ export class ChatMessageService {
         logger.error('[API] Exception in getChannelMessages:', error);
         return createErrorResponse(error);
       }
-    });
+    }, client);
   }
   
   /**
@@ -103,7 +94,7 @@ export class ChatMessageService {
     offset = 0,
     client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
-    return apiClient.query(async () => {
+    return apiClient.query(async (supabase) => {
       try {
         // Validate parentId
         if (!parentId || parentId === 'null' || parentId === 'undefined') {
@@ -111,11 +102,9 @@ export class ChatMessageService {
           return createErrorResponse(new Error("Invalid parent message ID"));
         }
         
-        // Create repository for chat messages
-        const repository = createRepository('chats', {}, client);
-        
         // Query replies with author details
-        const query = repository
+        const { data: result, error } = await supabase
+          .from('chats')
           .select(`
             *,
             author:profiles(
@@ -126,15 +115,13 @@ export class ChatMessageService {
           .order('created_at', { ascending: true })
           .range(offset, offset + limit - 1);
           
-        const result = await query.execute();
-          
-        if (result.error) {
-          logger.error('[API] Error fetching thread replies:', result.error);
-          return createErrorResponse(result.error);
+        if (error) {
+          logger.error('[API] Error fetching thread replies:', error);
+          return createErrorResponse(error);
         }
         
         // Process messages with our factory
-        const transformedMessages = (result.data || []).map(
+        const transformedMessages = (result || []).map(
           (msg: any): ChatMessageWithAuthor => ChatMessageFactory.createMessageWithAuthor(msg)
         );
         
@@ -143,7 +130,7 @@ export class ChatMessageService {
         logger.error('[API] Exception in getThreadReplies:', error);
         return createErrorResponse(error);
       }
-    });
+    }, client);
   }
   
   /**
@@ -156,12 +143,10 @@ export class ChatMessageService {
     parentId?: string | null | undefined,
     client?: any
   ): Promise<ApiResponse<ChatMessage>> {
-    return apiClient.query(async () => {
+    return apiClient.query(async (supabase) => {
       try {
-        const activeClient = client || supabase;
-        
         // Check if user is authenticated
-        const { data: sessionData } = await activeClient.auth.getSession();
+        const { data: sessionData } = await supabase.auth.getSession();
         if (!sessionData.session) {
           logger.error('[API] No authenticated session when sending message');
           return createErrorResponse(new Error("Authentication required"));
@@ -189,8 +174,6 @@ export class ChatMessageService {
           parentId = null;
         }
         
-        const repository = createRepository('chats', {}, client);
-        
         const newMessage = {
           channel_id: channelId,
           message: message,
@@ -198,18 +181,17 @@ export class ChatMessageService {
           parent_id: parentId || null
         };
         
-        const result = await repository
+        const { data, error } = await supabase
+          .from('chats')
           .insert(newMessage)
           .select()
-          .execute();
+          .single();
           
         // Handle result
-        if (!result.data || result.error) {
-          logger.error('[API] Error sending message:', result.error);
-          return createErrorResponse(result.error);
+        if (!data || error) {
+          logger.error('[API] Error sending message:', error);
+          return createErrorResponse(error);
         }
-        
-        const data = Array.isArray(result.data) ? result.data[0] : result.data;
         
         if (!data) {
           return createErrorResponse(new Error("Failed to create message: No data returned"));
@@ -233,21 +215,19 @@ export class ChatMessageService {
         logger.error('[API] Exception in sendChatMessage:', error);
         return createErrorResponse(error);
       }
-    });
+    }, client);
   }
   
   /**
    * Get reply counts for multiple messages in a single query
    * This is a major optimization over querying counts individually
    */
-  private static async getReplyCountsForMessages(messageIds: string[], client?: any): Promise<Record<string, number>> {
+  private static async getReplyCountsForMessages(messageIds: string[], supabase: any): Promise<Record<string, number>> {
     try {
       if (!messageIds.length) return {};
       
-      const activeClient = client || supabase;
-      
       // Execute a single query to count replies for all messages
-      const { data, error } = await activeClient
+      const { data, error } = await supabase
         .from('chat_reply_counts')
         .select('*')
         .in('parent_id', messageIds);
@@ -282,7 +262,7 @@ export class ChatMessageService {
     limit = 3,
     client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
-    return apiClient.query(async () => {
+    return apiClient.query(async (supabase) => {
       try {
         // Validate channelId
         if (!channelId || channelId === 'null' || channelId === 'undefined') {
@@ -290,11 +270,9 @@ export class ChatMessageService {
           return createSuccessResponse([]);
         }
         
-        // Create repository for base message query
-        const repository = createRepository('chats', {}, client);
-        
         // Query messages with author details, limited count
-        const query = repository
+        const { data: messagesResult, error } = await supabase
+          .from('chats')
           .select(`
             *,
             author:profiles(
@@ -306,17 +284,13 @@ export class ChatMessageService {
           .order('created_at', { ascending: false }) // Most recent first
           .limit(limit);
           
-        const result = await query.execute();
-        
-        if (result.error) {
-          logger.error('[API] Error fetching channel message previews:', result.error);
-          return createErrorResponse(result.error);
+        if (error) {
+          logger.error('[API] Error fetching channel message previews:', error);
+          return createErrorResponse(error);
         }
         
-        const messagesResult = result.data || [];
-        
         // If there are no messages, return empty array
-        if (messagesResult.length === 0) {
+        if (!messagesResult || messagesResult.length === 0) {
           return createSuccessResponse([]);
         }
         
@@ -331,7 +305,7 @@ export class ChatMessageService {
         logger.error('[API] Exception in getChannelMessagePreviews:', error);
         return createErrorResponse(error);
       }
-    });
+    }, client);
   }
 }
 
