@@ -11,7 +11,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { useCreateOrganizationWithRelationships } from "@/hooks/organizations";
+import { useCreateOrganization } from "@/hooks/organizations";
 import { logger } from "@/utils/logger";
 import { Skeleton } from "@/components/ui/skeleton";
 import Layout from "@/components/layout/Layout";
@@ -32,7 +32,7 @@ type OrganizationFormValues = z.infer<typeof organizationSchema>;
 const CreateOrganization = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const createOrganization = useCreateOrganizationWithRelationships();
+  const createOrganization = useCreateOrganization();
   const [formError, setFormError] = useState<Error | null>(null);
 
   const form = useForm<OrganizationFormValues>({
@@ -87,8 +87,7 @@ const CreateOrganization = () => {
       const result = await createOrganization.mutateAsync({
         name: values.name,
         description: values.description,
-        website_url: values.website_url,
-        userId: currentUser.id
+        website_url: values.website_url
       });
 
       // If successful and we have an organization ID from the result
@@ -195,4 +194,3 @@ const CreateOrganization = () => {
 };
 
 export default CreateOrganization;
-
