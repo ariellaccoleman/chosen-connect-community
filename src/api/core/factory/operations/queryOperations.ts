@@ -1,3 +1,4 @@
+
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
@@ -205,7 +206,7 @@ export function createQueryOperations<
           return createSuccessResponse(transformedData);
         }, providedClient);
       } catch (error) {
-        if (includeCount) {
+        if (queryOptions.includeCount) {
           return {
             data: null,
             totalCount: 0,
