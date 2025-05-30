@@ -1,3 +1,4 @@
+
 import { renderHook, act } from '@testing-library/react';
 import { useFormError } from '@/hooks/useFormError';
 import { toast } from 'sonner';
@@ -21,7 +22,7 @@ jest.mock('@/utils/logger', () => ({
   }
 }));
 
-describe.skip('useFormError Hook', () => {
+describe('useFormError Hook', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });

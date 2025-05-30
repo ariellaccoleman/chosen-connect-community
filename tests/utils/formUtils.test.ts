@@ -1,6 +1,7 @@
+
 import { formatUrl, cleanFormData } from '@/utils/formUtils';
 
-describe.skip('formUtils', () => {
+describe('formUtils', () => {
   test('formatUrl should add https protocol if missing', () => {
     expect(formatUrl('example.com')).toBe('https://example.com');
     expect(formatUrl('http://example.com')).toBe('http://example.com');

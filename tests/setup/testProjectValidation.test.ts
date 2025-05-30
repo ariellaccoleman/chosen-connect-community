@@ -1,7 +1,8 @@
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../utils/persistentTestUsers';
 
-describe.skip('Test Project Validation', () => {
+describe('Test Project Validation', () => {
   afterAll(() => {
     TestClientFactory.cleanup();
   });
