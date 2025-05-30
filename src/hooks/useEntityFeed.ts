@@ -7,7 +7,7 @@ import { entityRegistry } from "@/registry";
 import { profileApi } from "@/api/profiles";
 import { organizationApi } from "@/api/organizations";
 import { eventApi } from "@/api/events";
-import { postsApi } from "@/api/posts";
+import { postsApi, getPostsWithDetails } from "@/api/posts";
 import { tagAssignmentApi } from "@/api/tags";
 
 interface UseEntityFeedOptions {
@@ -199,28 +199,33 @@ export const useEntityFeed = ({
               case EntityType.POST:
                 logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
                 
-                // Build filters for posts
-                const postFilters: any = {};
-                
-                // Apply tag filtering if we have tagged post IDs
-                if (tagId && taggedEntityIds[targetType]?.length) {
-                  postFilters.id = taggedEntityIds[targetType];
-                  logger.debug(`EntityFeed: Filtering POST entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                }
-                
-                // Use the posts API with search
-                const postsResponse = await postsApi.getAll({
-                  filters: postFilters,
-                  search: search || undefined,
-                  limit
-                });
+                // Use getPostsWithDetails to get full post data including author, likes, comments
+                const postsResponse = await getPostsWithDetails(limit, 0);
                   
                 if (postsResponse.error) {
                   logger.error(`EntityFeed: Error fetching POST entities:`, postsResponse.error);
                   break;
                 }
                 
-                items = postsResponse.data || [];
+                let postItems = postsResponse.data || [];
+                
+                // Apply tag filtering if we have tagged post IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  postItems = postItems.filter(post => taggedEntityIds[targetType].includes(post.id));
+                  logger.debug(`EntityFeed: Filtered POST entities by ${taggedEntityIds[targetType].length} tagged IDs, result: ${postItems.length} posts`);
+                }
+                
+                // Apply search filtering if provided
+                if (search && search.trim()) {
+                  const searchLower = search.toLowerCase();
+                  postItems = postItems.filter(post => 
+                    post.content?.toLowerCase().includes(searchLower) ||
+                    post.author?.name?.toLowerCase().includes(searchLower)
+                  );
+                  logger.debug(`EntityFeed: Applied search filter to posts, result: ${postItems.length} posts`);
+                }
+                
+                items = postItems;
                 logger.debug(`EntityFeed: Received ${items?.length || 0} POST entities`);
                 break;
                 
@@ -234,21 +239,49 @@ export const useEntityFeed = ({
               items.forEach((item) => {
                 if (item) {
                   try {
-                    // Use the entity registry to convert data to entity
-                    const entity = entityRegistry.toEntity(item, type);
-                    
-                    if (entity) {
-                      logger.debug(`EntityFeed: Converted ${type} to entity`, {
+                    // For posts, we need to preserve the full data structure
+                    if (type === EntityType.POST) {
+                      // Create entity with post content as description and preserve all post data
+                      const entity: Entity = {
+                        id: item.id,
+                        entityType: EntityType.POST,
+                        name: `Post by ${item.author?.name || 'Unknown'}`,
+                        description: item.content || '',
+                        imageUrl: item.author?.avatar || undefined,
+                        created_at: item.created_at,
+                        updated_at: item.updated_at,
+                        location: null,
+                        tags: [], // Will be populated later if needed
+                        // Preserve the full post data in rawData
+                        rawData: item
+                      } as Entity & { rawData: any };
+                      
+                      logger.debug(`EntityFeed: Created POST entity`, {
                         id: entity.id,
                         entityType: entity.entityType,
-                        name: entity.name
+                        name: entity.name,
+                        hasAuthor: !!item.author,
+                        hasContent: !!item.content
                       });
                       
-                      // Initialize empty tags array that will be populated later if needed
-                      entity.tags = [];
                       allEntities.push(entity);
                     } else {
-                      logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
+                      // Use the entity registry to convert data to entity for other types
+                      const entity = entityRegistry.toEntity(item, type);
+                      
+                      if (entity) {
+                        logger.debug(`EntityFeed: Converted ${type} to entity`, {
+                          id: entity.id,
+                          entityType: entity.entityType,
+                          name: entity.name
+                        });
+                        
+                        // Initialize empty tags array that will be populated later if needed
+                        entity.tags = [];
+                        allEntities.push(entity);
+                      } else {
+                        logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
+                      }
                     }
                   } catch (conversionError) {
                     logger.error(`EntityFeed: Error converting ${type} entity:`, conversionError);
