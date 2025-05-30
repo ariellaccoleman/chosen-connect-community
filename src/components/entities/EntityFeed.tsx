@@ -93,24 +93,23 @@ const EntityFeed = ({
     logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
   }, [selectedTagId]);
   
-  // Use the entity feed hook with enhanced tag filtering and profile-specific options
+  // Use the entity feed hook with pagination parameters
   const { 
     entities, 
     isLoading,
     totalCount
   } = useEntityFeed({
     entityTypes,
-    limit: renderPagination ? undefined : limit, // Don't limit if we're paginating
+    limit: renderPagination ? undefined : limit,
     tagId: selectedTagId,
     search,
-    isApproved
+    isApproved,
+    currentPage,
+    itemsPerPage
   });
   
   // Calculate pagination
-  const totalPages = renderPagination && itemsPerPage ? Math.ceil((totalCount || entities.length) / itemsPerPage) : 1;
-  const startIndex = renderPagination ? (currentPage - 1) * itemsPerPage : 0;
-  const endIndex = renderPagination ? startIndex + itemsPerPage : entities.length;
-  const paginatedEntities = renderPagination ? entities.slice(startIndex, endIndex) : entities;
+  const totalPages = renderPagination && itemsPerPage ? Math.ceil(totalCount / itemsPerPage) : 1;
   
   // Log entity count when it changes 
   useEffect(() => {
@@ -163,13 +162,13 @@ const EntityFeed = ({
       </div>
       
       <EntityList 
-        entities={paginatedEntities} 
+        entities={entities} 
         isLoading={isLoading} 
         emptyMessage={emptyMessage}
       />
       
-      {renderPagination && !isLoading && entities.length > 0 && (
-        renderPagination(totalCount || entities.length, totalPages)
+      {renderPagination && !isLoading && totalCount > 0 && (
+        renderPagination(totalCount, totalPages)
       )}
     </div>
   );

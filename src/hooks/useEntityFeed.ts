@@ -7,7 +7,7 @@ import { organizationApi } from '@/api/organizations';
 import { eventApi } from '@/api/events';
 import { logger } from '@/utils/logger';
 import { ProfileWithDetails } from '@/types';
-import { OrganizationWithDetails } from '@/types/organization';
+import { OrganizationWithLocation } from '@/types/organization';
 import { EventWithDetails } from '@/types/event';
 
 interface EntityFeedParams {
@@ -16,6 +16,9 @@ interface EntityFeedParams {
   tagId?: string | null;
   search?: string;
   isApproved?: boolean;
+  // Pagination params
+  currentPage?: number;
+  itemsPerPage?: number;
 }
 
 // Helper function to convert profile to entity
@@ -33,7 +36,7 @@ const profileToEntity = (profile: ProfileWithDetails): Entity => ({
 });
 
 // Helper function to convert organization to entity
-const organizationToEntity = (org: OrganizationWithDetails): Entity => ({
+const organizationToEntity = (org: OrganizationWithLocation): Entity => ({
   id: org.id,
   entityType: EntityType.ORGANIZATION,
   name: org.name,
@@ -67,7 +70,9 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     limit,
     tagId,
     search = "",
-    isApproved = true
+    isApproved = true,
+    currentPage = 1,
+    itemsPerPage = 12
   } = params;
 
   // Validate entity types
@@ -84,7 +89,9 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     limit,
     tagId,
     search,
-    isApproved
+    isApproved,
+    currentPage,
+    itemsPerPage
   }];
 
   const query = useQuery({
@@ -108,7 +115,6 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                     ...(isApproved !== false && { is_approved: true }),
                   },
                   search,
-                  limit,
                   query: `*, tags:tag_assignments(*, tag:tags(*))`
                 });
 
@@ -118,13 +124,12 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (profilesResult.data || []).map(profileToEntity);
-                count = profilesResult.count || entities.length;
+                count = profilesResult.data?.length || 0;
                 break;
 
               case EntityType.ORGANIZATION:
                 const orgsResult = await organizationApi.getAll({
                   search,
-                  limit,
                   query: `*, tags:tag_assignments(*, tag:tags(*))`
                 });
 
@@ -134,13 +139,12 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (orgsResult.data || []).map(organizationToEntity);
-                count = orgsResult.count || entities.length;
+                count = orgsResult.data?.length || 0;
                 break;
 
               case EntityType.EVENT:
                 const eventsResult = await eventApi.getAll({
                   search,
-                  limit,
                   query: `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`
                 });
 
@@ -150,7 +154,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (eventsResult.data || []).map(eventToEntity);
-                count = eventsResult.count || entities.length;
+                count = eventsResult.data?.length || 0;
                 break;
             }
 
@@ -161,8 +165,6 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   assignment.tag_id === tagId
                 )
               );
-              // Note: count becomes less accurate after client-side filtering
-              // In a real app, you'd want to do this filtering server-side
             }
 
             allEntities.push(...entities);
@@ -182,9 +184,16 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
         logger.debug(`EntityFeed: Returning ${allEntities.length} entities total`);
 
+        // For now, we'll handle pagination client-side since we're aggregating from multiple sources
+        // In a real production app, you'd want server-side pagination with proper counts
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        const paginatedEntities = allEntities.slice(startIndex, endIndex);
+
         return {
-          entities: allEntities,
-          totalCount
+          entities: paginatedEntities,
+          totalCount: allEntities.length,
+          allEntities: allEntities // Keep all for accurate total count
         };
 
       } catch (error) {
