@@ -66,7 +66,7 @@ const PostEntityList = ({
       };
     }
     
-    // Use the full post data structure and map entity tags to Post format
+    // Use the full post data structure and preserve the correct structure
     return {
       id: postData.id,
       content: postData.content,
@@ -77,7 +77,7 @@ const PostEntityList = ({
       author: postData.author,
       likes_count: postData.likes?.length || 0,
       comments_count: postData.comments?.length || 0,
-      // Map the entity tags to the format expected by PostCard
+      // Map the entity tags to the format expected by PostCard, preserving tag objects
       tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
     };
   });

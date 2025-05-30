@@ -1,3 +1,4 @@
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
 import { apiClient } from '../core/apiClient';
@@ -34,7 +35,7 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
   useBatchOperations: false
 });
 
-// Create the post comments API (alias as commentsApi for backwards compatibility)
+// Create the post comments API
 export const postCommentsApi = createApiFactory<any, string>({
   tableName: 'post_comments',
   entityName: 'postComment',
@@ -125,10 +126,25 @@ export const getPostsWithDetails = async (
         has_media: post.has_media || false,
         created_at: post.created_at,
         updated_at: post.updated_at,
-        author: post.author,
+        author: post.author ? {
+          id: post.author.id,
+          name: `${post.author.first_name || ''} ${post.author.last_name || ''}`.trim() || 'Unknown',
+          avatar: post.author.avatar_url
+        } : {
+          id: '',
+          name: 'Unknown'
+        },
         likes: post.post_likes || [],
         comments: (post.post_comments || []).map((comment: any) => ({
           ...comment,
+          author: comment.author ? {
+            id: comment.author.id,
+            name: `${comment.author.first_name || ''} ${comment.author.last_name || ''}`.trim() || 'Unknown',
+            avatar: comment.author.avatar_url
+          } : {
+            id: '',
+            name: 'Unknown'
+          },
           likes: comment.comment_likes || []
         }))
       }));
@@ -181,10 +197,25 @@ export const getPostWithDetails = async (
         has_media: post.has_media || false,
         created_at: post.created_at,
         updated_at: post.updated_at,
-        author: post.author,
+        author: post.author ? {
+          id: post.author.id,
+          name: `${post.author.first_name || ''} ${post.author.last_name || ''}`.trim() || 'Unknown',
+          avatar: post.author.avatar_url
+        } : {
+          id: '',
+          name: 'Unknown'
+        },
         likes: post.post_likes || [],
         comments: (post.post_comments || []).map((comment: any) => ({
           ...comment,
+          author: comment.author ? {
+            id: comment.author.id,
+            name: `${comment.author.first_name || ''} ${comment.author.last_name || ''}`.trim() || 'Unknown',
+            avatar: comment.author.avatar_url
+          } : {
+            id: '',
+            name: 'Unknown'
+          },
           likes: comment.comment_likes || []
         }))
       };
@@ -197,50 +228,299 @@ export const getPostWithDetails = async (
   }, client);
 };
 
-// Add extended APIs with custom methods
+// Extended APIs with real implementations
 const extendedPostsApi = {
   ...postsApi,
   getPostsWithDetails,
   getPostWithDetails,
   createPostWithTags: async (data: any) => {
-    // Placeholder for createPostWithTags functionality
-    return postsApi.create(data);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createErrorResponse(new Error('User not authenticated'));
+        }
+
+        const postData = {
+          content: data.content,
+          has_media: data.has_media || false,
+          author_id: user.user.id
+        };
+
+        const result = await postsApi.create(postData);
+        return result;
+      } catch (error) {
+        logger.error('Exception in createPostWithTags:', error);
+        return createErrorResponse(error);
+      }
+    });
   }
 };
 
 const extendedPostLikesApi = {
   ...postLikesApi,
   hasLiked: async (postId: string) => {
-    // Placeholder for hasLiked functionality
-    return createSuccessResponse(false);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createSuccessResponse(false);
+        }
+
+        const { data, error } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          logger.error('Error checking like status:', error);
+          return createErrorResponse(error);
+        }
+
+        return createSuccessResponse(!!data);
+      } catch (error) {
+        logger.error('Exception in hasLiked:', error);
+        return createErrorResponse(error);
+      }
+    });
   },
   toggleLike: async (postId: string) => {
-    // Placeholder for toggleLike functionality
-    return createSuccessResponse(true);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createErrorResponse(new Error('User not authenticated'));
+        }
+
+        // Check if like exists
+        const { data: existingLike, error: checkError } = await supabase
+          .from('post_likes')
+          .select('id')
+          .eq('post_id', postId)
+          .eq('user_id', user.user.id)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          logger.error('Error checking existing like:', checkError);
+          return createErrorResponse(checkError);
+        }
+
+        if (existingLike) {
+          // Remove like
+          const { error: deleteError } = await supabase
+            .from('post_likes')
+            .delete()
+            .eq('id', existingLike.id);
+
+          if (deleteError) {
+            logger.error('Error removing like:', deleteError);
+            return createErrorResponse(deleteError);
+          }
+
+          return createSuccessResponse({ action: 'unliked' });
+        } else {
+          // Add like
+          const { error: insertError } = await supabase
+            .from('post_likes')
+            .insert({
+              post_id: postId,
+              user_id: user.user.id
+            });
+
+          if (insertError) {
+            logger.error('Error adding like:', insertError);
+            return createErrorResponse(insertError);
+          }
+
+          return createSuccessResponse({ action: 'liked' });
+        }
+      } catch (error) {
+        logger.error('Exception in toggleLike:', error);
+        return createErrorResponse(error);
+      }
+    });
   }
 };
 
 const extendedCommentLikesApi = {
   ...commentLikesApi,
   hasLiked: async (commentId: string) => {
-    // Placeholder for hasLiked functionality
-    return createSuccessResponse(false);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createSuccessResponse(false);
+        }
+
+        const { data, error } = await supabase
+          .from('comment_likes')
+          .select('id')
+          .eq('comment_id', commentId)
+          .eq('user_id', user.user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          logger.error('Error checking comment like status:', error);
+          return createErrorResponse(error);
+        }
+
+        return createSuccessResponse(!!data);
+      } catch (error) {
+        logger.error('Exception in hasLiked (comment):', error);
+        return createErrorResponse(error);
+      }
+    });
   },
   toggleLike: async (commentId: string) => {
-    // Placeholder for toggleLike functionality
-    return createSuccessResponse(true);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createErrorResponse(new Error('User not authenticated'));
+        }
+
+        // Check if like exists
+        const { data: existingLike, error: checkError } = await supabase
+          .from('comment_likes')
+          .select('id')
+          .eq('comment_id', commentId)
+          .eq('user_id', user.user.id)
+          .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+          logger.error('Error checking existing comment like:', checkError);
+          return createErrorResponse(checkError);
+        }
+
+        if (existingLike) {
+          // Remove like
+          const { error: deleteError } = await supabase
+            .from('comment_likes')
+            .delete()
+            .eq('id', existingLike.id);
+
+          if (deleteError) {
+            logger.error('Error removing comment like:', deleteError);
+            return createErrorResponse(deleteError);
+          }
+
+          return createSuccessResponse({ action: 'unliked' });
+        } else {
+          // Add like
+          const { error: insertError } = await supabase
+            .from('comment_likes')
+            .insert({
+              comment_id: commentId,
+              user_id: user.user.id
+            });
+
+          if (insertError) {
+            logger.error('Error adding comment like:', insertError);
+            return createErrorResponse(insertError);
+          }
+
+          return createSuccessResponse({ action: 'liked' });
+        }
+      } catch (error) {
+        logger.error('Exception in toggleLike (comment):', error);
+        return createErrorResponse(error);
+      }
+    });
   }
 };
 
 const extendedCommentsApi = {
   ...commentsApi,
   getCommentsForPost: async (postId: string) => {
-    // Placeholder for getCommentsForPost functionality
-    return commentsApi.getAll();
+    return apiClient.query(async (supabase) => {
+      try {
+        const { data: comments, error } = await supabase
+          .from('post_comments')
+          .select(`
+            *,
+            author:profiles!post_comments_author_id_fkey(
+              id, first_name, last_name, avatar_url
+            ),
+            comment_likes(id, user_id)
+          `)
+          .eq('post_id', postId)
+          .order('created_at', { ascending: true });
+
+        if (error) {
+          logger.error('Error fetching comments:', error);
+          return createErrorResponse(error);
+        }
+
+        const transformedComments = (comments || []).map((comment: any) => ({
+          ...comment,
+          author: comment.author ? {
+            id: comment.author.id,
+            name: `${comment.author.first_name || ''} ${comment.author.last_name || ''}`.trim() || 'Unknown',
+            avatar: comment.author.avatar_url
+          } : {
+            id: '',
+            name: 'Unknown'
+          },
+          likes: comment.comment_likes || []
+        }));
+
+        return createSuccessResponse(transformedComments);
+      } catch (error) {
+        logger.error('Exception in getCommentsForPost:', error);
+        return createErrorResponse(error);
+      }
+    });
   },
   createComment: async (data: any) => {
-    // Placeholder for createComment functionality
-    return commentsApi.create(data);
+    return apiClient.query(async (supabase) => {
+      try {
+        const { user } = await supabase.auth.getUser();
+        if (!user.user) {
+          return createErrorResponse(new Error('User not authenticated'));
+        }
+
+        const commentData = {
+          post_id: data.post_id,
+          content: data.content,
+          author_id: user.user.id
+        };
+
+        const { data: comment, error } = await supabase
+          .from('post_comments')
+          .insert(commentData)
+          .select(`
+            *,
+            author:profiles!post_comments_author_id_fkey(
+              id, first_name, last_name, avatar_url
+            )
+          `)
+          .single();
+
+        if (error) {
+          logger.error('Error creating comment:', error);
+          return createErrorResponse(error);
+        }
+
+        const transformedComment = {
+          ...comment,
+          author: comment.author ? {
+            id: comment.author.id,
+            name: `${comment.author.first_name || ''} ${comment.author.last_name || ''}`.trim() || 'Unknown',
+            avatar: comment.author.avatar_url
+          } : {
+            id: '',
+            name: 'Unknown'
+          }
+        };
+
+        return createSuccessResponse(transformedComment);
+      } catch (error) {
+        logger.error('Exception in createComment:', error);
+        return createErrorResponse(error);
+      }
+    });
   }
 };
 
