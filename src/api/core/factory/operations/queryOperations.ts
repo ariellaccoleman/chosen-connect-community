@@ -122,7 +122,7 @@ export function createQueryOperations<
 
           // If count is requested, make a separate count query
           if (includeCount) {
-            let countQuery = repository.select('*', { count: 'exact', head: true });
+            let countQuery = repository.select('*');
             
             // Apply the same filters for count
             Object.entries(filters).forEach(([key, value]) => {
@@ -141,7 +141,7 @@ export function createQueryOperations<
             }
 
             const countResult = await countQuery.execute();
-            const totalCount = countResult.count || 0;
+            const totalCount = Array.isArray(countResult.data) ? countResult.data.length : 0;
 
             return {
               data: transformedData,

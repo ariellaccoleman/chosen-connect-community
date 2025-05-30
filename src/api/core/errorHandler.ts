@@ -24,6 +24,16 @@ export type ApiResponse<T> = {
 };
 
 /**
+ * Enhanced API response type with count support
+ */
+export type ApiResponseWithCount<T> = {
+  data: T | null;
+  totalCount?: number;
+  error: ApiError | null;
+  status: 'success' | 'error';
+};
+
+/**
  * Create a standardized error response
  */
 export const createErrorResponse = (error: unknown): ApiResponse<any> => {
