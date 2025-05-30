@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
@@ -17,14 +16,6 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
     this.supabaseClient = client || supabase;
     this.schema = schema;
     
-    console.log(`SupabaseRepository created for table: ${tableName}, schema: ${schema}`);
-    console.log('Client verification:', {
-      hasClient: !!this.supabaseClient,
-      hasFrom: !!(this.supabaseClient && this.supabaseClient.from),
-      clientType: typeof this.supabaseClient,
-      environment: typeof window === 'undefined' ? 'Node.js' : 'Browser'
-    });
-    
     // Verify the client is properly initialized
     if (!this.supabaseClient) {
       throw new Error(`Supabase client is not initialized for table ${tableName}`);
@@ -41,7 +32,6 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   setSchema(schema: string): void {
     this.schema = schema;
-    console.log(`Schema updated to: ${schema} for table: ${this.tableName}`);
   }
 
   /**
@@ -57,8 +47,6 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   select(selectQuery = '*'): RepositoryQuery<T> {
     try {
-      console.log(`Creating select query for ${this.tableName} in schema ${this.schema}`);
-      
       // Verify the supabase client has the required methods
       if (!this.supabaseClient || !this.supabaseClient.from) {
         throw new Error(`Supabase client is not properly initialized - missing 'from' method`);
@@ -70,11 +58,9 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
         .from(this.tableName as any)
         .select(selectQuery, { schema: this.schema });
       
-      console.log(`Successfully created select query for ${this.tableName}`);
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating select query for ${this.tableName}:`, error);
-      console.error(`Error creating select query for ${this.tableName}:`, error);
       // Return a query that will return an error when executed
       return new ErrorQuery<T>(error, `select from ${this.tableName}`);
     }
@@ -85,8 +71,6 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
    */
   insert(data: Record<string, any> | Record<string, any>[]): RepositoryQuery<T> {
     try {
-      console.log(`Creating insert query for ${this.tableName} in schema ${this.schema}`);
-      
       if (!this.supabaseClient || !this.supabaseClient.from) {
         throw new Error(`Supabase client is not properly initialized - missing 'from' method`);
       }
@@ -99,7 +83,6 @@ export class SupabaseRepository<T = any> extends BaseRepository<T> {
       return new SupabaseQuery<T>(query, this.tableName);
     } catch (error) {
       logger.error(`Error creating insert query for ${this.tableName}:`, error);
-      console.error(`Error creating insert query for ${this.tableName}:`, error);
       return new ErrorQuery<T>(error, `insert into ${this.tableName}`);
     }
   }
