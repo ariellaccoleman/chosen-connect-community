@@ -6,6 +6,28 @@
 This plan outlines the migration of skipped tests from mock-based testing to database integration testing, and the updating of APIs that are not yet using the factory pattern. Based on analysis of the latest test run with 18 test suites, this will provide more reliable testing that matches production behavior.
 
 ## Current State Analysis (18 Test Suites)
+### Current tests
+apiFactory
+apiFactoryWithRepo
+authApi
+batchOperation
+CreateEvent
+databaseConnection
+errorHandler
+EventTagsManager
+formUtils
+organizationsApi
+queryHookFactory
+relationshipsApi
+relationshipsApi.database
+repository
+tagsApi.integration
+testProjectValidation
+useFormError
+useOrganizationMutations
+verify-env
+ - dynamically generated to verify test environment works
+
 
 ### Currently Passing Integration Tests ✅
 1. **tests/api/tags/tagsApi.integration.test.ts** - Database integration (user4)
@@ -19,6 +41,8 @@ This plan outlines the migration of skipped tests from mock-based testing to dat
 
 ### Mock-Based Tests Requiring Analysis
 From the 18 test suites, the following likely need migration evaluation:
+
+
 
 2. **tests/api/authApi.test.ts** (Mock-based)
    - Status: Deprecated mock tests
