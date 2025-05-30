@@ -17,28 +17,35 @@ interface EntityFeedProps {
   limit?: number;
   className?: string;
   emptyMessage?: string;
-  tagId?: string; // Fixed tagId prop to match what's being passed in HubDetail.tsx
-  excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
+  tagId?: string;
+  excludeEntityTypes?: EntityType[];
   // Profile-specific props
   search?: string;
   isApproved?: boolean;
+  // Pagination props
+  currentPage?: number;
+  itemsPerPage?: number;
+  renderPagination?: (totalItems: number, totalPages: number) => React.ReactNode;
 }
 
 /**
  * Component for displaying a feed of entities, with optional filtering by type and tags
  */
 const EntityFeed = ({
-  title = "", // Changed default from "Entity Feed" to empty string
+  title = "",
   defaultEntityTypes = Object.values(EntityType),
   showTabs = true,
   showTagFilter = true,
   limit,
   className = "",
   emptyMessage = "No items found",
-  tagId, // Add the tagId prop to destructuring
+  tagId,
   excludeEntityTypes = [],
   search = "",
-  isApproved = true
+  isApproved = true,
+  currentPage = 1,
+  itemsPerPage = 12,
+  renderPagination
 }: EntityFeedProps) => {
   // Filter out excluded entity types
   const availableEntityTypes = defaultEntityTypes.filter(
@@ -61,9 +68,11 @@ const EntityFeed = ({
       showTagFilter,
       fixedTagId: tagId,
       search,
-      isApproved
+      isApproved,
+      currentPage,
+      itemsPerPage
     });
-  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId, search, isApproved]);
+  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId, search, isApproved, currentPage, itemsPerPage]);
   
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
@@ -87,14 +96,21 @@ const EntityFeed = ({
   // Use the entity feed hook with enhanced tag filtering and profile-specific options
   const { 
     entities, 
-    isLoading
+    isLoading,
+    totalCount
   } = useEntityFeed({
     entityTypes,
-    limit,
+    limit: renderPagination ? undefined : limit, // Don't limit if we're paginating
     tagId: selectedTagId,
     search,
     isApproved
   });
+  
+  // Calculate pagination
+  const totalPages = renderPagination && itemsPerPage ? Math.ceil((totalCount || entities.length) / itemsPerPage) : 1;
+  const startIndex = renderPagination ? (currentPage - 1) * itemsPerPage : 0;
+  const endIndex = renderPagination ? startIndex + itemsPerPage : entities.length;
+  const paginatedEntities = renderPagination ? entities.slice(startIndex, endIndex) : entities;
   
   // Log entity count when it changes 
   useEffect(() => {
@@ -104,9 +120,12 @@ const EntityFeed = ({
       entityTypes: entityTypes.join(','),
       search,
       isApproved,
+      totalCount,
+      currentPage,
+      totalPages,
       entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
     });
-  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved]);
+  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved, totalCount, currentPage, totalPages]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
@@ -144,10 +163,14 @@ const EntityFeed = ({
       </div>
       
       <EntityList 
-        entities={entities} 
+        entities={paginatedEntities} 
         isLoading={isLoading} 
         emptyMessage={emptyMessage}
       />
+      
+      {renderPagination && !isLoading && entities.length > 0 && (
+        renderPagination(totalCount || entities.length, totalPages)
+      )}
     </div>
   );
 };
