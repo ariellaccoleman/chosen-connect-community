@@ -7,6 +7,7 @@ import { entityRegistry } from "@/registry";
 import { profileApi } from "@/api/profiles";
 import { organizationApi } from "@/api/organizations";
 import { eventApi } from "@/api/events";
+import { postsApi } from "@/api/posts";
 import { tagAssignmentApi } from "@/api/tags";
 
 interface UseEntityFeedOptions {
@@ -193,6 +194,34 @@ export const useEntityFeed = ({
                 
                 items = eventsResponse.data || [];
                 logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities`);
+                break;
+                
+              case EntityType.POST:
+                logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
+                
+                // Build filters for posts
+                const postFilters: any = {};
+                
+                // Apply tag filtering if we have tagged post IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  postFilters.id = taggedEntityIds[targetType];
+                  logger.debug(`EntityFeed: Filtering POST entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                }
+                
+                // Use the posts API with search
+                const postsResponse = await postsApi.getAll({
+                  filters: postFilters,
+                  search: search || undefined,
+                  limit
+                });
+                  
+                if (postsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching POST entities:`, postsResponse.error);
+                  break;
+                }
+                
+                items = postsResponse.data || [];
+                logger.debug(`EntityFeed: Received ${items?.length || 0} POST entities`);
                 break;
                 
               default:

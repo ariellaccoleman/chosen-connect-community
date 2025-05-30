@@ -2,13 +2,14 @@
 import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import PostComposer from "@/components/feed/PostComposer";
-import PostList from "@/components/feed/PostList";
+import PostEntityList from "@/components/feed/PostEntityList";
 import EntitySearchAndFilter from "@/components/common/EntitySearchAndFilter";
 import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { User } from "lucide-react";
 import { logger } from "@/utils/logger";
+import { useEntityFeed } from "@/hooks/useEntityFeed";
 
 const Feed: React.FC = () => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
@@ -18,6 +19,17 @@ const Feed: React.FC = () => {
   logger.debug("Feed page rendering with filters:", { 
     selectedTagId,
     searchQuery
+  });
+
+  // Use EntityFeed hook to get posts as entities
+  const { 
+    entities, 
+    isLoading 
+  } = useEntityFeed({
+    entityTypes: [EntityType.POST],
+    tagId: selectedTagId,
+    search: searchQuery,
+    limit: 50
   });
 
   const handleTagChange = (tagId: string | null) => {
@@ -63,9 +75,17 @@ const Feed: React.FC = () => {
           initialTagId={selectedTagId}
         />
         
-        {/* Feed content */}
+        {/* Feed content using EntityFeed approach but with custom PostEntityList */}
         <div className="space-y-4">
-          <PostList selectedTagId={selectedTagId} searchQuery={searchQuery} />
+          <PostEntityList 
+            entities={entities} 
+            isLoading={isLoading}
+            emptyMessage={
+              selectedTagId || searchQuery.trim() 
+                ? "No posts match your current filters." 
+                : "No posts yet. Be the first to post!"
+            }
+          />
         </div>
       </div>
     </Layout>
