@@ -1,3 +1,4 @@
+
 import { apiClient } from '../core/apiClient';
 import { supabase } from '@/integrations/supabase/client';
 import { logger } from '@/utils/logger';
@@ -18,14 +19,17 @@ export class ChatMessageService {
   static async getChannelMessages(
     channelId: string | null | undefined,
     limit = 50,
-    offset = 0
+    offset = 0,
+    client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
     return apiClient.query(async () => {
       try {
         logger.info(`[API] getChannelMessages called for channel ${channelId}`);
         
+        const activeClient = client || supabase;
+        
         // Check authentication
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await activeClient.auth.getSession();
         if (!sessionData.session) {
           logger.error('[API] No authenticated session when fetching messages');
           return createErrorResponse(new Error("Authentication required"));
@@ -38,7 +42,7 @@ export class ChatMessageService {
         }
         
         // Create repository for base message query
-        const repository = createRepository('chats');
+        const repository = createRepository('chats', {}, client);
         
         // Query messages with author details
         const query = repository
@@ -71,7 +75,7 @@ export class ChatMessageService {
         const messageIds = messagesResult.map((msg: any) => msg.id);
         
         // Get reply counts
-        const replyCounts = await this.getReplyCountsForMessages(messageIds);
+        const replyCounts = await this.getReplyCountsForMessages(messageIds, client);
         
         // Process messages with our factory
         const transformedMessages = messagesResult.map((msg: any): ChatMessageWithAuthor => {
@@ -96,7 +100,8 @@ export class ChatMessageService {
   static async getThreadReplies(
     parentId: string | null | undefined,
     limit = 50,
-    offset = 0
+    offset = 0,
+    client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
     return apiClient.query(async () => {
       try {
@@ -107,7 +112,7 @@ export class ChatMessageService {
         }
         
         // Create repository for chat messages
-        const repository = createRepository('chats');
+        const repository = createRepository('chats', {}, client);
         
         // Query replies with author details
         const query = repository
@@ -148,12 +153,15 @@ export class ChatMessageService {
     channelId: string | null | undefined,
     message: string,
     userId: string | null | undefined,
-    parentId?: string | null | undefined
+    parentId?: string | null | undefined,
+    client?: any
   ): Promise<ApiResponse<ChatMessage>> {
     return apiClient.query(async () => {
       try {
+        const activeClient = client || supabase;
+        
         // Check if user is authenticated
-        const { data: sessionData } = await supabase.auth.getSession();
+        const { data: sessionData } = await activeClient.auth.getSession();
         if (!sessionData.session) {
           logger.error('[API] No authenticated session when sending message');
           return createErrorResponse(new Error("Authentication required"));
@@ -181,7 +189,7 @@ export class ChatMessageService {
           parentId = null;
         }
         
-        const repository = createRepository('chats');
+        const repository = createRepository('chats', {}, client);
         
         const newMessage = {
           channel_id: channelId,
@@ -232,12 +240,14 @@ export class ChatMessageService {
    * Get reply counts for multiple messages in a single query
    * This is a major optimization over querying counts individually
    */
-  private static async getReplyCountsForMessages(messageIds: string[]): Promise<Record<string, number>> {
+  private static async getReplyCountsForMessages(messageIds: string[], client?: any): Promise<Record<string, number>> {
     try {
       if (!messageIds.length) return {};
       
+      const activeClient = client || supabase;
+      
       // Execute a single query to count replies for all messages
-      const { data, error } = await supabase
+      const { data, error } = await activeClient
         .from('chat_reply_counts')
         .select('*')
         .in('parent_id', messageIds);
@@ -269,7 +279,8 @@ export class ChatMessageService {
    */
   static async getChannelMessagePreviews(
     channelId: string | null | undefined,
-    limit = 3
+    limit = 3,
+    client?: any
   ): Promise<ApiResponse<ChatMessageWithAuthor[]>> {
     return apiClient.query(async () => {
       try {
@@ -280,7 +291,7 @@ export class ChatMessageService {
         }
         
         // Create repository for base message query
-        const repository = createRepository('chats');
+        const repository = createRepository('chats', {}, client);
         
         // Query messages with author details, limited count
         const query = repository
@@ -332,8 +343,9 @@ export class ChatMessageService {
 export const getChannelMessages = (
   channelId: string | null | undefined,
   limit = 50,
-  offset = 0
-) => ChatMessageService.getChannelMessages(channelId, limit, offset);
+  offset = 0,
+  client?: any
+) => ChatMessageService.getChannelMessages(channelId, limit, offset, client);
 
 /**
  * Get thread replies with author details
@@ -341,8 +353,9 @@ export const getChannelMessages = (
 export const getThreadReplies = (
   parentId: string | null | undefined,
   limit = 50,
-  offset = 0
-) => ChatMessageService.getThreadReplies(parentId, limit, offset);
+  offset = 0,
+  client?: any
+) => ChatMessageService.getThreadReplies(parentId, limit, offset, client);
 
 /**
  * Send a chat message
@@ -351,13 +364,15 @@ export const sendChatMessage = (
   channelId: string | null | undefined,
   message: string,
   userId: string | null | undefined,
-  parentId?: string | null | undefined
-) => ChatMessageService.sendChatMessage(channelId, message, userId, parentId);
+  parentId?: string | null | undefined,
+  client?: any
+) => ChatMessageService.sendChatMessage(channelId, message, userId, parentId, client);
 
 /**
  * Get channel message previews (limited number for display in UI)
  */
 export const getChannelMessagePreviews = (
   channelId: string | null | undefined,
-  limit = 3
-) => ChatMessageService.getChannelMessagePreviews(channelId, limit);
+  limit = 3,
+  client?: any
+) => ChatMessageService.getChannelMessagePreviews(channelId, limit, client);
