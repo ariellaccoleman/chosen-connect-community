@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
 import { profileApi } from '@/api/profiles';
@@ -252,7 +252,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
     // Keep previous data while loading new page to prevent flickering
-    keepPreviousData: true
+    placeholderData: keepPreviousData
   });
 
   return {
