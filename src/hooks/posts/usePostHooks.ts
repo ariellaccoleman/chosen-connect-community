@@ -27,7 +27,8 @@ export const usePosts = () => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to fetch posts");
       }
-      return result.data;
+      // Return the ApiResponse format that components expect
+      return result;
     }
   });
 };
@@ -43,7 +44,7 @@ export const usePost = (postId: string) => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to fetch post");
       }
-      return result.data;
+      return result;
     },
     enabled: !!postId
   });
@@ -60,7 +61,8 @@ export const usePostComments = (postId: string, options = {}) => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to fetch comments");
       }
-      return result.data;
+      // Return the ApiResponse format that components expect
+      return result;
     },
     enabled: !!postId,
     ...options
@@ -78,7 +80,8 @@ export const useHasLikedPost = (postId: string) => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to check like status");
       }
-      return result.data;
+      // Return the ApiResponse format that components expect
+      return result;
     },
     enabled: !!postId
   });
@@ -95,7 +98,8 @@ export const useHasLikedComment = (commentId: string) => {
       if (result.error) {
         throw new Error(result.error.message || "Failed to check comment like status");
       }
-      return result.data;
+      // Return the ApiResponse format that components expect
+      return result;
     },
     enabled: !!commentId
   });

@@ -25,12 +25,10 @@ export default function CreateChatChannel() {
     createMutation.mutate(channelData, {
       onSuccess: (response) => {
         logger.info("Channel creation response:", response);
-        if (response.status === 'success' && response.data) {
+        // The mutation returns the direct data, not an ApiResponse wrapper
+        if (response) {
           toast.success("Channel created successfully");
           navigate(`/admin/chat/channels`);
-        } else if (response.error) {
-          toast.error(`Failed to create channel: ${response.error.message}`);
-          logger.error("Channel creation failed:", response.error);
         }
       },
       onError: (error) => {
