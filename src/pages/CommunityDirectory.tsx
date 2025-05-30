@@ -55,13 +55,14 @@ const CommunityDirectory = () => {
         className="mt-6"
         currentPage={currentPage}
         itemsPerPage={itemsPerPage}
-        renderPagination={(totalItems, totalPages) => (
+        renderPagination={(totalItems, totalPages, hasNextPage) => (
           <CommunityPagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
             itemsPerPage={itemsPerPage}
             totalItems={totalItems}
+            hasNextPage={hasNextPage}
           />
         )}
       />

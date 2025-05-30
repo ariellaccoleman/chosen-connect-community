@@ -62,7 +62,7 @@ const eventToEntity = (event: EventWithDetails): Entity => ({
 });
 
 /**
- * Hook for fetching entities with filtering options
+ * Hook for fetching entities with server-side pagination and filtering
  */
 export const useEntityFeed = (params: EntityFeedParams = {}) => {
   const {
@@ -84,13 +84,17 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     logger.warn('Some invalid entity types were filtered out:', entityTypes);
   }
 
+  // Calculate pagination parameters
+  const offset = (currentPage - 1) * itemsPerPage;
+  const actualLimit = limit || itemsPerPage;
+
+  // Create query key that includes pagination for separate caching
   const queryKey = ['entity-feed', {
     entityTypes: validEntityTypes.sort(),
-    limit,
     tagId,
     search,
     isApproved,
-    currentPage,
+    page: currentPage,
     itemsPerPage
   }];
 
@@ -101,21 +105,39 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
         const allEntities: Entity[] = [];
         let totalCount = 0;
 
-        logger.debug(`EntityFeed: Fetching entities for types: ${validEntityTypes.join(', ')}`);
+        logger.debug(`EntityFeed: Fetching entities for page ${currentPage}, types: ${validEntityTypes.join(', ')}`);
 
-        for (const entityType of validEntityTypes) {
+        // For server-side pagination, we need to fetch from each entity type
+        // and then combine and sort the results
+        const entityPromises = validEntityTypes.map(async (entityType) => {
           try {
             let entities: Entity[] = [];
             let count = 0;
 
             switch (entityType) {
               case EntityType.PERSON:
+                // Build query with tag filtering if needed
+                let profileQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
+                
+                // Add tag filtering to the query if tagId is provided
+                if (tagId) {
+                  profileQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
+                }
+
                 const profilesResult = await profileApi.getAll({
                   filters: {
                     ...(isApproved !== false && { is_approved: true }),
+                    ...(tagId && { 
+                      'tag_assignments.tag_id': tagId 
+                    })
                   },
                   search,
-                  query: `*, tags:tag_assignments(*, tag:tags(*))`
+                  searchColumns: ['first_name', 'last_name', 'headline'],
+                  orderBy: 'created_at',
+                  ascending: false,
+                  limit: actualLimit,
+                  offset: offset,
+                  select: profileQuery
                 });
 
                 if (profilesResult.error) {
@@ -128,9 +150,25 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 break;
 
               case EntityType.ORGANIZATION:
+                let orgQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
+                
+                if (tagId) {
+                  orgQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
+                }
+
                 const orgsResult = await organizationApi.getAll({
+                  filters: {
+                    ...(tagId && { 
+                      'tag_assignments.tag_id': tagId 
+                    })
+                  },
                   search,
-                  query: `*, tags:tag_assignments(*, tag:tags(*))`
+                  searchColumns: ['name', 'description'],
+                  orderBy: 'created_at',
+                  ascending: false,
+                  limit: actualLimit,
+                  offset: offset,
+                  select: orgQuery
                 });
 
                 if (orgsResult.error) {
@@ -143,9 +181,25 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 break;
 
               case EntityType.EVENT:
+                let eventQuery = `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
+                
+                if (tagId) {
+                  eventQuery = `*, tags:tag_assignments!inner(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
+                }
+
                 const eventsResult = await eventApi.getAll({
+                  filters: {
+                    ...(tagId && { 
+                      'tag_assignments.tag_id': tagId 
+                    })
+                  },
                   search,
-                  query: `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`
+                  searchColumns: ['title', 'description'],
+                  orderBy: 'created_at',
+                  ascending: false,
+                  limit: actualLimit,
+                  offset: offset,
+                  select: eventQuery
                 });
 
                 if (eventsResult.error) {
@@ -158,42 +212,41 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 break;
             }
 
-            // Apply tag filtering if specified
-            if (tagId && entities.length > 0) {
-              entities = entities.filter(entity => 
-                entity.tags && entity.tags.some(assignment => 
-                  assignment.tag_id === tagId
-                )
-              );
-            }
-
-            allEntities.push(...entities);
-            totalCount += count;
+            return { entities, count };
 
           } catch (error) {
             logger.error(`Error processing ${entityType}:`, error);
+            return { entities: [], count: 0 };
           }
-        }
+        });
 
-        // Sort by creation date (newest first)
+        // Wait for all entity type queries to complete
+        const results = await Promise.all(entityPromises);
+        
+        // Combine all entities and counts
+        results.forEach(result => {
+          allEntities.push(...result.entities);
+          totalCount += result.count;
+        });
+
+        // Sort combined results by creation date (newest first)
         allEntities.sort((a, b) => {
           const dateA = new Date(a.created_at || 0);
           const dateB = new Date(b.created_at || 0);
           return dateB.getTime() - dateA.getTime();
         });
 
-        logger.debug(`EntityFeed: Returning ${allEntities.length} entities total`);
+        // For mixed entity types, we might get more than itemsPerPage results
+        // so slice to the exact amount requested
+        const paginatedEntities = allEntities.slice(0, itemsPerPage);
 
-        // For now, we'll handle pagination client-side since we're aggregating from multiple sources
-        // In a real production app, you'd want server-side pagination with proper counts
-        const startIndex = (currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedEntities = allEntities.slice(startIndex, endIndex);
+        logger.debug(`EntityFeed: Returning ${paginatedEntities.length} entities for page ${currentPage}, total found: ${totalCount}`);
 
         return {
           entities: paginatedEntities,
-          totalCount: allEntities.length,
-          allEntities: allEntities // Keep all for accurate total count
+          totalCount,
+          hasNextPage: paginatedEntities.length === itemsPerPage,
+          currentPage
         };
 
       } catch (error) {
@@ -201,12 +254,14 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
         throw error;
       }
     },
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 2, // 2 minutes - shorter since we're paginating
   });
 
   return {
     entities: query.data?.entities || [],
     totalCount: query.data?.totalCount || 0,
+    hasNextPage: query.data?.hasNextPage || false,
+    currentPage: query.data?.currentPage || currentPage,
     isLoading: query.isLoading,
     error: query.error
   };

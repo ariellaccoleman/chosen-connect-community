@@ -16,6 +16,7 @@ interface CommunityPaginationProps {
   onPageChange: (page: number) => void;
   itemsPerPage: number;
   totalItems: number;
+  hasNextPage?: boolean;
 }
 
 const CommunityPagination = ({
@@ -23,9 +24,10 @@ const CommunityPagination = ({
   totalPages,
   onPageChange,
   itemsPerPage,
-  totalItems
+  totalItems,
+  hasNextPage = false
 }: CommunityPaginationProps) => {
-  if (totalPages <= 1) return null;
+  if (totalPages <= 1 && !hasNextPage) return null;
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -119,9 +121,9 @@ const CommunityPagination = ({
               href="#"
               onClick={(e) => {
                 e.preventDefault();
-                if (currentPage < totalPages) onPageChange(currentPage + 1);
+                if (currentPage < totalPages || hasNextPage) onPageChange(currentPage + 1);
               }}
-              className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+              className={(currentPage === totalPages && !hasNextPage) ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
         </PaginationContent>

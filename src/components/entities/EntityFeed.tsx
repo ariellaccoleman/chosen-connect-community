@@ -25,7 +25,7 @@ interface EntityFeedProps {
   // Pagination props
   currentPage?: number;
   itemsPerPage?: number;
-  renderPagination?: (totalItems: number, totalPages: number) => React.ReactNode;
+  renderPagination?: (totalItems: number, totalPages: number, hasNextPage: boolean) => React.ReactNode;
 }
 
 /**
@@ -58,7 +58,7 @@ const EntityFeed = ({
     getEntityTypePlural 
   } = useEntitySystem();
   
-  // Enhanced logging for debugging tag filtering
+  // Enhanced logging for debugging pagination
   useEffect(() => {
     logger.debug(`EntityFeed initialized:`, {
       defaultEntityTypes,
@@ -82,7 +82,7 @@ const EntityFeed = ({
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   
-  // Sync local tag state with prop changes - THIS IS THE FIX
+  // Sync local tag state with prop changes
   useEffect(() => {
     setSelectedTagId(tagId || null);
     logger.debug(`EntityFeed: Tag prop changed, updating selectedTagId to ${tagId}`);
@@ -93,11 +93,12 @@ const EntityFeed = ({
     logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
   }, [selectedTagId]);
   
-  // Use the entity feed hook with pagination parameters
+  // Use the entity feed hook with server-side pagination
   const { 
     entities, 
     isLoading,
-    totalCount
+    totalCount,
+    hasNextPage
   } = useEntityFeed({
     entityTypes,
     limit: renderPagination ? undefined : limit,
@@ -108,7 +109,7 @@ const EntityFeed = ({
     itemsPerPage
   });
   
-  // Calculate pagination
+  // Calculate pagination info
   const totalPages = renderPagination && itemsPerPage ? Math.ceil(totalCount / itemsPerPage) : 1;
   
   // Log entity count when it changes 
@@ -122,9 +123,10 @@ const EntityFeed = ({
       totalCount,
       currentPage,
       totalPages,
+      hasNextPage,
       entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
     });
-  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved, totalCount, currentPage, totalPages]);
+  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved, totalCount, currentPage, totalPages, hasNextPage]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
@@ -167,8 +169,8 @@ const EntityFeed = ({
         emptyMessage={emptyMessage}
       />
       
-      {renderPagination && !isLoading && totalCount > 0 && (
-        renderPagination(totalCount, totalPages)
+      {renderPagination && !isLoading && (
+        renderPagination(totalCount, totalPages, hasNextPage)
       )}
     </div>
   );
