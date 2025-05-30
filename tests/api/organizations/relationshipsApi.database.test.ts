@@ -1,5 +1,6 @@
+
 import { organizationRelationshipsApi } from '@/api/organizations/relationshipsApi';
-import { TestClientFactory, TestInfrastructure } from '@/integrations/supabase/testClient';
+import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper, PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 import { TestAuthUtils } from '../../utils/testAuthUtils';
 import { ProfileOrganizationRelationship } from '@/types';
@@ -291,7 +292,14 @@ describe('Organization Relationships API - Database Tests', () => {
       });
       
       expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
+      // Fix: The API returns the created relationship object, not just true
+      expect(result.data).toMatchObject({
+        profile_id: testUser.id,
+        organization_id: testOrganization.id,
+        connection_type: 'current',
+        department: 'Engineering',
+        notes: 'New relationship'
+      });
       
       // Verify the relationship was created in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -396,7 +404,12 @@ describe('Organization Relationships API - Database Tests', () => {
       );
       
       expect(result.status).toBe('success');
-      expect(result.data).toBe(true);
+      // Fix: The API returns the updated relationship object, not just true
+      expect(result.data).toMatchObject({
+        connection_type: 'former',
+        department: 'Marketing',
+        notes: 'Updated notes'
+      });
       
       // Verify the update in the database using service client
       const serviceClient = TestClientFactory.getServiceRoleClient();
@@ -494,3 +507,4 @@ describe('Organization Relationships API - Database Tests', () => {
     });
   });
 });
+

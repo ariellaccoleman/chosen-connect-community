@@ -1,4 +1,5 @@
 
+
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { PersistentTestUserHelper } from '../utils/persistentTestUsers';
 
@@ -8,7 +9,7 @@ describe('Test Project Validation', () => {
   });
 
   test('should be using dedicated test project', () => {
-    const projectInfo = TestInfrastructure.getTestProjectInfo();
+    const projectInfo = TestClientFactory.getTestProjectInfo();
     
     console.log('Test project info:', {
       url: projectInfo.url,
@@ -99,3 +100,4 @@ describe('Test Project Validation', () => {
     expect(true).toBe(true);
   });
 });
+
