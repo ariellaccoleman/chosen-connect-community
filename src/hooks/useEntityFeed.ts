@@ -29,7 +29,7 @@ export const useEntityFeed = ({
   limit = 10,
   filterByUserId = null,
   search = "",
-  isApproved = true,
+  isApproved
 }: UseEntityFeedOptions) => {
   // This query fetches entities based on the provided entityTypes
   const { data: entitiesData, isLoading, error } = useQuery({
@@ -37,7 +37,7 @@ export const useEntityFeed = ({
     queryFn: async () => {
       const allEntities: Entity[] = [];
       
-      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
+      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
       
       // If tagId is provided, get all tagged entity IDs first
       let taggedEntityIds: Record<string, string[]> = {};
@@ -111,7 +111,7 @@ export const useEntityFeed = ({
                   peopleFilters.id = filterByUserId;
                 }
                 
-                // Apply approved filter for profiles
+                // Only apply approved filter if explicitly set (not undefined)
                 if (isApproved !== undefined) {
                   peopleFilters.is_approved = isApproved;
                 }

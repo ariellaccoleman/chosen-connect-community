@@ -38,7 +38,7 @@ const EntityFeed = ({
   tagId, // Add the tagId prop to destructuring
   excludeEntityTypes = [],
   search = "",
-  isApproved = true
+  isApproved
 }: EntityFeedProps) => {
   // Filter out excluded entity types
   const availableEntityTypes = defaultEntityTypes.filter(
