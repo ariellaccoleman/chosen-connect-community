@@ -3,8 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
-import { supabase } from "@/integrations/supabase/client";
 import { entityRegistry } from "@/registry";
+import { profileApi } from "@/api/profiles";
+import { organizationApi } from "@/api/organizations";
+import { eventApi } from "@/api/events";
+import { tagAssignmentApi } from "@/api/tags";
 
 interface UseEntityFeedOptions {
   entityTypes: EntityType[];
@@ -41,17 +44,17 @@ export const useEntityFeed = ({
       if (tagId) {
         logger.debug(`EntityFeed: Fetching tagged entities for tagId=${tagId}`);
         
-        // Get all entities tagged with this tag ID
-        const { data: tagAssignments, error: tagError } = await supabase
-          .from('tag_assignments')
-          .select('target_id, target_type')
-          .eq('tag_id', tagId);
+        // Get all entities tagged with this tag ID using the API
+        const tagAssignmentsResponse = await tagAssignmentApi.getAll({
+          filters: { tag_id: tagId },
+          select: 'target_id, target_type'
+        });
           
-        if (tagError) {
-          logger.error("EntityFeed: Failed to fetch tag assignments", tagError);
-        } else if (tagAssignments) {
+        if (tagAssignmentsResponse.error) {
+          logger.error("EntityFeed: Failed to fetch tag assignments", tagAssignmentsResponse.error);
+        } else if (tagAssignmentsResponse.data) {
           // Group entity IDs by type for efficient filtering
-          taggedEntityIds = tagAssignments.reduce((acc, assignment) => {
+          taggedEntityIds = tagAssignmentsResponse.data.reduce((acc, assignment) => {
             const type = assignment.target_type;
             if (!acc[type]) acc[type] = [];
             acc[type].push(assignment.target_id);
@@ -95,111 +98,110 @@ export const useEntityFeed = ({
               return;
             }
             
-            // Fetch the appropriate data based on entity type
+            // Fetch the appropriate data based on entity type using API factories
             switch (type) {
               case EntityType.PERSON:
                 logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
                 
-                // Basic query for people
-                let peopleQuery = supabase.from('profiles').select('*');
+                // Build filters for people
+                const peopleFilters: any = {};
                 
                 // Apply profile-specific filters
                 if (filterByUserId) {
-                  peopleQuery = peopleQuery.eq('id', filterByUserId);
+                  peopleFilters.id = filterByUserId;
                 }
                 
                 // Apply approved filter for profiles
                 if (isApproved !== undefined) {
-                  peopleQuery = peopleQuery.eq('is_approved', isApproved);
-                }
-                
-                // Apply search filter for profiles
-                if (search && search.trim()) {
-                  const searchTerm = `%${search.toLowerCase()}%`;
-                  peopleQuery = peopleQuery.or(
-                    `first_name.ilike.${searchTerm},last_name.ilike.${searchTerm},bio.ilike.${searchTerm},headline.ilike.${searchTerm},email.ilike.${searchTerm}`
-                  );
+                  peopleFilters.is_approved = isApproved;
                 }
                 
                 // Apply tag filtering if we have tagged person IDs
                 if (tagId && taggedEntityIds[targetType]?.length) {
-                  peopleQuery = peopleQuery.in('id', taggedEntityIds[targetType]);
+                  // For API factory, we'll need to handle this differently
+                  // since we can't directly filter by array of IDs in the simple filter
+                  peopleFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Apply limit and get results
-                const { data: profiles, error: profilesError } = await peopleQuery.limit(limit);
+                // Use the profile API
+                const profilesResponse = await profileApi.getAll({
+                  filters: peopleFilters,
+                  search: search ? { 
+                    query: search,
+                    columns: ['first_name', 'last_name', 'bio', 'headline', 'email']
+                  } : undefined,
+                  limit
+                });
                   
-                if (profilesError) {
-                  logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesError);
+                if (profilesResponse.error) {
+                  logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesResponse.error);
                   break;
                 }
                 
-                items = profiles || [];
+                items = profilesResponse.data || [];
                 logger.debug(`EntityFeed: Received ${items?.length || 0} PERSON entities`);
                 break;
                 
               case EntityType.ORGANIZATION:
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}, search=${search}`);
                 
-                // Basic query for organizations
-                let orgsQuery = supabase.from('organizations').select('*');
-                
-                // Apply search filter for organizations
-                if (search && search.trim()) {
-                  const searchTerm = `%${search.toLowerCase()}%`;
-                  orgsQuery = orgsQuery.or(
-                    `name.ilike.${searchTerm},description.ilike.${searchTerm}`
-                  );
-                }
+                // Build filters for organizations
+                const orgFilters: any = {};
                 
                 // Apply tag filtering if we have tagged organization IDs
                 if (tagId && taggedEntityIds[targetType]?.length) {
-                  orgsQuery = orgsQuery.in('id', taggedEntityIds[targetType]);
+                  orgFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Apply limit and get results
-                const { data: organizations, error: orgsError } = await orgsQuery.limit(limit);
+                // Use the organization API
+                const orgsResponse = await organizationApi.getAll({
+                  filters: orgFilters,
+                  search: search ? {
+                    query: search,
+                    columns: ['name', 'description']
+                  } : undefined,
+                  limit
+                });
                   
-                if (orgsError) {
-                  logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsError);
+                if (orgsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsResponse.error);
                   break;
                 }
                 
-                items = organizations || [];
+                items = orgsResponse.data || [];
                 logger.debug(`EntityFeed: Received ${items?.length || 0} ORGANIZATION entities`);
                 break;
                 
               case EntityType.EVENT:
                 logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}, search=${search}`);
                 
-                // Basic query for events
-                let eventsQuery = supabase.from('events').select('*');
-                
-                // Apply search filter for events
-                if (search && search.trim()) {
-                  const searchTerm = `%${search.toLowerCase()}%`;
-                  eventsQuery = eventsQuery.or(
-                    `title.ilike.${searchTerm},description.ilike.${searchTerm}`
-                  );
-                }
+                // Build filters for events
+                const eventFilters: any = {};
                 
                 // Apply tag filtering if we have tagged event IDs
                 if (tagId && taggedEntityIds[targetType]?.length) {
-                  eventsQuery = eventsQuery.in('id', taggedEntityIds[targetType]);
+                  eventFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Apply limit and get results
-                const { data: events, error: eventsError } = await eventsQuery.limit(limit);
+                // Use the event API
+                const eventsResponse = await eventApi.getAll({
+                  filters: eventFilters,
+                  search: search ? {
+                    query: search,
+                    columns: ['title', 'description']
+                  } : undefined,
+                  limit
+                });
                   
-                if (eventsError) {
-                  logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsError);
+                if (eventsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsResponse.error);
                   break;
                 }
                 
-                items = events || [];
+                items = eventsResponse.data || [];
                 logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities`);
                 break;
                 
@@ -249,20 +251,19 @@ export const useEntityFeed = ({
           // For each entity, fetch its tags - this is now just to get the tag details
           // since we already filtered by tag
           for (const entity of allEntities) {
-            const { data: tagAssignments, error: tagError } = await supabase
-              .from('tag_assignments')
-              .select(`
-                *,
-                tag:tags(*)
-              `)
-              .eq('target_id', entity.id)
-              .eq('target_type', entity.entityType);
+            const tagAssignmentsResponse = await tagAssignmentApi.getAll({
+              filters: {
+                target_id: entity.id,
+                target_type: entity.entityType
+              },
+              select: '*,tag:tags(*)'
+            });
               
-            if (tagError) {
-              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagError);
-            } else if (tagAssignments && tagAssignments.length > 0) {
+            if (tagAssignmentsResponse.error) {
+              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
+            } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
               // Add tags to entity
-              entity.tags = tagAssignments.map(assignment => ({
+              entity.tags = tagAssignmentsResponse.data.map(assignment => ({
                 id: assignment.id,
                 tag_id: assignment.tag_id,
                 target_id: assignment.target_id,

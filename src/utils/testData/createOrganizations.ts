@@ -1,9 +1,9 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { faker } from "@faker-js/faker";
+import { organizationApi } from "@/api/organizations";
 
 /**
- * Creates random organizations in the database
+ * Creates random organizations using the organization API
  * @param count Number of organizations to create
  * @param locations Array of locations to associate with organizations
  * @returns Array of created organizations
@@ -20,22 +20,22 @@ export const createOrganizations = async (count: number, locations: any[]) => {
       locations[Math.floor(Math.random() * locations.length)].id : 
       null;
 
-    const { data, error } = await supabase
-      .from('organizations')
-      .insert({
+    try {
+      const response = await organizationApi.create({
         name,
         description,
         website_url,
         location_id
-      })
-      .select()
-      .single();
+      });
 
-    if (error) {
-      console.error("Error creating organization:", error.message);
-    } else {
-      organizations.push(data);
-      console.log(`Created organization: ${name}`);
+      if (response.error) {
+        console.error("Error creating organization:", response.error);
+      } else {
+        organizations.push(response.data);
+        console.log(`Created organization: ${name}`);
+      }
+    } catch (error) {
+      console.error("Error creating organization:", error);
     }
   }
 

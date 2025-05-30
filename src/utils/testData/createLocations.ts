@@ -1,9 +1,9 @@
 
-import { supabase } from "@/integrations/supabase/client";
 import { faker } from "@faker-js/faker";
+import { locationsApi } from "@/api/locations";
 
 /**
- * Creates random locations in the database
+ * Creates random locations using the locations API
  * @param count Number of locations to create
  * @returns Array of created locations
  */
@@ -17,22 +17,22 @@ export const createLocations = async (count: number) => {
     const country = faker.location.country();
     const full_name = `${city}, ${region}, ${country}`;
 
-    const { data, error } = await supabase
-      .from('locations')
-      .insert({
+    try {
+      const response = await locationsApi.create({
         city,
         region,
         country,
         full_name
-      })
-      .select()
-      .single();
+      });
 
-    if (error) {
-      console.error("Error creating location:", error.message);
-    } else {
-      locations.push(data);
-      console.log(`Created location: ${full_name}`);
+      if (response.error) {
+        console.error("Error creating location:", response.error);
+      } else {
+        locations.push(response.data);
+        console.log(`Created location: ${full_name}`);
+      }
+    } catch (error) {
+      console.error("Error creating location:", error);
     }
   }
 

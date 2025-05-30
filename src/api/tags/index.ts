@@ -13,6 +13,10 @@ export {
   createExtendedTagAssignmentApi
 } from './factory/tagApiFactory';
 
+// Export tag entity type operations
+export * from './tagEntityTypeOperations';
+export * from './tagEntityTypeFixes';
+
 // Import API instances for function exports
 import { tagApi, tagAssignmentApi } from './factory/tagApiFactory';
 
