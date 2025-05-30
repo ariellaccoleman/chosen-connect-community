@@ -18,8 +18,13 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
 
+  // Extract Tag objects from TagAssignment array
+  const tags = profile.tags
+    ?.filter(tagAssignment => tagAssignment.tag)
+    .map(tagAssignment => tagAssignment.tag!) || [];
+
   // Check if profile has tags to determine layout
-  const hasTags = profile.tags && Array.isArray(profile.tags) && profile.tags.length > 0;
+  const hasTags = tags.length > 0;
 
   return (
     <Link to={profileUrl} className="block">
@@ -36,7 +41,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
             <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
                 <TagList 
-                  tags={profile.tags}
+                  tags={tags}
                   className="flex flex-wrap gap-2" 
                 />
               </div>
