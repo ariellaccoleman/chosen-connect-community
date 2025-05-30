@@ -44,7 +44,7 @@ const PostEntityList = ({
 
   // Convert entities back to Post format for PostCard
   const posts: Post[] = postEntities.map(entity => {
-    // The full post data is now preserved in rawData
+    // The full post data is preserved in rawData
     const postData = (entity as any).rawData;
     
     if (!postData) {
@@ -66,7 +66,7 @@ const PostEntityList = ({
       };
     }
     
-    // Use the full post data structure
+    // Use the full post data structure and map entity tags to Post format
     return {
       id: postData.id,
       content: postData.content,
@@ -77,6 +77,7 @@ const PostEntityList = ({
       author: postData.author,
       likes_count: postData.likes?.length || 0,
       comments_count: postData.comments?.length || 0,
+      // Map the entity tags to the format expected by PostCard
       tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
     };
   });

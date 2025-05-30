@@ -251,7 +251,7 @@ export const useEntityFeed = ({
                         created_at: item.created_at,
                         updated_at: item.updated_at,
                         location: null,
-                        tags: [], // Will be populated later if needed
+                        tags: [], // Will be populated later
                         // Preserve the full post data in rawData
                         rawData: item
                       } as Entity & { rawData: any };
@@ -276,7 +276,7 @@ export const useEntityFeed = ({
                           name: entity.name
                         });
                         
-                        // Initialize empty tags array that will be populated later if needed
+                        // Initialize empty tags array that will be populated later
                         entity.tags = [];
                         allEntities.push(entity);
                       } else {
@@ -295,46 +295,43 @@ export const useEntityFeed = ({
         })
       );
       
-      // After all entities are fetched, if tagId was provided, fetch tags for each entity
-      if (tagId) {
-        try {
-          logger.debug(`EntityFeed: Fetching tags for each entity`);
-          
-          // For each entity, fetch its tags - this is now just to get the tag details
-          // since we already filtered by tag
-          for (const entity of allEntities) {
-            const tagAssignmentsResponse = await tagAssignmentApi.getAll({
-              filters: {
-                target_id: entity.id,
-                target_type: entity.entityType
-              }
-            });
-              
-            if (tagAssignmentsResponse.error) {
-              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
-            } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
-              // Add tags to entity
-              entity.tags = tagAssignmentsResponse.data.map(assignment => ({
-                id: assignment.id,
-                tag_id: assignment.tag_id,
-                target_id: assignment.target_id,
-                target_type: assignment.target_type,
-                created_at: assignment.created_at || '',
-                updated_at: assignment.updated_at || '',
-                tag: {
-                  id: assignment.tag?.id || '',
-                  name: assignment.tag?.name || '',
-                  description: assignment.tag?.description || null,
-                  created_by: null,
-                  created_at: '',
-                  updated_at: ''
-                }
-              }));
+      // Always fetch tags for all entities to display on cards
+      try {
+        logger.debug(`EntityFeed: Fetching tags for each entity`);
+        
+        // For each entity, fetch its tags
+        for (const entity of allEntities) {
+          const tagAssignmentsResponse = await tagAssignmentApi.getAll({
+            filters: {
+              target_id: entity.id,
+              target_type: entity.entityType
             }
+          });
+            
+          if (tagAssignmentsResponse.error) {
+            logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
+          } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
+            // Add tags to entity
+            entity.tags = tagAssignmentsResponse.data.map(assignment => ({
+              id: assignment.id,
+              tag_id: assignment.tag_id,
+              target_id: assignment.target_id,
+              target_type: assignment.target_type,
+              created_at: assignment.created_at || '',
+              updated_at: assignment.updated_at || '',
+              tag: {
+                id: assignment.tag?.id || '',
+                name: assignment.tag?.name || '',
+                description: assignment.tag?.description || null,
+                created_by: null,
+                created_at: '',
+                updated_at: ''
+              }
+            }));
           }
-        } catch (e) {
-          logger.error(`EntityFeed: Error fetching tags for entities:`, e);
         }
+      } catch (e) {
+        logger.error(`EntityFeed: Error fetching tags for entities:`, e);
       }
       
       logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
