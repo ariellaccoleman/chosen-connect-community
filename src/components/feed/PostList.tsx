@@ -10,9 +10,10 @@ import { toast } from "sonner";
 
 interface PostListProps {
   selectedTagId: string | null;
+  searchQuery?: string;
 }
 
-const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
+const PostList: React.FC<PostListProps> = ({ selectedTagId, searchQuery = "" }) => {
   // Use our posts hook to fetch real data
   const { data: postsResponse, isLoading, error, refetch } = usePosts();
   
@@ -39,23 +40,36 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   // Extract posts from response and handle error state
   const posts = postsResponse?.data || [];
   
-  // Filter posts by selected tag if a tag is selected
-  const filteredPosts = selectedTagId
-    ? posts.filter(post => {
-        const hasTags = Array.isArray(post.tags) && post.tags.length > 0;
-        if (!hasTags) return false;
-        
-        return post.tags.some(tag => tag.id === selectedTagId);
-      })
-    : posts;
+  // Filter posts by selected tag and search query
+  const filteredPosts = posts.filter(post => {
+    // Filter by tag if a tag is selected
+    if (selectedTagId) {
+      const hasTags = Array.isArray(post.tags) && post.tags.length > 0;
+      if (!hasTags) return false;
+      
+      const hasSelectedTag = post.tags.some(tag => tag.id === selectedTagId);
+      if (!hasSelectedTag) return false;
+    }
+    
+    // Filter by search query if provided
+    if (searchQuery.trim()) {
+      const searchLower = searchQuery.toLowerCase();
+      const contentMatch = post.content?.toLowerCase().includes(searchLower);
+      const authorMatch = post.author_profile?.first_name?.toLowerCase().includes(searchLower) ||
+                         post.author_profile?.last_name?.toLowerCase().includes(searchLower);
+      
+      return contentMatch || authorMatch;
+    }
+    
+    return true;
+  });
 
-  logger.debug("Selected tag ID:", selectedTagId);
-  logger.debug("Filtered posts:", filteredPosts.length);
-  logger.debug("Posts with tags:", posts.map(p => ({ 
-    id: p.id,
-    content: p.content?.substring(0, 20) + "...",
-    tags: p.tags 
-  })));
+  logger.debug("Filtering results:", {
+    selectedTagId,
+    searchQuery,
+    totalPosts: posts.length,
+    filteredPosts: filteredPosts.length
+  });
 
   if (isLoading) {
     return (
@@ -76,11 +90,17 @@ const PostList: React.FC<PostListProps> = ({ selectedTagId }) => {
   }
 
   if (filteredPosts.length === 0) {
+    const hasFilters = selectedTagId || searchQuery.trim();
     return (
       <div className="bg-gray-50 rounded-lg p-8 text-center">
         <p className="text-gray-500">
-          {selectedTagId ? "No posts match the selected tag." : "No posts yet. Be the first to post!"}
+          {hasFilters ? "No posts match your current filters." : "No posts yet. Be the first to post!"}
         </p>
+        {hasFilters && (
+          <p className="text-sm text-gray-400 mt-2">
+            Try adjusting your search or tag filter to see more results.
+          </p>
+        )}
       </div>
     );
   }

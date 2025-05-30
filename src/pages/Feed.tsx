@@ -3,8 +3,7 @@ import React, { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import PostComposer from "@/components/feed/PostComposer";
 import PostList from "@/components/feed/PostList";
-import TagFilter from "@/components/filters/TagFilter";
-import { useSelectionTags } from "@/hooks/tags";
+import EntitySearchAndFilter from "@/components/common/EntitySearchAndFilter";
 import { EntityType } from "@/types/entityTypes";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,15 +12,22 @@ import { logger } from "@/utils/logger";
 
 const Feed: React.FC = () => {
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
   const { user } = useAuth();
   
-  logger.debug("Feed page rendering with selected tag:", { 
-    selectedTagId
+  logger.debug("Feed page rendering with filters:", { 
+    selectedTagId,
+    searchQuery
   });
 
-  const handleTagSelect = (tagId: string | null) => {
+  const handleTagChange = (tagId: string | null) => {
     logger.debug(`Feed: Tag selected: ${tagId}`);
     setSelectedTagId(tagId);
+  };
+
+  const handleSearchChange = (search: string) => {
+    logger.debug(`Feed: Search changed: ${search}`);
+    setSearchQuery(search);
   };
 
   return (
@@ -46,19 +52,20 @@ const Feed: React.FC = () => {
           </div>
         )}
         
-        {/* Tag filter */}
-        <div className="mb-4 sm:mb-6">
-          <TagFilter
-            selectedTagId={selectedTagId}
-            onTagSelect={handleTagSelect}
-            targetType={EntityType.POST}
-            label="Filter posts by tag"
-          />
-        </div>
+        {/* Enhanced search and filter */}
+        <EntitySearchAndFilter
+          entityType={EntityType.POST}
+          searchPlaceholder="Search posts..."
+          tagPlaceholder="Filter by tag"
+          onSearchChange={handleSearchChange}
+          onTagChange={handleTagChange}
+          initialSearch={searchQuery}
+          initialTagId={selectedTagId}
+        />
         
         {/* Feed content */}
         <div className="space-y-4">
-          <PostList selectedTagId={selectedTagId} />
+          <PostList selectedTagId={selectedTagId} searchQuery={searchQuery} />
         </div>
       </div>
     </Layout>
