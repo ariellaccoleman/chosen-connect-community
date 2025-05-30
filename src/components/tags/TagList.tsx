@@ -1,31 +1,74 @@
 
 import { Badge } from "@/components/ui/badge";
-import { TagAssignment } from "@/utils/tags/types";
+import { TagAssignment, Tag } from "@/utils/tags/types";
 import { cn } from "@/lib/utils";
 import { logger } from "@/utils/logger";
 import { X } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface TagListProps {
-  tagAssignments: TagAssignment[] | undefined;
+  tagAssignments?: TagAssignment[] | undefined;
+  tags?: Tag[] | undefined; // New prop for direct tag support
   className?: string;
   maxTags?: number; 
-  showDebugInfo?: boolean; // Option to show more debug info in console
-  onRemove?: (assignmentId: string) => void; // Added this prop
-  isRemoving?: boolean; // Added this prop
+  showDebugInfo?: boolean;
+  onRemove?: (assignmentId: string) => void;
+  isRemoving?: boolean;
 }
 
 /**
  * Component to display a list of tags as badges
+ * Supports both TagAssignment[] (legacy) and Tag[] (new simplified approach)
  */
 const TagList = ({
   tagAssignments,
+  tags,
   className,
   maxTags = 10,
   showDebugInfo = false,
   onRemove,
   isRemoving = false
 }: TagListProps) => {
+  // Handle direct tags (new approach)
+  if (tags) {
+    if (!tags || tags.length === 0) {
+      return null;
+    }
+
+    const displayTags = maxTags > 0 ? tags.slice(0, maxTags) : tags;
+    const extraTagsCount = Math.max(0, tags.length - maxTags);
+
+    return (
+      <div className={cn("flex flex-wrap gap-1", className)}>
+        {displayTags.map((tag) => {
+          if (!tag?.id || !tag?.name) {
+            return null;
+          }
+          
+          return (
+            <Badge 
+              key={tag.id} 
+              variant="outline"
+              className="text-xs px-2 py-0.5 bg-opacity-50 text-gray-700 dark:text-gray-300"
+            >
+              {tag.name}
+            </Badge>
+          );
+        })}
+        
+        {extraTagsCount > 0 && (
+          <Badge 
+            variant="outline"
+            className="text-xs px-2 py-0.5 bg-opacity-50 text-gray-700 dark:text-gray-300"
+          >
+            +{extraTagsCount} more
+          </Badge>
+        )}
+      </div>
+    );
+  }
+
+  // Handle TagAssignments (legacy approach)
   if (!tagAssignments || tagAssignments.length === 0) {
     return null;
   }

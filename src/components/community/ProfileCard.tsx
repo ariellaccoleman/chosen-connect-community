@@ -18,25 +18,8 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
 
-  // Convert the tag objects from people_with_tags view to TagAssignment format
-  const tagAssignments = profile.tags && Array.isArray(profile.tags) 
-    ? profile.tags
-        .filter((tag: any) => tag && typeof tag === 'object' && tag.id && tag.name)
-        .map((tag: any) => ({
-          id: `${profile.id}-${tag.id}`, // Create a unique assignment ID
-          tag_id: tag.id,
-          target_id: profile.id,
-          target_type: 'person',
-          tag: {
-            id: tag.id,
-            name: tag.name,
-            description: tag.description || null
-          }
-        }))
-    : [];
-
   // Check if profile has tags to determine layout
-  const hasTags = tagAssignments && tagAssignments.length > 0;
+  const hasTags = profile.tags && Array.isArray(profile.tags) && profile.tags.length > 0;
 
   return (
     <Link to={profileUrl} className="block">
@@ -53,9 +36,8 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
             <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
                 <TagList 
-                  tagAssignments={tagAssignments} 
+                  tags={profile.tags}
                   className="flex flex-wrap gap-2" 
-                  showDebugInfo={profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85"}
                 />
               </div>
             </div>
