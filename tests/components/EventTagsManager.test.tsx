@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -7,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClientProvider, QueryClient } from '@tanstack/react-query';
 import { CentralTestAuthUtils } from '../api/testing/CentralTestAuthUtils';
 import { createEvent } from '@/api/events/eventApiFactory';
-import { tagApi } from '@/api/tags/factory/tagApiFactory';
+import { resetTagApi } from '@/api/tags/factory/tagApiFactory';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 
 // Mock react-router-dom navigate function
@@ -92,25 +91,39 @@ describe('EventTagsManager Component - Database Integration', () => {
   });
 
   test('renders the tag manager for authenticated users with real event', async () => {
-    await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user1',
-      async (client) => {
-        // Create a real test event inside the authenticated context
+    await CentralTestAuthUtils.executeWithSpecificAPI(
+      'events',
+      async (eventsAPI, { client, user }) => {
+        // Create a real test event with authenticated API
         const testEvent = {
           title: `Test Event ${Date.now()}`,
           description: 'Test event for tag manager',
           start_time: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
           end_time: new Date(Date.now() + 90000000).toISOString(),
           is_virtual: true,
-          is_paid: false
+          is_paid: false,
+          host_id: user.id
         };
 
-        const eventResult = await createEvent(testEvent as any);
+        const eventResult = await eventsAPI.createEvent(testEvent);
         expect(eventResult.data).toBeTruthy();
         testEventId = eventResult.data!.id;
 
-        // Render component with real event ID
-        render(<EventTagsManager eventId={testEventId} />, { wrapper: Wrapper });
+        // Create API factories with authenticated client
+        const tagApis = resetTagApi(client);
+        const apiFactories = {
+          tagApi: tagApis.tagApi,
+          tagAssignmentApi: tagApis.tagAssignmentApi
+        };
+
+        // Render component with real event ID and authenticated APIs
+        render(
+          <EventTagsManager 
+            eventId={testEventId} 
+            apiFactories={apiFactories}
+          />, 
+          { wrapper: Wrapper }
+        );
 
         // Wait for component to load
         await waitFor(() => {
@@ -129,35 +142,49 @@ describe('EventTagsManager Component - Database Integration', () => {
   });
 
   test('allows adding tags to event through real API', async () => {
-    await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user1',
-      async (client) => {
-        // Create a real test event inside the authenticated context
+    await CentralTestAuthUtils.executeWithSpecificAPI(
+      'events',
+      async (eventsAPI, { client, user }) => {
+        // Create a real test event with authenticated API
         const testEvent = {
           title: `Tagged Event ${Date.now()}`,
           description: 'Event for tag testing',
           start_time: new Date(Date.now() + 86400000).toISOString(),
           end_time: new Date(Date.now() + 90000000).toISOString(),
           is_virtual: true,
-          is_paid: false
+          is_paid: false,
+          host_id: user.id
         };
 
-        const eventResult = await createEvent(testEvent as any);
+        const eventResult = await eventsAPI.createEvent(testEvent);
         expect(eventResult.data).toBeTruthy();
         testEventId = eventResult.data!.id;
 
-        // Create a test tag inside the authenticated context
+        // Create API factories with authenticated client
+        const tagApis = resetTagApi(client);
+        const apiFactories = {
+          tagApi: tagApis.tagApi,
+          tagAssignmentApi: tagApis.tagAssignmentApi
+        };
+
+        // Create a test tag with authenticated API
         const testTag = {
           name: `test-tag-${Date.now()}`,
           description: 'Test tag for events'
         };
 
-        const tagResult = await tagApi.create(testTag);
+        const tagResult = await tagApis.tagApi.create(testTag);
         expect(tagResult.data).toBeTruthy();
         const createdTagId = tagResult.data!.id;
 
-        // Render component
-        render(<EventTagsManager eventId={testEventId} />, { wrapper: Wrapper });
+        // Render component with authenticated APIs
+        render(
+          <EventTagsManager 
+            eventId={testEventId} 
+            apiFactories={apiFactories}
+          />, 
+          { wrapper: Wrapper }
+        );
 
         // Wait for component to load
         await waitFor(() => {
@@ -169,32 +196,39 @@ describe('EventTagsManager Component - Database Integration', () => {
         expect(screen.getByText(/Your event was created successfully/)).toBeInTheDocument();
         expect(screen.getByText(/add tags to help people find your event/)).toBeInTheDocument();
 
-        // Clean up created tag inside the authenticated context
-        await tagApi.delete(createdTagId);
+        // Clean up created tag with authenticated API
+        await tagApis.tagApi.delete(createdTagId);
       }
     );
   });
 
   test('handles navigation correctly', async () => {
-    await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user1',
-      async (client) => {
-        // Create a real test event inside the authenticated context
+    await CentralTestAuthUtils.executeWithSpecificAPI(
+      'events',
+      async (eventsAPI, { client, user }) => {
+        // Create a real test event with authenticated API
         const testEvent = {
           title: `Nav Test Event ${Date.now()}`,
           description: 'Event for navigation testing',
           start_time: new Date(Date.now() + 86400000).toISOString(),
           end_time: new Date(Date.now() + 90000000).toISOString(),
           is_virtual: true,
-          is_paid: false
+          is_paid: false,
+          host_id: user.id
         };
 
-        const eventResult = await createEvent(testEvent as any);
+        const eventResult = await eventsAPI.createEvent(testEvent);
         expect(eventResult.data).toBeTruthy();
         testEventId = eventResult.data!.id;
 
         // Render component
-        render(<EventTagsManager eventId={testEventId} />, { wrapper: Wrapper });
+        render(
+          <EventTagsManager 
+            eventId={testEventId} 
+            apiFactories={apiFactories}
+          />, 
+          { wrapper: Wrapper }
+        );
 
         // Wait for component to load
         await waitFor(() => {
@@ -212,25 +246,32 @@ describe('EventTagsManager Component - Database Integration', () => {
   });
 
   test('displays loading state appropriately', async () => {
-    await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user1',
-      async (client) => {
-        // Create a real test event inside the authenticated context
+    await CentralTestAuthUtils.executeWithSpecificAPI(
+      'events',
+      async (eventsAPI, { client, user }) => {
+        // Create a real test event with authenticated API
         const testEvent = {
           title: `Loading Test Event ${Date.now()}`,
           description: 'Event for loading state testing',
           start_time: new Date(Date.now() + 86400000).toISOString(),
           end_time: new Date(Date.now() + 90000000).toISOString(),
           is_virtual: true,
-          is_paid: false
+          is_paid: false,
+          host_id: user.id
         };
 
-        const eventResult = await createEvent(testEvent as any);
+        const eventResult = await eventsAPI.createEvent(testEvent);
         expect(eventResult.data).toBeTruthy();
         testEventId = eventResult.data!.id;
 
         // Render component
-        render(<EventTagsManager eventId={testEventId} />, { wrapper: Wrapper });
+        render(
+          <EventTagsManager 
+            eventId={testEventId} 
+            apiFactories={apiFactories}
+          />, 
+          { wrapper: Wrapper }
+        );
 
         // The component should eventually load without showing permanent loading state
         await waitFor(() => {
@@ -247,11 +288,17 @@ describe('EventTagsManager Component - Database Integration', () => {
     // Test with an invalid event ID to see error handling
     const invalidEventId = 'invalid-uuid-format';
     
-    await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user1',
-      async (client) => {
+    await CentralTestAuthUtils.executeWithSpecificAPI(
+      'events',
+      async (eventsAPI, { client, user }) => {
         // Render component with invalid event ID
-        render(<EventTagsManager eventId={invalidEventId} />, { wrapper: Wrapper });
+        render(
+          <EventTagsManager 
+            eventId={invalidEventId} 
+            apiFactories={apiFactories}
+          />, 
+          { wrapper: Wrapper }
+        );
 
         // Wait for component to load
         await waitFor(() => {

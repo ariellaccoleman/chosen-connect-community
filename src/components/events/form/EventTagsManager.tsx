@@ -8,19 +8,31 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { logger } from "@/utils/logger";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiOperations } from "@/api/core/types";
+
+// Define the API factories interface for dependency injection
+interface ApiFactories {
+  eventApi?: ApiOperations<any>;
+  tagApi?: ApiOperations<any>;
+  tagAssignmentApi?: ApiOperations<any>;
+}
 
 interface EventTagsManagerProps {
   eventId: string;
+  // Optional API factories for testing/custom usage
+  apiFactories?: ApiFactories;
 }
 
-const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
+const EventTagsManager = ({ eventId, apiFactories }: EventTagsManagerProps) => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
 
   // Log component mounting for debugging
   React.useEffect(() => {
-    logger.info(`EventTagsManager mounted for event ${eventId}`);
-  }, [eventId]);
+    logger.info(`EventTagsManager mounted for event ${eventId}`, {
+      hasCustomApis: !!apiFactories
+    });
+  }, [eventId, apiFactories]);
 
   const handleTagSuccess = () => {
     toast.success("Tag added successfully to your event");
@@ -67,6 +79,7 @@ const EventTagsManager = ({ eventId }: EventTagsManagerProps) => {
           isEditing={true}
           onTagSuccess={handleTagSuccess}
           onTagError={handleTagError}
+          apiFactories={apiFactories}
         />
       </div>
     </div>

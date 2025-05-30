@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useEntityTags, useTagAssignmentMutations } from "@/hooks/tags/useTagFactoryHooks";
 import TagList from "./TagList";
@@ -9,6 +8,14 @@ import { EntityType } from "@/types/entityTypes";
 import { logger } from "@/utils/logger";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { ApiOperations } from "@/api/core/types";
+
+// Define the API factories interface for dependency injection
+interface ApiFactories {
+  eventApi?: ApiOperations<any>;
+  tagApi?: ApiOperations<any>;
+  tagAssignmentApi?: ApiOperations<any>;
+}
 
 interface EntityTagManagerProps {
   entityId: string;
@@ -19,6 +26,8 @@ interface EntityTagManagerProps {
   onTagSuccess?: () => void;
   onTagError?: (error: Error) => void;
   className?: string;
+  // Optional API factories for testing/custom usage
+  apiFactories?: ApiFactories;
 }
 
 const EntityTagManager = ({
@@ -29,11 +38,21 @@ const EntityTagManager = ({
   onFinishEditing,
   onTagSuccess,
   onTagError,
-  className = ""
+  className = "",
+  apiFactories
 }: EntityTagManagerProps) => {
   const queryClient = useQueryClient();
-  const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(entityId, entityType);
-  const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations();
+  
+  // Use injected API factories or default hooks
+  const { data: tagAssignmentsResponse, isLoading, isError, error, refetch } = useEntityTags(
+    entityId, 
+    entityType,
+    apiFactories?.tagAssignmentApi
+  );
+  
+  const { assignTag, removeTagAssignment, isAssigning, isRemoving } = useTagAssignmentMutations(
+    apiFactories?.tagAssignmentApi
+  );
   
   // Extract the actual assignments from the API response
   const tagAssignments = tagAssignmentsResponse || [];
@@ -45,9 +64,10 @@ const EntityTagManager = ({
       entityType,
       isAdmin,
       isEditing,
-      assignmentsCount: tagAssignments.length
+      assignmentsCount: tagAssignments.length,
+      hasCustomApis: !!apiFactories
     });
-  }, [entityId, entityType, isAdmin, isEditing, tagAssignments.length]);
+  }, [entityId, entityType, isAdmin, isEditing, tagAssignments.length, apiFactories]);
 
   // If there was an error loading the tags, show an error message with retry option
   if (isError) {
@@ -155,6 +175,7 @@ const EntityTagManager = ({
           onTagSelected={handleAddTag}
           isAdmin={isAdmin}
           entityId={entityId}
+          tagApi={apiFactories?.tagApi}
         />
         {isAssigning && <p className="text-sm text-muted-foreground mt-1">Adding tag...</p>}
       </div>
