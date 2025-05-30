@@ -1,7 +1,3 @@
-import { 
-  getSelectionTags, 
-  getFilterTags 
-} from "@/api/tags/getTagsApi"; 
 import { tagApi } from "@/api/tags/factory/tagApiFactory"; 
 import { Tag } from "./types";
 import { EntityType } from "@/types/entityTypes";
