@@ -202,11 +202,6 @@ export const resetTagApi = (client?: any) => {
   };
 };
 
-// DEPRECATED: Default exports - will be removed in next phase
-// These cause repositories to be created at import time with unauthenticated client
-export const tagApi = createExtendedTagApi(); // Use extended for backward compatibility
-export const tagAssignmentApi = createExtendedTagAssignmentApi(); // Use extended for backward compatibility
-
 // Factory functions for creating API instances (for testing and custom usage)
 export function createTagApiFactory(client?: any) {
   return createTagApi(client);
@@ -216,29 +211,9 @@ export function createTagAssignmentApiFactory(client?: any) {
   return createTagAssignmentApi(client);
 }
 
-// DEPRECATED: Simplified function exports - will be removed in next phase
-// These use the problematic default exports
-export const getAllTags = tagApi.getAll;
-export const getTagById = tagApi.getById;
-export const createTag = tagApi.create;
-export const updateTag = tagApi.update;
-export const deleteTag = tagApi.delete;
-export const findTagByName = (name: string) => tagApi.getAll({ filters: { name } });
-export const searchTags = tagApi.searchByName;
-export const findOrCreateTag = tagApi.findOrCreate;
-export const getTagsByEntityType = tagApi.getByEntityType;
-
-// Tag assignment function exports
-export const getTagAssignmentsForEntity = (entityId: string, entityType: EntityType) => 
-  tagAssignmentApi.getAll({ 
-    filters: { 
-      target_id: entityId, 
-      target_type: entityType 
-    } 
-  });
-
-export const createTagAssignment = tagAssignmentApi.createAssignment;
-export const deleteTagAssignment = tagAssignmentApi.delete;
+// Current exports - using extended APIs for backward compatibility
+export const tagApi = createExtendedTagApi();
+export const tagAssignmentApi = createExtendedTagAssignmentApi();
 
 // Re-export core operations for direct access if needed
 export { createTagCoreOperations } from './tagCoreOperations';

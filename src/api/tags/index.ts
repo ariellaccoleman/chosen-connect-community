@@ -15,20 +15,10 @@ export {
 
 // Export simplified function interface for direct usage (factory-based)
 export {
-  getAllTags,
-  getTagById,
   createTag,
   updateTag,
   deleteTag,
-  findTagByName,
-  searchTags,
   findOrCreateTag,
-  getTagsByEntityType,
-  getTagAssignmentsForEntity,
   createTagAssignment,
   deleteTagAssignment
 } from './factory/tagApiFactory';
-
-// Export legacy tagsApi functions for backward compatibility
-// These will be removed in a future version
-export * from './tagsApi';

@@ -320,32 +320,6 @@ export class TestClientFactory {
     return session.user;
   }
 
-  // Legacy methods for backward compatibility during migration
-  
-  /**
-   * @deprecated Use getUserClient() instead. This method will be removed after migration.
-   */
-  static async getSharedTestClient(): Promise<SupabaseClient<Database>> {
-    console.warn('⚠️ getSharedTestClient() is deprecated. Use getUserClient() with specific user credentials.');
-    // Return a basic anon client for backward compatibility
-    return this.getAnonClient();
-  }
-
-  /**
-   * @deprecated Use getUserClient() instead. This method will be removed after migration.
-   */
-  static async authenticateSharedClient(userEmail: string, userPassword: string): Promise<SupabaseClient<Database>> {
-    console.warn('⚠️ authenticateSharedClient() is deprecated. Use getUserClient() instead.');
-    return this.getUserClient(userEmail, userPassword);
-  }
-
-  /**
-   * @deprecated Use removeUserClient() or clearAllUserClients() instead.
-   */
-  static async signOutSharedClient(): Promise<void> {
-    console.warn('⚠️ signOutSharedClient() is deprecated. Use removeUserClient() or clearAllUserClients() instead.');
-  }
-
   /**
    * Get service role client for test data setup and cleanup
    * Service role key is now REQUIRED for all test operations
