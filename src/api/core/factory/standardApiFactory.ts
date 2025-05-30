@@ -56,20 +56,30 @@ export function createStandardApiFactory<
       const repoConfig = repository as RepositoryConfig<T>;
       
       if (repoConfig.enhanced) {
-        dataRepository = createEnhancedRepository<T>(
-          tableName as string, 
-          repoConfig.type === 'supabase' ? 'supabase' : 'mock',
-          repoConfig.initialData,
-          {
-            idField: options.idField,
-            defaultSelect: options.defaultSelect,
-            transformResponse: options.transformResponse,
-            transformRequest: options.transformRequest,
-            softDelete: options.softDelete,
-            enableLogging: repoConfig.enableLogging
-          },
-          providedClient // Pass the provided client to the enhanced repository
-        );
+        // Handle different repository types properly
+        if (repoConfig.type === 'supabase') {
+          dataRepository = createEnhancedRepository<T>(
+            tableName as string, 
+            'supabase',
+            repoConfig.initialData,
+            {
+              idField: options.idField,
+              defaultSelect: options.defaultSelect,
+              transformResponse: options.transformResponse,
+              transformRequest: options.transformRequest,
+              softDelete: options.softDelete,
+              enableLogging: repoConfig.enableLogging
+            },
+            providedClient // Pass the provided client to the enhanced repository
+          );
+        } else {
+          // For mock type, use a regular repository with initial data
+          dataRepository = createRepository<T>(
+            tableName as string,
+            { schema: 'public' },
+            providedClient
+          );
+        }
       } else {
         dataRepository = createRepository<T>(
           tableName as string, 
