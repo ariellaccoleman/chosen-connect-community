@@ -1,6 +1,5 @@
 
 import { Database } from "@/integrations/supabase/types";
-import { ApiOperations } from "../types";
 import { DataRepository } from "../repository/repositoryFactory";
 
 // Define a type for valid table names from the Database type
@@ -100,4 +99,62 @@ export interface ViewOperations<T, TId = string> {
   
   // View name for reference
   readonly viewName: string;
+}
+
+// Full API operations interface (includes all CRUD operations)
+export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> {
+  // Query operations
+  getAll: (params?: {
+    filters?: Record<string, any>;
+    search?: string;
+    searchColumns?: string[];
+    ascending?: boolean;
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  getById: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  getByIds: (ids: TId[]) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  // Mutation operations
+  create: (data: TCreate) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  update: (id: TId, data: TUpdate) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  delete: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  // Table name for reference
+  readonly tableName: string;
+}
+
+// Relationship API operations (excludes generic create, includes read/update/delete)
+export interface RelationshipApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> extends Omit<ApiOperations<T, TId, TCreate, TUpdate>, 'create'> {
+  // All operations except generic create
+  // Relationship-specific create methods would be added by extending classes
 }

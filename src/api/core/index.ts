@@ -10,7 +10,6 @@ export {
   createQueryOperations,
   createMutationOperations 
 } from './factory/operations';
-export * from './factory/types';
 
 // Repository pattern
 export * from './repository/index';
@@ -30,5 +29,17 @@ export {
 // API Client
 export * from './apiClient';
 
-// Types
-export * from './types';
+// Types - import specific types to avoid conflicts
+export type { 
+  TableNames, 
+  ViewNames,
+  TableRow,
+  ViewRow,
+  TableInsert,
+  TableUpdate,
+  TableColumnName,
+  ViewColumnName,
+  ApiFactoryOptions,
+  RelationshipFactoryOptions,
+  ViewFactoryOptions
+} from './factory/types';

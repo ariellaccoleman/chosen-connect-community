@@ -1,6 +1,6 @@
 
 import { DataRepository, ViewRepository } from "../repository";
-import { TableNames, ViewNames } from "./types";
+import { TableNames, ViewNames, ApiFactoryOptions, ViewOperations, ApiOperations, RelationshipApiOperations } from "./types";
 
 /**
  * Repository configuration

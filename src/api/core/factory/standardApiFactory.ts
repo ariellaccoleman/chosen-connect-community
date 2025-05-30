@@ -58,7 +58,7 @@ export function createStandardApiFactory<
       if (repoConfig.enhanced) {
         dataRepository = createEnhancedRepository<T>(
           tableName as string, 
-          repoConfig.type,
+          repoConfig.type === 'supabase' ? 'supabase' : 'mock',
           repoConfig.initialData,
           {
             idField: options.idField,
