@@ -1,4 +1,3 @@
-
 import { createRepository } from '@/api/core/repository/repositoryFactory';
 import { TestClientFactory } from '@/integrations/supabase/testClient';
 import { CentralTestAuthUtils } from '../../testing/CentralTestAuthUtils';
@@ -24,7 +23,7 @@ describe('Repository Pattern - Database Integration', () => {
   describe('Real Database Repository', () => {
     test('creates repository with real database connection', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           expect(repo.tableName).toBe('profiles');
@@ -34,7 +33,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('select query works with execute on real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           const result = await repo.select().execute();
@@ -51,7 +50,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('filtering with eq works with real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -75,7 +74,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('single returns first matching item from real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -102,7 +101,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('maybeSingle returns null when no match in real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           const result = await repo.select().eq('id', 'non-existent-uuid-12345').maybeSingle();
@@ -119,7 +118,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('insert adds new entity to real database', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           const newProfile = { 
@@ -146,7 +145,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('update modifies entity in real database', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -183,7 +182,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('delete removes entity from real database', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -221,7 +220,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('ordering works with real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -247,7 +246,7 @@ describe('Repository Pattern - Database Integration', () => {
     
     test('pagination works with real data', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           
@@ -284,7 +283,7 @@ describe('Repository Pattern - Database Integration', () => {
   describe('Repository Factory', () => {
     test('creates repository with authenticated client', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           expect(repo.tableName).toBe('profiles');
@@ -296,7 +295,7 @@ describe('Repository Pattern - Database Integration', () => {
   describe('Repository Error Handling', () => {
     test('handles database constraint violations gracefully', async () => {
       await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-        'user3',
+        'user2',
         async (client) => {
           const repo = createRepository<TestProfile>('profiles', {}, client);
           

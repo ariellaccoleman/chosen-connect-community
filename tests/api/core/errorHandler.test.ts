@@ -72,7 +72,7 @@ describe('API Error Handler - Database Integration', () => {
   test('handleApiError handles real PostgrestError from database', async () => {
     // Use authenticated API to trigger a real database error
     const result = await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user3',
+      'user2',
       async (client) => {
         try {
           // Try to insert invalid data to trigger a real PostgrestError
@@ -151,9 +151,9 @@ describe('API Error Handler - Database Integration', () => {
   });
 
   test('handleApiError with real database permission error', async () => {
-    // Test with unauthenticated client to trigger permission error
+    // Test with authenticated client to check permission handling
     const result = await CentralTestAuthUtils.executeWithAuthenticatedAPI(
-      'user3',
+      'user2',
       async (client) => {
         try {
           // Try to access a table that might have RLS restrictions

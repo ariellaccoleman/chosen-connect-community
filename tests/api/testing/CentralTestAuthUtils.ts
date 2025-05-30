@@ -1,6 +1,6 @@
 
 import { TestClientFactory } from '@/integrations/supabase/testClient';
-import { TEST_USER_CONFIG } from '../../utils/persistentTestUsers';
+import { PERSISTENT_TEST_USERS } from '../../utils/persistentTestUsers';
 
 /**
  * Centralized test authentication utilities for database integration tests
@@ -14,10 +14,10 @@ export class CentralTestAuthUtils {
    * @returns Result of the test function
    */
   static async executeWithAuthenticatedAPI<T>(
-    userKey: keyof typeof TEST_USER_CONFIG.users,
+    userKey: keyof typeof PERSISTENT_TEST_USERS,
     testFunction: (client: any) => Promise<T>
   ): Promise<T> {
-    const userConfig = TEST_USER_CONFIG.users[userKey];
+    const userConfig = PERSISTENT_TEST_USERS[userKey];
     if (!userConfig) {
       throw new Error(`User configuration not found for key: ${userKey}`);
     }
@@ -37,8 +37,8 @@ export class CentralTestAuthUtils {
    * @param userKey - The user key
    * @returns The authenticated user object
    */
-  static async getAuthenticatedUser(userKey: keyof typeof TEST_USER_CONFIG.users) {
-    const userConfig = TEST_USER_CONFIG.users[userKey];
+  static async getAuthenticatedUser(userKey: keyof typeof PERSISTENT_TEST_USERS) {
+    const userConfig = PERSISTENT_TEST_USERS[userKey];
     if (!userConfig) {
       throw new Error(`User configuration not found for key: ${userKey}`);
     }
