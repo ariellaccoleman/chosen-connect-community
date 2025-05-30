@@ -135,7 +135,8 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1
+                  page: Math.floor(offset / actualLimit) + 1,
+                  includeCount: true
                 });
 
                 if (profilesResult.error) {
@@ -144,7 +145,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (profilesResult.data || []).map(profileToEntity);
-                count = profilesResult.data?.length || 0;
+                count = (profilesResult as any).totalCount || 0;
                 break;
 
               case EntityType.ORGANIZATION:
@@ -164,7 +165,8 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1
+                  page: Math.floor(offset / actualLimit) + 1,
+                  includeCount: true
                 });
 
                 if (orgsResult.error) {
@@ -173,7 +175,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (orgsResult.data || []).map(organizationToEntity);
-                count = orgsResult.data?.length || 0;
+                count = (orgsResult as any).totalCount || 0;
                 break;
 
               case EntityType.EVENT:
@@ -193,7 +195,8 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1
+                  page: Math.floor(offset / actualLimit) + 1,
+                  includeCount: true
                 });
 
                 if (eventsResult.error) {
@@ -202,7 +205,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 }
 
                 entities = (eventsResult.data || []).map(eventToEntity);
-                count = eventsResult.data?.length || 0;
+                count = (eventsResult as any).totalCount || 0;
                 break;
             }
 

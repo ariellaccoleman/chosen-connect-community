@@ -1,8 +1,7 @@
-
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
-import { ApiResponse, createSuccessResponse, createErrorResponse } from "../../errorHandler";
+import { ApiResponse, ApiResponseWithCount, createSuccessResponse, createErrorResponse } from "../../errorHandler";
 import { apiClient } from "../../apiClient";
 
 /**
@@ -54,7 +53,11 @@ export function createQueryOperations<
       limit?: number;
       offset?: number;
       select?: string;
-    } = {}): Promise<ApiResponse<T[]>> {
+      includeCount?: boolean;
+      page?: number;
+      sortBy?: string;
+      sortDirection?: 'asc' | 'desc';
+    } = {}): Promise<ApiResponse<T[]> | ApiResponseWithCount<T[]>> {
       try {
         const {
           filters = {},
@@ -64,8 +67,19 @@ export function createQueryOperations<
           ascending = false,
           limit,
           offset,
-          select = defaultSelect
+          select = defaultSelect,
+          includeCount = false,
+          page,
+          sortBy,
+          sortDirection = 'desc'
         } = queryOptions;
+
+        // Calculate offset from page if provided
+        const calculatedOffset = page && limit ? (page - 1) * limit : offset;
+        
+        // Use sortBy and sortDirection if provided, otherwise fall back to orderBy and ascending
+        const finalOrderBy = sortBy || orderBy;
+        const finalAscending = sortDirection === 'asc' ? true : (ascending || false);
 
         // Use repository if provided, otherwise use apiClient with optional client injection
         if (repository) {
@@ -89,11 +103,11 @@ export function createQueryOperations<
           }
 
           // Apply ordering
-          query = query.order(orderBy, { ascending });
+          query = query.order(finalOrderBy, { ascending: finalAscending });
 
           // Apply pagination
           if (limit !== undefined) {
-            const from = offset || 0;
+            const from = calculatedOffset || 0;
             const to = from + limit - 1;
             query = query.range(from, to);
           }
@@ -105,13 +119,44 @@ export function createQueryOperations<
           const transformedData = Array.isArray(result.data) 
             ? result.data.map(transformResponse)
             : [];
+
+          // If count is requested, make a separate count query
+          if (includeCount) {
+            let countQuery = repository.select('*', { count: 'exact', head: true });
+            
+            // Apply the same filters for count
+            Object.entries(filters).forEach(([key, value]) => {
+              if (value !== undefined && value !== null) {
+                if (Array.isArray(value)) {
+                  countQuery = countQuery.in(key, value);
+                } else {
+                  countQuery = countQuery.eq(key, value);
+                }
+              }
+            });
+
+            // Apply search for count
+            if (search && searchColumns.length > 0) {
+              countQuery = countQuery.ilike(searchColumns[0], `%${search}%`);
+            }
+
+            const countResult = await countQuery.execute();
+            const totalCount = countResult.count || 0;
+
+            return {
+              data: transformedData,
+              totalCount,
+              error: null,
+              status: 'success'
+            };
+          }
             
           return createSuccessResponse(transformedData);
         }
 
         // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
-          let query = client.from(tableName).select(select);
+          let query = client.from(tableName).select(select, includeCount ? { count: 'exact' } : {});
 
           // Apply filters
           Object.entries(filters).forEach(([key, value]) => {
@@ -131,26 +176,43 @@ export function createQueryOperations<
           }
 
           // Apply ordering
-          query = query.order(orderBy, { ascending });
+          query = query.order(finalOrderBy, { ascending: finalAscending });
 
           // Apply pagination
           if (limit !== undefined) {
-            const from = offset || 0;
+            const from = calculatedOffset || 0;
             const to = from + limit - 1;
             query = query.range(from, to);
           }
 
-          const { data, error } = await query;
+          const { data, error, count } = await query;
           
           if (error) throw error;
           
           const transformedData = Array.isArray(data) 
             ? data.map(transformResponse)
             : [];
+
+          if (includeCount) {
+            return {
+              data: transformedData,
+              totalCount: count || 0,
+              error: null,
+              status: 'success'
+            };
+          }
             
           return createSuccessResponse(transformedData);
         }, providedClient);
       } catch (error) {
+        if (includeCount) {
+          return {
+            data: null,
+            totalCount: 0,
+            error: error as any,
+            status: 'error'
+          };
+        }
         return createErrorResponse(error);
       }
     },
