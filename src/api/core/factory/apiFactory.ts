@@ -1,4 +1,3 @@
-
 import { ApiOperations, RelationshipApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
 import { createBatchOperations } from "./operations/batchOperations";
@@ -178,16 +177,8 @@ export function createApiFactory<
   // Add batch operations if requested
   if (useBatchOperations) {
     const batchOps = createBatchOperations<T, TId, TCreate, TUpdate, Table>(
-      entity,
-      tableName,
-      {
-        idField: options.idField,
-        defaultSelect: options.defaultSelect,
-        transformResponse: options.transformResponse,
-        transformRequest: options.transformRequest,
-        repository: dataRepository // Use the real repository instead of wrapper
-      },
-      providedClient
+      dataRepository,
+      entity
     );
     Object.assign(result, batchOps);
   }
