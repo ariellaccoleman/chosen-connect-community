@@ -101,7 +101,7 @@ export const organizationRelationshipsApi = {
     relationshipId: string,
     relationshipData: Partial<ProfileOrganizationRelationship>,
     providedClient?: any
-  ): Promise<ApiResponse<boolean>> {
+  ): Promise<ApiResponse<ProfileOrganizationRelationship>> {
     logger.info(`API call: updateOrganizationRelationship for ID: ${relationshipId}`, relationshipData);
     
     return apiClient.query(async (client) => {
@@ -122,14 +122,16 @@ export const organizationRelationshipsApi = {
         throw new Error(`Relationship with ID ${relationshipId} not found`);
       }
       
-      const { error } = await client
+      const { data: updatedRelationship, error } = await client
         .from('org_relationships')
         .update({
           connection_type: relationshipData.connection_type,
           department: relationshipData.department,
           notes: relationshipData.notes
         })
-        .eq('id', relationshipId);
+        .eq('id', relationshipId)
+        .select()
+        .single();
       
       if (error) {
         logger.error(`Error updating organization relationship ${relationshipId}:`, error);
@@ -137,7 +139,7 @@ export const organizationRelationshipsApi = {
       }
       
       logger.info(`Successfully updated organization relationship ${relationshipId}`);
-      return createSuccessResponse(true);
+      return createSuccessResponse(updatedRelationship as ProfileOrganizationRelationship);
     }, providedClient);
   },
   
