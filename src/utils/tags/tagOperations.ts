@@ -1,3 +1,4 @@
+
 import { tagApi } from "@/api/tags/factory/tagApiFactory"; 
 import { Tag } from "./types";
 import { EntityType } from "@/types/entityTypes";
@@ -57,15 +58,15 @@ export const fetchSelectionTags = async (options: {
     
     logger.debug(`fetchSelectionTags: Getting tags for target type: ${validOptions.targetType || 'all'}`);
     
-    // Use the new view-based API
-    const response = await getSelectionTags(validOptions);
-    if (response.status !== 'success' || !response.data) {
+    // Use factory-based API instead of undefined getSelectionTags
+    const response = await tagApi.getByEntityType(validOptions.targetType as EntityType);
+    if (response.error) {
       logger.error("Error fetching selection tags:", response.error);
       return [];
     }
     
-    logger.debug(`fetchSelectionTags: Found ${response.data.length} tags`);
-    return response.data;
+    logger.debug(`fetchSelectionTags: Found ${response.data?.length || 0} tags`);
+    return response.data || [];
   } catch (error) {
     logger.error("Error in fetchSelectionTags:", error);
     return [];
