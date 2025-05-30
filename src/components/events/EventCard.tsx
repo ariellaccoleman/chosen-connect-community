@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, MapPin, Video, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { Entity } from "@/types/entity";
-import TagList from "@/components/tags/TagList";
+import SimpleTagList from "@/components/tags/SimpleTagList";
 import EventCardRegistrationButton from "./EventCardRegistrationButton";
 
 interface EventCardProps {
@@ -43,11 +43,6 @@ const EventCard = ({ event, onViewEvent }: EventCardProps) => {
     return null;
   };
 
-  // Extract Tag objects from TagAssignment array
-  const tags = event.tags
-    ?.filter(tagAssignment => tagAssignment.tag)
-    .map(tagAssignment => tagAssignment.tag!) || [];
-
   return (
     <div 
       className="relative bg-gray-50 border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
@@ -78,9 +73,9 @@ const EventCard = ({ event, onViewEvent }: EventCardProps) => {
       
       {renderLocationInfo(event)}
       
-      {tags.length > 0 && (
+      {event.tags && event.tags.length > 0 && (
         <div className="mt-2 mb-2">
-          <TagList tags={tags} />
+          <SimpleTagList tags={event.tags} />
         </div>
       )}
       

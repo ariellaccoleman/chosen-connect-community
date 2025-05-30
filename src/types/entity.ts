@@ -1,6 +1,6 @@
 
 import { EntityType } from "./entityTypes";
-import { TagAssignment } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags/types";
 import { Location } from "./location";
 
 /** 
@@ -54,9 +54,9 @@ export interface Entity {
   updated_at?: string;
   
   /**
-   * Tags associated with this entity
+   * Tags associated with this entity - now Tag[] instead of TagAssignment[]
    */
-  tags?: TagAssignment[];
+  tags?: Tag[];
 }
 
 /**
