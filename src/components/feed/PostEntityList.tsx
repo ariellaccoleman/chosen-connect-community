@@ -43,18 +43,28 @@ const PostEntityList = ({
   }
 
   // Convert entities back to Post format for PostCard
-  const posts: Post[] = postEntities.map(entity => ({
-    id: entity.id,
-    content: entity.description || '',
-    author_id: (entity as any).author_id || '',
-    has_media: (entity as any).has_media || false,
-    created_at: entity.created_at || '',
-    updated_at: entity.updated_at || '',
-    author: (entity as any).author,
-    likes_count: (entity as any).likes_count,
-    comments_count: (entity as any).comments_count,
-    tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
-  }));
+  const posts: Post[] = postEntities.map(entity => {
+    // Get the raw data from the entity
+    const rawData = (entity as any).rawData || entity;
+    
+    return {
+      id: entity.id,
+      content: entity.description || rawData.content || '',
+      author_id: rawData.author_id || '',
+      has_media: rawData.has_media || false,
+      created_at: entity.created_at || rawData.created_at || '',
+      updated_at: entity.updated_at || rawData.updated_at || '',
+      author: rawData.author || {
+        id: rawData.author_id || '',
+        name: rawData.author?.name || 'Unknown',
+        avatar: rawData.author?.avatar_url,
+        title: rawData.author?.headline
+      },
+      likes_count: rawData.likes_count || 0,
+      comments_count: rawData.comments_count || 0,
+      tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
+    };
+  });
 
   return (
     <div className="space-y-4">
