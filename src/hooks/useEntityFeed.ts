@@ -46,8 +46,7 @@ export const useEntityFeed = ({
         
         // Get all entities tagged with this tag ID using the API
         const tagAssignmentsResponse = await tagAssignmentApi.getAll({
-          filters: { tag_id: tagId },
-          select: 'target_id, target_type'
+          filters: { tag_id: tagId }
         });
           
         if (tagAssignmentsResponse.error) {
@@ -124,13 +123,11 @@ export const useEntityFeed = ({
                   logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Use the profile API
+                // Use the profile API with search
                 const profilesResponse = await profileApi.getAll({
                   filters: peopleFilters,
-                  search: search ? { 
-                    query: search,
-                    columns: ['first_name', 'last_name', 'bio', 'headline', 'email']
-                  } : undefined,
+                  search: search || undefined,
+                  searchColumns: ['first_name', 'last_name', 'bio', 'headline', 'email'],
                   limit
                 });
                   
@@ -155,13 +152,11 @@ export const useEntityFeed = ({
                   logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Use the organization API
+                // Use the organization API with search
                 const orgsResponse = await organizationApi.getAll({
                   filters: orgFilters,
-                  search: search ? {
-                    query: search,
-                    columns: ['name', 'description']
-                  } : undefined,
+                  search: search || undefined,
+                  searchColumns: ['name', 'description'],
                   limit
                 });
                   
@@ -186,13 +181,11 @@ export const useEntityFeed = ({
                   logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
                 
-                // Use the event API
+                // Use the event API with search
                 const eventsResponse = await eventApi.getAll({
                   filters: eventFilters,
-                  search: search ? {
-                    query: search,
-                    columns: ['title', 'description']
-                  } : undefined,
+                  search: search || undefined,
+                  searchColumns: ['title', 'description'],
                   limit
                 });
                   
@@ -255,8 +248,7 @@ export const useEntityFeed = ({
               filters: {
                 target_id: entity.id,
                 target_type: entity.entityType
-              },
-              select: '*,tag:tags(*)'
+              }
             });
               
             if (tagAssignmentsResponse.error) {

@@ -9,24 +9,21 @@ import { TagEntityType } from "@/utils/tags/types";
  */
 export const getTagEntityTypes = async (tagId: string): Promise<string[]> => {
   try {
-    // Use the tag API to get tag entity type associations
-    const response = await tagApi.getAll({
-      filters: { id: tagId },
-      select: 'id,tag_entity_types(entity_type)'
+    // Get tag assignments for this tag to determine entity types
+    const response = await tagAssignmentApi.getAll({
+      filters: { tag_id: tagId }
     });
     
     if (response.error) {
-      logger.error("Error fetching tag entity types:", response.error);
+      logger.error("Error fetching tag assignments:", response.error);
       return [];
     }
     
-    const tag = response.data?.[0];
-    if (!tag || !tag.tag_entity_types) {
-      return [];
-    }
+    const assignments = response.data || [];
     
-    // Extract entity types from the related data
-    return tag.tag_entity_types.map((item: any) => item.entity_type);
+    // Extract unique entity types from assignments
+    const entityTypes = [...new Set(assignments.map(assignment => assignment.target_type))];
+    return entityTypes.filter(Boolean);
   } catch (error) {
     logger.error("Error in getTagEntityTypes:", error);
     return [];
@@ -51,10 +48,9 @@ export const isTagAssociatedWithEntityType = async (
  */
 export const getTagEntityTypeAssociations = async (tagId: string): Promise<TagEntityType[]> => {
   try {
-    // Use the tag API to get tag entity type associations
-    const response = await tagApi.getAll({
-      filters: { id: tagId },
-      select: 'id,tag_entity_types(*)'
+    // Get tag assignments for this tag with tag details
+    const response = await tagAssignmentApi.getAll({
+      filters: { tag_id: tagId }
     });
     
     if (response.error) {
@@ -62,12 +58,16 @@ export const getTagEntityTypeAssociations = async (tagId: string): Promise<TagEn
       return [];
     }
     
-    const tag = response.data?.[0];
-    if (!tag || !tag.tag_entity_types) {
-      return [];
-    }
+    const assignments = response.data || [];
     
-    return tag.tag_entity_types as TagEntityType[];
+    // Convert assignments to TagEntityType format
+    return assignments.map(assignment => ({
+      id: assignment.id,
+      tag_id: assignment.tag_id,
+      entity_type: assignment.target_type,
+      created_at: assignment.created_at || '',
+      updated_at: assignment.updated_at || ''
+    }));
   } catch (error) {
     logger.error("Error in getTagEntityTypeAssociations:", error);
     return [];

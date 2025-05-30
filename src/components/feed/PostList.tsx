@@ -1,9 +1,10 @@
+
 import React, { useEffect } from "react";
 import PostCard from "./PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePosts } from "@/hooks/posts";
 import { logger } from "@/utils/logger";
-import { fixTagEntityAssociations } from "@/utils/tags/fixTagEntityTypes";
+import { fixTagEntityAssociations } from "@/api/tags/tagEntityTypeFixes";
 import { EntityType } from "@/types/entityTypes";
 import { toast } from "sonner";
 

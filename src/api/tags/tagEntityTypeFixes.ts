@@ -13,8 +13,7 @@ export const fixTagEntityAssociations = async (entityType: EntityType): Promise<
     
     // Get all tag assignments for this entity type using the API
     const response = await tagAssignmentApi.getAll({
-      filters: { target_type: entityType },
-      select: 'tag_id'
+      filters: { target_type: entityType }
     });
     
     if (response.error) {
@@ -44,8 +43,7 @@ export const fixTagEntityAssociations = async (entityType: EntityType): Promise<
           filters: { 
             tag_id: tagId,
             target_type: entityType 
-          },
-          select: 'id'
+          }
         });
         
         if (existingResponse.error) {

@@ -15,8 +15,8 @@ export const createOrganizations = async (count: number, locations: any[]) => {
   for (let i = 0; i < count; i++) {
     const name = faker.company.name();
     const description = faker.company.catchPhrase();
-    const website_url = faker.internet.url({ protocol: 'https' });
-    const location_id = locations.length > 0 ? 
+    const websiteUrl = faker.internet.url({ protocol: 'https' });
+    const locationId = locations.length > 0 ? 
       locations[Math.floor(Math.random() * locations.length)].id : 
       null;
 
@@ -24,8 +24,8 @@ export const createOrganizations = async (count: number, locations: any[]) => {
       const response = await organizationApi.create({
         name,
         description,
-        website_url,
-        location_id
+        websiteUrl,
+        locationId
       });
 
       if (response.error) {
