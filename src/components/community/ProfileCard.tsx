@@ -25,10 +25,13 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
     // Only log detailed information for the specific profile we're interested in
     if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
       logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
-        tags: profile.tags?.map(t => ({
-          id: t.id,
-          tag_id: t.tag_id,
-          tag_name: t.tag ? t.tag.name : 'undefined'
+        profileTags: profile.tags,
+        tagStructure: profile.tags?.map(t => ({
+          rawTag: t,
+          hasId: !!t?.id,
+          hasName: !!t?.name,
+          name: t?.name,
+          type: typeof t
         }))
       });
     }
@@ -36,17 +39,19 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
 
   // Convert the new tags structure to the format expected by TagList
   const tagAssignments = profile.tags && Array.isArray(profile.tags) 
-    ? profile.tags.map((tag: any) => ({
-        id: `${profile.id}-${tag.id}`, // Create a unique assignment ID
-        tag_id: tag.id,
-        target_id: profile.id,
-        target_type: 'person',
-        tag: {
-          id: tag.id,
-          name: tag.name,
-          description: tag.description
-        }
-      }))
+    ? profile.tags
+        .filter((tag: any) => tag && typeof tag === 'object' && tag.id && tag.name)
+        .map((tag: any) => ({
+          id: `${profile.id}-${tag.id}`, // Create a unique assignment ID
+          tag_id: tag.id,
+          target_id: profile.id,
+          target_type: 'person',
+          tag: {
+            id: tag.id,
+            name: tag.name,
+            description: tag.description || null
+          }
+        }))
     : [];
 
   // Check if profile has tags to determine layout
