@@ -9,7 +9,13 @@ export * from './useTagFactoryHooks';
 // Export existing hooks for specific use cases
 export * from './useTagQuery';
 export * from './useTagAssignmentRelationshipHooks';
-export * from './useTagAssignments';
+
+// Export specific hooks from useTagAssignments, excluding useTagAssignmentMutations to avoid conflict
+export { 
+  useEntityTagAssignments,
+  useTagAssignmentsByTag,
+  useTagAssignmentsByEntity 
+} from './useTagAssignments';
 
 // Note: useTagCrudMutations and useTagAssignmentMutations are already exported from useTagFactoryHooks
 // Removed duplicate exports from useTagMutations to resolve ambiguity
