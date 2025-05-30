@@ -6,3 +6,6 @@
  */
 
 export * from './postsApiFactory';
+
+// Explicitly re-export the reset function with its unique name
+export { resetPostsApi } from './postsApiFactory';

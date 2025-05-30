@@ -19,3 +19,6 @@ export { resetChatMessageApi } from './chat/chatMessageApiFactory';
 
 // Import and re-export test functionality
 export * from './tests';
+
+// Explicitly re-export reset functions with unique names
+export { resetPostsApi } from './posts/postsApiFactory';

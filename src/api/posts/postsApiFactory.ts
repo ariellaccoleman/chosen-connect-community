@@ -1,3 +1,4 @@
+
 import { createApiFactory } from "@/api/core/factory";
 import { extendApiOperations } from "@/api/core/apiExtension";
 import { supabase } from "@/integrations/supabase/client";
@@ -359,7 +360,7 @@ export const postsApi = createExtendedPostsApi();
 /**
  * Reset posts API with authenticated client
  */
-export const resetApi = (client?: any) => {
+export const resetPostsApi = (client?: any) => {
   const newPostsApi = createExtendedPostsApi(client);
   const newCommentsApi = createExtendedCommentsApi(client);
   const newPostLikesApi = createExtendedPostLikesApi(client);
