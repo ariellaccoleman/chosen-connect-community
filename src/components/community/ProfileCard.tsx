@@ -8,8 +8,6 @@ import { Link } from "react-router-dom";
 import TagList from "../tags/TagList";
 import { APP_ROUTES } from "@/config/routes";
 import { generatePath } from 'react-router-dom';
-import { logger } from '@/utils/logger';
-import { useEffect } from "react";
 
 interface ProfileCardProps {
   profile: ProfileWithDetails;
@@ -19,23 +17,6 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Generate the correct profile URL using the APP_ROUTES constant and ID parameter 
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
   const profileUrl = generatePath(APP_ROUTES.PROFILE_VIEW, { profileId: profile.id });
-  
-  // Debug profile tags - enhanced to show more details
-  useEffect(() => {
-    // Only log detailed information for the specific profile we're interested in
-    if (profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85") {
-      logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
-        profileTags: profile.tags,
-        tagStructure: profile.tags?.map(t => ({
-          rawTag: t,
-          hasId: !!t?.id,
-          hasName: !!t?.name,
-          name: t?.name,
-          type: typeof t
-        }))
-      });
-    }
-  }, [profile]);
 
   // Convert the tag objects from people_with_tags view to TagAssignment format
   const tagAssignments = profile.tags && Array.isArray(profile.tags) 
