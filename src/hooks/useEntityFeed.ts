@@ -1,4 +1,3 @@
-
 import { useQuery } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -95,7 +94,8 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     search,
     isApproved,
     limit: actualLimit,
-    offset
+    offset,
+    currentPage // Include currentPage in query key to ensure proper cache invalidation
   }];
 
   const query = useQuery({
@@ -242,7 +242,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
           entities: allEntities,
           totalCount,
           hasNextPage,
-          currentPage
+          currentPage // Return the currentPage that was requested, not a computed one
         };
 
       } catch (error) {
@@ -251,13 +251,15 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
       }
     },
     staleTime: 1000 * 60 * 2, // 2 minutes
+    // Keep previous data while loading new page to prevent flickering
+    keepPreviousData: true
   });
 
   return {
     entities: query.data?.entities || [],
     totalCount: query.data?.totalCount || 0,
     hasNextPage: query.data?.hasNextPage || false,
-    currentPage: query.data?.currentPage || currentPage,
+    currentPage: currentPage, // Always return the currentPage from params, not from query data
     isLoading: query.isLoading,
     error: query.error
   };
