@@ -72,14 +72,16 @@ export function useSelectionTags(entityType?: EntityType) {
         if (response.error) {
           throw new Error(response.error.message || 'Failed to fetch tags for entity type');
         }
-        return response.data || [];
+        // Return the data directly, but wrap it in the expected format
+        return { data: response.data || [], error: null, status: 'success' as const };
       } else {
         // Get all tags when no entity type is specified
         const response = await tagApi.getAll();
         if (response.error) {
           throw new Error(response.error.message || 'Failed to fetch all tags');
         }
-        return response.data || [];
+        // Return the data directly, but wrap it in the expected format
+        return { data: response.data || [], error: null, status: 'success' as const };
       }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
