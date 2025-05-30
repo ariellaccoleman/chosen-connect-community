@@ -29,7 +29,7 @@ export const useEntityFeed = ({
   limit = 10,
   filterByUserId = null,
   search = "",
-  isApproved = true,
+  isApproved,
 }: UseEntityFeedOptions) => {
   // This query fetches entities based on the provided entityTypes
   const { data: entitiesData, isLoading, error } = useQuery({
@@ -42,6 +42,7 @@ export const useEntityFeed = ({
       // If tagId is provided, get all tagged entity IDs first
       let taggedEntityIds: Record<string, string[]> = {};
       
+      // Only fetch tag assignments if we have a specific tag to filter by
       if (tagId) {
         logger.debug(`EntityFeed: Fetching tagged entities for tagId=${tagId}`);
         
@@ -111,15 +112,13 @@ export const useEntityFeed = ({
                   peopleFilters.id = filterByUserId;
                 }
                 
-                // Apply approved filter for profiles
+                // Apply approved filter for profiles only if explicitly set
                 if (isApproved !== undefined) {
                   peopleFilters.is_approved = isApproved;
                 }
                 
-                // Apply tag filtering if we have tagged person IDs
+                // Apply tag filtering ONLY if we have a specific tag filter
                 if (tagId && taggedEntityIds[targetType]?.length) {
-                  // For API factory, we'll need to handle this differently
-                  // since we can't directly filter by array of IDs in the simple filter
                   peopleFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
@@ -146,7 +145,7 @@ export const useEntityFeed = ({
                 // Build filters for organizations
                 const orgFilters: any = {};
                 
-                // Apply tag filtering if we have tagged organization IDs
+                // Apply tag filtering ONLY if we have a specific tag filter
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   orgFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
@@ -174,7 +173,7 @@ export const useEntityFeed = ({
                 // Build filters for events
                 const eventFilters: any = {};
                 
-                // Apply tag filtering if we have tagged event IDs
+                // Apply tag filtering ONLY if we have a specific tag filter
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   eventFilters.id = taggedEntityIds[targetType];
                   logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
@@ -209,7 +208,7 @@ export const useEntityFeed = ({
                 
                 let postItems = postsResponse.data || [];
                 
-                // Apply tag filtering if we have tagged post IDs
+                // Apply tag filtering ONLY if we have a specific tag filter
                 if (tagId && taggedEntityIds[targetType]?.length) {
                   postItems = postItems.filter(post => taggedEntityIds[targetType].includes(post.id));
                   logger.debug(`EntityFeed: Filtered POST entities by ${taggedEntityIds[targetType].length} tagged IDs, result: ${postItems.length} posts`);
