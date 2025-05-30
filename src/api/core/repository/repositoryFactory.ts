@@ -1,6 +1,6 @@
 
 import { BaseRepository } from './BaseRepository';
-import { createSupabaseRepository } from './SupabaseRepository';
+import { SupabaseRepository } from './SupabaseRepository';
 import { supabase } from '@/integrations/supabase/client';
 import { ViewRepository, createViewRepository } from './ViewRepository';
 
@@ -39,7 +39,7 @@ export function createRepository<T>(
     isProvidedClient: !!providedClient
   });
   
-  return createSupabaseRepository<T>(tableName, clientToUse, schema);
+  return new SupabaseRepository<T>(tableName, clientToUse, schema);
 }
 
 /**

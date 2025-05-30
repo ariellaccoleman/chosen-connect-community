@@ -70,19 +70,18 @@ export function createEnhancedRepository<T>(
   tableName: string,
   type: EnhancedRepositoryType = "supabase",
   initialData?: T[],
-  options: EnhancedRepositoryOptions<T> = {}
+  options: EnhancedRepositoryOptions<T> = {},
+  providedClient?: any
 ): BaseRepository<T> {
-  // Create base repository
-  let repository: BaseRepository<T>;
-  
   const schema = options.schema || 'public';
+  const clientToUse = providedClient || supabase;
   
-  // Initialize the repository (only Supabase supported now)
-  repository = new SupabaseRepository<T>(tableName, supabase, schema);
+  // Create base repository using the SupabaseRepository constructor directly
+  const repository = new SupabaseRepository<T>(tableName, clientToUse, schema);
   
   // Log repository creation in development
   if (process.env.NODE_ENV === "development" && options.enableLogging) {
-    logger.info(`Creating repository for table ${tableName}`, {
+    logger.info(`Creating enhanced repository for table ${tableName}`, {
       repositoryType: type,
       schema,
       options

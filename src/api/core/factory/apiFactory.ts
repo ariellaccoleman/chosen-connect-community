@@ -1,3 +1,4 @@
+
 import { ApiOperations, RelationshipApiOperations } from "../types";
 import { createBaseOperations } from "./baseOperations";
 import { createBatchOperations } from "./operations/batchOperations";
@@ -114,13 +115,14 @@ export function createApiFactory<
             transformRequest: options.transformRequest,
             softDelete: options.softDelete,
             enableLogging: repoConfig.enableLogging
-          }
+          },
+          providedClient // Pass the provided client to the enhanced repository
         );
       } else {
         dataRepository = createRepository<T>(
           tableName as string, 
           { schema: 'public' },
-          providedClient // Pass the provided client to the real repository
+          providedClient // Pass the provided client to the repository
         );
       }
     }
@@ -129,7 +131,7 @@ export function createApiFactory<
     dataRepository = createRepository<T>(
       tableName as string,
       { schema: 'public' },
-      providedClient // Pass the provided client to the real repository
+      providedClient // Pass the provided client to the repository
     );
   }
   
@@ -145,7 +147,7 @@ export function createApiFactory<
     tableName,
     {
       ...options,
-      repository: dataRepository // Use the real repository instead of wrapper
+      repository: dataRepository
     },
     providedClient
   );
@@ -167,7 +169,7 @@ export function createApiFactory<
         softDelete: options.softDelete,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: dataRepository // Use the real repository instead of wrapper
+        repository: dataRepository
       },
       providedClient
     );

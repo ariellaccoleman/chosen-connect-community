@@ -4,9 +4,7 @@ import {
   postsApiExtended as postsApi, 
   commentsApiExtended as commentsApi, 
   postLikesApiExtended as postLikesApi, 
-  commentLikesApiExtended as commentLikesApi,
-  getAllPosts,
-  getPostById
+  commentLikesApiExtended as commentLikesApi
 } from "@/api/posts";
 import { CreatePostRequest, CreateCommentRequest } from "@/types/post";
 import { toast } from "sonner";
@@ -24,7 +22,13 @@ const COMMENT_LIKES_KEY = "comment-likes";
 export const usePosts = () => {
   return useQuery({
     queryKey: [POSTS_KEY],
-    queryFn: () => postsApi.getPostsWithDetails()
+    queryFn: async () => {
+      const result = await postsApi.getPostsWithDetails();
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to fetch posts");
+      }
+      return result.data;
+    }
   });
 };
 
@@ -34,7 +38,13 @@ export const usePosts = () => {
 export const usePost = (postId: string) => {
   return useQuery({
     queryKey: [POST_KEY, postId],
-    queryFn: () => postsApi.getPostWithDetails(postId),
+    queryFn: async () => {
+      const result = await postsApi.getPostWithDetails(postId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to fetch post");
+      }
+      return result.data;
+    },
     enabled: !!postId
   });
 };
@@ -45,7 +55,13 @@ export const usePost = (postId: string) => {
 export const usePostComments = (postId: string, options = {}) => {
   return useQuery({
     queryKey: [COMMENTS_KEY, postId],
-    queryFn: () => commentsApi.getCommentsForPost(postId),
+    queryFn: async () => {
+      const result = await commentsApi.getCommentsForPost(postId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to fetch comments");
+      }
+      return result.data;
+    },
     enabled: !!postId,
     ...options
   });
@@ -57,7 +73,13 @@ export const usePostComments = (postId: string, options = {}) => {
 export const useHasLikedPost = (postId: string) => {
   return useQuery({
     queryKey: [POST_LIKES_KEY, 'has-liked', postId],
-    queryFn: () => postLikesApi.hasLiked(postId),
+    queryFn: async () => {
+      const result = await postLikesApi.hasLiked(postId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to check like status");
+      }
+      return result.data;
+    },
     enabled: !!postId
   });
 };
@@ -68,7 +90,13 @@ export const useHasLikedPost = (postId: string) => {
 export const useHasLikedComment = (commentId: string) => {
   return useQuery({
     queryKey: [COMMENT_LIKES_KEY, 'has-liked', commentId],
-    queryFn: () => commentLikesApi.hasLiked(commentId),
+    queryFn: async () => {
+      const result = await commentLikesApi.hasLiked(commentId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to check comment like status");
+      }
+      return result.data;
+    },
     enabled: !!commentId
   });
 };
@@ -80,7 +108,13 @@ export const useCreatePost = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: CreatePostRequest) => postsApi.createPostWithTags(data),
+    mutationFn: async (data: CreatePostRequest) => {
+      const result = await postsApi.createPostWithTags(data);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to create post");
+      }
+      return result.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [POSTS_KEY] });
       toast("Your post has been published");
@@ -98,7 +132,13 @@ export const useCreateComment = (postId: string) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (data: CreateCommentRequest) => commentsApi.createComment(data),
+    mutationFn: async (data: CreateCommentRequest) => {
+      const result = await commentsApi.createComment(data);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to create comment");
+      }
+      return result.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, postId] });
       queryClient.invalidateQueries({ queryKey: [POST_KEY, postId] });
@@ -118,7 +158,13 @@ export const useTogglePostLike = (postId: string) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => postLikesApi.toggleLike(postId),
+    mutationFn: async () => {
+      const result = await postLikesApi.toggleLike(postId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to toggle like");
+      }
+      return result.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [POST_LIKES_KEY, 'has-liked', postId] });
       queryClient.invalidateQueries({ queryKey: [POST_KEY, postId] });
@@ -137,7 +183,13 @@ export const useToggleCommentLike = (commentId: string, postId: string) => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: () => commentLikesApi.toggleLike(commentId),
+    mutationFn: async () => {
+      const result = await commentLikesApi.toggleLike(commentId);
+      if (result.error) {
+        throw new Error(result.error.message || "Failed to toggle comment like");
+      }
+      return result.data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [COMMENT_LIKES_KEY, 'has-liked', commentId] });
       queryClient.invalidateQueries({ queryKey: [COMMENTS_KEY, postId] });

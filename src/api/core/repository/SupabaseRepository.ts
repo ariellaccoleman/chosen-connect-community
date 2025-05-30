@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 import { RepositoryQuery, RepositoryResponse, RepositoryError } from './DataRepository';
 import { BaseRepository } from './BaseRepository';
@@ -468,11 +469,4 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   async execute(): Promise<RepositoryResponse<T[]>> {
     return createErrorResponse<T[]>(handleRepositoryError(this.error, this.context));
   }
-}
-
-/**
- * Create a Supabase repository for a specific table
- */
-export function createSupabaseRepository<T>(tableName: string, client?: any, schema: string = 'public'): SupabaseRepository<T> {
-  return new SupabaseRepository<T>(tableName, client, schema);
 }
