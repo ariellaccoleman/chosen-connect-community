@@ -1,25 +1,22 @@
 
 /**
- * Repository Testing Module
+ * Testing utilities - DEPRECATED
  * 
- * This module provides utilities for testing repositories with the new
- * simplified architecture using a dedicated test Supabase project
+ * Testing utilities have been moved to /tests/api/testing/
+ * This file remains for backwards compatibility but will be removed in a future version.
+ * 
+ * Please update your imports to use:
+ * import { CentralTestAuthUtils } from '../../../tests/api/testing/CentralTestAuthUtils';
  */
 
-// NEW: Simplified test utilities for dedicated test project (recommended)
-export * from './simplifiedTestUtils';
-
-// Secure test utilities (still available) - but rename TestUserFactory to avoid conflict
+// Legacy exports (deprecated - use /tests/api/testing/ instead)
 export { 
   SecureTestContext,
   createSecureTestContext,
   TestUserFactory as SecureTestUserFactory
 } from './secureTestUtils';
 
-// Legacy test repository utilities (deprecated)
-export * from './repositoryTestUtils';
-
-// Mock data generation
+// Mock data generation (moved to /tests/api/testing/)
 export * from './mockDataGenerator';
 
 // Comprehensive schema validation (for production project)
@@ -28,7 +25,7 @@ export * from './comprehensiveSchemaValidation';
 // Snapshot testing
 export * from './snapshotTesting';
 
-// Validation and performance testing
+// Validation and performance testing (moved to /tests/api/testing/)
 export * from './validationUtils';
 
 // Relationship testing
@@ -48,3 +45,6 @@ export {
 
 // Error types for enhanced error handling
 export * from './errorTypes';
+
+// Testing integration guide (documentation)
+// Note: TESTING_INTEGRATION_GUIDE.md moved to /tests/docs/
