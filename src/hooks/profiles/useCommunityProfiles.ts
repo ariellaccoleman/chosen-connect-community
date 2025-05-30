@@ -1,9 +1,8 @@
 
 import { useQuery } from '@tanstack/react-query';
-import { profileApi } from '@/api/profiles';
 import { ProfileWithDetails } from '@/types';
 import { logger } from '@/utils/logger';
-import { supabase } from '@/integrations/supabase/client';
+import { profileApi } from '@/api/profiles';
 
 interface CommunityProfilesParams {
   search?: string;
@@ -62,16 +61,23 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
       // Check tag assignments via direct query for verification
       if (response.data && response.data.length > 0) {
         try {
-          const { data: assignments, error } = await supabase
-            .from('entity_tag_assignments_view')
-            .select('*')
-            .eq('target_type', 'person')
-            .eq('target_id', targetProfileId);
+          const tagAssignmentsResponse = await profileApi.getAll({
+            query: `
+              id,
+              tag_assignments!inner(
+                tag_id,
+                tag:tags(name)
+              )
+            `,
+            filters: {
+              id: targetProfileId
+            }
+          });
           
-          if (error) {
-            logger.error('Error fetching tag assignments for target profile:', error);
+          if (tagAssignmentsResponse.error) {
+            logger.error('Error fetching tag assignments for target profile:', tagAssignmentsResponse.error);
           } else {
-            logger.debug(`Tag assignments for target profile (direct query):`, assignments);
+            logger.debug(`Tag assignments for target profile (direct query):`, tagAssignmentsResponse.data);
           }
         } catch (e) {
           logger.error('Exception while fetching tag assignments:', e);
