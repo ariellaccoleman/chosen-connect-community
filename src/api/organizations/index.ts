@@ -15,3 +15,16 @@ export {
   deleteOrganization
 } from "./organizationApiFactory";
 export { organizationRelationshipsApi } from "./relationshipsApi";
+
+// Re-export organization admin API
+export {
+  organizationAdminApi,
+  getAllOrganizationAdmins,
+  getOrganizationAdminsByOrg,
+  getUserAdminRequests,
+  checkIsOrganizationAdmin,
+  getOrganizationRole,
+  createAdminRequest,
+  updateAdminRequest,
+  deleteAdminRequest
+} from "./organizationAdminApiFactory";

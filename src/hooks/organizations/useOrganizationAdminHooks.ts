@@ -1,42 +1,29 @@
 
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { OrganizationAdminWithDetails } from '@/types';
-import { formatAdminWithDetails } from '@/utils/adminFormatters';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { OrganizationAdmin } from '@/types';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { OrganizationAdminWithDetails, OrganizationAdmin } from '@/types';
 import { createMutationHandlers } from '@/utils/toastUtils';
+import {
+  getAllOrganizationAdmins,
+  getOrganizationAdminsByOrg,
+  getUserAdminRequests,
+  checkIsOrganizationAdmin,
+  getOrganizationRole,
+  createAdminRequest,
+  updateAdminRequest,
+  deleteAdminRequest
+} from '@/api/organizations/organizationAdminApiFactory';
 
 // Fetch all organization admin requests (for site admins)
 export const useOrganizationAdmins = (filters: { status?: 'pending' | 'approved' | 'all' } = {}) => {
   return useQuery({
     queryKey: ['organization-admins', filters],
     queryFn: async (): Promise<OrganizationAdminWithDetails[]> => {
-      let query = supabase
-        .from('organization_admins')
-        .select(`
-          *,
-          profile:profiles(*),
-          organization:organizations(
-            *,
-            location:locations(*)
-          )
-        `);
-      
-      if (filters.status === 'pending') {
-        query = query.eq('is_approved', false);
-      } else if (filters.status === 'approved') {
-        query = query.eq('is_approved', true);
-      }
-      
-      const { data, error } = await query.order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching organization admins:', error);
+      const response = await getAllOrganizationAdmins(filters);
+      if (response.error) {
+        console.error('Error fetching organization admins:', response.error);
         return [];
       }
-      
-      return (data || []).map(admin => formatAdminWithDetails(admin));
+      return response.data || [];
     },
   });
 };
@@ -48,26 +35,12 @@ export const useOrganizationAdminsByOrg = (organizationId: string | undefined) =
     queryFn: async (): Promise<OrganizationAdminWithDetails[]> => {
       if (!organizationId) return [];
       
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select(`
-          *,
-          profile:profiles(*),
-          organization:organizations(
-            *,
-            location:locations(*)
-          )
-        `)
-        .eq('organization_id', organizationId)
-        .eq('is_approved', true)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching organization admins:', error);
+      const response = await getOrganizationAdminsByOrg(organizationId, false);
+      if (response.error) {
+        console.error('Error fetching organization admins:', response.error);
         return [];
       }
-      
-      return (data || []).map(admin => formatAdminWithDetails(admin));
+      return response.data || [];
     },
     enabled: !!organizationId,
   });
@@ -80,26 +53,14 @@ export const usePendingOrganizationAdmins = (organizationId: string | undefined)
     queryFn: async (): Promise<OrganizationAdminWithDetails[]> => {
       if (!organizationId) return [];
       
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select(`
-          *,
-          profile:profiles(*),
-          organization:organizations(
-            *,
-            location:locations(*)
-          )
-        `)
-        .eq('organization_id', organizationId)
-        .eq('is_approved', false)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching pending organization admins:', error);
+      const response = await getOrganizationAdminsByOrg(organizationId, true);
+      if (response.error) {
+        console.error('Error fetching pending organization admins:', response.error);
         return [];
       }
-      
-      return (data || []).map(admin => formatAdminWithDetails(admin));
+      // Filter to only pending requests
+      const pendingAdmins = (response.data || []).filter(admin => !admin.is_approved);
+      return pendingAdmins;
     },
     enabled: !!organizationId,
   });
@@ -112,20 +73,12 @@ export const useIsOrganizationAdmin = (userId: string | undefined, organizationI
     queryFn: async (): Promise<boolean> => {
       if (!userId || !organizationId) return false;
       
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select('id')
-        .eq('profile_id', userId)
-        .eq('organization_id', organizationId)
-        .eq('is_approved', true)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking if user is organization admin:', error);
+      const response = await checkIsOrganizationAdmin(userId, organizationId);
+      if (response.error) {
+        console.error('Error checking if user is organization admin:', response.error);
         return false;
       }
-      
-      return !!data;
+      return response.data || false;
     },
     enabled: !!userId && !!organizationId,
   });
@@ -138,20 +91,12 @@ export const useOrganizationRole = (userId: string | undefined, organizationId: 
     queryFn: async (): Promise<string | null> => {
       if (!userId || !organizationId) return null;
       
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select('role')
-        .eq('profile_id', userId)
-        .eq('organization_id', organizationId)
-        .eq('is_approved', true)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error checking organization role:', error);
+      const response = await getOrganizationRole(userId, organizationId);
+      if (response.error) {
+        console.error('Error checking organization role:', response.error);
         return null;
       }
-      
-      return data?.role || null;
+      return response.data;
     },
     enabled: !!userId && !!organizationId,
   });
@@ -164,32 +109,16 @@ export const useUserAdminRequests = (userId: string | undefined) => {
     queryFn: async (): Promise<OrganizationAdminWithDetails[]> => {
       if (!userId) return [];
       
-      const { data, error } = await supabase
-        .from('organization_admins')
-        .select(`
-          *,
-          organization:organizations(
-            *,
-            location:locations(*)
-          ),
-          profile:profiles(*)
-        `)
-        .eq('profile_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error('Error fetching user admin requests:', error);
+      const response = await getUserAdminRequests(userId);
+      if (response.error) {
+        console.error('Error fetching user admin requests:', response.error);
         return [];
       }
-      
-      return (data || []).map(admin => formatAdminWithDetails(admin));
+      return response.data || [];
     },
     enabled: !!userId,
   });
 };
-
-// Valid organization admin roles
-const VALID_ROLES = ['owner', 'admin', 'editor'];
 
 // Create a new organization admin request
 export const useCreateAdminRequest = () => {
@@ -201,30 +130,11 @@ export const useCreateAdminRequest = () => {
       organization_id: string;
       role?: string;
     }) => {
-      // Validate role before submitting
-      const role = request.role || 'editor';
-      if (!VALID_ROLES.includes(role)) {
-        throw new Error(`Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+      const response = await createAdminRequest(request);
+      if (response.error) {
+        throw response.error;
       }
-      
-      const { error } = await supabase
-        .from('organization_admins')
-        .insert({
-          profile_id: request.profile_id,
-          organization_id: request.organization_id,
-          role: role,
-          is_approved: false
-        });
-      
-      if (error) {
-        // Provide a clearer error message
-        if (error.message.includes('organization_admins_role_check')) {
-          throw new Error(`Invalid role: "${role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
-        }
-        throw error;
-      }
-      
-      return true;
+      return response.data;
     },
     ...createMutationHandlers({
       successMessage: 'Admin request created successfully',
@@ -249,25 +159,11 @@ export const useUpdateAdminRequest = () => {
       requestId: string, 
       updates: Partial<OrganizationAdmin> 
     }) => {
-      // Validate role if it's being updated
-      if (updates.role && !VALID_ROLES.includes(updates.role)) {
-        throw new Error(`Invalid role: "${updates.role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
+      const response = await updateAdminRequest(requestId, updates);
+      if (response.error) {
+        throw response.error;
       }
-      
-      const { error } = await supabase
-        .from('organization_admins')
-        .update(updates)
-        .eq('id', requestId);
-      
-      if (error) {
-        // Provide a clearer error message
-        if (error.message.includes('organization_admins_role_check')) {
-          throw new Error(`Invalid role: "${updates.role}". Valid roles are: ${VALID_ROLES.join(', ')}`);
-        }
-        throw error;
-      }
-      
-      return true;
+      return response.data;
     },
     ...createMutationHandlers({
       successMessage: 'Admin request updated successfully',
@@ -287,14 +183,11 @@ export const useDeleteAdminRequest = () => {
   
   return useMutation({
     mutationFn: async (requestId: string) => {
-      const { error } = await supabase
-        .from('organization_admins')
-        .delete()
-        .eq('id', requestId);
-      
-      if (error) throw error;
-      
-      return true;
+      const response = await deleteAdminRequest(requestId);
+      if (response.error) {
+        throw response.error;
+      }
+      return response.data;
     },
     ...createMutationHandlers({
       successMessage: 'Admin request deleted successfully',
