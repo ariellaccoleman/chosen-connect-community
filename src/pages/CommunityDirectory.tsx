@@ -30,7 +30,7 @@ const CommunityDirectory = () => {
         showTagFilter={false}
         tagId={selectedTagId}
         search={searchQuery}
-        isApproved={undefined}
+        isApproved={true}
         emptyMessage={selectedTagId ? "No community members match the selected tag." : "No community members found. Be the first to join!"}
         className="mt-6"
       />
