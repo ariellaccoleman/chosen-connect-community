@@ -236,15 +236,15 @@ const extendedPostsApi = {
   createPostWithTags: async (data: any) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createErrorResponse(new Error('User not authenticated'));
         }
 
         const postData = {
           content: data.content,
           has_media: data.has_media || false,
-          author_id: user.user.id
+          author_id: user.id
         };
 
         const result = await postsApi.create(postData);
@@ -262,8 +262,8 @@ const extendedPostLikesApi = {
   hasLiked: async (postId: string) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createSuccessResponse(false);
         }
 
@@ -271,7 +271,7 @@ const extendedPostLikesApi = {
           .from('post_likes')
           .select('id')
           .eq('post_id', postId)
-          .eq('user_id', user.user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') {
@@ -289,8 +289,8 @@ const extendedPostLikesApi = {
   toggleLike: async (postId: string) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createErrorResponse(new Error('User not authenticated'));
         }
 
@@ -299,7 +299,7 @@ const extendedPostLikesApi = {
           .from('post_likes')
           .select('id')
           .eq('post_id', postId)
-          .eq('user_id', user.user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
@@ -326,7 +326,7 @@ const extendedPostLikesApi = {
             .from('post_likes')
             .insert({
               post_id: postId,
-              user_id: user.user.id
+              user_id: user.id
             });
 
           if (insertError) {
@@ -349,8 +349,8 @@ const extendedCommentLikesApi = {
   hasLiked: async (commentId: string) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createSuccessResponse(false);
         }
 
@@ -358,7 +358,7 @@ const extendedCommentLikesApi = {
           .from('comment_likes')
           .select('id')
           .eq('comment_id', commentId)
-          .eq('user_id', user.user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (error && error.code !== 'PGRST116') {
@@ -376,8 +376,8 @@ const extendedCommentLikesApi = {
   toggleLike: async (commentId: string) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createErrorResponse(new Error('User not authenticated'));
         }
 
@@ -386,7 +386,7 @@ const extendedCommentLikesApi = {
           .from('comment_likes')
           .select('id')
           .eq('comment_id', commentId)
-          .eq('user_id', user.user.id)
+          .eq('user_id', user.id)
           .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
@@ -413,7 +413,7 @@ const extendedCommentLikesApi = {
             .from('comment_likes')
             .insert({
               comment_id: commentId,
-              user_id: user.user.id
+              user_id: user.id
             });
 
           if (insertError) {
@@ -476,15 +476,15 @@ const extendedCommentsApi = {
   createComment: async (data: any) => {
     return apiClient.query(async (supabase) => {
       try {
-        const { user } = await supabase.auth.getUser();
-        if (!user.user) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
           return createErrorResponse(new Error('User not authenticated'));
         }
 
         const commentData = {
           post_id: data.post_id,
           content: data.content,
-          author_id: user.user.id
+          author_id: user.id
         };
 
         const { data: comment, error } = await supabase

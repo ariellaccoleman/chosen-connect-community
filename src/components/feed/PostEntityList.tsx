@@ -78,7 +78,14 @@ const PostEntityList = ({
       likes_count: postData.likes?.length || 0,
       comments_count: postData.comments?.length || 0,
       // Map the entity tags to the format expected by PostCard, preserving tag objects
-      tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
+      tags: entity.tags ? entity.tags.map(tagAssignment => ({
+        id: tagAssignment.tag?.id || '',
+        name: tagAssignment.tag?.name || '',
+        description: tagAssignment.tag?.description || null,
+        created_by: null,
+        created_at: '',
+        updated_at: ''
+      })).filter(tag => tag.name) : []
     };
   });
 
