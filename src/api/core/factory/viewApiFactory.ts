@@ -1,3 +1,4 @@
+
 import { ViewOperations } from "./types";
 import { ViewRepository, createViewRepository } from "../repository";
 import { ViewNames, ViewFactoryOptions } from "./apiFactoryTypes";
@@ -156,7 +157,7 @@ export function createViewApiFactory<
       return {
         data: transformedData,
         error: null,
-        status: 'success' | 'error';
+        status: 'success' as const
       };
     },
 
