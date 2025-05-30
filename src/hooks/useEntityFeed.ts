@@ -1,3 +1,4 @@
+
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -74,6 +75,16 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     itemsPerPage = 12
   } = params;
 
+  logger.debug("useEntityFeed called with params:", {
+    entityTypes,
+    limit,
+    tagId,
+    search,
+    isApproved,
+    currentPage,
+    itemsPerPage
+  });
+
   // Validate entity types
   const validEntityTypes = entityTypes.filter(type => 
     Object.values(EntityType).includes(type)
@@ -87,6 +98,13 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
   const offset = (currentPage - 1) * itemsPerPage;
   const actualLimit = limit || itemsPerPage;
 
+  logger.debug("useEntityFeed pagination calculation:", {
+    currentPage,
+    itemsPerPage,
+    offset,
+    actualLimit
+  });
+
   // Create query key that includes all parameters that affect the data
   const queryKey = ['entity-feed', {
     entityTypes: validEntityTypes.sort(),
@@ -98,9 +116,20 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     currentPage // Include currentPage in query key to ensure proper cache invalidation
   }];
 
+  logger.debug("useEntityFeed query key:", queryKey);
+
   const query = useQuery({
     queryKey,
     queryFn: async () => {
+      logger.debug(`useEntityFeed queryFn starting for page ${currentPage}:`, {
+        entityTypes: validEntityTypes,
+        tagId,
+        search,
+        isApproved,
+        offset,
+        actualLimit
+      });
+
       try {
         const allEntities: Entity[] = [];
         let totalCount = 0;
@@ -110,6 +139,14 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
         // For server-side pagination, we need to fetch from each entity type
         // and then combine and sort the results
         const entityPromises = validEntityTypes.map(async (entityType) => {
+          logger.debug(`useEntityFeed fetching ${entityType}:`, {
+            tagId,
+            search,
+            isApproved,
+            actualLimit,
+            page: Math.floor(offset / actualLimit) + 1
+          });
+
           try {
             let entities: Entity[] = [];
             let count = 0;
@@ -146,6 +183,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
                 entities = (profilesResult.data || []).map(profileToEntity);
                 count = (profilesResult as any).totalCount || 0;
+                logger.debug(`useEntityFeed ${entityType} result:`, {
+                  entitiesCount: entities.length,
+                  totalCount: count
+                });
                 break;
 
               case EntityType.ORGANIZATION:
@@ -176,6 +217,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
                 entities = (orgsResult.data || []).map(organizationToEntity);
                 count = (orgsResult as any).totalCount || 0;
+                logger.debug(`useEntityFeed ${entityType} result:`, {
+                  entitiesCount: entities.length,
+                  totalCount: count
+                });
                 break;
 
               case EntityType.EVENT:
@@ -206,6 +251,10 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
                 entities = (eventsResult.data || []).map(eventToEntity);
                 count = (eventsResult as any).totalCount || 0;
+                logger.debug(`useEntityFeed ${entityType} result:`, {
+                  entitiesCount: entities.length,
+                  totalCount: count
+                });
                 break;
             }
 
@@ -226,6 +275,12 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
           totalCount += result.count;
         });
 
+        logger.debug("useEntityFeed combined results:", {
+          allEntitiesCount: allEntities.length,
+          totalCount,
+          currentPage
+        });
+
         // Sort combined results by creation date (newest first)
         allEntities.sort((a, b) => {
           const dateA = new Date(a.created_at || 0);
@@ -236,14 +291,21 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
         // For server-side pagination, determine if there's a next page
         const hasNextPage = allEntities.length === actualLimit;
 
-        logger.debug(`EntityFeed: Returning ${allEntities.length} entities for page ${currentPage}, total found: ${totalCount}`);
-
-        return {
+        const result = {
           entities: allEntities,
           totalCount,
           hasNextPage,
           currentPage // Return the currentPage that was requested, not a computed one
         };
+
+        logger.debug(`useEntityFeed queryFn returning for page ${currentPage}:`, {
+          entitiesCount: result.entities.length,
+          totalCount: result.totalCount,
+          hasNextPage: result.hasNextPage,
+          currentPage: result.currentPage
+        });
+
+        return result;
 
       } catch (error) {
         logger.error('EntityFeed error:', error);
@@ -255,7 +317,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     placeholderData: keepPreviousData
   });
 
-  return {
+  const hookResult = {
     entities: query.data?.entities || [],
     totalCount: query.data?.totalCount || 0,
     hasNextPage: query.data?.hasNextPage || false,
@@ -263,4 +325,15 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
     isLoading: query.isLoading,
     error: query.error
   };
+
+  logger.debug("useEntityFeed hook returning:", {
+    entitiesCount: hookResult.entities.length,
+    totalCount: hookResult.totalCount,
+    hasNextPage: hookResult.hasNextPage,
+    currentPage: hookResult.currentPage,
+    isLoading: hookResult.isLoading,
+    hasError: !!hookResult.error
+  });
+
+  return hookResult;
 };

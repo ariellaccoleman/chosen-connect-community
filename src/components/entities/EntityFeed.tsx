@@ -47,6 +47,15 @@ const EntityFeed = ({
   itemsPerPage = 12,
   renderPagination
 }: EntityFeedProps) => {
+  logger.debug("EntityFeed render with props:", {
+    currentPage,
+    itemsPerPage,
+    search,
+    tagId,
+    isApproved,
+    hasRenderPagination: !!renderPagination
+  });
+
   // Filter out excluded entity types
   const availableEntityTypes = defaultEntityTypes.filter(
     type => !excludeEntityTypes.includes(type)
@@ -74,6 +83,13 @@ const EntityFeed = ({
     });
   }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId, search, isApproved, currentPage, itemsPerPage]);
   
+  // Track currentPage prop changes
+  useEffect(() => {
+    logger.debug("EntityFeed currentPage prop changed:", { 
+      newCurrentPage: currentPage 
+    });
+  }, [currentPage]);
+  
   // Determine entity types to fetch based on the active tab
   const entityTypes = activeTab === "all" 
     ? availableEntityTypes 
@@ -94,6 +110,16 @@ const EntityFeed = ({
   }, [selectedTagId]);
   
   // Use the entity feed hook with server-side pagination
+  logger.debug("EntityFeed calling useEntityFeed with:", {
+    entityTypes,
+    limit: renderPagination ? undefined : limit,
+    tagId: selectedTagId,
+    search,
+    isApproved,
+    currentPage,
+    itemsPerPage
+  });
+  
   const { 
     entities, 
     isLoading,
@@ -109,8 +135,23 @@ const EntityFeed = ({
     itemsPerPage
   });
   
+  logger.debug("EntityFeed received from useEntityFeed:", {
+    entitiesCount: entities.length,
+    isLoading,
+    totalCount,
+    hasNextPage,
+    currentPageFromHook: currentPage
+  });
+  
   // Calculate pagination info
   const totalPages = renderPagination && itemsPerPage ? Math.ceil(totalCount / itemsPerPage) : 1;
+  
+  logger.debug("EntityFeed pagination calculation:", {
+    totalCount,
+    itemsPerPage,
+    totalPages,
+    hasRenderPagination: !!renderPagination
+  });
   
   // Log entity count when it changes 
   useEffect(() => {

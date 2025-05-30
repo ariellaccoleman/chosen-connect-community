@@ -9,6 +9,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { logger } from "@/utils/logger";
 
 interface CommunityPaginationProps {
   currentPage: number;
@@ -27,10 +28,27 @@ const CommunityPagination = ({
   totalItems,
   hasNextPage = false
 }: CommunityPaginationProps) => {
-  if (totalPages <= 1 && !hasNextPage) return null;
+  logger.debug("CommunityPagination render:", {
+    currentPage,
+    totalPages,
+    itemsPerPage,
+    totalItems,
+    hasNextPage
+  });
+
+  if (totalPages <= 1 && !hasNextPage) {
+    logger.debug("CommunityPagination: Not rendering - only 1 page and no next page");
+    return null;
+  }
 
   const startItem = (currentPage - 1) * itemsPerPage + 1;
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+
+  logger.debug("CommunityPagination: Item range calculation:", {
+    startItem,
+    endItem,
+    calculation: `(${currentPage} - 1) * ${itemsPerPage} + 1 = ${startItem}, min(${currentPage} * ${itemsPerPage}, ${totalItems}) = ${endItem}`
+  });
 
   const getVisiblePages = () => {
     const pages = [];
@@ -78,6 +96,38 @@ const CommunityPagination = ({
 
   const visiblePages = getVisiblePages();
 
+  logger.debug("CommunityPagination: Visible pages:", visiblePages);
+
+  const handlePageChange = (page: number) => {
+    logger.debug("CommunityPagination: Page change clicked:", {
+      oldPage: currentPage,
+      newPage: page,
+      totalPages,
+      hasNextPage
+    });
+    onPageChange(page);
+  };
+
+  const handlePreviousClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (currentPage > 1) {
+      logger.debug("CommunityPagination: Previous clicked, going to page:", currentPage - 1);
+      handlePageChange(currentPage - 1);
+    } else {
+      logger.debug("CommunityPagination: Previous clicked but already on first page");
+    }
+  };
+
+  const handleNextClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (currentPage < totalPages || hasNextPage) {
+      logger.debug("CommunityPagination: Next clicked, going to page:", currentPage + 1);
+      handlePageChange(currentPage + 1);
+    } else {
+      logger.debug("CommunityPagination: Next clicked but already on last page");
+    }
+  };
+
   return (
     <div className="flex flex-col items-center gap-4 mt-8">
       <div className="text-sm text-gray-600">
@@ -89,10 +139,7 @@ const CommunityPagination = ({
           <PaginationItem>
             <PaginationPrevious 
               href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage > 1) onPageChange(currentPage - 1);
-              }}
+              onClick={handlePreviousClick}
               className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
@@ -106,7 +153,8 @@ const CommunityPagination = ({
                   href="#"
                   onClick={(e) => {
                     e.preventDefault();
-                    onPageChange(page);
+                    logger.debug("CommunityPagination: Page link clicked:", page);
+                    handlePageChange(page);
                   }}
                   isActive={page === currentPage}
                 >
@@ -119,10 +167,7 @@ const CommunityPagination = ({
           <PaginationItem>
             <PaginationNext 
               href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                if (currentPage < totalPages || hasNextPage) onPageChange(currentPage + 1);
-              }}
+              onClick={handleNextClick}
               className={(currentPage === totalPages && !hasNextPage) ? "pointer-events-none opacity-50" : ""}
             />
           </PaginationItem>
