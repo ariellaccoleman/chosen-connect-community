@@ -95,7 +95,7 @@ describe('EventTagsManager Component - Database Integration', () => {
     await CentralTestAuthUtils.executeWithAuthenticatedAPI(
       'user1',
       async (client) => {
-        // Create a real test event first
+        // Create a real test event inside the authenticated context
         const testEvent = {
           title: `Test Event ${Date.now()}`,
           description: 'Test event for tag manager',
@@ -132,7 +132,7 @@ describe('EventTagsManager Component - Database Integration', () => {
     await CentralTestAuthUtils.executeWithAuthenticatedAPI(
       'user1',
       async (client) => {
-        // Create a real test event
+        // Create a real test event inside the authenticated context
         const testEvent = {
           title: `Tagged Event ${Date.now()}`,
           description: 'Event for tag testing',
@@ -146,7 +146,7 @@ describe('EventTagsManager Component - Database Integration', () => {
         expect(eventResult.data).toBeTruthy();
         testEventId = eventResult.data!.id;
 
-        // Create a test tag
+        // Create a test tag inside the authenticated context
         const testTag = {
           name: `test-tag-${Date.now()}`,
           description: 'Test tag for events'
@@ -169,7 +169,7 @@ describe('EventTagsManager Component - Database Integration', () => {
         expect(screen.getByText(/Your event was created successfully/)).toBeInTheDocument();
         expect(screen.getByText(/add tags to help people find your event/)).toBeInTheDocument();
 
-        // Clean up created tag
+        // Clean up created tag inside the authenticated context
         await tagApi.delete(createdTagId);
       }
     );
@@ -179,7 +179,7 @@ describe('EventTagsManager Component - Database Integration', () => {
     await CentralTestAuthUtils.executeWithAuthenticatedAPI(
       'user1',
       async (client) => {
-        // Create a real test event
+        // Create a real test event inside the authenticated context
         const testEvent = {
           title: `Nav Test Event ${Date.now()}`,
           description: 'Event for navigation testing',
@@ -215,7 +215,7 @@ describe('EventTagsManager Component - Database Integration', () => {
     await CentralTestAuthUtils.executeWithAuthenticatedAPI(
       'user1',
       async (client) => {
-        // Create a real test event
+        // Create a real test event inside the authenticated context
         const testEvent = {
           title: `Loading Test Event ${Date.now()}`,
           description: 'Event for loading state testing',
