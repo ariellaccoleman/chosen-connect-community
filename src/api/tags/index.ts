@@ -13,6 +13,9 @@ export {
   createExtendedTagAssignmentApi
 } from './factory/tagApiFactory';
 
+// Import API instances for function exports
+import { tagApi, tagAssignmentApi } from './factory/tagApiFactory';
+
 // Export simplified function interface using the API instances
 export const createTag = (data: any) => tagApi.create(data);
 export const updateTag = (id: string, data: any) => tagApi.update(id, data);
