@@ -28,6 +28,3 @@ export const createTagAssignment = (tagId: string, entityId: string, entityType:
 // Use relationship-specific delete method that takes the relationship components
 export const deleteTagAssignment = (tagId: string, entityId: string, entityType: EntityType) => 
   tagAssignmentApi.deleteByTagAndEntity(tagId, entityId, entityType);
-
-// For cases where we have the assignment ID directly
-export const deleteTagAssignmentById = (id: string) => tagAssignmentApi.delete(id);
