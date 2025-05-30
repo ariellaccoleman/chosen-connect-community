@@ -23,8 +23,9 @@ interface DataRepository<T> {
 
 ### Repository Types
 
-- **SupabaseRepository**: Implementation for Supabase database access
-- **MockRepository**: Implementation for testing and development without a database
+- **SupabaseRepository**: Implementation for Supabase database access with schema support
+- **EnhancedRepository**: Extended functionality with transforms and validation
+- **ViewRepository**: Read-only repository for database views
 
 ## Usage Examples
 
@@ -35,10 +36,13 @@ interface DataRepository<T> {
 const userRepository = createRepository<UserType>('users');
 
 // With configuration options
-const configuredRepo = createRepository<PostType>('posts', 'supabase', {
-  defaultSelect: '*,author:users(*)',
-  idField: 'post_id'
+const configuredRepo = createRepository<PostType>('posts', {
+  schema: 'public',
+  defaultSelect: '*,author:users(*)'
 });
+
+// For testing with schema isolation
+const testRepo = createTestingRepository<UserType>('users');
 ```
 
 ### Using a Repository
@@ -57,6 +61,26 @@ const activeUsers = await userRepository
   .execute();
 ```
 
+### Testing with Schema Isolation
+
+```typescript
+import { createTestingRepository, setupTestSchema } from '@/api/core/repository';
+
+// Setup test environment
+beforeAll(async () => {
+  await setupTestSchema();
+});
+
+// Create isolated test repository
+const testUserRepo = createTestingRepository<User>('users');
+
+test('should create user', async () => {
+  const newUser = { name: 'Test User', email: 'test@example.com' };
+  const result = await testUserRepo.insert(newUser).execute();
+  expect(result.data.name).toBe('Test User');
+});
+```
+
 ## Best Practices
 
 1. Use repositories as the primary data access method rather than direct API calls
@@ -64,3 +88,5 @@ const activeUsers = await userRepository
 3. Abstract query complexity into repository methods
 4. Use type parameters to ensure type safety
 5. Handle errors consistently within repository implementations
+6. Use schema-based testing for reliable test isolation
+7. Leverage the testing utilities for comprehensive test coverage

@@ -36,7 +36,7 @@ Always import from the specific module directly:
 // Preferred
 import { profileApi } from '@/api/profiles';
 import { organizationApi } from '@/api/organizations';
-import { createTestRepository } from '@/api/core/testing/repositoryTestUtils';
+import { createTestingRepository } from '@/api/core/repository';
 ```
 
 ### Factory Pattern
@@ -70,19 +70,16 @@ const { data, error } = await repository
 
 ### Testing Utilities
 
-The repository testing utilities provide robust tools for testing:
+The repository testing utilities provide robust tools for schema-based testing:
 
 ```typescript
-// Create a test repository
-const testRepo = createTestRepository<User>({
-  tableName: 'users',
-  initialData: mockUsers
+// Create a testing repository with schema isolation
+const testRepo = createTestingRepository<User>('users', {
+  schema: 'testing'
 });
 
-// Mock the repository factory
-mockRepositoryFactory({
-  users: mockUsers
-});
+// Setup test schema before tests
+await setupTestSchema();
 
 // Generate test data
 const mockData = createMockDataGenerator<User>('profile')

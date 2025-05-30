@@ -1,6 +1,6 @@
-# Migration Guide: Moving from Mock Repositories to Schema-Based Testing
+# Migration Guide: Using Schema-Based Testing
 
-This guide outlines the process of migrating existing tests from using mock repositories to the new schema-based testing approach.
+This guide outlines how to use the current schema-based testing approach in our application.
 
 ## Benefits of Schema-Based Testing
 
@@ -9,11 +9,11 @@ This guide outlines the process of migrating existing tests from using mock repo
 3. **Simplified Maintenance**: No need to maintain separate mock implementations
 4. **Easier Debugging**: Tests fail for the same reasons production would
 
-## Migration Steps
+## Current Testing Approach
 
 ### 1. Prepare the Test Environment
 
-Before migrating any tests, ensure your testing environment is set up correctly:
+Set up your testing environment using the schema-based utilities:
 
 ```typescript
 // In your Jest setup file or at the beginning of your test suite
@@ -24,27 +24,18 @@ beforeAll(async () => {
 });
 ```
 
-### 2. Replace Mock Repositories with Schema-Based Repositories
+### 2. Use Schema-Based Repositories
 
-Replace code like this:
-
-```typescript
-// Old approach with mock repositories
-import { createMockRepository } from '@/api/core/repository/MockRepository';
-
-const mockRepo = createMockRepository<Profile>('profiles', initialData);
-```
-
-With this:
+Create repositories that use the testing schema:
 
 ```typescript
-// New approach with schema-based testing
-import { createTestingProfileRepository } from '@/api/core/repository/entities/factories/profileRepositoryFactory';
-// OR
+// Current approach with schema-based testing
 import { createTestingRepository } from '@/api/core/repository/repositoryFactory';
+// OR
+import { createTestingProfileRepository } from '@/api/core/repository/entities/factories/profileRepositoryFactory';
 
 // Entity-specific repository (recommended)
-const profileRepo = createTestingProfileRepository(initialData);
+const profileRepo = createTestingProfileRepository();
 // OR
 // Generic repository
 const profileRepo = createTestingRepository<Profile>('profiles');
@@ -78,15 +69,12 @@ describe('Profile Tests', () => {
 });
 ```
 
-### 4. Update Assertions
+### 4. Current Assertions
 
-Most assertions can remain the same, but some mock-specific assertions may need updates:
+Test directly against repository operations:
 
 ```typescript
-// Old approach
-expect(mockRepo.spies.insert).toHaveBeenCalledWith(expectedData);
-
-// New approach - verify the operation result directly
+// Current approach - verify the operation result directly
 const result = await repo.insert(newData).execute();
 expect(result.error).toBeNull();
 expect(result.data).toBeTruthy();
@@ -106,34 +94,85 @@ await seedTestData<Profile>('profiles', testProfiles);
 await clearTestTable('profiles');
 ```
 
-## Migration Strategy
+## Testing Strategy
 
-1. **Incremental Approach**: Migrate one test suite at a time
-2. **Start Simple**: Begin with simpler repositories that have fewer dependencies
-3. **Update Entity Factories**: Ensure all entity repositories have `createTesting*Repository` functions
-4. **Run in Parallel**: During migration, you can run both mock and schema-based tests together
-5. **Remove Mock Code**: After all tests are migrated, remove mock implementations
+1. **Schema-Based Approach**: All tests use real database operations against the testing schema
+2. **Repository Creation**: Use `createTestingRepository` for isolated test repositories
+3. **Test Setup/Teardown**: Use schema utilities for clean test environments
+4. **Data Isolation**: Each test suite uses isolated testing schema data
 
-## Common Issues and Solutions
+## Common Patterns
 
-### Database Connection Issues
+### Database Connection Setup
 
-If tests cannot connect to the database, check your Supabase connection configuration.
+Ensure tests can connect to the database:
 
-### Slow Tests
+```typescript
+import { setupTestSchema } from '@/api/core/testing/schemaBasedTesting';
+
+beforeAll(async () => {
+  await setupTestSchema();
+});
+```
+
+### Repository Testing
+
+```typescript
+import { createTestingRepository } from '@/api/core/repository';
+
+const testRepo = createTestingRepository<User>('users');
+
+test('should create user', async () => {
+  const user = { name: 'Test User', email: 'test@example.com' };
+  const result = await testRepo.insert(user).execute();
+  expect(result.error).toBeNull();
+  expect(result.data.name).toBe('Test User');
+});
+```
+
+### Test Data Seeding
+
+```typescript
+import { seedTestData, clearTestTable } from '@/api/core/testing';
+
+beforeEach(async () => {
+  await seedTestData('users', mockUsers);
+});
+
+afterEach(async () => {
+  await clearTestTable('users');
+});
+```
+
+## Performance Considerations
 
 Schema-based tests may run slower than mock tests. Optimize by:
 - Running tests in parallel with `--maxWorkers`
 - Minimizing database operations in setup/teardown
 - Using transactions for faster rollbacks
+- Leveraging test contexts for efficient setup
+
+## Troubleshooting
+
+### Database Connection Issues
+
+If tests cannot connect to the database, check your Supabase connection configuration.
 
 ### Missing Tables or Columns
 
 If tests fail due to missing tables or columns, ensure:
 - Your schema has been properly set up with `setupTestSchema()`
-- The public schema has all required tables defined
+- The testing schema has all required tables defined
 - Column names match exactly between the test and actual schema
+
+## Best Practices
+
+1. **Use Testing Repositories**: Always use `createTestingRepository` for tests
+2. **Isolate Test Data**: Use the testing schema for all test operations
+3. **Clean Setup/Teardown**: Use the provided utilities for test lifecycle management
+4. **Performance Awareness**: Monitor test performance and optimize where needed
+5. **Real Database Benefits**: Leverage the fact that tests run against real database infrastructure
 
 ## Conclusion
 
-This migration improves the reliability and value of our test suite by testing against a real database. Take your time during migration, and reach out for help if you encounter issues.
+Our current schema-based testing approach provides reliable, maintainable tests that closely mirror production behavior. By testing against a real database with schema isolation, we gain confidence in our repository implementations while maintaining test speed and reliability.

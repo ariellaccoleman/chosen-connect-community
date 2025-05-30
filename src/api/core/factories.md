@@ -1,4 +1,3 @@
-
 # API and Query Hook Factories
 
 This document explains how to use the factory patterns to create consistent API operations and React Query hooks.
@@ -113,15 +112,9 @@ export const usersApi = createApiFactory<User>({
 Use the repository option to control data access:
 
 ```typescript
-// Use mock repository for testing
-export const testUsersApi = createApiFactory<User>({
-  tableName: 'users',
-  repository: { type: 'mock', initialData: testUsers }
-});
-
 // Use an explicit repository instance
-import { createSupabaseRepository } from '@/api/core/repository';
-const userRepo = createSupabaseRepository<User>('users');
+import { createRepository } from '@/api/core/repository';
+const userRepo = createRepository<User>('users');
 
 export const usersApi = createApiFactory<User>({
   tableName: 'users',
@@ -132,7 +125,8 @@ export const usersApi = createApiFactory<User>({
 export const enhancedUsersApi = createApiFactory<User>({
   tableName: 'users',
   repository: {
-    type: 'enhanced', 
+    type: 'supabase', 
+    enhanced: true,
     defaultSelect: '*, profile:profiles(*)'
   }
 });
@@ -170,14 +164,17 @@ await usersApi.batchDelete(['1', '2', '3']);
 ## Testing API Factories
 
 ```typescript
-import { mockRepositoryFactory } from '@/api/core/testing/repositoryTestUtils';
+import { createTestingRepository } from '@/api/core/repository';
+import { setupTestSchema, seedTestData } from '@/api/core/testing';
 import { usersApi } from '@/api/users';
 
-// Setup mocks
-beforeAll(() => {
-  mockRepositoryFactory({
-    users: mockUsers
-  });
+// Setup test environment
+beforeAll(async () => {
+  await setupTestSchema();
+});
+
+beforeEach(async () => {
+  await seedTestData('users', mockUsers);
 });
 
 test('should get user by ID', async () => {
@@ -185,8 +182,8 @@ test('should get user by ID', async () => {
   expect(user.data).toEqual(mockUsers[0]);
 });
 
-afterAll(() => {
-  resetRepositoryFactoryMock();
+afterEach(async () => {
+  await clearTestTable('users');
 });
 ```
 
@@ -197,13 +194,13 @@ afterAll(() => {
 3. **Create Domain Types**: Define clear types for your domain entities
 4. **Use Transforms**: Handle data mapping through transform functions
 5. **Centralize Configuration**: Keep API config in a single module per entity
-6. **Test Factories**: Use the testing utilities to test API factories
+6. **Test with Schema**: Use schema-based testing for reliable tests
 7. **Repository Integration**: Leverage the repository pattern for data access
 8. **Type Safety**: Ensure proper typing for all operations
 
 ## Integration with Repository Pattern
 
-The API Factory pattern works seamlessly with the updated Repository Pattern:
+The API Factory pattern works seamlessly with the Repository Pattern:
 
 ```typescript
 import { createApiFactory } from '@/api/core/factory';

@@ -12,8 +12,8 @@ The repository pattern provides a standardized way to access data sources in the
 - `DataRepository` Interface: Defines the standard operations available for data access
 - `BaseRepository`: Abstract class implementing common repository functionality
 - `SupabaseRepository`: Implementation for Supabase database access
-- `MockRepository`: Implementation for testing without a database
 - `EntityRepository`: Base class for entity-specific repositories
+- `ViewRepository`: Read-only repository for database views
 - `CachedRepository`: Decorator that adds caching capabilities to repositories
 
 ## Creating Repositories
@@ -27,8 +27,8 @@ import { createRepository } from "@/api/core/repository";
 const organizationsRepo = createRepository<Organization>("organizations");
 
 // With table options
-const profilesRepo = createRepository<Profile>("profiles", "supabase", {
-  idField: "id",
+const profilesRepo = createRepository<Profile>("profiles", {
+  schema: "public",
   defaultSelect: "*, location:locations(*)"
 });
 ```
@@ -123,40 +123,42 @@ const profileApi = createApiFactory<Profile, string, CreateProfileDto, UpdatePro
 
 ## Testing Repositories
 
-Our testing utilities help you test repositories efficiently:
+Our testing utilities help you test repositories efficiently using schema-based testing:
 
 ### Creating Test Repositories
 
 ```typescript
-import { createTestRepository } from "@/api/core/testing/repositoryTestUtils";
+import { createTestingRepository, setupTestSchema } from "@/api/core/repository";
 
-// Create a test repository with mock data
-const testRepo = createTestRepository<User>({
-  tableName: 'users',
-  initialData: mockUsers,
-  entityType: 'profile'  // For automatic mock data generation
+// Setup test environment
+beforeAll(async () => {
+  await setupTestSchema();
 });
 
-// Use the enhanced testing methods
-testRepo.findById('123');
-testRepo.addItems(newUser);
-testRepo.mockError('select', 'DATABASE_ERROR', 'Failed to query database');
+// Create a test repository with schema isolation
+const testRepo = createTestingRepository<User>('users');
+
+// Use standard repository operations
+const user = await testRepo.getById('123');
+const newUser = await testRepo.insert({ name: 'Test User' }).execute();
 ```
 
 ### Creating Test Contexts
 
 ```typescript
-import { createRepositoryTestContext } from "@/api/core/testing/repositoryTestUtils";
+import { createTestContext } from "@/api/core/testing";
 
 // Create a reusable test context
-const context = createRepositoryTestContext<User>({
-  tableName: 'users',
-  entityType: 'profile'
-});
+const context = createTestContext<User>('users');
 
 // In your tests
-beforeEach(() => context.setup());
-afterEach(() => context.cleanup());
+beforeEach(async () => {
+  await context.setup();
+});
+
+afterEach(async () => {
+  await context.cleanup();
+});
 
 test('should get user by ID', async () => {
   // Use the repository from the context
@@ -165,19 +167,29 @@ test('should get user by ID', async () => {
 });
 ```
 
-### Mocking Repository Factory
+### Testing with Schema Isolation
 
 ```typescript
-import { mockRepositoryFactory } from "@/api/core/testing/repositoryTestUtils";
+import { seedTestData, clearTestTable } from "@/api/core/testing";
 
-// Mock all repositories 
-mockRepositoryFactory({
-  users: mockUsers,
-  organizations: mockOrganizations
+// Seed test data
+beforeEach(async () => {
+  await seedTestData('users', mockUsers);
 });
 
-// After tests
-resetRepositoryFactoryMock();
+// Test operations
+test('should find active users', async () => {
+  const activeUsers = await repository
+    .select()
+    .eq('status', 'active')
+    .execute();
+  expect(activeUsers.data.length).toBeGreaterThan(0);
+});
+
+// Cleanup after test
+afterEach(async () => {
+  await clearTestTable('users');
+});
 ```
 
 ### Testing Relationships
@@ -278,5 +290,7 @@ try {
 4. **Handle Errors Consistently**: Either use standard operations or follow the error handling patterns.
 5. **Repository Naming**: Follow the convention of using the plural form of the entity for repositories.
 6. **Type Safety**: Ensure your repository operations are properly typed to catch errors at compile time.
-7. **Testing**: Use the testing utilities to thoroughly test repository operations.
-8. **Mock Data Generation**: Use the mock data generators for consistent test data.
+7. **Testing**: Use schema-based testing utilities for thorough test coverage.
+8. **Test Data Generation**: Use the mock data generators for consistent test data.
+9. **Schema Isolation**: Use testing schemas to isolate test data from production data.
+10. **Performance Monitoring**: Use performance testing utilities to monitor repository performance.

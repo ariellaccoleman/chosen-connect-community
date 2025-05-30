@@ -73,13 +73,15 @@ For detailed examples of API and hook factories, see the [API Factory Documentat
 When testing hooks that use repositories:
 
 ```typescript
-import { mockRepositoryFactory } from '@/api/core/testing/repositoryTestUtils';
+import { createTestingRepository, setupTestSchema } from '@/api/core/repository';
 
 // Setup
-beforeEach(() => {
-  mockRepositoryFactory({
-    profiles: mockProfiles
-  });
+beforeAll(async () => {
+  await setupTestSchema();
+});
+
+beforeEach(async () => {
+  await seedTestData('profiles', mockProfiles);
 });
 
 // Test the hook
@@ -90,11 +92,13 @@ test('should fetch profile data', async () => {
   await waitFor(() => expect(result.current.isSuccess).toBe(true));
   
   // Check result
-  expect(result.current.data).toEqual(mockProfiles[0]);
+  expect(result.current.data).toEqual(expect.objectContaining({
+    data: mockProfiles[0]
+  }));
 });
 
 // Cleanup
-afterEach(() => {
-  resetRepositoryFactoryMock();
+afterEach(async () => {
+  await clearTestTable('profiles');
 });
 ```

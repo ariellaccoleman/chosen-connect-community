@@ -1,7 +1,7 @@
 
 # Repository Testing Utilities Guide
 
-This guide covers the testing utilities available for working with repositories in the application.
+This guide covers the testing utilities available for working with repositories using schema-based testing in the application.
 
 ## Mock Data Generation
 
@@ -57,52 +57,46 @@ const userWithPosts = userGenerator
 console.log(userWithPosts.posts); // Array of 3 post entities
 ```
 
-## Repository Testing
+## Schema-Based Repository Testing
 
 ### Creating Test Repositories
 
-The `createTestRepository` function creates enhanced repositories for testing:
+Use `createTestingRepository` to create repositories for testing:
 
 ```typescript
-import { createTestRepository } from '@/api/core/testing/repositoryTestUtils';
+import { createTestingRepository, setupTestSchema } from '@/api/core/repository';
 
-// Create a test repository
-const testRepo = createTestRepository<User>({
-  tableName: 'users',
-  initialData: mockUsers,
-  entityType: 'profile'  // For automatic data generation
+// Setup test environment
+beforeAll(async () => {
+  await setupTestSchema();
 });
 
-// Access test utilities
-testRepo.findById('123');
-testRepo.addItems(newUser);
-testRepo.updateItem('123', { name: 'Updated Name' });
-testRepo.clearItems();
-testRepo.mockError('select', 'NOT_FOUND', 'User not found');
-testRepo.mockSuccess('getById', { id: '123', name: 'Test User' });
+// Create a test repository using the testing schema
+const testRepo = createTestingRepository<User>('users');
 
-// Monitor method calls with spies
-expect(testRepo.spies.select).toHaveBeenCalledTimes(1);
-testRepo.resetSpies();
+// Use standard repository operations
+const user = await testRepo.getById('123');
+const newUser = await testRepo.insert({ name: 'Test User' }).execute();
 ```
 
 ### Testing Repository Contexts
 
-The `createRepositoryTestContext` function creates a reusable test context:
+The `createTestContext` function creates a reusable test context:
 
 ```typescript
-import { createRepositoryTestContext } from '@/api/core/testing/repositoryTestUtils';
+import { createTestContext } from '@/api/core/testing/schemaBasedTesting';
 
 // Create a test context
-const context = createRepositoryTestContext<User>({
-  tableName: 'users',
-  entityType: 'profile',
-  initialData: mockUsers
-});
+const context = createTestContext<User>('users');
 
 // Setup in test
-beforeEach(() => context.setup());
-afterEach(() => context.cleanup());
+beforeEach(async () => {
+  await context.setup();
+});
+
+afterEach(async () => {
+  await context.cleanup();
+});
 
 test('should get user by ID', async () => {
   const { repository } = context;
@@ -114,25 +108,19 @@ test('should get user by ID', async () => {
 const testUsers = context.generateData(5, { role: 'user' });
 ```
 
-### Mocking Repository Factory
+### Test Data Management
 
 ```typescript
-import { mockRepositoryFactory, resetRepositoryFactoryMock } from '@/api/core/testing/repositoryTestUtils';
+import { seedTestData, clearTestTable } from '@/api/core/testing/schemaBasedTesting';
 
-// Setup mocks before tests
-beforeAll(() => {
-  mockRepositoryFactory({
-    users: mockUsers,
-    organizations: mockOrganizations,
-    events: mockEvents
-  });
+// Seed test data before tests
+beforeEach(async () => {
+  await seedTestData('users', mockUsers);
 });
 
-// Your tests here...
-
-// Reset after tests
-afterAll(() => {
-  resetRepositoryFactoryMock();
+// Clear test data after tests
+afterEach(async () => {
+  await clearTestTable('users');
 });
 ```
 
@@ -266,26 +254,43 @@ performanceTester.clearMeasurements();
 The testing utilities are designed to work with Jest:
 
 ```typescript
-import { createTestRepository } from '@/api/core/testing/repositoryTestUtils';
+import { createTestingRepository, setupTestSchema } from '@/api/core/repository';
 
 describe('User Repository', () => {
-  const repo = createTestRepository<User>({
-    tableName: 'users',
-    entityType: 'profile'
+  beforeAll(async () => {
+    await setupTestSchema();
   });
   
-  beforeEach(() => {
-    repo.clearItems();
-    repo.resetSpies();
+  const repo = createTestingRepository<User>('users');
+  
+  beforeEach(async () => {
+    await clearTestTable('users');
   });
   
   test('should create a new user', async () => {
     const newUser = { id: '123', name: 'Test User' };
-    await repo.insert(newUser);
+    const result = await repo.insert(newUser).execute();
     
-    const result = await repo.getById('123');
-    expect(result).toEqual(newUser);
-    expect(repo.spies.insert).toHaveBeenCalledTimes(1);
+    expect(result.error).toBeNull();
+    expect(result.data.name).toBe('Test User');
   });
 });
 ```
+
+## Best Practices
+
+1. **Use Schema-Based Testing**: Always use testing repositories for isolation
+2. **Clean Test Environment**: Use setup/teardown utilities for clean tests
+3. **Generate Realistic Data**: Use mock data generators for consistent test data
+4. **Test Relationships**: Validate entity relationships thoroughly
+5. **Performance Monitoring**: Use performance testing to catch regressions
+6. **Snapshot Testing**: Use snapshots for complex response validation
+7. **Proper Cleanup**: Always clean up test data after tests
+
+## Migration Notes
+
+Our testing approach has been fully migrated to schema-based testing. This means:
+- All tests use real database operations against the testing schema
+- No mock repositories are used in the current implementation
+- Test isolation is achieved through schema separation rather than in-memory mocks
+- Tests provide better coverage and confidence due to real database interactions
