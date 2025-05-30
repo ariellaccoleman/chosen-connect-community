@@ -1,5 +1,5 @@
 
 /**
- * Re-export all tag API functionality
+ * Re-export all tag API functionality - Factory pattern only
  */
 export * from './tags/index';

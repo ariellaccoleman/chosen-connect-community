@@ -1,17 +1,19 @@
 
 /**
- * Main tag API exports - simplified structure
+ * Main tag API exports - Factory pattern only
  */
 
-// Export the two main APIs
+// Export the factory APIs and their instances
 export {
   tagApi,
   tagAssignmentApi,
   createTagApiFactory,
-  createTagAssignmentApiFactory
+  createTagAssignmentApiFactory,
+  createExtendedTagApi,
+  createExtendedTagAssignmentApi
 } from './factory/tagApiFactory';
 
-// Export simplified function interface for direct usage
+// Export simplified function interface for direct usage (factory-based)
 export {
   getAllTags,
   getTagById,
@@ -27,6 +29,6 @@ export {
   deleteTagAssignment
 } from './factory/tagApiFactory';
 
-// For backward compatibility with legacy code, export the old tagsApi functions
+// Export legacy tagsApi functions for backward compatibility
 // These will be removed in a future version
 export * from './tagsApi';
