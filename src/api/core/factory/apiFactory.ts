@@ -59,107 +59,6 @@ export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'reposit
 }
 
 /**
- * Create a client-aware repository wrapper that can use either repository or direct client access
- */
-function createClientAwareRepository<T>(
-  baseRepository: DataRepository<T>, 
-  tableName: string,
-  providedClient?: any
-): DataRepository<T> {
-  if (!providedClient) {
-    return baseRepository;
-  }
-  
-  // Return a repository-like interface that uses the provided client
-  return {
-    ...baseRepository,
-    select: (columns: string = '*') => {
-      let query = providedClient.from(tableName).select(columns);
-      return {
-        ...query,
-        eq: (column: string, value: any) => {
-          query = query.eq(column, value);
-          return { ...query, execute: () => query, maybeSingle: () => query.maybeSingle() };
-        },
-        in: (column: string, values: any[]) => {
-          query = query.in(column, values);
-          return { ...query, execute: () => query };
-        },
-        ilike: (column: string, pattern: string) => {
-          query = query.ilike(column, pattern);
-          return { ...query, execute: () => query };
-        },
-        order: (column: string, options: any) => {
-          query = query.order(column, options);
-          return { ...query, execute: () => query };
-        },
-        range: (from: number, to: number) => {
-          query = query.range(from, to);
-          return { ...query, execute: () => query };
-        },
-        execute: () => query,
-        single: () => query.single(),
-        maybeSingle: () => query.maybeSingle()
-      };
-    },
-    insert: (data: any) => {
-      let query = providedClient.from(tableName).insert(data);
-      return {
-        ...query,
-        select: (columns: string = '*') => {
-          query = query.select(columns);
-          return { ...query, execute: () => query, single: () => query.single() };
-        },
-        execute: () => query,
-        single: () => query.single()
-      };
-    },
-    update: (data: any) => {
-      let query = providedClient.from(tableName).update(data);
-      return {
-        ...query,
-        eq: (column: string, value: any) => {
-          query = query.eq(column, value);
-          return { 
-            ...query, 
-            select: (columns: string = '*') => {
-              query = query.select(columns);
-              return { ...query, execute: () => query, single: () => query.single() };
-            },
-            execute: () => query, 
-            single: () => query.single() 
-          };
-        },
-        execute: () => query,
-        single: () => query.single()
-      };
-    },
-    delete: () => {
-      let query = providedClient.from(tableName).delete();
-      return {
-        ...query,
-        eq: (column: string, value: any) => {
-          query = query.eq(column, value);
-          return { 
-            ...query, 
-            select: (columns: string = '*') => {
-              query = query.select(columns);
-              return { ...query, execute: () => query };
-            },
-            execute: () => query 
-          };
-        },
-        in: (column: string, values: any[]) => {
-          query = query.in(column, values);
-          return { ...query, execute: () => query };
-        },
-        execute: () => query
-      };
-    }
-  } as DataRepository<T>;
-}
-
-/**
  * Creates a complete API factory with all operations that support client injection
  * 
  * @param config - Configuration for the API factory
@@ -221,17 +120,19 @@ export function createApiFactory<
       } else {
         dataRepository = createRepository<T>(
           tableName as string, 
-          { schema: 'public' }
+          { schema: 'public' },
+          providedClient // Pass the provided client to the real repository
         );
       }
     }
   } else {
-    // Create default repository
-    dataRepository = createRepository<T>(tableName as string);
+    // Create default repository with the provided client
+    dataRepository = createRepository<T>(
+      tableName as string,
+      { schema: 'public' },
+      providedClient // Pass the provided client to the real repository
+    );
   }
-  
-  // Create client-aware repository that can handle both repository and direct client access
-  const clientAwareRepository = createClientAwareRepository(dataRepository, tableName as string, providedClient);
   
   // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
@@ -245,7 +146,7 @@ export function createApiFactory<
     tableName,
     {
       ...options,
-      repository: clientAwareRepository
+      repository: dataRepository // Use the real repository instead of wrapper
     },
     providedClient
   );
@@ -267,7 +168,7 @@ export function createApiFactory<
         softDelete: options.softDelete,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: clientAwareRepository
+        repository: dataRepository // Use the real repository instead of wrapper
       },
       providedClient
     );
@@ -284,7 +185,7 @@ export function createApiFactory<
         defaultSelect: options.defaultSelect,
         transformResponse: options.transformResponse,
         transformRequest: options.transformRequest,
-        repository: clientAwareRepository
+        repository: dataRepository // Use the real repository instead of wrapper
       },
       providedClient
     );
