@@ -35,6 +35,29 @@ jest.mock('@/utils/logger', () => ({
   }
 }));
 
+// Mock useAuth hook to avoid authentication context issues
+jest.mock('@/hooks/useAuth', () => ({
+  useAuth: () => ({
+    user: {
+      id: 'test-user-id',
+      email: 'test@example.com'
+    },
+    loading: false,
+    isAuthenticated: true,
+    isAdmin: false,
+    email: 'test@example.com',
+    initialized: true,
+    login: jest.fn(),
+    signUp: jest.fn(),
+    logout: jest.fn(),
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+    forgotPassword: jest.fn(),
+    resetPassword: jest.fn(),
+    error: null
+  })
+}));
+
 // Create QueryClient for tests
 const queryClient = new QueryClient({
   defaultOptions: {
