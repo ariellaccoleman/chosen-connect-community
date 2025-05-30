@@ -1,4 +1,3 @@
-
 import { 
   getSelectionTags, 
   getFilterTags 
@@ -28,14 +27,15 @@ export const fetchFilterTags = async (options: {
     
     logger.debug(`fetchFilterTags: Getting tags for target type: ${validOptions.targetType || 'all'}`);
     
-    const response = await getFilterTags(validOptions);
-    if (response.status !== 'success' || !response.data) {
+    // Use factory-based API
+    const response = await tagApi.getByEntityType(validOptions.targetType as EntityType);
+    if (response.error) {
       logger.error("Error fetching filter tags:", response.error);
       return [];
     }
     
-    logger.debug(`fetchFilterTags: Found ${response.data.length} tags`);
-    return response.data;
+    logger.debug(`fetchFilterTags: Found ${response.data?.length || 0} tags`);
+    return response.data || [];
   } catch (error) {
     logger.error("Error in fetchFilterTags:", error);
     return [];
