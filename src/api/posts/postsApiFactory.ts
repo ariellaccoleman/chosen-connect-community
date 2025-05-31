@@ -1,10 +1,11 @@
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
 import { apiClient } from '../core/apiClient';
 import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
 
-// Create the main posts API using the factory with the posts_with_tags view
+// Create the main posts API using the factory
 export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
   tableName: 'posts',
   entityName: 'post',
@@ -15,10 +16,7 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
     author_id: data.author_id,
     has_media: data.has_media || false,
     created_at: data.created_at,
-    updated_at: data.updated_at,
-    // Include tags if they exist in the response (from posts_with_tags view)
-    tags: data.tags || [],
-    tag_names: data.tag_names || []
+    updated_at: data.updated_at
   }),
   transformRequest: (data: PostCreate | PostUpdate) => {
     const transformed: Record<string, any> = {
@@ -34,8 +32,26 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
     return transformed;
   },
   useMutationOperations: true,
-  useBatchOperations: false,
-  withTagsView: 'posts_with_tags' // Add the view for tag-enhanced queries
+  useBatchOperations: false
+});
+
+// Create the posts with tags view API for filtering and display
+export const postsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+  tableName: 'posts_with_tags',
+  entityName: 'postWithTags',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    content: data.content,
+    author_id: data.author_id,
+    has_media: data.has_media || false,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    tags: data.tags || [],
+    tag_names: data.tag_names || []
+  }),
+  useMutationOperations: false, // Read-only view
+  useBatchOperations: false
 });
 
 // Create the post comments API (alias as commentsApi for backwards compatibility)
@@ -284,8 +300,7 @@ export const resetPostsApi = (client?: any) => {
       return transformed;
     },
     useMutationOperations: true,
-    useBatchOperations: false,
-    withTagsView: 'posts_with_tags'
+    useBatchOperations: false
   }, client);
 
   const newPostCommentsApi = createApiFactory<any, string>({
@@ -332,8 +347,27 @@ export const resetPostsApi = (client?: any) => {
     useBatchOperations: false
   }, client);
 
+  const newPostsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+    tableName: 'posts_with_tags',
+    entityName: 'postWithTags',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      content: data.content,
+      author_id: data.author_id,
+      has_media: data.has_media || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      tags: data.tags || [],
+      tag_names: data.tag_names || []
+    }),
+    useMutationOperations: false,
+    useBatchOperations: false
+  }, client);
+
   return {
     postsApi: newPostsApi,
+    postsWithTagsApi: newPostsWithTagsApi,
     postCommentsApi: newPostCommentsApi,
     postLikesApi: newPostLikesApi,
     commentLikesApi: newCommentLikesApi,
@@ -352,6 +386,11 @@ export const {
   update: updatePost,
   delete: deletePost
 } = postsApi;
+
+export const {
+  getAll: getAllPostsWithTags,
+  getById: getPostWithTagsById
+} = postsWithTagsApi;
 
 export const {
   getAll: getAllPostComments,

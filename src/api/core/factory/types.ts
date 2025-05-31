@@ -1,117 +1,160 @@
 
-import type { Database } from '@/integrations/supabase/types';
+import { Database } from "@/integrations/supabase/types";
+import { DataRepository } from "../repository/repositoryFactory";
 
-// Extract table names from Database type
+// Define a type for valid table names from the Database type
 export type TableNames = keyof Database['public']['Tables'];
 
-// View names (including the new posts_with_tags view)
-export type ViewNames = 
-  | 'people_with_tags'
-  | 'organizations_with_tags' 
-  | 'events_with_tags'
-  | 'posts_with_tags'
-  | 'all_tags_with_entity_types_view'
-  | 'entity_tag_assignments_view'
-  | 'filtered_entity_tags_view'
-  | 'hub_details'
-  | 'orphaned_tags_view'
-  | 'tag_entity_types_view'
-  | 'chat_reply_counts';
+// Define a type for valid view names from the Database type
+export type ViewNames = keyof Database['public']['Views'];
 
-/**
- * Base configuration for API factories
- */
-export interface ApiFactoryConfig<T> {
-  tableName: TableNames;
-  entityName: string;
+// Get the Row type for a specific table
+export type TableRow<T extends TableNames> = Database['public']['Tables'][T]['Row'];
+
+// Get the Row type for a specific view
+export type ViewRow<T extends ViewNames> = Database['public']['Views'][T]['Row'];
+
+// Get the Insert type for a specific table
+export type TableInsert<T extends TableNames> = Database['public']['Tables'][T]['Insert'];
+
+// Get the Update type for a specific table
+export type TableUpdate<T extends TableNames> = Database['public']['Tables'][T]['Update'];
+
+// Define a type for valid column names for a specific table
+// Use string type intersection to ensure TS knows this is a string
+export type TableColumnName<T extends TableNames> = keyof Database['public']['Tables'][T]['Row'] & string;
+
+// Define a type for valid column names for a specific view
+export type ViewColumnName<T extends ViewNames> = keyof Database['public']['Views'][T]['Row'] & string;
+
+// Options type for the API factory function
+export interface ApiFactoryOptions<T> {
+  idField?: string;
+  defaultSelect?: string;
   defaultOrderBy?: string;
-  transformResponse?: (data: any) => T;
-  transformRequest?: (data: any) => any;
-  withTagsView?: ViewNames | string; // Allow view names for enhanced tag operations
+  softDelete?: boolean;
+  transformResponse?: (item: any) => T;
+  transformRequest?: (item: any) => Record<string, any>;
 }
 
 /**
- * Extended configuration including operation flags
+ * Options type for relationship API factory functions
+ * Extends ApiFactoryOptions with relationship-specific configuration
  */
-export interface ApiFactoryOptions<T, TCreate = Partial<T>, TUpdate = Partial<T>> 
-  extends ApiFactoryConfig<T> {
-  useMutationOperations?: boolean;
-  useBatchOperations?: boolean;
-  useRelationshipOperations?: boolean;
-  client?: any; // Optional Supabase client override
+export interface RelationshipFactoryOptions<T> extends ApiFactoryOptions<T> {
+  // Relationship-specific validation functions
+  validateRelationship?: (sourceId: string, targetId: string, relationshipType?: string) => boolean;
+  
+  // Custom relationship creation logic
+  onRelationshipCreated?: (relationship: T) => void | Promise<void>;
+  onRelationshipDeleted?: (relationshipId: string) => void | Promise<void>;
+  
+  // Cascade options for relationship operations
+  cascadeDelete?: boolean;
+  preventDuplicates?: boolean;
+  
+  // Relationship metadata
+  sourceEntityType?: string;
+  targetEntityType?: string;
+  relationshipDescription?: string;
 }
 
-/**
- * Standard CRUD operations interface
- */
-export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> {
-  // Read operations
-  getAll: (options?: {
+// Options type for the View factory function (read-only operations)
+export interface ViewFactoryOptions<T> {
+  idField?: string;
+  defaultSelect?: string;
+  defaultOrderBy?: string;
+  transformResponse?: (item: any) => T;
+  enableLogging?: boolean;
+}
+
+// Read-only operations interface for view factories
+export interface ViewOperations<T, TId = string> {
+  // Read operations only
+  getAll: (params?: {
     filters?: Record<string, any>;
     search?: string;
     searchColumns?: string[];
-    orderBy?: string;
     ascending?: boolean;
     limit?: number;
     offset?: number;
     select?: string;
-    includeTags?: boolean;
-    tagId?: string;
-  }) => Promise<any>;
-  getById: (id: TId, select?: string) => Promise<any>;
-  getByIds: (ids: TId[], select?: string) => Promise<any>;
+  }) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
   
-  // Enhanced read operations (if withTagsView is provided)
-  getAllWithTags?: (options?: {
+  getById: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  getByIds: (ids: TId[]) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  // View name for reference
+  readonly viewName: string;
+}
+
+// Full API operations interface (includes all CRUD operations)
+export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> {
+  // Query operations
+  getAll: (params?: {
     filters?: Record<string, any>;
     search?: string;
     searchColumns?: string[];
-    orderBy?: string;
     ascending?: boolean;
     limit?: number;
     offset?: number;
-  }) => Promise<any>;
-  getByTagId?: (tagId: string, options?: {
-    search?: string;
-    searchColumns?: string[];
-    orderBy?: string;
-    ascending?: boolean;
-    limit?: number;
-    offset?: number;
-  }) => Promise<any>;
-  getByIdWithTags?: (id: TId) => Promise<any>;
+    select?: string;
+  }) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
   
-  // Write operations
-  create?: (data: TCreate) => Promise<any>;
-  update?: (id: TId, data: TUpdate) => Promise<any>;
-  delete?: (id: TId) => Promise<any>;
+  getById: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
   
-  // Batch operations (optional)
-  batchCreate?: (data: TCreate[]) => Promise<any>;
-  batchUpdate?: (updates: Array<{ id: TId; data: TUpdate }>) => Promise<any>;
-  batchDelete?: (ids: TId[]) => Promise<any>;
+  getByIds: (ids: TId[]) => Promise<{
+    data: T[];
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  // Mutation operations
+  create: (data: TCreate) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  update: (id: TId, data: TUpdate) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  delete: (id: TId) => Promise<{
+    data: T | null;
+    error: any;
+    status: 'success' | 'error';
+  }>;
+  
+  // Table name for reference
+  readonly tableName: string;
 }
 
-/**
- * List parameters for read operations
- */
-export interface ListParams {
-  filters?: Record<string, any>;
-  search?: string;
-  searchColumns?: string[];
-  orderBy?: string;
-  ascending?: boolean;
-  limit?: number;
-  offset?: number;
-  select?: string;
-  includeTags?: boolean;
-  tagId?: string;
-}
-
-/**
- * Standard response wrapper
- */
-export interface ApiResponse<T> {
-  data: T;
-  error?: any;
+// Relationship API operations (excludes generic create, includes read/update/delete)
+export interface RelationshipApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> extends Omit<ApiOperations<T, TId, TCreate, TUpdate>, 'create'> {
+  // All operations except generic create
+  // Relationship-specific create methods would be added by extending classes
 }

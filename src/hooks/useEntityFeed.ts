@@ -1,198 +1,156 @@
 
 import { useQuery } from "@tanstack/react-query";
-import { Entity } from "@/types/entity";
 import { EntityType } from "@/types/entityTypes";
+import { Entity } from "@/types/entity";
 import { logger } from "@/utils/logger";
-import { entityRegistry } from "@/registry";
-import { profileApi } from "@/api/profiles";
-import { organizationApi } from "@/api/organizations";
-import { eventApi } from "@/api/events";
-import { postsApi } from "@/api/posts";
+import { organizationApi } from "@/api/organizations/organizationApiFactory";
+import { eventApi } from "@/api/events/eventApiFactory";
+import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
+import { apiClient } from "@/api/core/apiClient";
 
-interface UseEntityFeedOptions {
+interface UseEntityFeedProps {
   entityTypes: EntityType[];
-  tagId?: string | null;
   limit?: number;
-  filterByUserId?: string | null;
-  // Profile-specific options
+  tagId?: string | null;
   search?: string;
   isApproved?: boolean;
 }
 
-/**
- * Custom hook to fetch entities of specified types, optionally filtered by tag
- * Now simplified to use view APIs with pre-loaded tags
- */
 export const useEntityFeed = ({
   entityTypes,
-  tagId = null,
-  limit = 10,
-  filterByUserId = null,
+  limit = 50,
+  tagId,
   search = "",
-  isApproved = true,
-}: UseEntityFeedOptions) => {
-  // This query fetches entities based on the provided entityTypes using view APIs
-  const { data: entitiesData, isLoading, error } = useQuery({
-    queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId, search, isApproved }],
+  isApproved = true
+}: UseEntityFeedProps) => {
+  return useQuery({
+    queryKey: ['entity-feed', entityTypes, limit, tagId, search, isApproved],
     queryFn: async () => {
       const allEntities: Entity[] = [];
       
-      logger.debug(`EntityFeed: Starting simplified fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
-      
-      // Fetch each entity type using their view APIs with pre-loaded tags
-      await Promise.all(
-        entityTypes.map(async (type) => {
-          try {
-            let items: any[] = [];
-            
-            // Common query options
-            const queryOptions = {
-              search: search || undefined,
-              limit,
-              tagId, // Pass tagId for database-level filtering
-              includeTags: true // Always include tags from views
-            };
-            
-            // Fetch the appropriate data based on entity type using view APIs
-            switch (type) {
-              case EntityType.PERSON:
-                logger.debug(`EntityFeed: Fetching PERSON entities from view with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
-                
-                // Build filters for people
-                const peopleFilters: any = {};
-                
-                // Apply profile-specific filters
-                if (filterByUserId) {
-                  peopleFilters.id = filterByUserId;
-                }
-                
-                // Apply approved filter for profiles
-                if (isApproved !== undefined) {
-                  peopleFilters.is_approved = isApproved;
-                }
-                
-                // Use the profile API with view support and correct getAll method
-                const profilesResponse = await profileApi.getAll({
-                  filters: peopleFilters,
-                  ...queryOptions
-                });
-                  
-                if (profilesResponse.error) {
-                  logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesResponse.error);
-                  break;
-                }
-                
-                items = profilesResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} PERSON entities from view`);
-                break;
-                
-              case EntityType.ORGANIZATION:
-                logger.debug(`EntityFeed: Fetching ORGANIZATION entities from view with tagId=${tagId}, search=${search}`);
-                
-                // Use the organization API with view support and correct getAll method
-                const orgsResponse = await organizationApi.getAll({
-                  filters: {},
-                  ...queryOptions
-                });
-                  
-                if (orgsResponse.error) {
-                  logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsResponse.error);
-                  break;
-                }
-                
-                items = orgsResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} ORGANIZATION entities from view`);
-                break;
-                
-              case EntityType.EVENT:
-                logger.debug(`EntityFeed: Fetching EVENT entities from view with tagId=${tagId}, search=${search}`);
-                
-                // Use the event API with view support and correct getAll method
-                const eventsResponse = await eventApi.getAll({
-                  filters: {},
-                  ...queryOptions
-                });
-                  
-                if (eventsResponse.error) {
-                  logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsResponse.error);
-                  break;
-                }
-                
-                items = eventsResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities from view`);
-                break;
-                
-              case EntityType.POST:
-                logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
-                
-                // Use the posts API with the correct getAll method and tag filtering
-                const postFilters: any = {};
-                
-                const postsResponse = await postsApi.getAll({
-                  filters: postFilters,
-                  search: search || undefined,
-                  limit,
-                  tagId, // Use tagId parameter for filtering
-                  includeTags: true // Include tags from posts_with_tags view
-                });
-                  
-                if (postsResponse.error) {
-                  logger.error(`EntityFeed: Error fetching POST entities:`, postsResponse.error);
-                  break;
-                }
-                
-                items = postsResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} POST entities`);
-                break;
-                
-              default:
-                logger.warn(`Unsupported entity type: ${type}`);
-                break;
-            }
-            
-            // Convert each item to an Entity and add to results
-            if (items && items.length > 0) {
-              items.forEach((item) => {
-                if (item) {
-                  try {
-                    // Use the entity registry to convert data to entity
-                    const entity = entityRegistry.toEntity(item, type);
-                    
-                    if (entity) {
-                      logger.debug(`EntityFeed: Converted ${type} to entity`, {
-                        id: entity.id,
-                        entityType: entity.entityType,
-                        name: entity.name,
-                        tagsCount: entity.tags?.length || 0
-                      });
-                      
-                      allEntities.push(entity);
-                    } else {
-                      logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
-                    }
-                  } catch (conversionError) {
-                    logger.error(`EntityFeed: Error converting ${type} entity:`, conversionError);
-                  }
-                }
-              });
-            }
-          } catch (e) {
-            logger.error(`Error fetching ${type} entities:`, e);
-          }
-        })
-      );
-      
-      logger.debug(`EntityFeed: Simplified fetch completed, found ${allEntities.length} total entities`);
-      return allEntities;
-    },
-    enabled: entityTypes.length > 0,
-  });
-  
-  return {
-    entities: entitiesData || [],
-    isLoading,
-    error,
-  };
-};
+      logger.debug(`useEntityFeed: Fetching entities for types: ${entityTypes.join(', ')}`, {
+        tagId,
+        search,
+        isApproved,
+        limit
+      });
 
-export default useEntityFeed;
+      // Fetch data for each entity type
+      for (const entityType of entityTypes) {
+        try {
+          let apiResponse;
+          
+          switch (entityType) {
+            case EntityType.ORGANIZATION:
+              if (tagId) {
+                // Use tag filtering for organizations
+                apiResponse = await organizationApi.filterByTagNames([tagId]);
+              } else if (search) {
+                apiResponse = await organizationApi.search('name', search);
+              } else {
+                apiResponse = await organizationApi.getAll();
+              }
+              break;
+              
+            case EntityType.PERSON:
+              // Use apiClient directly for people with complex filters
+              const result = await apiClient.query(async (supabase) => {
+                let query = supabase.from('people_with_tags').select('*');
+                
+                // Apply filters
+                if (isApproved) {
+                  query = query.eq('is_approved', true);
+                }
+                if (search) {
+                  query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,headline.ilike.%${search}%`);
+                }
+                if (tagId) {
+                  // Use PostgreSQL array overlap operator for tag filtering
+                  query = query.overlaps('tag_names', [tagId]);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) throw error;
+                
+                return { isSuccess: () => true, data };
+              });
+              
+              apiResponse = result;
+              break;
+              
+            case EntityType.EVENT:
+              if (tagId) {
+                apiResponse = await eventApi.filterByTagNames([tagId]);
+              } else if (search) {
+                apiResponse = await eventApi.search('title', search);
+              } else {
+                apiResponse = await eventApi.getAll();
+              }
+              break;
+              
+            case EntityType.POST:
+              if (tagId) {
+                // Use tag filtering for posts with the new posts_with_tags view
+                apiResponse = await postsWithTagsApi.filterByTagNames([tagId]);
+              } else if (search) {
+                apiResponse = await postsWithTagsApi.search('content', search);
+              } else {
+                apiResponse = await postsWithTagsApi.getAll();
+              }
+              break;
+              
+            default:
+              logger.warn(`Unknown entity type: ${entityType}`);
+              continue;
+          }
+
+          if (apiResponse.isSuccess()) {
+            const data = apiResponse.data || [];
+            logger.debug(`useEntityFeed: Found ${data.length} ${entityType} entities`, {
+              tagId,
+              search,
+              firstFew: data.slice(0, 3).map(item => ({ id: item.id, name: item.name || item.title || item.content?.substring(0, 50) }))
+            });
+            
+            // Transform to Entity format
+            const entities: Entity[] = data.map((item: any) => ({
+              id: item.id,
+              name: item.name || item.title || `${item.first_name} ${item.last_name}`.trim() || 'Untitled',
+              description: item.description || item.bio || item.content || '',
+              entityType,
+              tags: item.tags || [],
+              ...item
+            }));
+            
+            allEntities.push(...entities);
+          } else {
+            logger.error(`Failed to fetch ${entityType} entities:`, apiResponse.error);
+          }
+        } catch (error) {
+          logger.error(`Error fetching ${entityType} entities:`, error);
+        }
+      }
+
+      // Sort by creation date (newest first) and apply limit
+      const sortedEntities = allEntities
+        .sort((a, b) => {
+          const aDate = new Date(a.created_at || 0);
+          const bDate = new Date(b.created_at || 0);
+          return bDate.getTime() - aDate.getTime();
+        })
+        .slice(0, limit);
+
+      logger.debug(`useEntityFeed: Returning ${sortedEntities.length} total entities`, {
+        breakdown: entityTypes.reduce((acc, type) => {
+          acc[type] = sortedEntities.filter(e => e.entityType === type).length;
+          return acc;
+        }, {} as Record<string, number>)
+      });
+
+      return sortedEntities;
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    enabled: entityTypes.length > 0
+  });
+};

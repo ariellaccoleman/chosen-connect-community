@@ -76,9 +76,9 @@ export function createQueryOperations<
         // Use the with_tags view if tags are requested/needed and available
         const tableToQuery = (includeTags || tagId) && withTagsView ? withTagsView : tableName;
 
-        // Use apiClient for all queries since we need proper JSONB support
-        return await apiClient.query(async (client) => {
-          let query = client.from(tableToQuery).select(select);
+        // Use repository if provided, otherwise use apiClient with optional client injection
+        if (repository && !tagId) { // Only use repository for simple queries without tag filtering
+          let query = repository.select(select);
 
           // Apply filters
           Object.entries(filters).forEach(([key, value]) => {
@@ -91,11 +91,52 @@ export function createQueryOperations<
             }
           });
 
-          // Apply tag filtering using the aggregated tags JSONB array
+          // Apply search
+          if (search && searchColumns.length > 0) {
+            // For now, just search on the first column
+            query = query.ilike(searchColumns[0], `%${search}%`);
+          }
+
+          // Apply ordering
+          query = query.order(orderBy, { ascending });
+
+          // Apply pagination
+          if (limit !== undefined) {
+            const from = offset || 0;
+            const to = from + limit - 1;
+            query = query.range(from, to);
+          }
+
+          const result = await query.execute();
+          
+          if (result.error) throw result.error;
+          
+          const transformedData = Array.isArray(result.data) 
+            ? result.data.map(transformResponse)
+            : [];
+            
+          return createSuccessResponse(transformedData);
+        }
+
+        // Use apiClient with optional client injection
+        return await apiClient.query(async (client) => {
+          let query = client.from(tableToQuery as any).select(select);
+
+          // Apply filters
+          Object.entries(filters).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              if (Array.isArray(value)) {
+                query = query.in(key, value);
+              } else {
+                query = query.eq(key, value);
+              }
+            }
+          });
+
+          // Apply tag filtering using array overlap for tag_names
           if (tagId && withTagsView) {
-            // Use JSONB contains operator to find entities with the specific tag
-            // The tags column contains an array of tag objects with id and name
-            query = query.contains('tags', [{ id: tagId }]);
+            // Use array overlap operator to find entities with the specific tag name
+            query = query.overlaps('tag_names', [tagId]);
           }
 
           // Apply search
@@ -127,6 +168,30 @@ export function createQueryOperations<
       } catch (error) {
         return createErrorResponse(error);
       }
+    },
+
+    /**
+     * Search entities using case-insensitive pattern matching
+     */
+    async search(field: string, searchTerm: string): Promise<ApiResponse<T[]>> {
+      return this.getAll({
+        search: searchTerm,
+        searchColumns: [field]
+      });
+    },
+
+    /**
+     * Filter entities by tag names using PostgreSQL array overlap operator
+     */
+    async filterByTagNames(tagNames: string[]): Promise<ApiResponse<T[]>> {
+      if (!tagNames || tagNames.length === 0 || !withTagsView) {
+        return this.getAll();
+      }
+
+      return this.getAll({
+        tagId: tagNames[0], // For now, handle single tag filtering
+        includeTags: true
+      });
     },
 
     /**
@@ -180,10 +245,22 @@ export function createQueryOperations<
      */
     async getById(id: TId, select: string = defaultSelect): Promise<ApiResponse<T | null>> {
       try {
-        // Use apiClient for consistency
+        // Use repository if provided, otherwise use apiClient with optional client injection
+        if (repository) {
+          const result = await repository
+            .select(select)
+            .eq(idField, id as any)
+            .maybeSingle();
+          
+          if (result.error) throw result.error;
+          
+          return createSuccessResponse(result.data ? transformResponse(result.data) : null);
+        }
+
+        // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(tableName)
+            .from(tableName as any)
             .select(select)
             .eq(idField, id as any)
             .maybeSingle();
@@ -208,7 +285,7 @@ export function createQueryOperations<
       try {
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(withTagsView)
+            .from(withTagsView as any)
             .select("*")
             .eq(idField, id as any)
             .maybeSingle();
@@ -231,10 +308,26 @@ export function createQueryOperations<
           return createSuccessResponse([]);
         }
 
-        // Use apiClient for consistency
+        // Use repository if provided, otherwise use apiClient with optional client injection
+        if (repository) {
+          const result = await repository
+            .select(select)
+            .in(idField, ids as any[])
+            .execute();
+          
+          if (result.error) throw result.error;
+          
+          const transformedData = Array.isArray(result.data) 
+            ? result.data.map(transformResponse)
+            : [];
+            
+          return createSuccessResponse(transformedData);
+        }
+
+        // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(tableName)
+            .from(tableName as any)
             .select(select)
             .in(idField, ids as any[]);
           
