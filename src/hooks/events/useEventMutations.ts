@@ -22,10 +22,8 @@ export const useEventMutations = () => {
       logger.info("Creating event", { event, hostId, tagIds });
       
       try {
-        // Use extended API to create event with tags if provided
-        const result = tagIds && tagIds.length > 0
-          ? await extendedEventApi.createEventWithTags(event, hostId, tagIds)
-          : await extendedEventApi.create({ ...event, host_id: hostId } as any);
+        // Create the event with host_id
+        const result = await extendedEventApi.create({ ...event, host_id: hostId } as any);
         
         if (result.error) {
           logger.error("API returned error:", result.error);
