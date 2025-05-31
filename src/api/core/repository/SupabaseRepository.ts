@@ -313,6 +313,19 @@ class SupabaseQuery<T> implements RepositoryQuery<T> {
     }
   }
 
+  /**
+   * Filter by array overlap (PostgreSQL arrays)
+   */
+  overlaps(column: string, values: any[]): RepositoryQuery<T> {
+    try {
+      this.query = this.query.overlaps(column, values);
+      return this;
+    } catch (error) {
+      logger.error(`Error in overlaps operation on ${this.context}:`, error);
+      return new ErrorQuery<T>(error, `${this.context}.overlaps(${column})`);
+    }
+  }
+
   order(column: string, options: { ascending?: boolean } = {}): RepositoryQuery<T> {
     try {
       this.query = this.query.order(column, options);
@@ -451,6 +464,7 @@ class ErrorQuery<T> implements RepositoryQuery<T> {
   lt(_column: string, _value: any): RepositoryQuery<T> { return this; }
   lte(_column: string, _value: any): RepositoryQuery<T> { return this; }
   or(_filter: string): RepositoryQuery<T> { return this; }
+  overlaps(_column: string, _values: any[]): RepositoryQuery<T> { return this; }
   order(_column: string, _options: { ascending?: boolean } = {}): RepositoryQuery<T> { return this; }
   limit(_count: number): RepositoryQuery<T> { return this; }
   offset(_count: number): RepositoryQuery<T> { return this; }
