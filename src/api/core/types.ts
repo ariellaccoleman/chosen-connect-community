@@ -44,26 +44,57 @@ export type ApiResponse<T> = {
   data: T | null;
   error: ApiError | null;
   status: 'success' | 'error';
+  isSuccess: () => boolean;
+  isError: () => boolean;
 };
 
 /**
- * Standard CRUD operations interface for API factories
+ * Base API operations interface for all entity types
  */
-export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> {
-  // Read operations
+export interface BaseApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> {
+  // Basic CRUD operations
   getAll: (params?: ListParams) => Promise<ApiResponse<T[]>>;
   getById: (id: TId) => Promise<ApiResponse<T | null>>;
   getByIds: (ids: TId[]) => Promise<ApiResponse<T[]>>;
   
+  // Search and filtering operations
+  search: (field: string, searchTerm: string) => Promise<ApiResponse<T[]>>;
+  filterByTagNames: (tagNames: string[]) => Promise<ApiResponse<T[]>>;
+  
+  // Entity name for reference
+  readonly entityName?: string;
+}
+
+/**
+ * Standard CRUD operations interface for regular entities
+ */
+export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> 
+  extends BaseApiOperations<T, TId, TCreate, TUpdate> {
   // Write operations
   create: (data: TCreate) => Promise<ApiResponse<T>>;
   update: (id: TId, data: TUpdate) => Promise<ApiResponse<T>>;
   delete: (id: TId) => Promise<ApiResponse<boolean>>;
   
-  // Batch operations
+  // Batch operations (optional)
   batchCreate?: (data: TCreate[]) => Promise<ApiResponse<T[]>>;
   batchUpdate?: (items: {id: TId, data: TUpdate}[]) => Promise<ApiResponse<T[]>>;
   batchDelete?: (ids: TId[]) => Promise<ApiResponse<boolean>>;
+  
+  // Table name for reference
+  readonly tableName?: string;
+}
+
+/**
+ * View operations interface (read-only)
+ */
+export interface ViewApiOperations<T, TId = string> extends BaseApiOperations<T, TId> {
+  // Enhanced operations that include tags by default
+  getAllWithTags?: (params?: ListParams) => Promise<ApiResponse<T[]>>;
+  getByIdWithTags?: (id: TId) => Promise<ApiResponse<T | null>>;
+  getByTagId?: (tagId: string, params?: ListParams) => Promise<ApiResponse<T[]>>;
+  
+  // View name for reference
+  readonly viewName?: string;
 }
 
 /**

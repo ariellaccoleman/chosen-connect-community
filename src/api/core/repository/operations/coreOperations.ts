@@ -1,3 +1,4 @@
+
 import { DataRepository, RepositoryResponse } from "../DataRepository";
 import { logger } from "@/utils/logger";
 import { ApiResponse, ApiError, createSuccessResponse, createErrorResponse } from "../../errorHandler";
@@ -19,6 +20,25 @@ export class CoreRepositoryOperations<T, TId = string> {
     return createErrorResponse({ 
       message: `Failed to ${operation} ${this.entityName.toLowerCase()}` 
     } as ApiError);
+  }
+
+  /**
+   * Get all entities
+   */
+  async getAll(): Promise<ApiResponse<T[]>> {
+    try {
+      const result = await this.repository
+        .select()
+        .execute();
+      
+      if (result.isError()) {
+        throw result.error;
+      }
+      
+      return createSuccessResponse(result.data as T[]);
+    } catch (error) {
+      return this.handleError(error, "retrieve");
+    }
   }
 
   /**

@@ -114,6 +114,22 @@ export interface RepositoryQuery<T = any> extends ReadOnlyRepositoryQuery<T> {
   or(filter: string): RepositoryQuery<T>;
   
   /**
+   * Filter by array contains operator
+   * @param column Column name (should be an array column)
+   * @param values Values that the array should contain
+   * @returns The query builder for chaining
+   */
+  contains(column: string, values: any[]): RepositoryQuery<T>;
+  
+  /**
+   * Filter by array overlap operator
+   * @param column Column name (should be an array column)
+   * @param values Values to check for overlap with the array
+   * @returns The query builder for chaining
+   */
+  overlaps(column: string, values: any[]): RepositoryQuery<T>;
+  
+  /**
    * Order results by a column
    * @param column Column to order by
    * @param options Options for ordering
