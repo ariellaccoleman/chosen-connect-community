@@ -41,11 +41,14 @@ describe('API Error Handler - Database Integration', () => {
     const testData = { id: '123', name: 'Test User' };
     const response = createSuccessResponse(testData);
     
-    expect(response).toEqual({
-      data: testData,
-      error: null,
-      status: 'success'
-    });
+    // Test individual properties instead of deep equality
+    expect(response.data).toEqual(testData);
+    expect(response.error).toBeNull();
+    expect(response.status).toBe('success');
+    
+    // Test helper methods
+    expect(response.isSuccess()).toBe(true);
+    expect(response.isError()).toBe(false);
   });
 
   test('createErrorResponse returns properly formatted error response', () => {
@@ -57,16 +60,19 @@ describe('API Error Handler - Database Integration', () => {
     
     const response = createErrorResponse(error);
     
-    expect(response).toEqual({
-      data: null,
-      error: {
-        code: 'auth/invalid_credentials',
-        message: 'Invalid email or password',
-        details: { attemptCount: 3 },
-        original: error
-      },
-      status: 'error'
+    // Test individual properties instead of deep equality
+    expect(response.data).toBeNull();
+    expect(response.status).toBe('error');
+    expect(response.error).toMatchObject({
+      code: 'auth/invalid_credentials',
+      message: 'Invalid email or password',
+      details: { attemptCount: 3 },
+      original: error
     });
+    
+    // Test helper methods
+    expect(response.isSuccess()).toBe(false);
+    expect(response.isError()).toBe(true);
   });
 
   test('handleApiError handles real PostgrestError from database', async () => {
@@ -99,6 +105,10 @@ describe('API Error Handler - Database Integration', () => {
       expect(result.status).toBe('error');
       expect(result.error).toBeDefined();
       expect(result.error?.message).toBeTruthy();
+      
+      // Test helper methods
+      expect(result.isSuccess()).toBe(false);
+      expect(result.isError()).toBe(true);
     }
   });
 
@@ -108,6 +118,10 @@ describe('API Error Handler - Database Integration', () => {
     
     expect(response.status).toBe('error');
     expect(response.error?.message).toBe('Something went wrong');
+    
+    // Test helper methods
+    expect(response.isSuccess()).toBe(false);
+    expect(response.isError()).toBe(true);
   });
 
   test('handleApiError handles unknown errors', () => {
@@ -115,6 +129,10 @@ describe('API Error Handler - Database Integration', () => {
     
     expect(response.status).toBe('error');
     expect(response.error?.message).toBe('Unexpected string error');
+    
+    // Test helper methods
+    expect(response.isSuccess()).toBe(false);
+    expect(response.isError()).toBe(true);
   });
 
   test('showErrorToast displays error message via toast', () => {
@@ -176,5 +194,23 @@ describe('API Error Handler - Database Integration', () => {
     // Should handle the error appropriately regardless of the specific error type
     expect(result).toBeDefined();
     expect(result.status).toBeDefined();
+    
+    // Test helper methods exist
+    expect(typeof result.isSuccess).toBe('function');
+    expect(typeof result.isError).toBe('function');
+  });
+
+  test('ApiResponse helper methods work correctly for success responses', () => {
+    const response = createSuccessResponse({ test: 'data' });
+    
+    expect(response.isSuccess()).toBe(true);
+    expect(response.isError()).toBe(false);
+  });
+
+  test('ApiResponse helper methods work correctly for error responses', () => {
+    const response = createErrorResponse(new Error('test error'));
+    
+    expect(response.isSuccess()).toBe(false);
+    expect(response.isError()).toBe(true);
   });
 });
