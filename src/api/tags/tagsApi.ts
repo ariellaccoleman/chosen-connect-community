@@ -25,25 +25,6 @@ export const getTagById = async (id: string): Promise<ApiResponse<Tag | null>> =
 };
 
 /**
- * Find tag by name
- */
-export const findTagByName = async (name: string): Promise<ApiResponse<Tag | null>> => {
-  const response = await extendedTagApi.getAll({ filters: { name } });
-  if (response.error) {
-    return response as ApiResponse<Tag | null>;
-  }
-  
-  const tag = response.data?.[0] || null;
-  return {
-    data: tag,
-    error: null,
-    status: 'success',
-    isSuccess: () => true,
-    isError: () => false
-  };
-};
-
-/**
  * Create a new tag
  */
 export const createTag = async (data: Partial<Tag>): Promise<ApiResponse<Tag>> => {
