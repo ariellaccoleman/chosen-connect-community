@@ -108,7 +108,7 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
       // Use array overlap operator to find entities that have any of the specified tag names
       const result = await this.repository
         .select()
-        .overlaps('tag_names', tagNames)
+        .contains('tag_names', tagNames)
         .execute();
       
       if (result.isError()) {
@@ -119,5 +119,12 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
     } catch (error) {
       return this.handleError(error, "filter by tag names");
     }
+  }
+
+  /**
+   * Get all entities - delegates to parent class
+   */
+  async getAll(): Promise<ApiResponse<T[]>> {
+    return super.getAll();
   }
 }

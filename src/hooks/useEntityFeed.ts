@@ -3,10 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { EntityType } from "@/types/entityTypes";
 import { Entity } from "@/types/entity";
 import { logger } from "@/utils/logger";
-import { organizationsWithTagsApi } from "@/api/organizations/organizationApiFactory";
-import { peopleWithTagsApi } from "@/api/profiles/profileApiFactory";
-import { eventsWithTagsApi } from "@/api/events/eventApiFactory";
+import { organizationApi } from "@/api/organizations/organizationApiFactory";
+import { eventApi } from "@/api/events/eventApiFactory";
 import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
+import { apiClient } from "@/api/core/apiClient";
 
 interface UseEntityFeedProps {
   entityTypes: EntityType[];
@@ -44,40 +44,48 @@ export const useEntityFeed = ({
             case EntityType.ORGANIZATION:
               if (tagId) {
                 // Use tag filtering for organizations
-                apiResponse = await organizationsWithTagsApi.filterByTagNames([tagId]);
+                apiResponse = await organizationApi.filterByTagNames([tagId]);
               } else if (search) {
-                apiResponse = await organizationsWithTagsApi.search('name', search);
+                apiResponse = await organizationApi.search('name', search);
               } else {
-                apiResponse = await organizationsWithTagsApi.getAll();
+                apiResponse = await organizationApi.getAll();
               }
               break;
               
             case EntityType.PERSON:
-              let query = peopleWithTagsApi.select();
+              // Use apiClient directly for people with complex filters
+              const result = await apiClient.query(async (supabase) => {
+                let query = supabase.from('people_with_tags').select('*');
+                
+                // Apply filters
+                if (isApproved) {
+                  query = query.eq('is_approved', true);
+                }
+                if (search) {
+                  query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,headline.ilike.%${search}%`);
+                }
+                if (tagId) {
+                  // Use PostgreSQL array overlap operator for tag filtering
+                  query = query.overlaps('tag_names', [tagId]);
+                }
+                
+                const { data, error } = await query;
+                
+                if (error) throw error;
+                
+                return { isSuccess: () => true, data };
+              });
               
-              // Apply filters
-              if (isApproved) {
-                query = query.eq('is_approved', true);
-              }
-              if (search) {
-                query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,headline.ilike.%${search}%`);
-              }
-              if (tagId) {
-                // Use PostgreSQL array overlap operator for tag filtering
-                query = query.overlaps('tag_names', [tagId]);
-              }
-              
-              const result = await query.execute();
-              apiResponse = result.isSuccess() ? result : { isSuccess: () => false, data: [] };
+              apiResponse = result;
               break;
               
             case EntityType.EVENT:
               if (tagId) {
-                apiResponse = await eventsWithTagsApi.filterByTagNames([tagId]);
+                apiResponse = await eventApi.filterByTagNames([tagId]);
               } else if (search) {
-                apiResponse = await eventsWithTagsApi.search('title', search);
+                apiResponse = await eventApi.search('title', search);
               } else {
-                apiResponse = await eventsWithTagsApi.getAll();
+                apiResponse = await eventApi.getAll();
               }
               break;
               

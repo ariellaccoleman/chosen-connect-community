@@ -1,3 +1,4 @@
+
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
@@ -119,7 +120,7 @@ export function createQueryOperations<
 
         // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
-          let query = client.from(tableToQuery).select(select);
+          let query = client.from(tableToQuery as any).select(select);
 
           // Apply filters
           Object.entries(filters).forEach(([key, value]) => {
@@ -132,10 +133,10 @@ export function createQueryOperations<
             }
           });
 
-          // Apply tag filtering using the aggregated tags array
+          // Apply tag filtering using array overlap for tag_names
           if (tagId && withTagsView) {
-            // Use array contains operator to find entities with the specific tag
-            query = query.contains('tags', [{ id: tagId }]);
+            // Use array overlap operator to find entities with the specific tag name
+            query = query.overlaps('tag_names', [tagId]);
           }
 
           // Apply search
@@ -167,6 +168,30 @@ export function createQueryOperations<
       } catch (error) {
         return createErrorResponse(error);
       }
+    },
+
+    /**
+     * Search entities using case-insensitive pattern matching
+     */
+    async search(field: string, searchTerm: string): Promise<ApiResponse<T[]>> {
+      return this.getAll({
+        search: searchTerm,
+        searchColumns: [field]
+      });
+    },
+
+    /**
+     * Filter entities by tag names using PostgreSQL array overlap operator
+     */
+    async filterByTagNames(tagNames: string[]): Promise<ApiResponse<T[]>> {
+      if (!tagNames || tagNames.length === 0 || !withTagsView) {
+        return this.getAll();
+      }
+
+      return this.getAll({
+        tagId: tagNames[0], // For now, handle single tag filtering
+        includeTags: true
+      });
     },
 
     /**
@@ -235,7 +260,7 @@ export function createQueryOperations<
         // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(tableName)
+            .from(tableName as any)
             .select(select)
             .eq(idField, id as any)
             .maybeSingle();
@@ -260,7 +285,7 @@ export function createQueryOperations<
       try {
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(withTagsView)
+            .from(withTagsView as any)
             .select("*")
             .eq(idField, id as any)
             .maybeSingle();
@@ -302,7 +327,7 @@ export function createQueryOperations<
         // Use apiClient with optional client injection
         return await apiClient.query(async (client) => {
           const { data, error } = await client
-            .from(tableName)
+            .from(tableName as any)
             .select(select)
             .in(idField, ids as any[]);
           

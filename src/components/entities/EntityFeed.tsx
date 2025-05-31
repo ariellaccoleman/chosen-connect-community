@@ -86,7 +86,7 @@ const EntityFeed = ({
   
   // Use the entity feed hook with enhanced tag filtering and profile-specific options
   const { 
-    entities, 
+    data: entities = [], 
     isLoading,
     error
   } = useEntityFeed({
