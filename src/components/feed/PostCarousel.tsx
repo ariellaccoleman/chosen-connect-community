@@ -1,7 +1,7 @@
 
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
+import { postsCompositeApi } from "@/api/posts/postsCompositeApiFactory";
 import PostCard from "./PostCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EntityType } from "@/types/entityTypes";
@@ -23,11 +23,11 @@ const PostCarousel = ({ hubTagId, limit = 10, className = "" }: PostCarouselProp
         let apiResponse;
         
         if (hubTagId) {
-          // Use tag ID filtering instead of tag name filtering
-          apiResponse = await postsWithTagsApi.filterByTagIds([hubTagId]);
+          // Use tag ID filtering with the view API
+          apiResponse = await postsCompositeApi.view.filterByTagIds([hubTagId]);
         } else {
-          // Get all posts
-          apiResponse = await postsWithTagsApi.getAll();
+          // Get all posts with tags
+          apiResponse = await postsCompositeApi.view.getAll();
         }
         
         if (apiResponse.isSuccess()) {

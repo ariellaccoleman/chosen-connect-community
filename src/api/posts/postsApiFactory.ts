@@ -1,241 +1,26 @@
+// Re-export from the new organized structure
+export { postsTableApi as postsApi } from './postsTableApiFactory';
+export { postsViewApi as postsWithTagsApi } from './postsViewApiFactory';
+export { postCommentsApi, postLikesApi, commentLikesApi } from './postInteractionApiFactory';
+export { postsCompositeApi } from './postsCompositeApiFactory';
+export { getPostsWithDetails, getPostWithDetails } from './postsDetailedOperations';
 
-import { createApiFactory, createViewApiFactory } from '../core/factory/apiFactory';
-import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
-import { apiClient } from '../core/apiClient';
-import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
-import { logger } from '@/utils/logger';
+// Export the composite API as the main interface
+export { postsCompositeApi as postsApiExtended } from './postsCompositeApiFactory';
 
-// Create the main posts API using the factory
-export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
-  tableName: 'posts',
-  entityName: 'post',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: any) => ({
-    id: data.id,
-    content: data.content,
-    author_id: data.author_id,
-    has_media: data.has_media || false,
-    created_at: data.created_at,
-    updated_at: data.updated_at
-  }),
-  transformRequest: (data: PostCreate | PostUpdate) => {
-    const transformed: Record<string, any> = {
-      content: data.content,
-      has_media: data.has_media || false
-    };
-    
-    // Only add author_id for PostCreate (not PostUpdate)
-    if ('author_id' in data) {
-      transformed.author_id = data.author_id;
-    }
-    
-    return transformed;
-  },
-  useMutationOperations: true,
-  useBatchOperations: false
-});
-
-// Create the posts with tags view API for filtering and display using ViewApiFactory
-export const postsWithTagsApi = createViewApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
-  viewName: 'posts_with_tags',
-  entityName: 'postWithTags',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: any) => ({
-    id: data.id,
-    content: data.content,
-    author_id: data.author_id,
-    has_media: data.has_media || false,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
-    tags: data.tags || [],
-    tag_names: data.tag_names || []
-  }),
-  enableLogging: false
-});
-
-// Create the post comments API (alias as commentsApi for backwards compatibility)
-export const postCommentsApi = createApiFactory<any, string>({
-  tableName: 'post_comments',
-  entityName: 'postComment',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: any) => ({
-    id: data.id,
-    content: data.content,
-    post_id: data.post_id,
-    author_id: data.author_id,
-    created_at: data.created_at,
-    updated_at: data.updated_at
-  }),
-  useMutationOperations: true,
-  useBatchOperations: false
-});
-
-// Export as commentsApi for backwards compatibility
+// Backwards compatibility exports
 export const commentsApi = postCommentsApi;
 
-// Create the post likes API
-export const postLikesApi = createApiFactory<any, string>({
-  tableName: 'post_likes',
-  entityName: 'postLike',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: any) => ({
-    id: data.id,
-    post_id: data.post_id,
-    user_id: data.user_id,
-    created_at: data.created_at
-  }),
-  useMutationOperations: true,
-  useBatchOperations: false
-});
-
-// Create the comment likes API
-export const commentLikesApi = createApiFactory<any, string>({
-  tableName: 'comment_likes',
-  entityName: 'commentLike',
-  defaultOrderBy: 'created_at',
-  transformResponse: (data: any) => ({
-    id: data.id,
-    comment_id: data.comment_id,
-    user_id: data.user_id,
-    created_at: data.created_at
-  }),
-  useMutationOperations: true,
-  useBatchOperations: false
-});
-
-/**
- * Get posts with full details including author, likes, and comments
- */
-export const getPostsWithDetails = async (
-  limit = 10,
-  offset = 0,
-  client?: any
-): Promise<ApiResponse<PostWithDetails[]>> => {
-  return apiClient.query(async (supabase) => {
-    try {
-      const { data: posts, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          author:profiles!posts_author_id_fkey(
-            id, first_name, last_name, avatar_url
-          ),
-          post_likes(id, user_id),
-          post_comments(
-            id, content, author_id, created_at,
-            author:profiles!post_comments_author_id_fkey(
-              id, first_name, last_name, avatar_url
-            ),
-            comment_likes(id, user_id)
-          )
-        `)
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) {
-        logger.error('Error fetching posts with details:', error);
-        return createErrorResponse(error);
-      }
-
-      const transformedPosts: PostWithDetails[] = (posts || []).map((post: any) => ({
-        id: post.id,
-        content: post.content,
-        author_id: post.author_id,
-        has_media: post.has_media || false,
-        created_at: post.created_at,
-        updated_at: post.updated_at,
-        author: post.author,
-        likes: post.post_likes || [],
-        comments: (post.post_comments || []).map((comment: any) => ({
-          ...comment,
-          likes: comment.comment_likes || []
-        }))
-      }));
-
-      return createSuccessResponse(transformedPosts);
-    } catch (error) {
-      logger.error('Exception in getPostsWithDetails:', error);
-      return createErrorResponse(error);
-    }
-  }, client);
-};
-
-/**
- * Get a single post with full details
- */
-export const getPostWithDetails = async (
-  postId: string,
-  client?: any
-): Promise<ApiResponse<PostWithDetails>> => {
-  return apiClient.query(async (supabase) => {
-    try {
-      const { data: post, error } = await supabase
-        .from('posts')
-        .select(`
-          *,
-          author:profiles!posts_author_id_fkey(
-            id, first_name, last_name, avatar_url
-          ),
-          post_likes(id, user_id),
-          post_comments(
-            id, content, author_id, created_at,
-            author:profiles!post_comments_author_id_fkey(
-              id, first_name, last_name, avatar_url
-            ),
-            comment_likes(id, user_id)
-          )
-        `)
-        .eq('id', postId)
-        .single();
-
-      if (error) {
-        logger.error('Error fetching post with details:', error);
-        return createErrorResponse(error);
-      }
-
-      const transformedPost: PostWithDetails = {
-        id: post.id,
-        content: post.content,
-        author_id: post.author_id,
-        has_media: post.has_media || false,
-        created_at: post.created_at,
-        updated_at: post.updated_at,
-        author: post.author,
-        likes: post.post_likes || [],
-        comments: (post.post_comments || []).map((comment: any) => ({
-          ...comment,
-          likes: comment.comment_likes || []
-        }))
-      };
-
-      return createSuccessResponse(transformedPost);
-    } catch (error) {
-      logger.error('Exception in getPostWithDetails:', error);
-      return createErrorResponse(error);
-    }
-  }, client);
-};
-
-// Add extended APIs with custom methods
-const extendedPostsApi = {
-  ...postsApi,
-  getPostsWithDetails,
-  getPostWithDetails,
-  createPostWithTags: async (data: any) => {
-    // Placeholder for createPostWithTags functionality
-    return postsApi.create(data);
-  }
-};
-
+// Extended APIs with placeholder methods for backwards compatibility
 const extendedPostLikesApi = {
   ...postLikesApi,
   hasLiked: async (postId: string) => {
     // Placeholder for hasLiked functionality
-    return createSuccessResponse(false);
+    return { data: false, error: null, status: 'success' as const, isSuccess: () => true, isError: () => false };
   },
   toggleLike: async (postId: string) => {
     // Placeholder for toggleLike functionality
-    return createSuccessResponse(true);
+    return { data: true, error: null, status: 'success' as const, isSuccess: () => true, isError: () => false };
   }
 };
 
@@ -243,28 +28,27 @@ const extendedCommentLikesApi = {
   ...commentLikesApi,
   hasLiked: async (commentId: string) => {
     // Placeholder for hasLiked functionality
-    return createSuccessResponse(false);
+    return { data: false, error: null, status: 'success' as const, isSuccess: () => true, isError: () => false };
   },
   toggleLike: async (commentId: string) => {
     // Placeholder for toggleLike functionality
-    return createSuccessResponse(true);
+    return { data: true, error: null, status: 'success' as const, isSuccess: () => true, isError: () => false };
   }
 };
 
 const extendedCommentsApi = {
-  ...commentsApi,
+  ...postCommentsApi,
   getCommentsForPost: async (postId: string) => {
     // Placeholder for getCommentsForPost functionality
-    return commentsApi.getAll();
+    return postCommentsApi.getAll();
   },
   createComment: async (data: any) => {
     // Placeholder for createComment functionality
-    return commentsApi.create(data);
+    return postCommentsApi.create(data);
   }
 };
 
-// Export the extended APIs
-export { extendedPostsApi as postsApiExtended };
+// Export extended APIs for backwards compatibility
 export { extendedPostLikesApi as postLikesApiExtended };
 export { extendedCommentLikesApi as commentLikesApiExtended };
 export { extendedCommentsApi as commentsApiExtended };
@@ -273,141 +57,65 @@ export { extendedCommentsApi as commentsApiExtended };
  * Reset posts APIs with authenticated client
  */
 export const resetPostsApi = (client?: any) => {
-  const newPostsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
-    tableName: 'posts',
-    entityName: 'post',
-    defaultOrderBy: 'created_at',
-    transformResponse: (data: any) => ({
-      id: data.id,
-      content: data.content,
-      author_id: data.author_id,
-      has_media: data.has_media || false,
-      created_at: data.created_at,
-      updated_at: data.updated_at
-    }),
-    transformRequest: (data: PostCreate | PostUpdate) => {
-      const transformed: Record<string, any> = {
-        content: data.content,
-        has_media: data.has_media || false
-      };
-      
-      // Only add author_id for PostCreate (not PostUpdate)
-      if ('author_id' in data) {
-        transformed.author_id = data.author_id;
-      }
-      
-      return transformed;
-    },
-    useMutationOperations: true,
-    useBatchOperations: false
-  }, client);
-
-  const newPostCommentsApi = createApiFactory<any, string>({
-    tableName: 'post_comments',
-    entityName: 'postComment',
-    defaultOrderBy: 'created_at',
-    transformResponse: (data: any) => ({
-      id: data.id,
-      content: data.content,
-      post_id: data.post_id,
-      author_id: data.author_id,
-      created_at: data.created_at,
-      updated_at: data.updated_at
-    }),
-    useMutationOperations: true,
-    useBatchOperations: false
-  }, client);
-
-  const newPostLikesApi = createApiFactory<any, string>({
-    tableName: 'post_likes',
-    entityName: 'postLike',
-    defaultOrderBy: 'created_at',
-    transformResponse: (data: any) => ({
-      id: data.id,
-      post_id: data.post_id,
-      user_id: data.user_id,
-      created_at: data.created_at
-    }),
-    useMutationOperations: true,
-    useBatchOperations: false
-  }, client);
-
-  const newCommentLikesApi = createApiFactory<any, string>({
-    tableName: 'comment_likes',
-    entityName: 'commentLike',
-    defaultOrderBy: 'created_at',
-    transformResponse: (data: any) => ({
-      id: data.id,
-      comment_id: data.comment_id,
-      user_id: data.user_id,
-      created_at: data.created_at
-    }),
-    useMutationOperations: true,
-    useBatchOperations: false
-  }, client);
-
-  const newPostsWithTagsApi = createViewApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
-    viewName: 'posts_with_tags',
-    entityName: 'postWithTags',
-    defaultOrderBy: 'created_at',
-    transformResponse: (data: any) => ({
-      id: data.id,
-      content: data.content,
-      author_id: data.author_id,
-      has_media: data.has_media || false,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      tags: data.tags || [],
-      tag_names: data.tag_names || []
-    }),
-    enableLogging: false
-  }, client);
-
-  return {
-    postsApi: newPostsApi,
-    postsWithTagsApi: newPostsWithTagsApi,
-    postCommentsApi: newPostCommentsApi,
-    postLikesApi: newPostLikesApi,
-    commentLikesApi: newCommentLikesApi,
-    getPostsWithDetails: (limit?: number, offset?: number) => 
-      getPostsWithDetails(limit, offset, client),
-    getPostWithDetails: (postId: string) => 
-      getPostWithDetails(postId, client)
-  };
+  const { resetPostsCompositeApi } = require('./postsCompositeApiFactory');
+  return resetPostsCompositeApi(client);
 };
 
-// Export individual operations for direct usage
-export const {
+// Export individual operations for direct usage - use composite API
+const { 
   getAll: getAllPosts,
   getById: getPostById,
   create: createPost,
   update: updatePost,
   delete: deletePost
-} = postsApi;
+} = postsCompositeApi;
 
-export const {
+const {
   getAll: getAllPostsWithTags,
   getById: getPostWithTagsById
-} = postsWithTagsApi;
+} = postsCompositeApi.view;
 
-export const {
+const {
   getAll: getAllPostComments,
   getById: getPostCommentById,
   create: createPostComment,
   update: updatePostComment,
   delete: deletePostComment
-} = postCommentsApi;
+} = postsCompositeApi.comments;
 
-export const {
+const {
   getAll: getAllPostLikes,
   getById: getPostLikeById,
   create: createPostLike,
   delete: deletePostLike
-} = postLikesApi;
+} = postsCompositeApi.likes;
 
-export const {
+const {
   getAll: getAllCommentLikes,
   getById: getCommentLikeById,
   create: createCommentLike,
   delete: deleteCommentLike
-} = commentLikesApi;
+} = postsCompositeApi.commentLikes;
+
+export {
+  getAllPosts,
+  getPostById,
+  createPost,
+  updatePost,
+  deletePost,
+  getAllPostsWithTags,
+  getPostWithTagsById,
+  getAllPostComments,
+  getPostCommentById,
+  createPostComment,
+  updatePostComment,
+  deletePostComment,
+  getAllPostLikes,
+  getPostLikeById,
+  createPostLike,
+  deletePostLike,
+  getAllCommentLikes,
+  getCommentLikeById,
+  createCommentLike,
+  deleteCommentLike
+};

@@ -5,7 +5,7 @@ import { Entity } from "@/types/entity";
 import { logger } from "@/utils/logger";
 import { organizationCompositeApi } from "@/api/organizations/organizationApiFactory";
 import { eventCompositeApi } from "@/api/events/eventApiFactory";
-import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
+import { postsCompositeApi } from "@/api/posts/postsCompositeApiFactory";
 import { profileCompositeApi } from "@/api/profiles/profileApiFactory";
 import { apiClient } from "@/api/core/apiClient";
 
@@ -92,12 +92,12 @@ export const useEntityFeed = ({
               
             case EntityType.POST:
               if (tagId) {
-                // Use tag ID filtering for posts with the new posts_with_tags view
-                apiResponse = await postsWithTagsApi.filterByTagIds([tagId]);
+                // Use tag ID filtering with the composite API's view
+                apiResponse = await postsCompositeApi.view.filterByTagIds([tagId]);
               } else if (search) {
-                apiResponse = await postsWithTagsApi.search(search, ['content']);
+                apiResponse = await postsCompositeApi.view.search(search, ['content']);
               } else {
-                apiResponse = await postsWithTagsApi.getAll();
+                apiResponse = await postsCompositeApi.view.getAll();
               }
               break;
               
