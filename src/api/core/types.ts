@@ -1,3 +1,4 @@
+
 import { ApiError } from "./errorHandler";
 
 /**
@@ -12,7 +13,6 @@ export interface ListParams {
   filters?: Record<string, any>;
   query?: string; // Added this property to support custom SQL queries
   include?: string; // Added for Supabase relationship inclusion
-  includeCount?: boolean; // New property for requesting total count
 }
 
 /**
@@ -42,16 +42,6 @@ export interface PaginatedResponse<T> {
  */
 export type ApiResponse<T> = {
   data: T | null;
-  error: ApiError | null;
-  status: 'success' | 'error';
-};
-
-/**
- * Enhanced API response type with count support
- */
-export type ApiResponseWithCount<T> = {
-  data: T | null;
-  totalCount?: number;
   error: ApiError | null;
   status: 'success' | 'error';
 };

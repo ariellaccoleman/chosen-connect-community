@@ -1,346 +1,320 @@
-import { useQuery, keepPreviousData } from '@tanstack/react-query';
-import { Entity } from '@/types/entity';
-import { EntityType } from '@/types/entityTypes';
-import { profileApi } from '@/api/profiles';
-import { organizationApi } from '@/api/organizations';
-import { eventApi } from '@/api/events';
-import { logger } from '@/utils/logger';
-import { ProfileWithDetails } from '@/types';
-import { OrganizationWithLocation } from '@/types/organization';
-import { EventWithDetails } from '@/types/event';
 
-interface EntityFeedParams {
-  entityTypes?: EntityType[];
-  limit?: number;
+import { useQuery } from "@tanstack/react-query";
+import { Entity } from "@/types/entity";
+import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
+import { entityRegistry } from "@/registry";
+import { profileApi } from "@/api/profiles";
+import { organizationApi } from "@/api/organizations";
+import { eventApi } from "@/api/events";
+import { postsApi } from "@/api/posts";
+import { tagAssignmentApi } from "@/api/tags";
+
+interface UseEntityFeedOptions {
+  entityTypes: EntityType[];
   tagId?: string | null;
+  limit?: number;
+  filterByUserId?: string | null;
+  // Profile-specific options
   search?: string;
   isApproved?: boolean;
-  // Pagination params
-  currentPage?: number;
-  itemsPerPage?: number;
 }
 
-// Helper function to convert profile to entity
-const profileToEntity = (profile: ProfileWithDetails): Entity => ({
-  id: profile.id,
-  entityType: EntityType.PERSON,
-  name: `${profile.first_name} ${profile.last_name}`,
-  description: profile.headline,
-  imageUrl: profile.avatar_url || undefined,
-  location: profile.location,
-  url: profile.website_url || undefined,
-  created_at: profile.created_at,
-  updated_at: profile.updated_at,
-  tags: profile.tags
-});
-
-// Helper function to convert organization to entity
-const organizationToEntity = (org: OrganizationWithLocation): Entity => ({
-  id: org.id,
-  entityType: EntityType.ORGANIZATION,
-  name: org.name,
-  description: org.description,
-  imageUrl: org.logo_url || undefined,
-  location: org.location,
-  url: org.website_url || undefined,
-  created_at: org.created_at,
-  updated_at: org.updated_at,
-  tags: org.tags
-});
-
-// Helper function to convert event to entity
-const eventToEntity = (event: EventWithDetails): Entity => ({
-  id: event.id,
-  entityType: EntityType.EVENT,
-  name: event.title,
-  description: event.description,
-  location: event.location,
-  created_at: event.created_at,
-  updated_at: event.updated_at,
-  tags: event.tags
-});
-
 /**
- * Hook for fetching entities with server-side pagination and filtering
+ * Custom hook to fetch entities of specified types, optionally filtered by tag
  */
-export const useEntityFeed = (params: EntityFeedParams = {}) => {
-  const {
-    entityTypes = [EntityType.PERSON, EntityType.ORGANIZATION, EntityType.EVENT],
-    limit,
-    tagId,
-    search = "",
-    isApproved = true,
-    currentPage = 1,
-    itemsPerPage = 12
-  } = params;
-
-  logger.debug("useEntityFeed called with params:", {
-    entityTypes,
-    limit,
-    tagId,
-    search,
-    isApproved,
-    currentPage,
-    itemsPerPage
-  });
-
-  // Validate entity types
-  const validEntityTypes = entityTypes.filter(type => 
-    Object.values(EntityType).includes(type)
-  );
-
-  if (validEntityTypes.length !== entityTypes.length) {
-    logger.warn('Some invalid entity types were filtered out:', entityTypes);
-  }
-
-  // Calculate pagination parameters
-  const offset = (currentPage - 1) * itemsPerPage;
-  const actualLimit = limit || itemsPerPage;
-
-  logger.debug("useEntityFeed pagination calculation:", {
-    currentPage,
-    itemsPerPage,
-    offset,
-    actualLimit
-  });
-
-  // Create more stable query key that properly isolates different page requests
-  const queryKey = ['entity-feed', {
-    entityTypes: validEntityTypes.sort().join(','), // Convert to string for better stability
-    tagId: tagId || 'none',
-    search: search || 'empty',
-    isApproved,
-    limit: actualLimit,
-    page: currentPage, // Use page instead of offset for cleaner cache keys
-    itemsPerPage
-  }];
-
-  logger.debug("useEntityFeed query key:", queryKey);
-
-  const query = useQuery({
-    queryKey,
+export const useEntityFeed = ({
+  entityTypes,
+  tagId = null,
+  limit = 10,
+  filterByUserId = null,
+  search = "",
+  isApproved = true,
+}: UseEntityFeedOptions) => {
+  // This query fetches entities based on the provided entityTypes
+  const { data: entitiesData, isLoading, error } = useQuery({
+    queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId, search, isApproved }],
     queryFn: async () => {
-      logger.debug(`useEntityFeed queryFn starting for page ${currentPage}:`, {
-        entityTypes: validEntityTypes,
-        tagId,
-        search,
-        isApproved,
-        offset,
-        actualLimit
-      });
-
-      try {
-        const allEntities: Entity[] = [];
-        let totalCount = 0;
-
-        logger.debug(`EntityFeed: Fetching entities for page ${currentPage}, types: ${validEntityTypes.join(', ')}`);
-
-        // For server-side pagination, we need to fetch from each entity type
-        // and then combine and sort the results
-        const entityPromises = validEntityTypes.map(async (entityType) => {
-          logger.debug(`useEntityFeed fetching ${entityType}:`, {
-            tagId,
-            search,
-            isApproved,
-            actualLimit,
-            page: Math.floor(offset / actualLimit) + 1
-          });
-
+      const allEntities: Entity[] = [];
+      
+      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
+      
+      // If tagId is provided, get all tagged entity IDs first
+      let taggedEntityIds: Record<string, string[]> = {};
+      
+      if (tagId) {
+        logger.debug(`EntityFeed: Fetching tagged entities for tagId=${tagId}`);
+        
+        // Get all entities tagged with this tag ID using the API
+        const tagAssignmentsResponse = await tagAssignmentApi.getAll({
+          filters: { tag_id: tagId }
+        });
+          
+        if (tagAssignmentsResponse.error) {
+          logger.error("EntityFeed: Failed to fetch tag assignments", tagAssignmentsResponse.error);
+        } else if (tagAssignmentsResponse.data) {
+          // Group entity IDs by type for efficient filtering
+          taggedEntityIds = tagAssignmentsResponse.data.reduce((acc, assignment) => {
+            const type = assignment.target_type;
+            if (!acc[type]) acc[type] = [];
+            acc[type].push(assignment.target_id);
+            return acc;
+          }, {} as Record<string, string[]>);
+          
+          logger.debug(`EntityFeed: Found tagged entities:`, 
+            Object.entries(taggedEntityIds).map(([type, ids]) => `${type}: ${ids.length} items`));
+        }
+      }
+      
+      // Conditionally fetch each entity type
+      await Promise.all(
+        entityTypes.map(async (type) => {
           try {
-            let entities: Entity[] = [];
-            let count = 0;
+            let items: any[] = [];
+            
+            // Map EntityType enum to database target_type values
+            const getTargetType = (entityType: EntityType): string => {
+              switch (entityType) {
+                case EntityType.PERSON:
+                  return 'person';
+                case EntityType.ORGANIZATION:
+                  return 'organization';
+                case EntityType.EVENT:
+                  return 'event';
+                case EntityType.POST:
+                  return 'post';
+                case EntityType.HUB:
+                  return 'hub';
+                default:
+                  return entityType.toLowerCase();
+              }
+            };
 
-            switch (entityType) {
+            const targetType = getTargetType(type);
+            
+            // If we have a tag filter and no entities of this type have this tag, skip
+            if (tagId && (!taggedEntityIds[targetType] || taggedEntityIds[targetType].length === 0)) {
+              logger.debug(`EntityFeed: No ${type} entities found with tagId=${tagId}, skipping`);
+              return;
+            }
+            
+            // Fetch the appropriate data based on entity type using API factories
+            switch (type) {
               case EntityType.PERSON:
-                // Build query with tag filtering if needed
-                let profileQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
+                logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
                 
-                // Add tag filtering to the query if tagId is provided
-                if (tagId) {
-                  profileQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
+                // Build filters for people
+                const peopleFilters: any = {};
+                
+                // Apply profile-specific filters
+                if (filterByUserId) {
+                  peopleFilters.id = filterByUserId;
                 }
-
-                const profilesResult = await profileApi.getAll({
-                  filters: {
-                    ...(isApproved !== false && { is_approved: true }),
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
-                  },
-                  search,
-                  sortBy: 'created_at',
-                  sortDirection: 'desc',
-                  limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                
+                // Apply approved filter for profiles
+                if (isApproved !== undefined) {
+                  peopleFilters.is_approved = isApproved;
+                }
+                
+                // Apply tag filtering if we have tagged person IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  // For API factory, we'll need to handle this differently
+                  // since we can't directly filter by array of IDs in the simple filter
+                  peopleFilters.id = taggedEntityIds[targetType];
+                  logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                }
+                
+                // Use the profile API with search
+                const profilesResponse = await profileApi.getAll({
+                  filters: peopleFilters,
+                  search: search || undefined,
+                  limit
                 });
-
-                if (profilesResult.error) {
-                  logger.error(`Error fetching profiles:`, profilesResult.error);
+                  
+                if (profilesResponse.error) {
+                  logger.error(`EntityFeed: Error fetching PERSON entities:`, profilesResponse.error);
                   break;
                 }
-
-                entities = (profilesResult.data || []).map(profileToEntity);
-                count = (profilesResult as any).totalCount || 0;
-                logger.debug(`useEntityFeed ${entityType} result:`, {
-                  entitiesCount: entities.length,
-                  totalCount: count
-                });
+                
+                items = profilesResponse.data || [];
+                logger.debug(`EntityFeed: Received ${items?.length || 0} PERSON entities`);
                 break;
-
+                
               case EntityType.ORGANIZATION:
-                let orgQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
+                logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}, search=${search}`);
                 
-                if (tagId) {
-                  orgQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
+                // Build filters for organizations
+                const orgFilters: any = {};
+                
+                // Apply tag filtering if we have tagged organization IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  orgFilters.id = taggedEntityIds[targetType];
+                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
-
-                const orgsResult = await organizationApi.getAll({
-                  filters: {
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
-                  },
-                  search,
-                  sortBy: 'created_at',
-                  sortDirection: 'desc',
-                  limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                
+                // Use the organization API with search
+                const orgsResponse = await organizationApi.getAll({
+                  filters: orgFilters,
+                  search: search || undefined,
+                  limit
                 });
-
-                if (orgsResult.error) {
-                  logger.error(`Error fetching organizations:`, orgsResult.error);
+                  
+                if (orgsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching ORGANIZATION entities:`, orgsResponse.error);
                   break;
                 }
-
-                entities = (orgsResult.data || []).map(organizationToEntity);
-                count = (orgsResult as any).totalCount || 0;
-                logger.debug(`useEntityFeed ${entityType} result:`, {
-                  entitiesCount: entities.length,
-                  totalCount: count
-                });
+                
+                items = orgsResponse.data || [];
+                logger.debug(`EntityFeed: Received ${items?.length || 0} ORGANIZATION entities`);
                 break;
-
-              case EntityType.EVENT:
-                let eventQuery = `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
                 
-                if (tagId) {
-                  eventQuery = `*, tags:tag_assignments!inner(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
+              case EntityType.EVENT:
+                logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}, search=${search}`);
+                
+                // Build filters for events
+                const eventFilters: any = {};
+                
+                // Apply tag filtering if we have tagged event IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  eventFilters.id = taggedEntityIds[targetType];
+                  logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
                 }
-
-                const eventsResult = await eventApi.getAll({
-                  filters: {
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
-                  },
-                  search,
-                  sortBy: 'created_at',
-                  sortDirection: 'desc',
-                  limit: actualLimit,
-                  page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                
+                // Use the event API with search
+                const eventsResponse = await eventApi.getAll({
+                  filters: eventFilters,
+                  search: search || undefined,
+                  limit
                 });
-
-                if (eventsResult.error) {
-                  logger.error(`Error fetching events:`, eventsResult.error);
+                  
+                if (eventsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching EVENT entities:`, eventsResponse.error);
                   break;
                 }
-
-                entities = (eventsResult.data || []).map(eventToEntity);
-                count = (eventsResult as any).totalCount || 0;
-                logger.debug(`useEntityFeed ${entityType} result:`, {
-                  entitiesCount: entities.length,
-                  totalCount: count
+                
+                items = eventsResponse.data || [];
+                logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities`);
+                break;
+                
+              case EntityType.POST:
+                logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
+                
+                // Build filters for posts
+                const postFilters: any = {};
+                
+                // Apply tag filtering if we have tagged post IDs
+                if (tagId && taggedEntityIds[targetType]?.length) {
+                  postFilters.id = taggedEntityIds[targetType];
+                  logger.debug(`EntityFeed: Filtering POST entities by ${taggedEntityIds[targetType].length} tagged IDs`);
+                }
+                
+                // Use the posts API with search
+                const postsResponse = await postsApi.getAll({
+                  filters: postFilters,
+                  search: search || undefined,
+                  limit
                 });
+                  
+                if (postsResponse.error) {
+                  logger.error(`EntityFeed: Error fetching POST entities:`, postsResponse.error);
+                  break;
+                }
+                
+                items = postsResponse.data || [];
+                logger.debug(`EntityFeed: Received ${items?.length || 0} POST entities`);
+                break;
+                
+              default:
+                logger.warn(`Unsupported entity type: ${type}`);
                 break;
             }
-
-            return { entities, count };
-
-          } catch (error) {
-            logger.error(`Error processing ${entityType}:`, error);
-            return { entities: [], count: 0 };
+            
+            // Convert each item to an Entity and add to results
+            if (items && items.length > 0) {
+              items.forEach((item) => {
+                if (item) {
+                  try {
+                    // Use the entity registry to convert data to entity
+                    const entity = entityRegistry.toEntity(item, type);
+                    
+                    if (entity) {
+                      logger.debug(`EntityFeed: Converted ${type} to entity`, {
+                        id: entity.id,
+                        entityType: entity.entityType,
+                        name: entity.name
+                      });
+                      
+                      // Initialize empty tags array that will be populated later if needed
+                      entity.tags = [];
+                      allEntities.push(entity);
+                    } else {
+                      logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
+                    }
+                  } catch (conversionError) {
+                    logger.error(`EntityFeed: Error converting ${type} entity:`, conversionError);
+                  }
+                }
+              });
+            }
+          } catch (e) {
+            logger.error(`Error fetching ${type} entities:`, e);
           }
-        });
-
-        // Wait for all entity type queries to complete
-        const results = await Promise.all(entityPromises);
-        
-        // Combine all entities and counts
-        results.forEach(result => {
-          allEntities.push(...result.entities);
-          totalCount += result.count;
-        });
-
-        logger.debug("useEntityFeed combined results:", {
-          allEntitiesCount: allEntities.length,
-          totalCount,
-          currentPage
-        });
-
-        // Sort combined results by creation date (newest first)
-        allEntities.sort((a, b) => {
-          const dateA = new Date(a.created_at || 0);
-          const dateB = new Date(b.created_at || 0);
-          return dateB.getTime() - dateA.getTime();
-        });
-
-        // For server-side pagination, determine if there's a next page
-        const hasNextPage = allEntities.length === actualLimit;
-
-        const result = {
-          entities: allEntities,
-          totalCount,
-          hasNextPage,
-          currentPage // Return the currentPage that was requested, not a computed one
-        };
-
-        logger.debug(`useEntityFeed queryFn returning for page ${currentPage}:`, {
-          entitiesCount: result.entities.length,
-          totalCount: result.totalCount,
-          hasNextPage: result.hasNextPage,
-          currentPage: result.currentPage
-        });
-
-        return result;
-
-      } catch (error) {
-        logger.error('EntityFeed error:', error);
-        throw error;
+        })
+      );
+      
+      // After all entities are fetched, if tagId was provided, fetch tags for each entity
+      if (tagId) {
+        try {
+          logger.debug(`EntityFeed: Fetching tags for each entity`);
+          
+          // For each entity, fetch its tags - this is now just to get the tag details
+          // since we already filtered by tag
+          for (const entity of allEntities) {
+            const tagAssignmentsResponse = await tagAssignmentApi.getAll({
+              filters: {
+                target_id: entity.id,
+                target_type: entity.entityType
+              }
+            });
+              
+            if (tagAssignmentsResponse.error) {
+              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
+            } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
+              // Add tags to entity
+              entity.tags = tagAssignmentsResponse.data.map(assignment => ({
+                id: assignment.id,
+                tag_id: assignment.tag_id,
+                target_id: assignment.target_id,
+                target_type: assignment.target_type,
+                created_at: assignment.created_at || '',
+                updated_at: assignment.updated_at || '',
+                tag: {
+                  id: assignment.tag?.id || '',
+                  name: assignment.tag?.name || '',
+                  description: assignment.tag?.description || null,
+                  created_by: null,
+                  created_at: '',
+                  updated_at: ''
+                }
+              }));
+            }
+          }
+        } catch (e) {
+          logger.error(`EntityFeed: Error fetching tags for entities:`, e);
+        }
       }
+      
+      logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
+      return allEntities;
     },
-    staleTime: 1000 * 60 * 2, // 2 minutes
-    // Keep previous data while loading new page to prevent flickering
-    placeholderData: keepPreviousData,
-    // Add retry configuration to prevent unnecessary retries on pagination
-    retry: (failureCount, error) => {
-      if (failureCount < 3) {
-        logger.debug(`useEntityFeed retry attempt ${failureCount + 1}:`, error);
-        return true;
-      }
-      return false;
-    }
+    enabled: entityTypes.length > 0,
   });
-
-  const hookResult = {
-    entities: query.data?.entities || [],
-    totalCount: query.data?.totalCount || 0,
-    hasNextPage: query.data?.hasNextPage || false,
-    currentPage: currentPage, // Always return the currentPage from params, not from query data
-    isLoading: query.isLoading,
-    error: query.error
+  
+  return {
+    entities: entitiesData || [],
+    isLoading,
+    error,
   };
-
-  logger.debug("useEntityFeed hook returning:", {
-    entitiesCount: hookResult.entities.length,
-    totalCount: hookResult.totalCount,
-    hasNextPage: hookResult.hasNextPage,
-    currentPage: hookResult.currentPage,
-    isLoading: hookResult.isLoading,
-    hasError: !!hookResult.error
-  });
-
-  return hookResult;
 };
+
+export default useEntityFeed;

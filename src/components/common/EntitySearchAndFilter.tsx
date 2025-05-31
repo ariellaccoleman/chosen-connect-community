@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,24 +30,19 @@ const EntitySearchAndFilter = ({
 }: EntitySearchAndFilterProps) => {
   const [searchTerm, setSearchTerm] = useState(initialSearch);
   const [selectedTagId, setSelectedTagId] = useState<string | null>(initialTagId);
-  const previousSearchTerm = useRef(initialSearch);
   
   // Fetch tags to get proper names for filter pills
   const { data: tagsResponse } = useSelectionTags(entityType);
   const allTags = Array.isArray(tagsResponse) ? tagsResponse : (tagsResponse?.data || []);
 
-  // Debounce search input - only call onSearchChange when search term actually changes
+  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Only call onSearchChange if the search term has actually changed
-      if (searchTerm !== previousSearchTerm.current) {
-        previousSearchTerm.current = searchTerm;
-        onSearchChange(searchTerm);
-      }
+      onSearchChange(searchTerm);
     }, 300);
     
     return () => clearTimeout(timer);
-  }, [searchTerm]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchTerm, onSearchChange]);
 
   // Handle tag selection
   const handleTagSelect = (tag: Tag) => {

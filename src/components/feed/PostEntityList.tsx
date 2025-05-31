@@ -43,60 +43,18 @@ const PostEntityList = ({
   }
 
   // Convert entities back to Post format for PostCard
-  const posts: Post[] = postEntities.map(entity => {
-    // The full post data is preserved in rawData
-    const postData = (entity as any).rawData;
-    
-    if (!postData) {
-      // Fallback if rawData is not available
-      return {
-        id: entity.id,
-        content: entity.description || '',
-        author_id: '',
-        has_media: false,
-        created_at: entity.created_at || '',
-        updated_at: entity.updated_at || '',
-        author: {
-          id: '',
-          name: 'Unknown'
-        },
-        likes_count: 0,
-        comments_count: 0,
-        tags: []
-      };
-    }
-    
-    // Use the full post data structure and preserve the correct structure
-    return {
-      id: postData.id,
-      content: postData.content,
-      author_id: postData.author_id,
-      has_media: postData.has_media || false,
-      created_at: postData.created_at,
-      updated_at: postData.updated_at,
-      author: postData.author,
-      likes_count: postData.likes?.length || 0,
-      comments_count: postData.comments?.length || 0,
-      // Map the entity tags to the format expected by PostCard
-      tags: entity.tags && entity.tags.length > 0 
-        ? entity.tags.map(tagAssignment => {
-            // Check if we have the tag object
-            if (tagAssignment.tag) {
-              return {
-                id: tagAssignment.tag.id,
-                name: tagAssignment.tag.name,
-                description: tagAssignment.tag.description || null,
-                created_by: tagAssignment.tag.created_by || null,
-                created_at: tagAssignment.tag.created_at || '',
-                updated_at: tagAssignment.tag.updated_at || ''
-              };
-            }
-            // Fallback if tag object is not populated
-            return null;
-          }).filter(Boolean) // Remove null entries
-        : []
-    };
-  });
+  const posts: Post[] = postEntities.map(entity => ({
+    id: entity.id,
+    content: entity.description || '',
+    author_id: (entity as any).author_id || '',
+    has_media: (entity as any).has_media || false,
+    created_at: entity.created_at || '',
+    updated_at: entity.updated_at || '',
+    author: (entity as any).author,
+    likes_count: (entity as any).likes_count,
+    comments_count: (entity as any).comments_count,
+    tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
+  }));
 
   return (
     <div className="space-y-4">

@@ -50,16 +50,17 @@ const TagBadge = ({
     <Badge 
       variant="outline" 
       className={cn(
-        "text-xs px-2 py-1 min-h-[24px] inline-flex items-center gap-1",
         badgeClasses,
         isFromDifferentEntityType && "opacity-70",
         className
       )}
     >
-      <span className="whitespace-nowrap">{tagName}</span>
-      {showEntityType && tagType && (
-        <span className="text-xs opacity-75">({tagType})</span>
-      )}
+      <span className="flex items-center">
+        <span>{tagName}</span>
+        {showEntityType && tagType && (
+          <span className="ml-1 text-xs opacity-75">({tagType})</span>
+        )}
+      </span>
       {isRemovable && (
         <button
           onClick={(e) => {
@@ -67,7 +68,7 @@ const TagBadge = ({
             e.stopPropagation();
             onRemove?.();
           }}
-          className="ml-1 hover:bg-blue-200 rounded-full p-0.5 flex-shrink-0"
+          className="ml-1 hover:bg-blue-200 rounded-full p-0.5"
           aria-label={`Remove ${tagName} tag`}
         >
           <X size={12} />

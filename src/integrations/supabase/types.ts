@@ -1690,6 +1690,7 @@ export type Database = {
       }
       people_with_tags: {
         Row: {
+          assigned_tag_id: string | null
           avatar_url: string | null
           bio: string | null
           company: string | null
@@ -1703,8 +1704,7 @@ export type Database = {
           linkedin_url: string | null
           location_id: string | null
           membership_tier: Database["public"]["Enums"]["pricing_tier"] | null
-          tag_names: string[] | null
-          tags: Json[] | null
+          tag_name: string | null
           timezone: string | null
           twitter_url: string | null
           updated_at: string | null

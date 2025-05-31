@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect } from "react";
 import { useEntityFeed } from "@/hooks/useEntityFeed";
 import EntityList from "./EntityList";
 import { EntityType } from "@/types/entityTypes";
@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TagFilter from "../filters/TagFilter";
 import { useSelectionTags } from "@/hooks/tags";
 import { useEntitySystem } from "@/hooks/useEntitySystem";
+import { logger } from "@/utils/logger";
 
 interface EntityFeedProps {
   title?: string;
@@ -16,40 +17,32 @@ interface EntityFeedProps {
   limit?: number;
   className?: string;
   emptyMessage?: string;
-  tagId?: string;
-  excludeEntityTypes?: EntityType[];
+  tagId?: string; // Fixed tagId prop to match what's being passed in HubDetail.tsx
+  excludeEntityTypes?: EntityType[]; // New prop to exclude certain entity types
   // Profile-specific props
   search?: string;
   isApproved?: boolean;
-  // Pagination props
-  currentPage?: number;
-  itemsPerPage?: number;
-  renderPagination?: (totalItems: number, totalPages: number, hasNextPage: boolean) => React.ReactNode;
 }
 
 /**
  * Component for displaying a feed of entities, with optional filtering by type and tags
  */
 const EntityFeed = ({
-  title = "",
+  title = "", // Changed default from "Entity Feed" to empty string
   defaultEntityTypes = Object.values(EntityType),
   showTabs = true,
   showTagFilter = true,
   limit,
   className = "",
   emptyMessage = "No items found",
-  tagId,
+  tagId, // Add the tagId prop to destructuring
   excludeEntityTypes = [],
   search = "",
-  isApproved = true,
-  currentPage = 1,
-  itemsPerPage = 12,
-  renderPagination
+  isApproved = true
 }: EntityFeedProps) => {
   // Filter out excluded entity types
-  const availableEntityTypes = useMemo(() => 
-    defaultEntityTypes.filter(type => !excludeEntityTypes.includes(type)),
-    [defaultEntityTypes, excludeEntityTypes]
+  const availableEntityTypes = defaultEntityTypes.filter(
+    type => !excludeEntityTypes.includes(type)
   );
 
   const [activeTab, setActiveTab] = useState<"all" | EntityType>("all");
@@ -58,44 +51,66 @@ const EntityFeed = ({
     getEntityTypePlural 
   } = useEntitySystem();
   
+  // Enhanced logging for debugging tag filtering
+  useEffect(() => {
+    logger.debug(`EntityFeed initialized:`, {
+      defaultEntityTypes,
+      activeTab,
+      excludedTypes: excludeEntityTypes,
+      availableTypes: availableEntityTypes,
+      showTagFilter,
+      fixedTagId: tagId,
+      search,
+      isApproved
+    });
+  }, [defaultEntityTypes, activeTab, excludeEntityTypes, availableEntityTypes, showTagFilter, tagId, search, isApproved]);
+  
   // Determine entity types to fetch based on the active tab
-  const entityTypes = useMemo(() => 
-    activeTab === "all" ? availableEntityTypes : [activeTab],
-    [activeTab, availableEntityTypes]
-  );
+  const entityTypes = activeTab === "all" 
+    ? availableEntityTypes 
+    : [activeTab];
   
   // If tagId is provided from props, use it as the default selected tag
   const [selectedTagId, setSelectedTagId] = useState<string | null>(tagId || null);
   
-  // Sync local tag state with prop changes
+  // Sync local tag state with prop changes - THIS IS THE FIX
   useEffect(() => {
     setSelectedTagId(tagId || null);
+    logger.debug(`EntityFeed: Tag prop changed, updating selectedTagId to ${tagId}`);
   }, [tagId]);
   
-  // Use the entity feed hook with server-side pagination
+  // Log when selectedTagId changes
+  useEffect(() => {
+    logger.debug(`EntityFeed: Tag selection changed to ${selectedTagId}`);
+  }, [selectedTagId]);
+  
+  // Use the entity feed hook with enhanced tag filtering and profile-specific options
   const { 
     entities, 
-    isLoading,
-    totalCount,
-    hasNextPage
+    isLoading
   } = useEntityFeed({
     entityTypes,
-    limit: renderPagination ? undefined : limit,
+    limit,
     tagId: selectedTagId,
     search,
-    isApproved,
-    currentPage,
-    itemsPerPage
+    isApproved
   });
   
-  // Calculate pagination info
-  const totalPages = useMemo(() => 
-    renderPagination && itemsPerPage ? Math.ceil(totalCount / itemsPerPage) : 1,
-    [renderPagination, itemsPerPage, totalCount]
-  );
+  // Log entity count when it changes 
+  useEffect(() => {
+    logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
+      activeTab,
+      selectedTagId,
+      entityTypes: entityTypes.join(','),
+      search,
+      isApproved,
+      entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
+    });
+  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
+    logger.debug(`EntityFeed: Tab changed to ${value}`);
   };
   
   // Make sure we don't allow changing the tag if it's fixed via props
@@ -133,10 +148,6 @@ const EntityFeed = ({
         isLoading={isLoading} 
         emptyMessage={emptyMessage}
       />
-      
-      {renderPagination && !isLoading && (
-        renderPagination(totalCount, totalPages, hasNextPage)
-      )}
     </div>
   );
 };

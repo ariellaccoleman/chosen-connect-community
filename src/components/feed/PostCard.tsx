@@ -17,7 +17,6 @@ import {
   useToggleCommentLike,
   useHasLikedComment
 } from "@/hooks/posts";
-import { useCurrentProfile } from "@/hooks/profiles";
 import { Skeleton } from "@/components/ui/skeleton";
 
 interface PostCardProps {
@@ -27,10 +26,6 @@ interface PostCardProps {
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  
-  // Get current user's profile for comment form
-  const { data: currentProfileResponse } = useCurrentProfile();
-  const currentProfile = currentProfileResponse?.data;
   
   // Load comments when comment section is shown
   const { 
@@ -162,9 +157,8 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
             {/* Comment form */}
             <form onSubmit={handleCommentSubmit} className="flex items-start space-x-2 mb-4">
               <Avatar className="h-8 w-8 mt-1">
-                <AvatarImage src={currentProfile?.avatar_url} alt={currentProfile?.full_name} />
                 <AvatarFallback className="bg-chosen-blue text-white">
-                  {currentProfile?.first_name?.charAt(0) || 'U'}
+                  U
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -247,10 +241,9 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
     toggleLikeMutation.mutate();
   };
   
-  // Format comment likes with proper pluralization - only show if > 0
+  // Format comment likes with proper pluralization
   const likesCount = comment.likes || 0;
-  const showLikes = likesCount > 0;
-  const likesText = likesCount === 1 ? "1 like" : `${likesCount} likes`;
+  const likesText = likesCount === 0 ? "0 likes" : likesCount === 1 ? "1 like" : `${likesCount} likes`;
   
   return (
     <div className="flex space-x-2">
@@ -277,9 +270,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment, postId }) => {
           >
             {hasLiked ? 'Liked' : 'Like'}
           </button>
-          {showLikes && (
-            <span className="text-xs text-gray-500">{likesText}</span>
-          )}
+          <span className="text-xs text-gray-500">{likesText}</span>
         </div>
       </div>
     </div>
