@@ -14,8 +14,8 @@ interface TagBadgeProps {
   isFromDifferentEntityType?: boolean;
   showEntityType?: boolean;
   isRemoving?: boolean;
-  // Add support for passing a Tag object
-  tag?: Tag;
+  // Add support for passing a Tag object (now standardized)
+  tag?: Tag | any; // Accept both Tag and raw tag objects from views
 }
 
 const TagBadge = ({
@@ -30,7 +30,8 @@ const TagBadge = ({
   tag,
 }: TagBadgeProps) => {
   // Use the tag object if provided, otherwise use the individual props
-  const tagName = tag ? tag.name : name;
+  // Handle both standardized Tag objects and raw objects from aggregated views
+  const tagName = tag ? (tag.name || tag.tag_name) : name;
   const tagType = entityType;
 
   // Determine the color based on entity type

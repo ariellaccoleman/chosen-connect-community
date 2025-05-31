@@ -67,6 +67,17 @@ export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = 
 }
 
 /**
+ * Enhanced API operations that include tag support
+ */
+export interface EnhancedApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = Partial<T>> 
+  extends ApiOperations<T, TId, TCreate, TUpdate> {
+  // Enhanced operations that include tags by default
+  getAllWithTags: (params?: ListParams) => Promise<ApiResponse<T[]>>;
+  getByIdWithTags: (id: TId) => Promise<ApiResponse<T | null>>;
+  getByTagId: (tagId: string, params?: ListParams) => Promise<ApiResponse<T[]>>;
+}
+
+/**
  * Relationship-specific operations interface that extends standard API operations
  * but omits the generic 'create' method to prevent misuse. Relationship entities
  * should use specific creation methods that enforce proper relationship semantics.
@@ -91,7 +102,7 @@ export interface QueryOptions {
 /**
  * Logical operators for filters
  */
-export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'like' | 'ilike';
+export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'like' | 'ilike' | 'contains';
 
 /**
  * Filter definition

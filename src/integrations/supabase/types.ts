@@ -1466,7 +1466,6 @@ export type Database = {
       }
       events_with_tags: {
         Row: {
-          assigned_tag_id: string | null
           created_at: string | null
           description: string | null
           end_time: string | null
@@ -1478,7 +1477,8 @@ export type Database = {
           price: number | null
           start_time: string | null
           tag_id: string | null
-          tag_name: string | null
+          tag_names: string[] | null
+          tags: Json[] | null
           title: string | null
           updated_at: string | null
         }
@@ -1620,7 +1620,6 @@ export type Database = {
       }
       organizations_with_tags: {
         Row: {
-          assigned_tag_id: string | null
           created_at: string | null
           description: string | null
           id: string | null
@@ -1629,7 +1628,8 @@ export type Database = {
           logo_api_url: string | null
           logo_url: string | null
           name: string | null
-          tag_name: string | null
+          tag_names: string[] | null
+          tags: Json[] | null
           updated_at: string | null
           website_url: string | null
         }
@@ -1690,7 +1690,6 @@ export type Database = {
       }
       people_with_tags: {
         Row: {
-          assigned_tag_id: string | null
           avatar_url: string | null
           bio: string | null
           company: string | null
@@ -1704,7 +1703,8 @@ export type Database = {
           linkedin_url: string | null
           location_id: string | null
           membership_tier: Database["public"]["Enums"]["pricing_tier"] | null
-          tag_name: string | null
+          tag_names: string[] | null
+          tags: Json[] | null
           timezone: string | null
           twitter_url: string | null
           updated_at: string | null

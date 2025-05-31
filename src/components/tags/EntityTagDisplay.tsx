@@ -13,19 +13,40 @@ interface EntityTagDisplayProps {
   className?: string;
   maxTags?: number;
   showDebugInfo?: boolean;
+  // New prop to accept pre-loaded tags from aggregated views
+  tags?: any[];
 }
 
 /**
  * Pure display component for entity tags - shows tag pills like on entity cards
+ * Now supports both fetching tags and using pre-loaded aggregated tags
  */
 const EntityTagDisplay = ({
   entityId,
   entityType,
   className = "",
   maxTags = 10,
-  showDebugInfo = false
+  showDebugInfo = false,
+  tags: preloadedTags
 }: EntityTagDisplayProps) => {
-  const { data: tagAssignments, isLoading, isError } = useEntityTags(entityId, entityType);
+  // Only fetch tags if not provided
+  const { data: tagAssignments, isLoading, isError } = useEntityTags(
+    entityId, 
+    entityType, 
+    { enabled: !preloadedTags } // Disable query if we have preloaded tags
+  );
+
+  // Use preloaded tags if available, otherwise use fetched assignments
+  if (preloadedTags && preloadedTags.length > 0) {
+    return (
+      <TagList 
+        tags={preloadedTags}
+        className={className}
+        maxTags={maxTags}
+        showDebugInfo={showDebugInfo}
+      />
+    );
+  }
 
   if (isLoading) {
     return <Skeleton className="h-6 w-32" />;
