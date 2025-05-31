@@ -2,7 +2,7 @@
 /**
  * Re-export all profile API modules
  */
-export { profileApi } from "./profileApiFactory";
+export { profileApi, profileViewApi, profileCompositeApi } from "./profileApiFactory";
 export {
   getAllProfiles,
   getProfileById,

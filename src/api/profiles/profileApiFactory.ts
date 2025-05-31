@@ -1,9 +1,11 @@
+
 import { Profile, ProfileWithDetails } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
+import { createViewApiFactory } from "@/api/core/factory/viewApiFactory";
 import { formatProfileWithDetails } from "@/utils/formatters/profileFormatters";
 
 /**
- * Factory for profile API operations
+ * Standard profile API for CRUD operations on the profiles table
  */
 export const profileApi = createApiFactory<
   ProfileWithDetails,
@@ -15,7 +17,6 @@ export const profileApi = createApiFactory<
   entityName: 'Profile',
   idField: 'id',
   defaultSelect: `*, location:locations(*)`,
-  withTagsView: 'people_with_tags', // Enable view-based operations
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => formatProfileWithDetails(data),
@@ -43,10 +44,33 @@ export const profileApi = createApiFactory<
 });
 
 /**
+ * Profile view API for read-only operations with tag filtering and search
+ */
+export const profileViewApi = createViewApiFactory<ProfileWithDetails>({
+  viewName: 'people_with_tags',
+  entityName: 'Profile',
+  defaultSelect: '*',
+  transformResponse: (data) => formatProfileWithDetails(data)
+});
+
+/**
+ * Composite profile API that combines CRUD and view operations
+ */
+export const profileCompositeApi = {
+  // CRUD operations from table API
+  ...profileApi,
+  
+  // View operations for enhanced querying
+  search: profileViewApi.search,
+  filterByTagIds: profileViewApi.filterByTagIds,
+  filterByTagNames: profileViewApi.filterByTagNames
+};
+
+/**
  * Reset profile API with authenticated client
  */
 export const resetProfileApi = (client?: any) => {
-  const newApi = createApiFactory<
+  const newTableApi = createApiFactory<
     ProfileWithDetails,
     string,
     Partial<Profile>,
@@ -56,7 +80,6 @@ export const resetProfileApi = (client?: any) => {
     entityName: 'Profile',
     idField: 'id',
     defaultSelect: `*, location:locations(*)`,
-    withTagsView: 'people_with_tags',
     useMutationOperations: true,
     useBatchOperations: false,
     transformResponse: (data) => formatProfileWithDetails(data),
@@ -83,13 +106,21 @@ export const resetProfileApi = (client?: any) => {
     }
   }, client);
 
+  const newViewApi = createViewApiFactory<ProfileWithDetails>({
+    viewName: 'people_with_tags',
+    entityName: 'Profile',
+    defaultSelect: '*',
+    transformResponse: (data) => formatProfileWithDetails(data)
+  }, client);
+
   return {
-    getAll: newApi.getAll,
-    getById: newApi.getById,
-    getByIds: newApi.getByIds,
-    create: newApi.create,
-    update: newApi.update,
-    delete: newApi.delete
+    // CRUD operations
+    ...newTableApi,
+    
+    // View operations
+    search: newViewApi.search,
+    filterByTagIds: newViewApi.filterByTagIds,
+    filterByTagNames: newViewApi.filterByTagNames
   };
 };
 

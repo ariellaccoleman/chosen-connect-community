@@ -1,9 +1,11 @@
+
 import { Organization, OrganizationWithLocation } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
+import { createViewApiFactory } from "@/api/core/factory/viewApiFactory";
 import { formatOrganizationWithLocation } from "@/utils/formatters/organizationFormatters";
 
 /**
- * Factory for organization API operations
+ * Standard organization API for CRUD operations on the organizations table
  */
 export const organizationApi = createApiFactory<
   OrganizationWithLocation,
@@ -14,11 +16,7 @@ export const organizationApi = createApiFactory<
   tableName: 'organizations',
   entityName: 'Organization',
   idField: 'id',
-  defaultSelect: `
-    *, 
-    location:locations(*)
-  `,
-  withTagsView: 'organizations_with_tags',
+  defaultSelect: `*, location:locations(*)`,
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => {
@@ -44,10 +42,33 @@ export const organizationApi = createApiFactory<
 });
 
 /**
+ * Organization view API for read-only operations with tag filtering and search
+ */
+export const organizationViewApi = createViewApiFactory<OrganizationWithLocation>({
+  viewName: 'organizations_with_tags',
+  entityName: 'Organization',
+  defaultSelect: '*',
+  transformResponse: (data) => formatOrganizationWithLocation(data)
+});
+
+/**
+ * Composite organization API that combines CRUD and view operations
+ */
+export const organizationCompositeApi = {
+  // CRUD operations from table API
+  ...organizationApi,
+  
+  // View operations for enhanced querying
+  search: organizationViewApi.search,
+  filterByTagIds: organizationViewApi.filterByTagIds,
+  filterByTagNames: organizationViewApi.filterByTagNames
+};
+
+/**
  * Reset organization API with authenticated client
  */
 export const resetOrganizationApi = (client?: any) => {
-  const newApi = createApiFactory<
+  const newTableApi = createApiFactory<
     OrganizationWithLocation,
     string,
     Partial<Organization>,
@@ -56,11 +77,7 @@ export const resetOrganizationApi = (client?: any) => {
     tableName: 'organizations',
     entityName: 'Organization',
     idField: 'id',
-    defaultSelect: `
-      *, 
-      location:locations(*)
-    `,
-    withTagsView: 'organizations_with_tags',
+    defaultSelect: `*, location:locations(*)`,
     useMutationOperations: true,
     useBatchOperations: false,
     transformResponse: (data) => {
@@ -85,13 +102,21 @@ export const resetOrganizationApi = (client?: any) => {
     }
   }, client);
 
+  const newViewApi = createViewApiFactory<OrganizationWithLocation>({
+    viewName: 'organizations_with_tags',
+    entityName: 'Organization',
+    defaultSelect: '*',
+    transformResponse: (data) => formatOrganizationWithLocation(data)
+  }, client);
+
   return {
-    getAll: newApi.getAll,
-    getById: newApi.getById,
-    getByIds: newApi.getByIds,
-    create: newApi.create,
-    update: newApi.update,
-    delete: newApi.delete
+    // CRUD operations
+    ...newTableApi,
+    
+    // View operations
+    search: newViewApi.search,
+    filterByTagIds: newViewApi.filterByTagIds,
+    filterByTagNames: newViewApi.filterByTagNames
   };
 };
 

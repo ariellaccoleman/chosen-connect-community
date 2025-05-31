@@ -5,7 +5,7 @@
  */
 
 // Re-export all organization API modules
-export { organizationApi } from "./organizationApiFactory";
+export { organizationApi, organizationViewApi, organizationCompositeApi } from "./organizationApiFactory";
 export {
   getAllOrganizations,
   getOrganizationById,

@@ -3,8 +3,8 @@ import { useQuery } from "@tanstack/react-query";
 import { EntityType } from "@/types/entityTypes";
 import { Entity } from "@/types/entity";
 import { logger } from "@/utils/logger";
-import { organizationApi } from "@/api/organizations/organizationApiFactory";
-import { eventApi } from "@/api/events/eventApiFactory";
+import { organizationCompositeApi } from "@/api/organizations/organizationApiFactory";
+import { eventCompositeApi } from "@/api/events/eventApiFactory";
 import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
 import { apiClient } from "@/api/core/apiClient";
 
@@ -44,11 +44,11 @@ export const useEntityFeed = ({
             case EntityType.ORGANIZATION:
               if (tagId) {
                 // Use tag filtering for organizations
-                apiResponse = await organizationApi.filterByTagNames([tagId]);
+                apiResponse = await organizationCompositeApi.filterByTagNames([tagId]);
               } else if (search) {
-                apiResponse = await organizationApi.search('name', search);
+                apiResponse = await organizationCompositeApi.search(search, ['name']);
               } else {
-                apiResponse = await organizationApi.getAll();
+                apiResponse = await organizationCompositeApi.getAll();
               }
               break;
               
@@ -81,11 +81,11 @@ export const useEntityFeed = ({
               
             case EntityType.EVENT:
               if (tagId) {
-                apiResponse = await eventApi.filterByTagNames([tagId]);
+                apiResponse = await eventCompositeApi.filterByTagNames([tagId]);
               } else if (search) {
-                apiResponse = await eventApi.search('title', search);
+                apiResponse = await eventCompositeApi.search(search, ['title']);
               } else {
-                apiResponse = await eventApi.getAll();
+                apiResponse = await eventCompositeApi.getAll();
               }
               break;
               
@@ -94,7 +94,7 @@ export const useEntityFeed = ({
                 // Use tag filtering for posts with the new posts_with_tags view
                 apiResponse = await postsWithTagsApi.filterByTagNames([tagId]);
               } else if (search) {
-                apiResponse = await postsWithTagsApi.search('content', search);
+                apiResponse = await postsWithTagsApi.search(search, ['content']);
               } else {
                 apiResponse = await postsWithTagsApi.getAll();
               }

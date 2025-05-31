@@ -1,5 +1,4 @@
 
-
 import { DataRepository } from "../repository";
 import { TableNames, ViewNames, ApiFactoryOptions, ViewFactoryOptions, RelationshipFactoryOptions } from "./types";
 
@@ -23,7 +22,6 @@ export interface ApiFactoryConfig<T> {
   softDelete?: boolean;
   transformResponse?: (item: any) => T;
   transformRequest?: (data: any) => any;
-  withTagsView?: string; // Add this property for view-based tag operations
 }
 
 /**
@@ -50,4 +48,3 @@ export type {
   ViewFactoryOptions, 
   RelationshipFactoryOptions 
 } from "./types";
-

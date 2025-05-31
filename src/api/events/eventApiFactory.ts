@@ -1,7 +1,7 @@
 
-
 import { Event, EventWithDetails } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
+import { createViewApiFactory } from "@/api/core/factory/viewApiFactory";
 
 /**
  * Transform response data to EventWithDetails format
@@ -17,7 +17,7 @@ const transformEventResponse = (data: any): EventWithDetails => {
 };
 
 /**
- * Factory for event API operations
+ * Standard event API for CRUD operations on the events table
  */
 export const eventApi = createApiFactory<
   EventWithDetails,
@@ -28,12 +28,7 @@ export const eventApi = createApiFactory<
   tableName: 'events',
   entityName: 'Event',
   idField: 'id',
-  defaultSelect: `
-    *, 
-    location:locations(*),
-    host:profiles(*)
-  `,
-  withTagsView: 'events_with_tags', // Enable view-based operations
+  defaultSelect: `*, location:locations(*), host:profiles(*)`,
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: transformEventResponse,
@@ -58,10 +53,33 @@ export const eventApi = createApiFactory<
 });
 
 /**
+ * Event view API for read-only operations with tag filtering and search
+ */
+export const eventViewApi = createViewApiFactory<EventWithDetails>({
+  viewName: 'events_with_tags',
+  entityName: 'Event',
+  defaultSelect: '*',
+  transformResponse: transformEventResponse
+});
+
+/**
+ * Composite event API that combines CRUD and view operations
+ */
+export const eventCompositeApi = {
+  // CRUD operations from table API
+  ...eventApi,
+  
+  // View operations for enhanced querying
+  search: eventViewApi.search,
+  filterByTagIds: eventViewApi.filterByTagIds,
+  filterByTagNames: eventViewApi.filterByTagNames
+};
+
+/**
  * Reset event API with authenticated client
  */
 export const resetEventApi = (client?: any) => {
-  const newApi = createApiFactory<
+  const newTableApi = createApiFactory<
     EventWithDetails,
     string,
     Partial<Event>,
@@ -70,12 +88,7 @@ export const resetEventApi = (client?: any) => {
     tableName: 'events',
     entityName: 'Event',
     idField: 'id',
-    defaultSelect: `
-      *, 
-      location:locations(*),
-      host:profiles(*)
-    `,
-    withTagsView: 'events_with_tags',
+    defaultSelect: `*, location:locations(*), host:profiles(*)`,
     useMutationOperations: true,
     useBatchOperations: false,
     transformResponse: transformEventResponse,
@@ -99,13 +112,21 @@ export const resetEventApi = (client?: any) => {
     }
   }, client);
 
+  const newViewApi = createViewApiFactory<EventWithDetails>({
+    viewName: 'events_with_tags',
+    entityName: 'Event',
+    defaultSelect: '*',
+    transformResponse: transformEventResponse
+  }, client);
+
   return {
-    getAll: newApi.getAll,
-    getById: newApi.getById,
-    getByIds: newApi.getByIds,
-    create: newApi.create,
-    update: newApi.update,
-    delete: newApi.delete
+    // CRUD operations
+    ...newTableApi,
+    
+    // View operations
+    search: newViewApi.search,
+    filterByTagIds: newViewApi.filterByTagIds,
+    filterByTagNames: newViewApi.filterByTagNames
   };
 };
 
@@ -120,4 +141,4 @@ export const {
 } = eventApi;
 
 // Export extended API for backwards compatibility
-export const extendedEventApi = eventApi;
+export const extendedEventApi = eventCompositeApi;
