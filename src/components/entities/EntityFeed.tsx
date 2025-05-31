@@ -87,7 +87,8 @@ const EntityFeed = ({
   // Use the entity feed hook with enhanced tag filtering and profile-specific options
   const { 
     entities, 
-    isLoading
+    isLoading,
+    error
   } = useEntityFeed({
     entityTypes,
     limit,
@@ -96,7 +97,7 @@ const EntityFeed = ({
     isApproved
   });
   
-  // Log entity count when it changes 
+  // Enhanced logging for entity fetch results
   useEffect(() => {
     logger.debug(`EntityFeed: Found ${entities.length} entities with current filters`, {
       activeTab,
@@ -104,9 +105,10 @@ const EntityFeed = ({
       entityTypes: entityTypes.join(','),
       search,
       isApproved,
-      entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType }))
+      entities: entities.slice(0, 3).map(e => ({ id: e.id, name: e.name, type: e.entityType })),
+      error: error ? error.message : null
     });
-  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved]);
+  }, [entities, activeTab, selectedTagId, entityTypes, search, isApproved, error]);
   
   const handleTabChange = (value: string) => {
     setActiveTab(value as "all" | EntityType);
@@ -115,6 +117,11 @@ const EntityFeed = ({
   
   // Make sure we don't allow changing the tag if it's fixed via props
   const onTagSelect = tagId ? undefined : setSelectedTagId;
+  
+  // Debug error state
+  if (error) {
+    logger.error('EntityFeed: Query error:', error);
+  }
   
   return (
     <div className={className}>
@@ -140,6 +147,15 @@ const EntityFeed = ({
             onTagSelect={onTagSelect}
             targetType={activeTab !== "all" ? activeTab : undefined}
           />
+        )}
+        
+        {/* Debug information in development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-2 p-2 bg-gray-100 text-xs rounded">
+            <strong>Debug:</strong> Types: {entityTypes.join(', ')}, Tag: {selectedTagId || 'none'}, 
+            Found: {entities.length}, Loading: {isLoading ? 'yes' : 'no'}
+            {error && <span className="text-red-600">, Error: {error.message}</span>}
+          </div>
         )}
       </div>
       

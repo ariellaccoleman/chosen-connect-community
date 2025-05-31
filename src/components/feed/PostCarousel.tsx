@@ -1,87 +1,87 @@
 
 import React from "react";
-import { usePosts } from "@/hooks/posts";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselNext,
-  CarouselPrevious
-} from "@/components/ui/carousel";
+import { useQuery } from "@tanstack/react-query";
+import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
 import PostCard from "./PostCard";
-import { MessageSquare } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { EntityType } from "@/types/entityTypes";
+import { logger } from "@/utils/logger";
 
 interface PostCarouselProps {
-  tagId: string | null;
+  hubTagId?: string;
+  limit?: number;
+  className?: string;
 }
 
-const PostCarousel: React.FC<PostCarouselProps> = ({ tagId }) => {
-  // Use our posts hook to fetch all posts
-  const { data: postsResponse, isLoading, error } = usePosts();
-  
-  // Extract posts and filter by the provided tag ID if any
-  const allPosts = postsResponse?.data || [];
-  const filteredPosts = tagId
-    ? allPosts.filter(post => {
-        if (!post.tags || !Array.isArray(post.tags) || post.tags.length === 0) return false;
-        return post.tags.some(tag => tag.id === tagId);
-      })
-    : allPosts;
-    
-  // Sort posts by most recent
-  const sortedPosts = [...filteredPosts].sort((a, b) => 
-    new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ).slice(0, 6); // Limit to 6 most recent posts
+const PostCarousel = ({ hubTagId, limit = 10, className = "" }: PostCarouselProps) => {
+  const { data: posts = [], isLoading, error } = useQuery({
+    queryKey: ['posts-carousel', hubTagId, limit],
+    queryFn: async () => {
+      try {
+        logger.debug(`PostCarousel: Fetching posts`, { hubTagId, limit });
+        
+        let apiResponse;
+        
+        if (hubTagId) {
+          // Use server-side tag filtering
+          apiResponse = await postsWithTagsApi.filterByTagNames([hubTagId]);
+        } else {
+          // Get all posts
+          apiResponse = await postsWithTagsApi.getAll();
+        }
+        
+        if (apiResponse.isSuccess()) {
+          const postsData = apiResponse.data || [];
+          logger.debug(`PostCarousel: Found ${postsData.length} posts`);
+          
+          // Apply limit and return
+          return postsData.slice(0, limit);
+        } else {
+          logger.error('PostCarousel: Failed to fetch posts:', apiResponse.error);
+          return [];
+        }
+      } catch (error) {
+        logger.error('PostCarousel: Error fetching posts:', error);
+        return [];
+      }
+    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-64 w-full rounded-lg" />
+      <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Skeleton key={i} className="h-48 w-full" />
+        ))}
       </div>
     );
   }
 
   if (error) {
+    logger.error('PostCarousel: Query error:', error);
     return (
-      <div className="bg-gray-50 rounded-lg p-4 text-center">
-        <p className="text-red-500">Error loading posts</p>
+      <div className="text-center p-8">
+        <p className="text-gray-500">Failed to load posts</p>
       </div>
     );
   }
 
-  if (sortedPosts.length === 0) {
+  if (!posts || posts.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-500">No posts associated with this hub yet</p>
+      <div className="text-center p-8">
+        <p className="text-gray-500">
+          {hubTagId ? 'No posts found for this topic' : 'No posts available'}
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="mb-8">
-      <h2 className="text-2xl font-bold mb-4 flex items-center">
-        <MessageSquare className="h-5 w-5 mr-2" />
-        <span>Recent Posts</span>
-      </h2>
-      
-      <Carousel className="w-full">
-        <CarouselContent className="-ml-4 overflow-visible">
-          {sortedPosts.map(post => (
-            <CarouselItem key={`post-${post.id}`} className="pl-4 md:basis-2/5 lg:basis-2/7 pr-4">
-              <div className="h-full">
-                <PostCard post={post} />
-              </div>
-            </CarouselItem>
-          ))}
-        </CarouselContent>
-        {sortedPosts.length > 1 && (
-          <div className="flex justify-end mt-2">
-            <CarouselPrevious className="mr-2 static translate-y-0 left-auto" />
-            <CarouselNext className="static translate-y-0 right-auto" />
-          </div>
-        )}
-      </Carousel>
+    <div className={`grid gap-4 md:grid-cols-2 lg:grid-cols-3 ${className}`}>
+      {posts.map((post) => (
+        <PostCard key={post.id} post={post} />
+      ))}
     </div>
   );
 };

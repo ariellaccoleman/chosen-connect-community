@@ -1,3 +1,4 @@
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
 import { apiClient } from '../core/apiClient';
@@ -31,6 +32,25 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
     return transformed;
   },
   useMutationOperations: true,
+  useBatchOperations: false
+});
+
+// Create the posts with tags view API for filtering and display
+export const postsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+  tableName: 'posts_with_tags',
+  entityName: 'postWithTags',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    content: data.content,
+    author_id: data.author_id,
+    has_media: data.has_media || false,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    tags: data.tags || [],
+    tag_names: data.tag_names || []
+  }),
+  useMutationOperations: false, // Read-only view
   useBatchOperations: false
 });
 
@@ -327,8 +347,27 @@ export const resetPostsApi = (client?: any) => {
     useBatchOperations: false
   }, client);
 
+  const newPostsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+    tableName: 'posts_with_tags',
+    entityName: 'postWithTags',
+    defaultOrderBy: 'created_at',
+    transformResponse: (data: any) => ({
+      id: data.id,
+      content: data.content,
+      author_id: data.author_id,
+      has_media: data.has_media || false,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      tags: data.tags || [],
+      tag_names: data.tag_names || []
+    }),
+    useMutationOperations: false,
+    useBatchOperations: false
+  }, client);
+
   return {
     postsApi: newPostsApi,
+    postsWithTagsApi: newPostsWithTagsApi,
     postCommentsApi: newPostCommentsApi,
     postLikesApi: newPostLikesApi,
     commentLikesApi: newCommentLikesApi,
@@ -347,6 +386,11 @@ export const {
   update: updatePost,
   delete: deletePost
 } = postsApi;
+
+export const {
+  getAll: getAllPostsWithTags,
+  getById: getPostWithTagsById
+} = postsWithTagsApi;
 
 export const {
   getAll: getAllPostComments,
