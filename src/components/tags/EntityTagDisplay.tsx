@@ -1,7 +1,7 @@
 
 import React from "react";
 import TagList from "./TagList";
-import { TagAssignment } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags/types";
 import { EntityType } from "@/types/entityTypes";
 import { useEntityTags } from "@/hooks/tags/useTagFactoryHooks";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,12 +14,12 @@ interface EntityTagDisplayProps {
   maxTags?: number;
   showDebugInfo?: boolean;
   // New prop to accept pre-loaded tags from aggregated views
-  tags?: any[];
+  tags?: Tag[];
 }
 
 /**
  * Pure display component for entity tags - shows tag pills like on entity cards
- * Now supports both fetching tags and using pre-loaded aggregated tags
+ * Now supports both fetching tags and using pre-loaded tags from views
  */
 const EntityTagDisplay = ({
   entityId,
@@ -29,7 +29,7 @@ const EntityTagDisplay = ({
   showDebugInfo = false,
   tags: preloadedTags
 }: EntityTagDisplayProps) => {
-  // Only fetch tags if not provided - useEntityTags only takes 2 arguments
+  // Only fetch tags if not provided
   const { data: tagAssignments, isLoading, isError } = useEntityTags(
     entityId, 
     entityType

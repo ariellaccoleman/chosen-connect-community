@@ -1,15 +1,16 @@
 
 import { Badge } from "@/components/ui/badge";
 import { TagAssignment } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags/types";
 import { cn } from "@/lib/utils";
 import { logger } from "@/utils/logger";
 import { X } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface TagListProps {
-  // Updated to support both legacy TagAssignment[] and new aggregated tag arrays
+  // Updated to support both legacy TagAssignment[] and new simplified tag arrays
   tagAssignments?: TagAssignment[];
-  tags?: any[]; // New prop for aggregated tags from views
+  tags?: Tag[]; // New prop for simplified tags from views
   className?: string;
   maxTags?: number; 
   showDebugInfo?: boolean;
@@ -19,7 +20,7 @@ interface TagListProps {
 
 /**
  * Component to display a list of tags as badges
- * Now supports both legacy TagAssignment[] and new aggregated tag arrays
+ * Now supports both legacy TagAssignment[] and new simplified Tag[] arrays
  */
 const TagList = ({
   tagAssignments,
@@ -31,16 +32,17 @@ const TagList = ({
   isRemoving = false
 }: TagListProps) => {
   // Determine which tag data to use
-  let displayTags: any[] = [];
+  let displayTags: Tag[] = [];
   
   if (tags && tags.length > 0) {
-    // Use new aggregated tags from views
+    // Use new simplified tags from views
     displayTags = tags;
   } else if (tagAssignments && tagAssignments.length > 0) {
     // Use legacy tag assignments (convert to simple tag objects)
     displayTags = tagAssignments
       .filter(assignment => assignment.tag)
-      .map(assignment => assignment.tag);
+      .map(assignment => assignment.tag!)
+      .filter(Boolean);
   }
 
   if (displayTags.length === 0) {
@@ -52,7 +54,7 @@ const TagList = ({
     logger.debug("TagList received tags:", displayTags.map(t => ({
       id: t.id,
       name: t.name,
-      type: tags ? 'aggregated' : 'assignment'
+      type: tags ? 'simplified' : 'assignment'
     })));
   }
 
@@ -84,7 +86,7 @@ const TagList = ({
                   e.preventDefault();
                   e.stopPropagation();
                   // For legacy assignments, pass the assignment ID
-                  // For new aggregated tags, we'd need a different approach
+                  // For new simplified tags, we'd need a different approach (tag ID + entity context)
                   const idToRemove = tagAssignments 
                     ? tagAssignments.find(a => a.tag?.id === tag.id)?.id 
                     : tag.id;
