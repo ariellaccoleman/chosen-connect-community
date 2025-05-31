@@ -13,13 +13,13 @@ interface EntityTagDisplayProps {
   className?: string;
   maxTags?: number;
   showDebugInfo?: boolean;
-  // New prop to accept pre-loaded tags from aggregated views
+  // Pre-loaded tags from aggregated views (preferred)
   tags?: Tag[];
 }
 
 /**
  * Pure display component for entity tags - shows tag pills like on entity cards
- * Now supports both fetching tags and using pre-loaded tags from views
+ * Now only supports simplified Tag[] format from views
  */
 const EntityTagDisplay = ({
   entityId,
@@ -29,13 +29,14 @@ const EntityTagDisplay = ({
   showDebugInfo = false,
   tags: preloadedTags
 }: EntityTagDisplayProps) => {
-  // Only fetch tags if not provided
+  // Only fetch tags if not provided (fallback for legacy components)
   const { data: tagAssignments, isLoading, isError } = useEntityTags(
     entityId, 
-    entityType
+    entityType,
+    { enabled: !preloadedTags || preloadedTags.length === 0 }
   );
 
-  // Use preloaded tags if available, otherwise use fetched assignments
+  // Use preloaded tags if available (preferred approach)
   if (preloadedTags && preloadedTags.length > 0) {
     return (
       <TagList 
@@ -60,9 +61,15 @@ const EntityTagDisplay = ({
     return null;
   }
 
+  // Convert TagAssignment[] to Tag[] for legacy support
+  const simpleTags: Tag[] = tagAssignments
+    .filter(assignment => assignment.tag)
+    .map(assignment => assignment.tag!)
+    .filter(Boolean);
+
   return (
     <TagList 
-      tagAssignments={tagAssignments}
+      tags={simpleTags}
       className={className}
       maxTags={maxTags}
       showDebugInfo={showDebugInfo}

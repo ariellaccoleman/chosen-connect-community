@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
@@ -23,6 +22,10 @@ interface PostCardProps {
   post: Post;
 }
 
+/**
+ * Post card component that displays post information with simplified tags
+ * Now expects post.tags to be Tag[] from views
+ */
 const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
@@ -107,7 +110,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           <p className="text-sm">{post.content}</p>
         </div>
         
-        {/* Post tags */}
+        {/* Post tags - now uses simplified Tag[] array */}
         {post.tags && post.tags.length > 0 && (
           <div className="px-4 pb-3 flex flex-wrap gap-2">
             {post.tags.map(tag => (

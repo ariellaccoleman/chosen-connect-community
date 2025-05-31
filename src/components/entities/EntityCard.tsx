@@ -21,6 +21,7 @@ interface EntityCardProps {
 /**
  * Generic card component for displaying any entity type
  * Uses entity.entityType to determine how to render the entity
+ * Now expects entity.tags to be Tag[] from views
  */
 const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps) => {
   const { 
@@ -40,7 +41,8 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   logger.debug(`EntityCard: Rendering entity with type "${entity.entityType}"`, {
     id: entity.id,
     entityType: entity.entityType,
-    name: entity.name
+    name: entity.name,
+    tagsCount: entity.tags?.length || 0
   });
 
   // Format date if it's an event
@@ -112,7 +114,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           </div>
         </div>
         
-        {/* Tags */}
+        {/* Tags - now expects simple Tag[] array */}
         {showTags && entity.tags && entity.tags.length > 0 && (
           <div className="mt-4">
             <TagList tags={entity.tags} />

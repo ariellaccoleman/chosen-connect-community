@@ -1,6 +1,5 @@
 
 import { Badge } from "@/components/ui/badge";
-import { TagAssignment } from "@/utils/tags/types";
 import { Tag } from "@/utils/tags/types";
 import { cn } from "@/lib/utils";
 import { logger } from "@/utils/logger";
@@ -8,59 +7,48 @@ import { X } from "lucide-react";
 import { Loader2 } from "lucide-react";
 
 interface TagListProps {
-  // Updated to support both legacy TagAssignment[] and new simplified tag arrays
-  tagAssignments?: TagAssignment[];
-  tags?: Tag[]; // New prop for simplified tags from views
+  // Simplified to only support Tag[] - no more TagAssignment[] complexity
+  tags: Tag[];
   className?: string;
   maxTags?: number; 
   showDebugInfo?: boolean;
-  onRemove?: (assignmentId: string) => void;
+  onRemove?: (tagId: string, entityId: string, entityType: string) => void;
   isRemoving?: boolean;
+  // Context for tag removal operations
+  entityId?: string;
+  entityType?: string;
 }
 
 /**
  * Component to display a list of tags as badges
- * Now supports both legacy TagAssignment[] and new simplified Tag[] arrays
+ * Now only supports simplified Tag[] arrays from views
  */
 const TagList = ({
-  tagAssignments,
-  tags,
+  tags = [],
   className,
   maxTags = 10,
   showDebugInfo = false,
   onRemove,
-  isRemoving = false
+  isRemoving = false,
+  entityId,
+  entityType
 }: TagListProps) => {
-  // Determine which tag data to use
-  let displayTags: Tag[] = [];
-  
-  if (tags && tags.length > 0) {
-    // Use new simplified tags from views
-    displayTags = tags;
-  } else if (tagAssignments && tagAssignments.length > 0) {
-    // Use legacy tag assignments (convert to simple tag objects)
-    displayTags = tagAssignments
-      .filter(assignment => assignment.tag)
-      .map(assignment => assignment.tag!)
-      .filter(Boolean);
-  }
-
-  if (displayTags.length === 0) {
+  if (!tags || tags.length === 0) {
     return null;
   }
 
   // Enhanced logging for debugging specific tag issues
   if (showDebugInfo) {
-    logger.debug("TagList received tags:", displayTags.map(t => ({
+    logger.debug("TagList received tags:", tags.map(t => ({
       id: t.id,
       name: t.name,
-      type: tags ? 'simplified' : 'assignment'
+      type: 'simplified'
     })));
   }
 
   // In case we have more tags than we want to show
-  const visibleTags = maxTags > 0 ? displayTags.slice(0, maxTags) : displayTags;
-  const extraTagsCount = Math.max(0, displayTags.length - maxTags);
+  const visibleTags = maxTags > 0 ? tags.slice(0, maxTags) : tags;
+  const extraTagsCount = Math.max(0, tags.length - maxTags);
 
   return (
     <div className={cn("flex flex-wrap gap-1", className)}>
@@ -80,19 +68,12 @@ const TagList = ({
           >
             {tag.name}
             
-            {onRemove && (
+            {onRemove && entityId && entityType && (
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  // For legacy assignments, pass the assignment ID
-                  // For new simplified tags, we'd need a different approach (tag ID + entity context)
-                  const idToRemove = tagAssignments 
-                    ? tagAssignments.find(a => a.tag?.id === tag.id)?.id 
-                    : tag.id;
-                  if (idToRemove) {
-                    onRemove(idToRemove);
-                  }
+                  onRemove(tag.id, entityId, entityType);
                 }}
                 disabled={isRemoving}
                 className="ml-1 focus:outline-none"

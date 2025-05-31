@@ -12,6 +12,10 @@ interface EventCardProps {
   onViewEvent: (eventId: string) => void;
 }
 
+/**
+ * Event card component that displays event information with simplified tags
+ * Now expects event.tags to be Tag[] from views
+ */
 const EventCard = ({ event, onViewEvent }: EventCardProps) => {
   const formatEventDate = (dateString: string) => {
     try {
@@ -73,6 +77,7 @@ const EventCard = ({ event, onViewEvent }: EventCardProps) => {
       
       {renderLocationInfo(event)}
       
+      {/* Tags - now uses simplified Tag[] array */}
       {event.tags && event.tags.length > 0 && (
         <div className="mt-2 mb-2">
           <TagList tags={event.tags} />

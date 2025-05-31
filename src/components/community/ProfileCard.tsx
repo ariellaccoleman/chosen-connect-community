@@ -15,6 +15,10 @@ interface ProfileCardProps {
   profile: ProfileWithDetails;
 }
 
+/**
+ * Profile card component that displays profile information with simplified tags
+ * Now expects profile.tags to be Tag[] from views
+ */
 const ProfileCard = ({ profile }: ProfileCardProps) => {
   // Generate the correct profile URL using the APP_ROUTES constant and ID parameter 
   // The route is defined as /profile/:profileId in APP_ROUTES.PROFILE_VIEW
@@ -46,7 +50,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
             <ProfileInfo profile={profile} />
           </div>
           
-          {/* Right Column - Tags (only show if has tags) */}
+          {/* Right Column - Tags (only show if has tags) - now uses simplified Tag[] */}
           {hasTags && (
             <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
