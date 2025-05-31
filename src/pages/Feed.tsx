@@ -23,7 +23,7 @@ const Feed: React.FC = () => {
 
   // Use EntityFeed hook to get posts as entities
   const { 
-    data: entities = [], 
+    entities, 
     isLoading 
   } = useEntityFeed({
     entityTypes: [EntityType.POST],

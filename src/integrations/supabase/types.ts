@@ -833,13 +833,6 @@ export type Database = {
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "post_comments_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts_with_tags"
-            referencedColumns: ["id"]
-          },
         ]
       }
       post_likes: {
@@ -867,13 +860,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_likes_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts_with_tags"
             referencedColumns: ["id"]
           },
         ]
@@ -909,13 +895,6 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "post_media_post_id_fkey"
-            columns: ["post_id"]
-            isOneToOne: false
-            referencedRelation: "posts_with_tags"
             referencedColumns: ["id"]
           },
         ]
@@ -1737,34 +1716,6 @@ export type Database = {
             columns: ["location_id"]
             isOneToOne: false
             referencedRelation: "locations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      posts_with_tags: {
-        Row: {
-          author_id: string | null
-          content: string | null
-          created_at: string | null
-          has_media: boolean | null
-          id: string | null
-          tag_names: string[] | null
-          tags: Json[] | null
-          updated_at: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "people_with_tags"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_author_id_fkey"
-            columns: ["author_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]

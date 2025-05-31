@@ -68,22 +68,15 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
   }
   
   /**
-   * Filter entities by tag ID using proper PostgreSQL array operators
-   * Works with both tag_names (text[]) and tags (jsonb[]) columns
+   * Filter entities by multiple tags
    */
   async filterByTagIds(tagIds: string[]): Promise<ApiResponse<T[]>> {
     try {
-      if (!tagIds || tagIds.length === 0) {
-        return this.getAll();
-      }
-
-      // For single tag ID filtering, we'll check if any of the tag objects in the jsonb array
-      // contain the specified tag ID, or if any tag names match
-      const tagId = tagIds[0]; // For now, handle single tag filtering
-      
+      // This implementation assumes that tag IDs are stored in a column called 'tag_id'
+      // Adjust the field name if your data model is different
       const result = await this.repository
         .select()
-        .or(`tags->@.{"id":"${tagId}"},tag_names.cs.{${tagId}}`)
+        .in("tag_id", tagIds)
         .execute();
       
       if (result.isError()) {
@@ -94,37 +87,5 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
     } catch (error) {
       return this.handleError(error, "filter by tags");
     }
-  }
-
-  /**
-   * Filter entities by tag names using PostgreSQL array contains operator
-   */
-  async filterByTagNames(tagNames: string[]): Promise<ApiResponse<T[]>> {
-    try {
-      if (!tagNames || tagNames.length === 0) {
-        return this.getAll();
-      }
-
-      // Use array overlap operator to find entities that have any of the specified tag names
-      const result = await this.repository
-        .select()
-        .contains('tag_names', tagNames)
-        .execute();
-      
-      if (result.isError()) {
-        throw result.error;
-      }
-      
-      return createSuccessResponse(result.data as T[]);
-    } catch (error) {
-      return this.handleError(error, "filter by tag names");
-    }
-  }
-
-  /**
-   * Get all entities - delegates to parent class
-   */
-  async getAll(): Promise<ApiResponse<T[]>> {
-    return super.getAll();
   }
 }

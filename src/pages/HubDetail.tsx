@@ -52,7 +52,7 @@ const HubDetail = () => {
 
   // Use the improved entity feed hook for each entity type with the proper tag_id
   const { 
-    data: people = [], 
+    entities: people, 
     isLoading: peopleLoading 
   } = useEntityFeed({
     entityTypes: [EntityType.PERSON],
@@ -61,7 +61,7 @@ const HubDetail = () => {
   });
   
   const { 
-    data: organizations = [], 
+    entities: organizations, 
     isLoading: organizationsLoading 
   } = useEntityFeed({
     entityTypes: [EntityType.ORGANIZATION],
@@ -70,7 +70,7 @@ const HubDetail = () => {
   });
   
   const { 
-    data: events = [], 
+    entities: events, 
     isLoading: eventsLoading 
   } = useEntityFeed({
     entityTypes: [EntityType.EVENT],
@@ -125,7 +125,7 @@ const HubDetail = () => {
         
         <div className="space-y-8">
           {/* Posts Carousel */}
-          <PostCarousel hubTagId={hub?.tag_id} />
+          <PostCarousel tagId={hub?.tag_id} />
           
           {/* Display Chat Channels if available */}
           <ChatChannelCarousel 
