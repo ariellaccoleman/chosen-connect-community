@@ -6,6 +6,7 @@ import { logger } from "@/utils/logger";
 import { organizationCompositeApi } from "@/api/organizations/organizationApiFactory";
 import { eventCompositeApi } from "@/api/events/eventApiFactory";
 import { postsWithTagsApi } from "@/api/posts/postsApiFactory";
+import { profileCompositeApi } from "@/api/profiles/profileApiFactory";
 import { apiClient } from "@/api/core/apiClient";
 
 interface UseEntityFeedProps {
@@ -43,8 +44,8 @@ export const useEntityFeed = ({
           switch (entityType) {
             case EntityType.ORGANIZATION:
               if (tagId) {
-                // Use tag filtering for organizations
-                apiResponse = await organizationCompositeApi.filterByTagNames([tagId]);
+                // Use tag ID filtering for organizations
+                apiResponse = await organizationCompositeApi.filterByTagIds([tagId]);
               } else if (search) {
                 apiResponse = await organizationCompositeApi.search(search, ['name']);
               } else {
@@ -53,35 +54,35 @@ export const useEntityFeed = ({
               break;
               
             case EntityType.PERSON:
-              // Use apiClient directly for people with complex filters
-              const result = await apiClient.query(async (supabase) => {
-                let query = supabase.from('people_with_tags').select('*');
+              if (tagId) {
+                // Use tag ID filtering for profiles
+                apiResponse = await profileCompositeApi.filterByTagIds([tagId]);
+              } else if (search) {
+                apiResponse = await profileCompositeApi.search(search, ['first_name', 'last_name', 'headline']);
+              } else {
+                // Use apiClient directly for people with complex filters
+                const result = await apiClient.query(async (supabase) => {
+                  let query = supabase.from('people_with_tags').select('*');
+                  
+                  // Apply filters
+                  if (isApproved) {
+                    query = query.eq('is_approved', true);
+                  }
+                  
+                  const { data, error } = await query;
+                  
+                  if (error) throw error;
+                  
+                  return { isSuccess: () => true, data };
+                });
                 
-                // Apply filters
-                if (isApproved) {
-                  query = query.eq('is_approved', true);
-                }
-                if (search) {
-                  query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,headline.ilike.%${search}%`);
-                }
-                if (tagId) {
-                  // Use PostgreSQL array overlap operator for tag filtering
-                  query = query.overlaps('tag_names', [tagId]);
-                }
-                
-                const { data, error } = await query;
-                
-                if (error) throw error;
-                
-                return { isSuccess: () => true, data };
-              });
-              
-              apiResponse = result;
+                apiResponse = result;
+              }
               break;
               
             case EntityType.EVENT:
               if (tagId) {
-                apiResponse = await eventCompositeApi.filterByTagNames([tagId]);
+                apiResponse = await eventCompositeApi.filterByTagIds([tagId]);
               } else if (search) {
                 apiResponse = await eventCompositeApi.search(search, ['title']);
               } else {
@@ -91,8 +92,8 @@ export const useEntityFeed = ({
               
             case EntityType.POST:
               if (tagId) {
-                // Use tag filtering for posts with the new posts_with_tags view
-                apiResponse = await postsWithTagsApi.filterByTagNames([tagId]);
+                // Use tag ID filtering for posts with the new posts_with_tags view
+                apiResponse = await postsWithTagsApi.filterByTagIds([tagId]);
               } else if (search) {
                 apiResponse = await postsWithTagsApi.search(search, ['content']);
               } else {

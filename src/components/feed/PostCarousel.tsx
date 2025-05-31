@@ -23,8 +23,8 @@ const PostCarousel = ({ hubTagId, limit = 10, className = "" }: PostCarouselProp
         let apiResponse;
         
         if (hubTagId) {
-          // Use server-side tag filtering
-          apiResponse = await postsWithTagsApi.filterByTagNames([hubTagId]);
+          // Use tag ID filtering instead of tag name filtering
+          apiResponse = await postsWithTagsApi.filterByTagIds([hubTagId]);
         } else {
           // Get all posts
           apiResponse = await postsWithTagsApi.getAll();
