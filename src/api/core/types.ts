@@ -38,12 +38,14 @@ export interface PaginatedResponse<T> {
 }
 
 /**
- * Standardized API response type
+ * Standardized API response type with helper methods
  */
 export type ApiResponse<T> = {
   data: T | null;
   error: ApiError | null;
   status: 'success' | 'error';
+  isSuccess: () => boolean;
+  isError: () => boolean;
 };
 
 /**

@@ -1,6 +1,7 @@
 
 import { Database } from "@/integrations/supabase/types";
 import { DataRepository } from "../repository/repositoryFactory";
+import { ApiResponse } from "../types";
 
 // Define a type for valid table names from the Database type
 export type TableNames = keyof Database['public']['Tables'];
@@ -79,23 +80,11 @@ export interface ViewOperations<T, TId = string> {
     limit?: number;
     offset?: number;
     select?: string;
-  }) => Promise<{
-    data: T[];
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  }) => Promise<ApiResponse<T[]>>;
   
-  getById: (id: TId) => Promise<{
-    data: T | null;
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  getById: (id: TId) => Promise<ApiResponse<T | null>>;
   
-  getByIds: (ids: TId[]) => Promise<{
-    data: T[];
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  getByIds: (ids: TId[]) => Promise<ApiResponse<T[]>>;
   
   // View name for reference
   readonly viewName: string;
@@ -112,42 +101,18 @@ export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = 
     limit?: number;
     offset?: number;
     select?: string;
-  }) => Promise<{
-    data: T[];
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  }) => Promise<ApiResponse<T[]>>;
   
-  getById: (id: TId) => Promise<{
-    data: T | null;
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  getById: (id: TId) => Promise<ApiResponse<T | null>>;
   
-  getByIds: (ids: TId[]) => Promise<{
-    data: T[];
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  getByIds: (ids: TId[]) => Promise<ApiResponse<T[]>>;
   
   // Mutation operations
-  create: (data: TCreate) => Promise<{
-    data: T | null;
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  create: (data: TCreate) => Promise<ApiResponse<T>>;
   
-  update: (id: TId, data: TUpdate) => Promise<{
-    data: T | null;
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  update: (id: TId, data: TUpdate) => Promise<ApiResponse<T>>;
   
-  delete: (id: TId) => Promise<{
-    data: T | null;
-    error: any;
-    status: 'success' | 'error';
-  }>;
+  delete: (id: TId) => Promise<ApiResponse<T | null>>;
   
   // Table name for reference
   readonly tableName: string;

@@ -21,10 +21,12 @@ export type ApiResponse<T> = {
   data: T | null;
   error: ApiError | null;
   status: 'success' | 'error';
+  isSuccess: () => boolean;
+  isError: () => boolean;
 };
 
 /**
- * Create a standardized error response
+ * Create a standardized error response with helper methods
  */
 export const createErrorResponse = (error: unknown): ApiResponse<any> => {
   const errorObj = createErrorObject(error);
@@ -39,18 +41,22 @@ export const createErrorResponse = (error: unknown): ApiResponse<any> => {
   return {
     data: null,
     error: apiError,
-    status: 'error'
+    status: 'error',
+    isSuccess: () => false,
+    isError: () => true
   };
 };
 
 /**
- * Create a standardized success response
+ * Create a standardized success response with helper methods
  */
 export const createSuccessResponse = <T>(data: T): ApiResponse<T> => {
   return {
     data,
     error: null,
-    status: 'success'
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false
   };
 };
 
