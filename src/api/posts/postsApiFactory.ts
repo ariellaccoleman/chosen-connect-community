@@ -1,9 +1,9 @@
+
 import { createApiFactory } from '../core/factory/apiFactory';
 import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
 import { apiClient } from '../core/apiClient';
 import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
-import { ViewApiOperations } from '../core/types';
 
 // Create the main posts API using the factory
 export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
@@ -35,174 +35,24 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
   useBatchOperations: false
 });
 
-// Create view operations for posts with tags using manual implementation
-const createPostsWithTagsViewOperations = (): ViewApiOperations<Post & { tags?: any[], tag_names?: string[] }, string> => {
-  return {
-    viewName: 'posts_with_tags',
-    
-    async getAll(params = {}) {
-      return apiClient.query(async (supabase) => {
-        try {
-          let query = supabase.from('posts_with_tags' as any).select('*');
-          
-          // Apply filters
-          if (params.filters) {
-            Object.entries(params.filters).forEach(([key, value]) => {
-              if (value !== undefined && value !== null) {
-                if (Array.isArray(value)) {
-                  query = query.in(key, value);
-                } else {
-                  query = query.eq(key, value);
-                }
-              }
-            });
-          }
-          
-          // Apply search
-          if (params.search && params.searchColumns?.length) {
-            query = query.ilike(params.searchColumns[0], `%${params.search}%`);
-          }
-          
-          // Apply ordering
-          if (params.ascending !== undefined) {
-            query = query.order('created_at', { ascending: params.ascending });
-          } else {
-            query = query.order('created_at', { ascending: false });
-          }
-          
-          // Apply pagination
-          if (params.limit !== undefined) {
-            const from = params.offset || 0;
-            const to = from + params.limit - 1;
-            query = query.range(from, to);
-          }
-          
-          const { data, error } = await query;
-          
-          if (error) throw error;
-          
-          const transformedData = (data || []).map((item: any) => ({
-            id: item.id,
-            content: item.content,
-            author_id: item.author_id,
-            has_media: item.has_media || false,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            tags: item.tags || [],
-            tag_names: item.tag_names || []
-          }));
-          
-          return createSuccessResponse(transformedData);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      });
-    },
-
-    async getById(id) {
-      return apiClient.query(async (supabase) => {
-        try {
-          const { data, error } = await supabase
-            .from('posts_with_tags' as any)
-            .select('*')
-            .eq('id', id)
-            .maybeSingle();
-          
-          if (error) throw error;
-          
-          const transformedData = data ? {
-            id: data.id,
-            content: data.content,
-            author_id: data.author_id,
-            has_media: data.has_media || false,
-            created_at: data.created_at,
-            updated_at: data.updated_at,
-            tags: data.tags || [],
-            tag_names: data.tag_names || []
-          } : null;
-          
-          return createSuccessResponse(transformedData);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      });
-    },
-
-    async getByIds(ids) {
-      if (!ids.length) {
-        return createSuccessResponse([]);
-      }
-      
-      return apiClient.query(async (supabase) => {
-        try {
-          const { data, error } = await supabase
-            .from('posts_with_tags' as any)
-            .select('*')
-            .in('id', ids);
-          
-          if (error) throw error;
-          
-          const transformedData = (data || []).map((item: any) => ({
-            id: item.id,
-            content: item.content,
-            author_id: item.author_id,
-            has_media: item.has_media || false,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            tags: item.tags || [],
-            tag_names: item.tag_names || []
-          }));
-          
-          return createSuccessResponse(transformedData);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      });
-    },
-
-    async search(field, searchTerm) {
-      return this.getAll({
-        search: searchTerm,
-        searchColumns: [field]
-      });
-    },
-
-    async filterByTagNames(tagNames) {
-      if (!tagNames || tagNames.length === 0) {
-        return this.getAll();
-      }
-
-      return apiClient.query(async (supabase) => {
-        try {
-          const { data, error } = await supabase
-            .from('posts_with_tags' as any)
-            .select('*')
-            .overlaps('tag_names', tagNames);
-          
-          if (error) throw error;
-          
-          const transformedData = (data || []).map((item: any) => ({
-            id: item.id,
-            content: item.content,
-            author_id: item.author_id,
-            has_media: item.has_media || false,
-            created_at: item.created_at,
-            updated_at: item.updated_at,
-            tags: item.tags || [],
-            tag_names: item.tag_names || []
-          }));
-          
-          return createSuccessResponse(transformedData);
-        } catch (error) {
-          return createErrorResponse(error);
-        }
-      });
-    }
-  };
-};
-
-// Create the posts with tags view API
-export const postsWithTagsApi = createPostsWithTagsViewOperations();
+// Create the posts with tags view API for filtering and display
+export const postsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+  tableName: 'posts_with_tags',
+  entityName: 'postWithTags',
+  defaultOrderBy: 'created_at',
+  transformResponse: (data: any) => ({
+    id: data.id,
+    content: data.content,
+    author_id: data.author_id,
+    has_media: data.has_media || false,
+    created_at: data.created_at,
+    updated_at: data.updated_at,
+    tags: data.tags || [],
+    tag_names: data.tag_names || []
+  }),
+  useMutationOperations: false, // Read-only view
+  useBatchOperations: false
+});
 
 // Create the post comments API (alias as commentsApi for backwards compatibility)
 export const postCommentsApi = createApiFactory<any, string>({
