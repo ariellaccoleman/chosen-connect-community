@@ -83,6 +83,12 @@ interface ChatChannelRowProps {
 function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) {
   const { data: tagAssignments } = useEntityTags(channel.id, EntityType.CHAT);
   
+  // Convert TagAssignment[] to Tag[] for display
+  const simpleTags = tagAssignments
+    ?.filter(assignment => assignment.tag)
+    .map(assignment => assignment.tag!)
+    .filter(Boolean) || [];
+  
   return (
     <TableRow key={channel.id}>
       <TableCell className="font-medium">{channel.name || 'Unnamed channel'}</TableCell>
@@ -103,7 +109,7 @@ function ChatChannelRow({ channel, onDelete, isDeleting }: ChatChannelRowProps) 
       </TableCell>
       <TableCell>
         <TagList 
-          tagAssignments={tagAssignments || []}
+          tags={simpleTags}
           className="flex flex-wrap"
         />
       </TableCell>

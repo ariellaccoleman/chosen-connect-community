@@ -16,11 +16,17 @@ const PublicProfileTags = ({ profileId }: PublicProfileTagsProps) => {
     return <Skeleton className="h-24 w-full" />;
   }
   
+  // Convert TagAssignment[] to Tag[] for display
+  const simpleTags = tagAssignments
+    ?.filter(assignment => assignment.tag)
+    .map(assignment => assignment.tag!)
+    .filter(Boolean) || [];
+  
   return (
     <div className="mt-4">
       <h3 className="text-lg font-semibold mb-2">Tags</h3>
       <TagList 
-        tagAssignments={tagAssignments || []} 
+        tags={simpleTags} 
         className="flex flex-wrap gap-2"
       />
     </div>

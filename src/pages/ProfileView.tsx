@@ -98,6 +98,12 @@ const ProfileView = () => {
     );
   }
 
+  // Convert TagAssignment[] to Tag[] for display
+  const simpleTags = tagAssignments
+    ?.filter(assignment => assignment.tag)
+    .map(assignment => assignment.tag!)
+    .filter(Boolean) || [];
+
   return (
     <div className="container max-w-4xl mx-auto px-4 py-8">
       <Button
@@ -125,9 +131,9 @@ const ProfileView = () => {
                 <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded mb-2"></div>
                 <div className="h-6 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
               </div>
-            ) : tagAssignments && tagAssignments.length > 0 ? (
+            ) : simpleTags && simpleTags.length > 0 ? (
               <TagList 
-                tagAssignments={tagAssignments}
+                tags={simpleTags}
                 className="flex flex-wrap gap-2"
                 showDebugInfo={true}
               />

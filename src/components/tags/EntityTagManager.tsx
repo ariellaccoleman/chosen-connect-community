@@ -103,9 +103,16 @@ const EntityTagManager = ({
     }
   };
   
-  const handleRemoveTag = async (assignmentId: string) => {
+  const handleRemoveTag = async (tagId: string, entityId: string, entityType: string) => {
+    // Find the assignment ID for this tag
+    const assignment = tagAssignments.find(a => a.tag?.id === tagId);
+    if (!assignment) {
+      toast.error("Assignment not found");
+      return;
+    }
+    
     try {
-      await removeTagAssignment(assignmentId);
+      await removeTagAssignment(assignment.id);
       
       // Invalidate related queries to refresh data
       queryClient.invalidateQueries({ queryKey: ['entity-tags', entityId, entityType] });
@@ -146,6 +153,12 @@ const EntityTagManager = ({
     );
   }
 
+  // Convert TagAssignment[] to Tag[] for display
+  const simpleTags = tagAssignments
+    .filter(assignment => assignment.tag)
+    .map(assignment => assignment.tag!)
+    .filter(Boolean);
+
   // EDITING MODE: Show tag selector + removable tag list
   return (
     <div className={className}>
@@ -160,9 +173,11 @@ const EntityTagManager = ({
       </div>
       
       <TagList 
-        tagAssignments={tagAssignments} 
+        tags={simpleTags}
         onRemove={isAdmin ? handleRemoveTag : undefined}
         isRemoving={isRemoving}
+        entityId={entityId}
+        entityType={entityType}
         className="mt-2"
       />
     </div>
