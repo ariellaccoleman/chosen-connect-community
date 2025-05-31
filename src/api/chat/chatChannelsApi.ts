@@ -18,7 +18,9 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
   tableName: 'chat_channels',
   entityName: 'chatChannel',
   defaultOrderBy: 'created_at',
-  transformResponse: (data: ChatChannelRow) => ({
+  // Include tag assignments in the default select
+  defaultSelect: '*, tag_assignments(*, tag:tags(*))',
+  transformResponse: (data: ChatChannelRow & { tag_assignments?: any[] }) => ({
     id: data.id,
     name: data.name || null,
     description: data.description || null,
@@ -26,7 +28,9 @@ export const chatChannelsApi = createApiFactory<ChatChannel, string, ChatChannel
     created_at: data.created_at || '',
     updated_at: data.updated_at || data.created_at || '',
     created_by: data.created_by || null,
-    channel_type: data.channel_type === 'group' ? 'group' : 'announcement'
+    channel_type: data.channel_type === 'group' ? 'group' : 'announcement',
+    // Include tag assignments if they exist
+    tag_assignments: data.tag_assignments || []
   }),
   transformRequest: (data) => {
     const transformed: Record<string, any> = {};

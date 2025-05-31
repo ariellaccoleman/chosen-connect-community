@@ -126,7 +126,7 @@ export function useUpdateChannelTags() {
 }
 
 /**
- * Hook to get chat channels filtered by tag ID using the API layer
+ * Hook to get chat channels filtered by tag ID - fixed implementation
  */
 export function useChatChannelsByTag(tagId: string | null | undefined) {
   return useQuery({
@@ -134,23 +134,32 @@ export function useChatChannelsByTag(tagId: string | null | undefined) {
     queryFn: async () => {
       if (!tagId) return [];
       
-      // Get all channels using the API
-      const channelsResult = await chatChannelsApi.getAll();
-      if (channelsResult.error || !Array.isArray(channelsResult.data)) {
-        logger.error("Error fetching channels:", channelsResult.error);
+      try {
+        // Get all channels with their tag assignments
+        const channelsResult = await chatChannelsApi.getAll({
+          // Use proper select to include tag assignments
+          select: '*, tag_assignments(*, tag:tags(*))'
+        });
+        
+        if (channelsResult.error || !Array.isArray(channelsResult.data)) {
+          logger.error("Error fetching channels:", channelsResult.error);
+          return [];
+        }
+        
+        // Filter channels by those that have assignments for this tag
+        const filteredChannels = channelsResult.data.filter(channel => {
+          if (!channel.tag_assignments || !Array.isArray(channel.tag_assignments)) {
+            return false;
+          }
+          return channel.tag_assignments.some(assignment => assignment.tag_id === tagId);
+        });
+        
+        logger.debug(`Found ${filteredChannels.length} channels for tag ${tagId}`);
+        return filteredChannels;
+      } catch (error) {
+        logger.error("Error in useChatChannelsByTag:", error);
         return [];
       }
-      
-      // Filter channels by those that have assignments for this tag
-      // This is a simplified approach - in a production app you might want to 
-      // create a specific API endpoint for this query
-      const filteredChannels = channelsResult.data.filter(channel => {
-        // For now, return all channels as we don't have tag assignment data here
-        // This would need to be enhanced with a proper API call that includes tag data
-        return true;
-      });
-      
-      return filteredChannels;
     },
     enabled: !!tagId
   });

@@ -1,3 +1,4 @@
+
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -152,27 +153,20 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
             switch (entityType) {
               case EntityType.PERSON:
-                // Build query with tag filtering if needed
+                // Use simple select query without problematic inner joins
                 let profileQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
-                
-                // Add tag filtering to the query if tagId is provided
-                if (tagId) {
-                  profileQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
-                }
 
                 const profilesResult = await profileApi.getAll({
                   filters: {
-                    ...(isApproved !== false && { is_approved: true }),
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
+                    ...(isApproved !== false && { is_approved: true })
                   },
                   search,
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                  includeCount: true,
+                  select: profileQuery
                 });
 
                 if (profilesResult.error) {
@@ -180,7 +174,17 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   break;
                 }
 
-                entities = (profilesResult.data || []).map(profileToEntity);
+                let profileEntities = (profilesResult.data || []).map(profileToEntity);
+                
+                // Filter by tag on the client side if tagId is provided
+                if (tagId) {
+                  profileEntities = profileEntities.filter(entity => {
+                    return entity.tags && Array.isArray(entity.tags) && 
+                           entity.tags.some(tagAssignment => tagAssignment.tag_id === tagId);
+                  });
+                }
+
+                entities = profileEntities;
                 count = (profilesResult as any).totalCount || 0;
                 logger.debug(`useEntityFeed ${entityType} result:`, {
                   entitiesCount: entities.length,
@@ -190,23 +194,16 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
               case EntityType.ORGANIZATION:
                 let orgQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
-                
-                if (tagId) {
-                  orgQuery = `*, location:locations(*), tags:tag_assignments!inner(*, tag:tags(*))`;
-                }
 
                 const orgsResult = await organizationApi.getAll({
-                  filters: {
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
-                  },
+                  filters: {},
                   search,
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                  includeCount: true,
+                  select: orgQuery
                 });
 
                 if (orgsResult.error) {
@@ -214,7 +211,17 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   break;
                 }
 
-                entities = (orgsResult.data || []).map(organizationToEntity);
+                let orgEntities = (orgsResult.data || []).map(organizationToEntity);
+                
+                // Filter by tag on the client side if tagId is provided
+                if (tagId) {
+                  orgEntities = orgEntities.filter(entity => {
+                    return entity.tags && Array.isArray(entity.tags) && 
+                           entity.tags.some(tagAssignment => tagAssignment.tag_id === tagId);
+                  });
+                }
+
+                entities = orgEntities;
                 count = (orgsResult as any).totalCount || 0;
                 logger.debug(`useEntityFeed ${entityType} result:`, {
                   entitiesCount: entities.length,
@@ -224,23 +231,16 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
               case EntityType.EVENT:
                 let eventQuery = `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
-                
-                if (tagId) {
-                  eventQuery = `*, tags:tag_assignments!inner(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
-                }
 
                 const eventsResult = await eventApi.getAll({
-                  filters: {
-                    ...(tagId && { 
-                      'tag_assignments.tag_id': tagId 
-                    })
-                  },
+                  filters: {},
                   search,
                   sortBy: 'created_at',
                   sortDirection: 'desc',
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
-                  includeCount: true
+                  includeCount: true,
+                  select: eventQuery
                 });
 
                 if (eventsResult.error) {
@@ -248,7 +248,17 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   break;
                 }
 
-                entities = (eventsResult.data || []).map(eventToEntity);
+                let eventEntities = (eventsResult.data || []).map(eventToEntity);
+                
+                // Filter by tag on the client side if tagId is provided
+                if (tagId) {
+                  eventEntities = eventEntities.filter(entity => {
+                    return entity.tags && Array.isArray(entity.tags) && 
+                           entity.tags.some(tagAssignment => tagAssignment.tag_id === tagId);
+                  });
+                }
+
+                entities = eventEntities;
                 count = (eventsResult as any).totalCount || 0;
                 logger.debug(`useEntityFeed ${entityType} result:`, {
                   entitiesCount: entities.length,

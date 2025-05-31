@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Entity } from "@/types/entity";
@@ -35,13 +36,6 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
     return null;
   }
 
-  // Debug entity data and registry access
-  logger.debug(`EntityCard: Rendering entity with type "${entity.entityType}"`, {
-    id: entity.id,
-    entityType: entity.entityType,
-    name: entity.name
-  });
-
   // Format date if it's an event
   const formattedDate = entity.entityType === EntityType.EVENT && entity.created_at
     ? format(new Date(entity.created_at), "MMM d, yyyy")
@@ -53,9 +47,6 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
   // Make sure we have a valid entity type
   const entityTypeLabel = getEntityTypeLabel(entity.entityType);
   
-  // Debug the entity type label resolution
-  logger.debug(`EntityCard: Entity type "${entity.entityType}" resolved to label "${entityTypeLabel}"`);
-  
   if (entityTypeLabel === 'Unknown') {
     logger.error(`EntityCard: Unknown entity type for entity: ${entity.id}, type: ${entity.entityType}`, {
       availableEntityTypes: Object.values(EntityType),
@@ -65,6 +56,13 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
 
   // Format location for display
   const locationDisplay = entity.location ? formatLocation(entity.location) : null;
+
+  // Safely check if entity has valid tags
+  const hasValidTags = showTags && 
+    entity.tags && 
+    Array.isArray(entity.tags) && 
+    entity.tags.length > 0 &&
+    entity.tags.some(tag => tag && tag.tag && tag.tag.name);
 
   return (
     <Link to={entityUrl} className="block">
@@ -111,8 +109,8 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
           </div>
         </div>
         
-        {/* Tags */}
-        {showTags && entity.tags && entity.tags.length > 0 && (
+        {/* Tags - with better error handling */}
+        {hasValidTags && (
           <div className="mt-4">
             <TagList tagAssignments={entity.tags} />
           </div>
