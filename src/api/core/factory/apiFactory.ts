@@ -11,7 +11,22 @@ export { createViewApiFactory } from './viewApiFactory';
 
 // Export all types
 export * from './apiFactoryTypes';
-export * from './types';
+export type { 
+  TableNames, 
+  ViewNames,
+  TableRow,
+  ViewRow,
+  TableInsert,
+  TableUpdate,
+  TableColumnName,
+  ViewColumnName,
+  ApiFactoryOptions,
+  RelationshipFactoryOptions,
+  ViewFactoryOptions,
+  ViewOperations,
+  ApiOperations,
+  RelationshipApiOperations
+} from './types';
 
 // Maintain backward compatibility - export the standard factory as the default
 export { createStandardApiFactory as createApiFactory } from './standardApiFactory';

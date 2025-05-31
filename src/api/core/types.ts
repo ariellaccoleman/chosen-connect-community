@@ -1,4 +1,3 @@
-
 import { ApiError } from "./errorHandler";
 
 /**
@@ -13,6 +12,7 @@ export interface ListParams {
   filters?: Record<string, any>;
   query?: string; // Added this property to support custom SQL queries
   include?: string; // Added for Supabase relationship inclusion
+  tagId?: string; // Added for tag filtering
 }
 
 /**

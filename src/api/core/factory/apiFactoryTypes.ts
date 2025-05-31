@@ -1,5 +1,4 @@
 
-
 import { DataRepository } from "../repository";
 import { TableNames, ViewNames, ApiFactoryOptions, ViewFactoryOptions, RelationshipFactoryOptions } from "./types";
 
@@ -50,4 +49,3 @@ export type {
   ViewFactoryOptions, 
   RelationshipFactoryOptions 
 } from "./types";
-
