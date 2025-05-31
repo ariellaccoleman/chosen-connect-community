@@ -53,7 +53,7 @@ const PostEntityList = ({
     author: (entity as any).author,
     likes_count: (entity as any).likes_count,
     comments_count: (entity as any).comments_count,
-    tags: entity.tags ? entity.tags.map(tagAssignment => tagAssignment.tag).filter(Boolean) : []
+    tags: entity.tags || [] // Use the simplified Tag[] format directly
   }));
 
   return (

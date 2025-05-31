@@ -1,6 +1,6 @@
 
 import { LocationWithDetails } from "./location";
-import { TagAssignment } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags/types";
 import { Entity } from "./entity";
 import { EntityType } from "./entityTypes";
 
@@ -34,5 +34,5 @@ export interface ProfileWithDetails extends Profile {
   full_name: string;
   role?: "admin" | "member"; // Keep for compatibility with user.user_metadata.role
   location?: LocationWithDetails;
-  tags?: TagAssignment[]; // Add tags property
+  tags?: Tag[]; // Changed from TagAssignment[] to Tag[]
 }

@@ -2,7 +2,7 @@
 import { Database } from "@/integrations/supabase/types";
 import { LocationWithDetails } from "./location";
 import { Profile } from "./profile";
-import { TagAssignment } from "@/utils/tags/types";
+import { Tag } from "@/utils/tags/types";
 import { Entity } from "./entity";
 import { EntityType } from "./entityTypes";
 
@@ -29,7 +29,7 @@ export interface EventWithDetails extends Entity {
   updated_at: string;
   location?: LocationWithDetails | null;
   host?: Profile | null;
-  tags?: TagAssignment[];
+  tags?: Tag[];
   entityType: EntityType.EVENT;
   name: string; // Map to title for Entity compatibility
 }

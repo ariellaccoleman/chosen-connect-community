@@ -69,7 +69,7 @@ const ProfileSummaryCard = ({ profile }: ProfileSummaryCardProps) => {
         
         {profile.tags && profile.tags.length > 0 && (
           <div className="mt-4">
-            <TagList tagAssignments={profile.tags} />
+            <TagList tags={profile.tags} />
           </div>
         )}
       </CardContent>

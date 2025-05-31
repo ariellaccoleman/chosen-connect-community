@@ -75,7 +75,7 @@ const EventCard = ({ event, onViewEvent }: EventCardProps) => {
       
       {event.tags && event.tags.length > 0 && (
         <div className="mt-2 mb-2">
-          <TagList tagAssignments={event.tags} />
+          <TagList tags={event.tags} />
         </div>
       )}
       

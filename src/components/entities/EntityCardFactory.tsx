@@ -59,7 +59,8 @@ export const EntityCardFactory: React.FC<EntityCardFactoryProps> = ({
         membership_tier: (entity as any).membership_tier || 'free',
         is_approved: (entity as any).is_approved ?? true,
         created_at: entity.created_at || new Date().toISOString(),
-        updated_at: entity.updated_at || new Date().toISOString()
+        updated_at: entity.updated_at || new Date().toISOString(),
+        tags: entity.tags || [] // Use the simplified Tag[] format
       };
       
       return <ProfileCard profile={profileData} />;

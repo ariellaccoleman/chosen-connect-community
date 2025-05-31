@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link } from "react-router-dom";
 import { Entity } from "@/types/entity";
@@ -114,7 +115,7 @@ const EntityCard = ({ entity, className = "", showTags = true }: EntityCardProps
         {/* Tags */}
         {showTags && entity.tags && entity.tags.length > 0 && (
           <div className="mt-4">
-            <TagList tagAssignments={entity.tags} />
+            <TagList tags={entity.tags} />
           </div>
         )}
       </div>

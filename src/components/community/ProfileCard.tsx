@@ -27,8 +27,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
       logger.debug(`ProfileCard: Target profile - ${profile.first_name} ${profile.last_name} (${profile.id})`, {
         tags: profile.tags?.map(t => ({
           id: t.id,
-          tag_id: t.tag_id,
-          tag_name: t.tag ? t.tag.name : 'undefined'
+          name: t.name
         }))
       });
     }
@@ -52,7 +51,7 @@ const ProfileCard = ({ profile }: ProfileCardProps) => {
             <div className="md:w-1/2 mt-4 md:mt-0">
               <div className="mb-2">
                 <TagList 
-                  tagAssignments={profile.tags} 
+                  tags={profile.tags} 
                   className="flex flex-wrap gap-2" 
                   showDebugInfo={profile.id === "95ad82bb-4109-4f88-8155-02231dda3b85"}
                 />

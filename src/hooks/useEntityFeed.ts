@@ -280,23 +280,11 @@ export const useEntityFeed = ({
             if (tagAssignmentsResponse.error) {
               logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
             } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
-              // Add tags to entity
-              entity.tags = tagAssignmentsResponse.data.map(assignment => ({
-                id: assignment.id,
-                tag_id: assignment.tag_id,
-                target_id: assignment.target_id,
-                target_type: assignment.target_type,
-                created_at: assignment.created_at || '',
-                updated_at: assignment.updated_at || '',
-                tag: {
-                  id: assignment.tag?.id || '',
-                  name: assignment.tag?.name || '',
-                  description: assignment.tag?.description || null,
-                  created_by: null,
-                  created_at: '',
-                  updated_at: ''
-                }
-              }));
+              // Convert tag assignments to simple Tag[] format
+              entity.tags = tagAssignmentsResponse.data
+                .filter(assignment => assignment.tag)
+                .map(assignment => assignment.tag!)
+                .filter(Boolean);
             }
           }
         } catch (e) {
