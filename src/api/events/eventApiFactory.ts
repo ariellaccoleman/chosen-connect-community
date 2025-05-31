@@ -1,4 +1,5 @@
 
+
 import { Event, EventWithDetails } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 
@@ -117,3 +118,6 @@ export const {
   update: updateEvent,
   delete: deleteEvent
 } = eventApi;
+
+// Export extended API for backwards compatibility
+export const extendedEventApi = eventApi;

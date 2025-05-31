@@ -8,7 +8,7 @@ import {
   createEnhancedRepository,
   DataRepository
 } from "../repository";
-import { ApiFactoryConfig, RepositoryConfig, TableNames } from "./apiFactoryTypes";
+import { ApiFactoryConfig, RepositoryConfig, TableNames, StandardApiFactoryConfig } from "./apiFactoryTypes";
 
 /**
  * Creates a standard API factory with full CRUD operations that support client injection
@@ -23,20 +23,19 @@ export function createStandardApiFactory<
   TCreate = Partial<T>, 
   TUpdate = Partial<T>,
   Table extends TableNames = TableNames
->({
-  tableName,
-  entityName,
-  repository,
-  useMutationOperations = false,
-  useBatchOperations = false,
-  ...options
-}: {
-  tableName: Table;
-  entityName?: string;
-  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
-  useMutationOperations?: boolean;
-  useBatchOperations?: boolean;
-} & ApiFactoryConfig<T>, providedClient?: any): ApiOperations<T, TId, TCreate, TUpdate> {
+>(
+  config: StandardApiFactoryConfig<T> & { tableName: Table },
+  providedClient?: any
+): ApiOperations<T, TId, TCreate, TUpdate> {
+  const {
+    tableName,
+    entityName,
+    repository,
+    useMutationOperations = false,
+    useBatchOperations = false,
+    ...options
+  } = config;
+
   // Validate tableName is defined
   if (!tableName) {
     throw new Error('tableName is required to create API operations');

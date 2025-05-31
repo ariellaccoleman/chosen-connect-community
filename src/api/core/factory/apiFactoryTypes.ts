@@ -1,65 +1,37 @@
 
-import { DataRepository, ViewRepository } from "../repository";
-import { TableNames, ViewNames, ApiFactoryOptions, ViewOperations, ApiOperations, RelationshipApiOperations } from "./types";
+import { DataRepository } from "../repository";
+import { TableNames } from "./types";
 
 /**
- * Repository configuration
+ * Repository configuration options
  */
-export interface RepositoryConfig<T = any> {
-  /**
-   * Repository type (supabase, mock)
-   */
-  type: EnhancedRepositoryType;
-  
-  /**
-   * Initial data for mock repository
-   */
-  initialData?: T[];
-  
-  /**
-   * Enable enhanced repository features
-   */
+export interface RepositoryConfig<T> {
   enhanced?: boolean;
-  
-  /**
-   * Enable logging for repository operations (development only)
-   */
+  type?: 'supabase' | 'mock';
+  initialData?: T[];
   enableLogging?: boolean;
 }
 
 /**
- * Enhanced API Factory options with repository support
+ * Core configuration for API factories
  */
-export interface ApiFactoryConfig<T> extends Omit<ApiFactoryOptions<T>, 'repository'> {
-  /**
-   * Enable mutation operations
-   */
-  useMutationOperations?: boolean;
-  
-  /**
-   * Enable batch operations
-   */
-  useBatchOperations?: boolean;
-  
-  /**
-   * Repository instance, factory function or configuration
-   */
-  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
+export interface ApiFactoryConfig<T> {
+  idField?: string;
+  defaultSelect?: string;
+  defaultOrderBy?: string;
+  softDelete?: boolean;
+  transformResponse?: (item: any) => T;
+  transformRequest?: (data: any) => any;
+  withTagsView?: string; // Add this property for view-based tag operations
 }
 
 /**
- * Enhanced repository type enumeration
+ * Configuration for creating standard API operations
  */
-export type EnhancedRepositoryType = 'supabase' | 'mock';
-
-// Re-export commonly used types from the main types file
-export type { 
-  ApiFactoryOptions, 
-  TableNames, 
-  ViewNames, 
-  ViewFactoryOptions, 
-  ViewOperations, 
-  RelationshipFactoryOptions,
-  ApiOperations,
-  RelationshipApiOperations
-} from "./types";
+export interface StandardApiFactoryConfig<T> extends ApiFactoryConfig<T> {
+  tableName: TableNames;
+  entityName?: string;
+  repository?: DataRepository<T> | (() => DataRepository<T>) | RepositoryConfig<T>;
+  useMutationOperations?: boolean;
+  useBatchOperations?: boolean;
+}
