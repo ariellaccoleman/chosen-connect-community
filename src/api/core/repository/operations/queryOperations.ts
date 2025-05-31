@@ -74,7 +74,16 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
   async filterByTagIds(tagIds: string[]): Promise<ApiResponse<T[]>> {
     try {
       if (!tagIds || tagIds.length === 0) {
-        return this.getAll();
+        // Use parent's getAll method from CoreRepositoryOperations
+        const result = await this.repository
+          .select()
+          .execute();
+        
+        if (result.isError()) {
+          throw result.error;
+        }
+        
+        return createSuccessResponse(result.data as T[]);
       }
 
       // For single tag ID filtering, we'll check if any of the tag objects in the jsonb array
@@ -102,13 +111,22 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
   async filterByTagNames(tagNames: string[]): Promise<ApiResponse<T[]>> {
     try {
       if (!tagNames || tagNames.length === 0) {
-        return this.getAll();
+        // Use parent's getAll method from CoreRepositoryOperations
+        const result = await this.repository
+          .select()
+          .execute();
+        
+        if (result.isError()) {
+          throw result.error;
+        }
+        
+        return createSuccessResponse(result.data as T[]);
       }
 
       // Use array overlap operator to find entities that have any of the specified tag names
       const result = await this.repository
         .select()
-        .contains('tag_names', tagNames)
+        .or(tagNames.map(tagName => `tag_names.cs.{${tagName}}`).join(','))
         .execute();
       
       if (result.isError()) {
@@ -122,9 +140,21 @@ export class QueryRepositoryOperations<T, TId = string> extends CoreRepositoryOp
   }
 
   /**
-   * Get all entities - delegates to parent class
+   * Get all entities - implemented here for the base functionality
    */
   async getAll(): Promise<ApiResponse<T[]>> {
-    return super.getAll();
+    try {
+      const result = await this.repository
+        .select()
+        .execute();
+      
+      if (result.isError()) {
+        throw result.error;
+      }
+      
+      return createSuccessResponse(result.data as T[]);
+    } catch (error) {
+      return this.handleError(error, "retrieve all");
+    }
   }
 }

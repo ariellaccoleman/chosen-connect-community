@@ -6,7 +6,7 @@ import { ChatMessageWithAuthor } from '@/types/chat';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/utils/logger';
 import { toast } from 'sonner';
-import { ApiResponse } from '@/api/core/errorHandler';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 
 // Create standardized hooks using the factory pattern
 export const chatMessageHooks = createQueryHooks(
@@ -35,17 +35,17 @@ export const useChannelMessages = (
       
       if (!isAuthenticated || !user) {
         logger.warn('[QUERY] User is not authenticated for fetching messages');
-        return { 
-          data: [], 
-          error: { code: 'auth_required', message: 'Authentication required', details: null }, 
-          status: 'error' 
-        };
+        return createErrorResponse({ 
+          code: 'auth_required', 
+          message: 'Authentication required', 
+          details: null 
+        });
       }
 
       // Don't attempt API call with invalid values
       if (!isValidChannelId) {
         logger.warn(`[QUERY] Invalid channelId provided: "${channelId}", returning empty array`);
-        return { data: [], error: null, status: 'success' };
+        return createSuccessResponse([]);
       }
       
       // Call the API function to get channel messages
@@ -140,16 +140,16 @@ export const useThreadMessages = (
     queryFn: async (): Promise<ApiResponse<ChatMessageWithAuthor[]>> => {
       if (!isValidMessageId) {
         logger.warn(`Invalid messageId provided: "${messageId}", returning empty array`);
-        return { data: [], error: null, status: 'success' };
+        return createSuccessResponse([]);
       }
 
       if (!isAuthenticated || !user) {
         logger.warn('User is not authenticated for fetching thread messages');
-        return { 
-          data: [], 
-          error: { code: 'auth_required', message: 'Authentication required', details: null }, 
-          status: 'error' 
-        };
+        return createErrorResponse({ 
+          code: 'auth_required', 
+          message: 'Authentication required', 
+          details: null 
+        });
       }
 
       return getThreadReplies(messageId, limit, offset);

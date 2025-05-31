@@ -6,7 +6,7 @@
 import { createApiFactory } from '@/api/core/factory/apiFactory';
 import { TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
-import { ApiResponse } from '@/api/core/errorHandler';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 import { createTagAssignmentCoreOperations } from './tagAssignmentCoreOperations';
 
 /**
@@ -56,11 +56,7 @@ export function createTagAssignmentBusinessOperations(client?: any) {
       });
       
       if (assignmentsResponse.error || !assignmentsResponse.data?.length) {
-        return {
-          data: false,
-          error: assignmentsResponse.error,
-          status: 'error'
-        };
+        return createErrorResponse(assignmentsResponse.error || new Error('Assignment not found'));
       }
       
       const assignment = assignmentsResponse.data[0];
@@ -80,19 +76,11 @@ export function createTagAssignmentBusinessOperations(client?: any) {
       });
       
       if (assignmentsResponse.error) {
-        return {
-          data: false,
-          error: assignmentsResponse.error,
-          status: 'error'
-        };
+        return createErrorResponse(assignmentsResponse.error);
       }
       
       if (!assignmentsResponse.data?.length) {
-        return {
-          data: true,
-          error: null,
-          status: 'success'
-        };
+        return createSuccessResponse(true);
       }
       
       // Delete all assignments
@@ -104,17 +92,9 @@ export function createTagAssignmentBusinessOperations(client?: any) {
         const results = await Promise.all(deletePromises);
         const allSuccessful = results.every(result => result.data === true);
         
-        return {
-          data: allSuccessful,
-          error: null,
-          status: 'success'
-        };
+        return createSuccessResponse(allSuccessful);
       } catch (error) {
-        return {
-          data: false,
-          error,
-          status: 'error'
-        };
+        return createErrorResponse(error);
       }
     },
 
@@ -131,18 +111,10 @@ export function createTagAssignmentBusinessOperations(client?: any) {
       });
       
       if (assignmentsResponse.error) {
-        return {
-          data: false,
-          error: assignmentsResponse.error,
-          status: 'error'
-        };
+        return createErrorResponse(assignmentsResponse.error);
       }
       
-      return {
-        data: (assignmentsResponse.data?.length || 0) > 0,
-        error: null,
-        status: 'success'
-      };
+      return createSuccessResponse((assignmentsResponse.data?.length || 0) > 0);
     }
   };
 }

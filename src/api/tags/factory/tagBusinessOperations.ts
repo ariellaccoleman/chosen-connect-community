@@ -37,11 +37,7 @@ export function createTagBusinessOperations(client?: any) {
         });
         
         if (existingResponse.data && existingResponse.data.length > 0) {
-          return {
-            data: existingResponse.data[0],
-            error: null,
-            status: 'success'
-          };
+          return createSuccessResponse(existingResponse.data[0]);
         }
       }
       
@@ -54,11 +50,7 @@ export function createTagBusinessOperations(client?: any) {
      */
     async searchByName(searchQuery: string): Promise<ApiResponse<Tag[]>> {
       if (!searchQuery.trim()) {
-        return {
-          data: [],
-          error: null,
-          status: 'success'
-        };
+        return createSuccessResponse([]);
       }
       
       return tagBase.getAll({ search: searchQuery });

@@ -3,7 +3,7 @@ import { createRelationshipApiFactory } from '@/api/core/factory/apiFactory';
 import { OrganizationRelationshipOperations } from './types';
 import { ProfileOrganizationRelationship, ProfileOrganizationRelationshipWithDetails } from '@/types';
 import { organizationRelationshipsApi } from './relationshipsApi';
-import { ApiResponse } from '@/api/core/types';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/types';
 
 /**
  * Factory function to create organization relationship API using the relationship pattern
@@ -76,13 +76,12 @@ export function createOrganizationRelationshipApi(client?: any): OrganizationRel
         } 
       });
       
-      // For now, return the result as-is since we don't have a specific API for this
-      // In the future, this could be enhanced to include profile details
-      return {
-        data: result.data as ProfileOrganizationRelationshipWithDetails[],
-        error: result.error,
-        status: result.status
-      };
+      // Transform to include helper methods
+      if (result.error) {
+        return createErrorResponse(result.error);
+      }
+      
+      return createSuccessResponse(result.data as ProfileOrganizationRelationshipWithDetails[]);
     }
   };
 }
