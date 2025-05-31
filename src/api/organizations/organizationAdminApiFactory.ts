@@ -3,6 +3,7 @@ import { OrganizationAdmin, OrganizationAdminWithDetails } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { supabase } from "@/integrations/supabase/client";
 import { ApiResponse } from "@/api/core/types";
+import { createErrorResponse, createSuccessResponse } from "@/api/core/errorHandler";
 
 /**
  * Transform raw organization admin data to the expected format
@@ -88,14 +89,14 @@ export const getAllOrganizationAdmins = async (filters: {
     
     if (error) {
       console.error('Error fetching organization admins:', error);
-      return { data: null, error, status: 'error' };
+      return createErrorResponse(error);
     }
     
     const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
-    return { data: formatted, error: null, status: 'success' };
+    return createSuccessResponse(formatted);
   } catch (error) {
     console.error('Error in getAllOrganizationAdmins:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -127,14 +128,14 @@ export const getOrganizationAdminsByOrg = async (
     
     if (error) {
       console.error('Error fetching organization admins:', error);
-      return { data: null, error, status: 'error' };
+      return createErrorResponse(error);
     }
     
     const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
-    return { data: formatted, error: null, status: 'success' };
+    return createSuccessResponse(formatted);
   } catch (error) {
     console.error('Error in getOrganizationAdminsByOrg:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -160,14 +161,14 @@ export const getUserAdminRequests = async (
     
     if (error) {
       console.error('Error fetching user admin requests:', error);
-      return { data: null, error, status: 'error' };
+      return createErrorResponse(error);
     }
     
     const formatted = (data || []).map(admin => transformOrganizationAdminResponse(admin));
-    return { data: formatted, error: null, status: 'success' };
+    return createSuccessResponse(formatted);
   } catch (error) {
     console.error('Error in getUserAdminRequests:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -189,13 +190,13 @@ export const checkIsOrganizationAdmin = async (
     
     if (error) {
       console.error('Error checking if user is organization admin:', error);
-      return { data: null, error, status: 'error' };
+      return createErrorResponse(error);
     }
     
-    return { data: !!data, error: null, status: 'success' };
+    return createSuccessResponse(!!data);
   } catch (error) {
     console.error('Error in checkIsOrganizationAdmin:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -217,13 +218,13 @@ export const getOrganizationRole = async (
     
     if (error) {
       console.error('Error checking organization role:', error);
-      return { data: null, error, status: 'error' };
+      return createErrorResponse(error);
     }
     
-    return { data: data?.role || null, error: null, status: 'success' };
+    return createSuccessResponse(data?.role || null);
   } catch (error) {
     console.error('Error in getOrganizationRole:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -259,10 +260,10 @@ export const createAdminRequest = async (request: {
       throw error;
     }
     
-    return { data: true, error: null, status: 'success' };
+    return createSuccessResponse(true);
   } catch (error) {
     console.error('Error in createAdminRequest:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -292,10 +293,10 @@ export const updateAdminRequest = async (
       throw error;
     }
     
-    return { data: true, error: null, status: 'success' };
+    return createSuccessResponse(true);
   } catch (error) {
     console.error('Error in updateAdminRequest:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 
@@ -313,10 +314,10 @@ export const deleteAdminRequest = async (requestId: string): Promise<ApiResponse
       throw error;
     }
     
-    return { data: true, error: null, status: 'success' };
+    return createSuccessResponse(true);
   } catch (error) {
     console.error('Error in deleteAdminRequest:', error);
-    return { data: null, error, status: 'error' };
+    return createErrorResponse(error);
   }
 };
 

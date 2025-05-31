@@ -1,7 +1,7 @@
 
 import { createApiFactory } from '@/api/core/factory';
 import { ApiResponse } from '@/api/core/types';
-import { createErrorResponse } from '@/api/core/errorHandler';
+import { createErrorResponse, createSuccessResponse } from '@/api/core/errorHandler';
 import { Hub } from '@/types';
 
 /**
@@ -51,10 +51,10 @@ export const resetHubApi = (client?: any) => {
         });
 
         if (error) {
-          return { status: 'error', error, data: null };
+          return createErrorResponse(error);
         }
 
-        return { status: 'success', data, error: null };
+        return createSuccessResponse(data);
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -70,10 +70,10 @@ export const resetHubApi = (client?: any) => {
         });
 
         if (error) {
-          return { status: 'error', error, data: null };
+          return createErrorResponse(error);
         }
 
-        return { status: 'success', data, error: null };
+        return createSuccessResponse(data);
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -83,10 +83,10 @@ export const resetHubApi = (client?: any) => {
         const { data, error } = await newApi.update(id, { is_featured: isFeatured } as any);
 
         if (error) {
-          return { status: 'error', error, data: null };
+          return createErrorResponse(error);
         }
 
-        return { status: 'success', data, error: null };
+        return createSuccessResponse(data);
       } catch (error) {
         return createErrorResponse(error);
       }
@@ -108,10 +108,10 @@ export const getAllHubsWithTags = async (): Promise<ApiResponse<Hub[]>> => {
     });
 
     if (error) {
-      return { status: 'error', error, data: null };
+      return createErrorResponse(error);
     }
 
-    return { status: 'success', data, error: null };
+    return createSuccessResponse(data);
   } catch (error) {
     return createErrorResponse(error);
   }
@@ -131,10 +131,10 @@ export const getFeaturedHubs = async (): Promise<ApiResponse<Hub[]>> => {
     });
 
     if (error) {
-      return { status: 'error', error, data: null };
+      return createErrorResponse(error);
     }
 
-    return { status: 'success', data, error: null };
+    return createSuccessResponse(data);
   } catch (error) {
     return createErrorResponse(error);
   }
@@ -148,10 +148,10 @@ export const toggleHubFeatured = async (id: string, isFeatured: boolean): Promis
     const { data, error } = await hubApi.update(id, { is_featured: isFeatured } as any);
 
     if (error) {
-      return { status: 'error', error, data: null };
+      return createErrorResponse(error);
     }
 
-    return { status: 'success', data, error: null };
+    return createSuccessResponse(data);
   } catch (error) {
     return createErrorResponse(error);
   }
