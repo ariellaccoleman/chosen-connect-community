@@ -1,4 +1,3 @@
-
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Entity } from '@/types/entity';
 import { EntityType } from '@/types/entityTypes';
@@ -153,9 +152,6 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
 
             switch (entityType) {
               case EntityType.PERSON:
-                // Use simple select query without problematic inner joins
-                let profileQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
-
                 const profilesResult = await profileApi.getAll({
                   filters: {
                     ...(isApproved !== false && { is_approved: true })
@@ -166,7 +162,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
                   includeCount: true,
-                  select: profileQuery
+                  select: '*, location:locations(*), tag_assignments(*, tag:tags(*))'
                 });
 
                 if (profilesResult.error) {
@@ -193,8 +189,6 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 break;
 
               case EntityType.ORGANIZATION:
-                let orgQuery = `*, location:locations(*), tags:tag_assignments(*, tag:tags(*))`;
-
                 const orgsResult = await organizationApi.getAll({
                   filters: {},
                   search,
@@ -203,7 +197,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
                   includeCount: true,
-                  select: orgQuery
+                  select: '*, location:locations(*), tag_assignments(*, tag:tags(*))'
                 });
 
                 if (orgsResult.error) {
@@ -230,8 +224,6 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                 break;
 
               case EntityType.EVENT:
-                let eventQuery = `*, tags:tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)`;
-
                 const eventsResult = await eventApi.getAll({
                   filters: {},
                   search,
@@ -240,7 +232,7 @@ export const useEntityFeed = (params: EntityFeedParams = {}) => {
                   limit: actualLimit,
                   page: Math.floor(offset / actualLimit) + 1,
                   includeCount: true,
-                  select: eventQuery
+                  select: '*, tag_assignments(*, tag:tags(*)), host:profiles(*), location:locations(*)'
                 });
 
                 if (eventsResult.error) {

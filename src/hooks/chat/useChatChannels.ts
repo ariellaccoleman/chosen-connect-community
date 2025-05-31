@@ -1,4 +1,3 @@
-
 import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createQueryHooks } from '../core/factory/queryHookFactory';
@@ -135,9 +134,8 @@ export function useChatChannelsByTag(tagId: string | null | undefined) {
       if (!tagId) return [];
       
       try {
-        // Get all channels with their tag assignments
+        // Get all channels with their tag assignments using the updated select parameter
         const channelsResult = await chatChannelsApi.getAll({
-          // Use proper select to include tag assignments
           select: '*, tag_assignments(*, tag:tags(*))'
         });
         

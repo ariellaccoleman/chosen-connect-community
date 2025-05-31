@@ -13,6 +13,7 @@ export interface ListParams {
   query?: string; // Added this property to support custom SQL queries
   include?: string; // Added for Supabase relationship inclusion
   includeCount?: boolean; // New property for requesting total count
+  select?: string; // Add select property for custom field selection
 }
 
 /**
