@@ -71,7 +71,7 @@ export const useEntityFeed = ({
                   peopleFilters.is_approved = isApproved;
                 }
                 
-                // Use the profile API with view support
+                // Use the profile API with view support and correct getAll method
                 const profilesResponse = await profileApi.getAll({
                   filters: peopleFilters,
                   ...queryOptions
@@ -89,7 +89,7 @@ export const useEntityFeed = ({
               case EntityType.ORGANIZATION:
                 logger.debug(`EntityFeed: Fetching ORGANIZATION entities from view with tagId=${tagId}, search=${search}`);
                 
-                // Use the organization API with view support
+                // Use the organization API with view support and correct getAll method
                 const orgsResponse = await organizationApi.getAll({
                   filters: {},
                   ...queryOptions
@@ -107,7 +107,7 @@ export const useEntityFeed = ({
               case EntityType.EVENT:
                 logger.debug(`EntityFeed: Fetching EVENT entities from view with tagId=${tagId}, search=${search}`);
                 
-                // Use the event API with view support
+                // Use the event API with view support and correct getAll method
                 const eventsResponse = await eventApi.getAll({
                   filters: {},
                   ...queryOptions
@@ -125,14 +125,15 @@ export const useEntityFeed = ({
               case EntityType.POST:
                 logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
                 
-                // Posts don't have a view yet, so use existing logic for now
-                // TODO: Create posts_with_tags view in future
+                // Use the posts API with the correct getAll method and tag filtering
                 const postFilters: any = {};
                 
                 const postsResponse = await postsApi.getAll({
                   filters: postFilters,
                   search: search || undefined,
-                  limit
+                  limit,
+                  tagId, // Use tagId parameter for filtering
+                  includeTags: true // Include tags from posts_with_tags view
                 });
                   
                 if (postsResponse.error) {

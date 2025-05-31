@@ -17,22 +17,21 @@ interface PostCarouselProps {
 }
 
 const PostCarousel: React.FC<PostCarouselProps> = ({ tagId }) => {
-  // Use our posts hook to fetch all posts
-  const { data: postsResponse, isLoading, error } = usePosts();
+  // Use our posts hook to fetch posts with proper tag filtering
+  const { data: postsResponse, isLoading, error } = usePosts({
+    // Pass the tagId to the hook for server-side filtering
+    tagId,
+    limit: 6,
+    includeTags: true
+  });
   
-  // Extract posts and filter by the provided tag ID if any
-  const allPosts = postsResponse?.data || [];
-  const filteredPosts = tagId
-    ? allPosts.filter(post => {
-        if (!post.tags || !Array.isArray(post.tags) || post.tags.length === 0) return false;
-        return post.tags.some(tag => tag.id === tagId);
-      })
-    : allPosts;
+  // Extract posts from the response
+  const posts = postsResponse?.data || [];
     
   // Sort posts by most recent
-  const sortedPosts = [...filteredPosts].sort((a, b) => 
+  const sortedPosts = [...posts].sort((a, b) => 
     new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-  ).slice(0, 6); // Limit to 6 most recent posts
+  );
 
   if (isLoading) {
     return (

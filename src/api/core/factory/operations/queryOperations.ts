@@ -1,3 +1,4 @@
+
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
@@ -75,49 +76,7 @@ export function createQueryOperations<
         // Use the with_tags view if tags are requested/needed and available
         const tableToQuery = (includeTags || tagId) && withTagsView ? withTagsView : tableName;
 
-        // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository && !tagId) { // Only use repository for simple queries without tag filtering
-          let query = repository.select(select);
-
-          // Apply filters
-          Object.entries(filters).forEach(([key, value]) => {
-            if (value !== undefined && value !== null) {
-              if (Array.isArray(value)) {
-                query = query.in(key, value);
-              } else {
-                query = query.eq(key, value);
-              }
-            }
-          });
-
-          // Apply search
-          if (search && searchColumns.length > 0) {
-            // For now, just search on the first column
-            query = query.ilike(searchColumns[0], `%${search}%`);
-          }
-
-          // Apply ordering
-          query = query.order(orderBy, { ascending });
-
-          // Apply pagination
-          if (limit !== undefined) {
-            const from = offset || 0;
-            const to = from + limit - 1;
-            query = query.range(from, to);
-          }
-
-          const result = await query.execute();
-          
-          if (result.error) throw result.error;
-          
-          const transformedData = Array.isArray(result.data) 
-            ? result.data.map(transformResponse)
-            : [];
-            
-          return createSuccessResponse(transformedData);
-        }
-
-        // Use apiClient with optional client injection
+        // Use apiClient for all queries since we need proper JSONB support
         return await apiClient.query(async (client) => {
           let query = client.from(tableToQuery).select(select);
 
@@ -132,9 +91,10 @@ export function createQueryOperations<
             }
           });
 
-          // Apply tag filtering using the aggregated tags array
+          // Apply tag filtering using the aggregated tags JSONB array
           if (tagId && withTagsView) {
-            // Use array contains operator to find entities with the specific tag
+            // Use JSONB contains operator to find entities with the specific tag
+            // The tags column contains an array of tag objects with id and name
             query = query.contains('tags', [{ id: tagId }]);
           }
 
@@ -220,19 +180,7 @@ export function createQueryOperations<
      */
     async getById(id: TId, select: string = defaultSelect): Promise<ApiResponse<T | null>> {
       try {
-        // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository) {
-          const result = await repository
-            .select(select)
-            .eq(idField, id as any)
-            .maybeSingle();
-          
-          if (result.error) throw result.error;
-          
-          return createSuccessResponse(result.data ? transformResponse(result.data) : null);
-        }
-
-        // Use apiClient with optional client injection
+        // Use apiClient for consistency
         return await apiClient.query(async (client) => {
           const { data, error } = await client
             .from(tableName)
@@ -283,23 +231,7 @@ export function createQueryOperations<
           return createSuccessResponse([]);
         }
 
-        // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository) {
-          const result = await repository
-            .select(select)
-            .in(idField, ids as any[])
-            .execute();
-          
-          if (result.error) throw result.error;
-          
-          const transformedData = Array.isArray(result.data) 
-            ? result.data.map(transformResponse)
-            : [];
-            
-          return createSuccessResponse(transformedData);
-        }
-
-        // Use apiClient with optional client injection
+        // Use apiClient for consistency
         return await apiClient.query(async (client) => {
           const { data, error } = await client
             .from(tableName)

@@ -4,7 +4,7 @@ import { apiClient } from '../core/apiClient';
 import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
 import { logger } from '@/utils/logger';
 
-// Create the main posts API using the factory
+// Create the main posts API using the factory with the posts_with_tags view
 export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
   tableName: 'posts',
   entityName: 'post',
@@ -15,7 +15,10 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
     author_id: data.author_id,
     has_media: data.has_media || false,
     created_at: data.created_at,
-    updated_at: data.updated_at
+    updated_at: data.updated_at,
+    // Include tags if they exist in the response (from posts_with_tags view)
+    tags: data.tags || [],
+    tag_names: data.tag_names || []
   }),
   transformRequest: (data: PostCreate | PostUpdate) => {
     const transformed: Record<string, any> = {
@@ -31,7 +34,8 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
     return transformed;
   },
   useMutationOperations: true,
-  useBatchOperations: false
+  useBatchOperations: false,
+  withTagsView: 'posts_with_tags' // Add the view for tag-enhanced queries
 });
 
 // Create the post comments API (alias as commentsApi for backwards compatibility)
@@ -280,7 +284,8 @@ export const resetPostsApi = (client?: any) => {
       return transformed;
     },
     useMutationOperations: true,
-    useBatchOperations: false
+    useBatchOperations: false,
+    withTagsView: 'posts_with_tags'
   }, client);
 
   const newPostCommentsApi = createApiFactory<any, string>({
