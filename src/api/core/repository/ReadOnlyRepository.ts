@@ -121,6 +121,14 @@ export interface ReadOnlyRepositoryQuery<T = any> {
   or(filter: string): ReadOnlyRepositoryQuery<T>;
   
   /**
+   * Filter by array overlap (PostgreSQL arrays)
+   * @param column Column name (should be an array column)
+   * @param values Array of values to check for overlap
+   * @returns The query builder for chaining
+   */
+  overlaps(column: string, values: any[]): ReadOnlyRepositoryQuery<T>;
+  
+  /**
    * Order results by a column
    * @param column Column to order by
    * @param options Options for ordering

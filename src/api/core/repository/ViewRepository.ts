@@ -225,6 +225,10 @@ class ViewRepositoryQuery<T> implements ReadOnlyRepositoryQuery<T> {
     return this.addOperation(query => query.or(filter));
   }
 
+  overlaps(column: string, values: any[]): ViewRepositoryQuery<T> {
+    return this.addOperation(query => query.overlaps(column, values));
+  }
+
   order(column: string, options?: { ascending?: boolean }): ViewRepositoryQuery<T> {
     return this.addOperation(query => query.order(column, options));
   }

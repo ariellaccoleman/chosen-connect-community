@@ -86,6 +86,32 @@ export interface ViewOperations<T, TId = string> {
   
   getByIds: (ids: TId[]) => Promise<ApiResponse<T[]>>;
   
+  // Enhanced query operations for views
+  findBy: (field: string, value: any, options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  search: (query: string, searchColumns?: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  filterByTagIds: (tagIds: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  // Legacy method for backward compatibility (will call filterByTagIds internally)
+  filterByTagNames: (tagNames: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
   // View name for reference
   readonly viewName: string;
 }
@@ -106,6 +132,32 @@ export interface ApiOperations<T, TId = string, TCreate = Partial<T>, TUpdate = 
   getById: (id: TId) => Promise<ApiResponse<T | null>>;
   
   getByIds: (ids: TId[]) => Promise<ApiResponse<T[]>>;
+  
+  // Enhanced query operations
+  findBy: (field: string, value: any, options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  search: (query: string, searchColumns?: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  filterByTagIds: (tagIds: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
+  
+  // Legacy method for backward compatibility
+  filterByTagNames: (tagNames: string[], options?: {
+    limit?: number;
+    offset?: number;
+    select?: string;
+  }) => Promise<ApiResponse<T[]>>;
   
   // Mutation operations
   create: (data: TCreate) => Promise<ApiResponse<T>>;

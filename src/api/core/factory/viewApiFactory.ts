@@ -162,6 +162,170 @@ export function createViewApiFactory<
       }
     },
 
+    /**
+     * Find records by a specific field value
+     */
+    async findBy(field: string, value: any, queryOptions: {
+      limit?: number;
+      offset?: number;
+      select?: string;
+    } = {}) {
+      try {
+        const { limit, offset, select = '*' } = queryOptions;
+        
+        let query = viewRepository.select(select).eq(field, value);
+        
+        // Apply ordering
+        if (options.defaultOrderBy) {
+          query = query.order(options.defaultOrderBy, { ascending: false });
+        }
+        
+        // Apply pagination
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
+        if (offset) {
+          query = query.offset(offset);
+        }
+        
+        const result = await query.execute();
+        
+        if (result.isError()) {
+          throw new Error(result.getErrorMessage());
+        }
+        
+        // Apply transform function to each item if provided
+        let transformedData = result.data || [];
+        if (options.transformResponse && Array.isArray(transformedData)) {
+          transformedData = transformedData.map(item => options.transformResponse!(item));
+        }
+        
+        return createSuccessResponse(transformedData);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+
+    /**
+     * Search records using case-insensitive pattern matching
+     */
+    async search(query: string, searchColumns: string[] = ['name'], queryOptions: {
+      limit?: number;
+      offset?: number;
+      select?: string;
+    } = {}) {
+      try {
+        if (!query.trim()) {
+          return createSuccessResponse([]);
+        }
+        
+        const { limit, offset, select = '*' } = queryOptions;
+        
+        let dbQuery = viewRepository.select(select);
+        
+        // Apply search on first column for now (can be enhanced later)
+        if (searchColumns.length > 0) {
+          dbQuery = dbQuery.ilike(searchColumns[0], `%${query}%`);
+        }
+        
+        // Apply ordering
+        if (options.defaultOrderBy) {
+          dbQuery = dbQuery.order(options.defaultOrderBy, { ascending: false });
+        }
+        
+        // Apply pagination
+        if (limit) {
+          dbQuery = dbQuery.limit(limit);
+        }
+        
+        if (offset) {
+          dbQuery = dbQuery.offset(offset);
+        }
+        
+        const result = await dbQuery.execute();
+        
+        if (result.isError()) {
+          throw new Error(result.getErrorMessage());
+        }
+        
+        // Apply transform function to each item if provided
+        let transformedData = result.data || [];
+        if (options.transformResponse && Array.isArray(transformedData)) {
+          transformedData = transformedData.map(item => options.transformResponse!(item));
+        }
+        
+        return createSuccessResponse(transformedData);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+
+    /**
+     * Filter records by tag IDs using PostgreSQL array operators
+     */
+    async filterByTagIds(tagIds: string[], queryOptions: {
+      limit?: number;
+      offset?: number;
+      select?: string;
+    } = {}) {
+      try {
+        if (!tagIds || tagIds.length === 0) {
+          return this.getAll(queryOptions);
+        }
+        
+        const { limit, offset, select = '*' } = queryOptions;
+        
+        let query = viewRepository.select(select);
+        
+        // Use array overlap operator to find entities that have any of the specified tag IDs
+        // Assumes the view has a tag_names column with tag IDs
+        query = query.overlaps('tag_names', tagIds);
+        
+        // Apply ordering
+        if (options.defaultOrderBy) {
+          query = query.order(options.defaultOrderBy, { ascending: false });
+        }
+        
+        // Apply pagination
+        if (limit) {
+          query = query.limit(limit);
+        }
+        
+        if (offset) {
+          query = query.offset(offset);
+        }
+        
+        const result = await query.execute();
+        
+        if (result.isError()) {
+          throw new Error(result.getErrorMessage());
+        }
+        
+        // Apply transform function to each item if provided
+        let transformedData = result.data || [];
+        if (options.transformResponse && Array.isArray(transformedData)) {
+          transformedData = transformedData.map(item => options.transformResponse!(item));
+        }
+        
+        return createSuccessResponse(transformedData);
+      } catch (error) {
+        return createErrorResponse(error);
+      }
+    },
+
+    /**
+     * Legacy method for backward compatibility - calls filterByTagIds internally
+     */
+    async filterByTagNames(tagNames: string[], queryOptions: {
+      limit?: number;
+      offset?: number;
+      select?: string;
+    } = {}) {
+      // For backward compatibility, treat tagNames as tagIds
+      return this.filterByTagIds(tagNames, queryOptions);
+    },
+
     viewName: viewName as string
   };
   
