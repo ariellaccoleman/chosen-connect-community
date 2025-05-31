@@ -19,11 +19,14 @@ const Dashboard: React.FC = () => {
   // Extract the profile data from the API response
   const profile = profileData?.data;
   
+  // Convert TagAssignments to Tag[] format for the new interface
+  const profileTags = tagAssignments?.map(assignment => assignment.tag!).filter(Boolean) || [];
+  
   // If the profile is loaded, add the isAdmin flag and tags to it
   const profileWithAdminStatus = profile ? {
     ...profile,
     role: isAdmin ? "admin" : profile.role || "member",
-    tags: tagAssignments || [] // Add tags to the profile data
+    tags: profileTags // Use converted Tag[] format
   } : null;
   
   // Debug admin status

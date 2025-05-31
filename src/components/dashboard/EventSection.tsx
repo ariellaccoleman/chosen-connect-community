@@ -91,7 +91,7 @@ const EventSection: React.FC = () => {
                 </div>
                 {event.tags && event.tags.length > 0 && (
                   <div className="mt-2">
-                    <TagList tagAssignments={event.tags} />
+                    <TagList tags={event.tags} />
                   </div>
                 )}
               </div>

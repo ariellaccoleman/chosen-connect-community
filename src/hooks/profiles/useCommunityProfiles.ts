@@ -90,14 +90,14 @@ export const useCommunityProfiles = (params: CommunityProfilesParams = {}) => {
           response.data.slice(0, 2).map(p => ({
             id: p.id, 
             name: `${p.first_name} ${p.last_name}`,
-            tags: p.tags?.map(t => ({ tag_id: t.tag_id, tag_name: t.tag?.name }))
+            tags: p.tags?.map(t => ({ id: t.id, name: t.name }))
           }))
         );
         
         // Check profiles with the specific tag we're interested in
         const targetTagId = "2de8fd5d-3311-4e38-94a3-596ee596524b";
         const profilesWithTargetTag = response.data.filter(profile => 
-          profile.tags && profile.tags.some(t => t.tag_id === targetTagId)
+          profile.tags && profile.tags.some(t => t.id === targetTagId)
         );
         
         logger.debug(`Profiles with target tag ${targetTagId}: ${profilesWithTargetTag.length}`, 
