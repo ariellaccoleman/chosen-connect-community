@@ -32,8 +32,7 @@ const EntityTagDisplay = ({
   // Only fetch tags if not provided (fallback for legacy components)
   const { data: tagAssignments, isLoading, isError } = useEntityTags(
     entityId, 
-    entityType,
-    { enabled: !preloadedTags || preloadedTags.length === 0 }
+    entityType
   );
 
   // Use preloaded tags if available (preferred approach)
