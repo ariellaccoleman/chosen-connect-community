@@ -1,4 +1,3 @@
-
 import { Organization, OrganizationWithLocation } from "@/types";
 import { createApiFactory } from "@/api/core/factory/apiFactory";
 import { formatOrganizationWithLocation } from "@/utils/formatters/organizationFormatters";
@@ -19,6 +18,7 @@ export const organizationApi = createApiFactory<
     *, 
     location:locations(*)
   `,
+  withTagsView: 'organizations_with_tags',
   useMutationOperations: true,
   useBatchOperations: false,
   transformResponse: (data) => {
@@ -60,6 +60,7 @@ export const resetOrganizationApi = (client?: any) => {
       *, 
       location:locations(*)
     `,
+    withTagsView: 'organizations_with_tags',
     useMutationOperations: true,
     useBatchOperations: false,
     transformResponse: (data) => {

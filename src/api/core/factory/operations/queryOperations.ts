@@ -1,4 +1,3 @@
-
 import { TableNames, ApiFactoryOptions } from "../types";
 import { DataRepository, RepositoryResponse } from "../../repository/DataRepository";
 import { createRepository } from "../../repository/repositoryFactory";
@@ -57,6 +56,7 @@ export function createQueryOperations<
       offset?: number;
       select?: string;
       includeTags?: boolean;
+      tagId?: string; // Add tagId filter option
     } = {}): Promise<ApiResponse<T[]>> {
       try {
         const {
@@ -68,14 +68,15 @@ export function createQueryOperations<
           limit,
           offset,
           select = defaultSelect,
-          includeTags = false
+          includeTags = false,
+          tagId
         } = queryOptions;
 
-        // Use the with_tags view if tags are requested and available
-        const tableToQuery = includeTags && withTagsView ? withTagsView : tableName;
+        // Use the with_tags view if tags are requested/needed and available
+        const tableToQuery = (includeTags || tagId) && withTagsView ? withTagsView : tableName;
 
         // Use repository if provided, otherwise use apiClient with optional client injection
-        if (repository) {
+        if (repository && !tagId) { // Only use repository for simple queries without tag filtering
           let query = repository.select(select);
 
           // Apply filters
@@ -130,6 +131,12 @@ export function createQueryOperations<
               }
             }
           });
+
+          // Apply tag filtering using the aggregated tags array
+          if (tagId && withTagsView) {
+            // Use array contains operator to find entities with the specific tag
+            query = query.contains('tags', [{ id: tagId }]);
+          }
 
           // Apply search
           if (search && searchColumns.length > 0) {
@@ -201,51 +208,11 @@ export function createQueryOperations<
         return createSuccessResponse([]);
       }
 
-      try {
-        return await apiClient.query(async (client) => {
-          const {
-            search,
-            searchColumns = ['name'],
-            orderBy = defaultOrderBy,
-            ascending = false,
-            limit,
-            offset
-          } = queryOptions;
-
-          // Use array contains operator to find entities with the specific tag
-          let query = client
-            .from(withTagsView)
-            .select("*")
-            .contains('tags', [{ id: tagId }]);
-
-          // Apply search if provided
-          if (search && searchColumns.length > 0) {
-            query = query.ilike(searchColumns[0], `%${search}%`);
-          }
-
-          // Apply ordering
-          query = query.order(orderBy, { ascending });
-
-          // Apply pagination
-          if (limit !== undefined) {
-            const from = offset || 0;
-            const to = from + limit - 1;
-            query = query.range(from, to);
-          }
-
-          const { data, error } = await query;
-          
-          if (error) throw error;
-          
-          const transformedData = Array.isArray(data) 
-            ? data.map(transformResponse)
-            : [];
-            
-          return createSuccessResponse(transformedData);
-        }, providedClient);
-      } catch (error) {
-        return createErrorResponse(error);
-      }
+      return this.getAll({
+        ...queryOptions,
+        tagId,
+        includeTags: true
+      });
     },
 
     /**

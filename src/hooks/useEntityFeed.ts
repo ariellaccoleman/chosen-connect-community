@@ -8,7 +8,6 @@ import { profileApi } from "@/api/profiles";
 import { organizationApi } from "@/api/organizations";
 import { eventApi } from "@/api/events";
 import { postsApi } from "@/api/posts";
-import { tagAssignmentApi } from "@/api/tags";
 
 interface UseEntityFeedOptions {
   entityTypes: EntityType[];
@@ -22,6 +21,7 @@ interface UseEntityFeedOptions {
 
 /**
  * Custom hook to fetch entities of specified types, optionally filtered by tag
+ * Now simplified to use view APIs with pre-loaded tags
  */
 export const useEntityFeed = ({
   entityTypes,
@@ -31,77 +31,32 @@ export const useEntityFeed = ({
   search = "",
   isApproved = true,
 }: UseEntityFeedOptions) => {
-  // This query fetches entities based on the provided entityTypes
+  // This query fetches entities based on the provided entityTypes using view APIs
   const { data: entitiesData, isLoading, error } = useQuery({
     queryKey: ["entities", { types: entityTypes, tagId, limit, filterByUserId, search, isApproved }],
     queryFn: async () => {
       const allEntities: Entity[] = [];
       
-      logger.debug(`EntityFeed: Starting fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
+      logger.debug(`EntityFeed: Starting simplified fetch for types=${entityTypes.join(',')} with tagId=${tagId}, search=${search}`);
       
-      // If tagId is provided, get all tagged entity IDs first
-      let taggedEntityIds: Record<string, string[]> = {};
-      
-      if (tagId) {
-        logger.debug(`EntityFeed: Fetching tagged entities for tagId=${tagId}`);
-        
-        // Get all entities tagged with this tag ID using the API
-        const tagAssignmentsResponse = await tagAssignmentApi.getAll({
-          filters: { tag_id: tagId }
-        });
-          
-        if (tagAssignmentsResponse.error) {
-          logger.error("EntityFeed: Failed to fetch tag assignments", tagAssignmentsResponse.error);
-        } else if (tagAssignmentsResponse.data) {
-          // Group entity IDs by type for efficient filtering
-          taggedEntityIds = tagAssignmentsResponse.data.reduce((acc, assignment) => {
-            const type = assignment.target_type;
-            if (!acc[type]) acc[type] = [];
-            acc[type].push(assignment.target_id);
-            return acc;
-          }, {} as Record<string, string[]>);
-          
-          logger.debug(`EntityFeed: Found tagged entities:`, 
-            Object.entries(taggedEntityIds).map(([type, ids]) => `${type}: ${ids.length} items`));
-        }
-      }
-      
-      // Conditionally fetch each entity type
+      // Fetch each entity type using their view APIs with pre-loaded tags
       await Promise.all(
         entityTypes.map(async (type) => {
           try {
             let items: any[] = [];
             
-            // Map EntityType enum to database target_type values
-            const getTargetType = (entityType: EntityType): string => {
-              switch (entityType) {
-                case EntityType.PERSON:
-                  return 'person';
-                case EntityType.ORGANIZATION:
-                  return 'organization';
-                case EntityType.EVENT:
-                  return 'event';
-                case EntityType.POST:
-                  return 'post';
-                case EntityType.HUB:
-                  return 'hub';
-                default:
-                  return entityType.toLowerCase();
-              }
+            // Common query options
+            const queryOptions = {
+              search: search || undefined,
+              limit,
+              tagId, // Pass tagId for database-level filtering
+              includeTags: true // Always include tags from views
             };
-
-            const targetType = getTargetType(type);
             
-            // If we have a tag filter and no entities of this type have this tag, skip
-            if (tagId && (!taggedEntityIds[targetType] || taggedEntityIds[targetType].length === 0)) {
-              logger.debug(`EntityFeed: No ${type} entities found with tagId=${tagId}, skipping`);
-              return;
-            }
-            
-            // Fetch the appropriate data based on entity type using API factories
+            // Fetch the appropriate data based on entity type using view APIs
             switch (type) {
               case EntityType.PERSON:
-                logger.debug(`EntityFeed: Fetching PERSON entities with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
+                logger.debug(`EntityFeed: Fetching PERSON entities from view with tagId=${tagId}, search=${search}, isApproved=${isApproved}`);
                 
                 // Build filters for people
                 const peopleFilters: any = {};
@@ -116,19 +71,10 @@ export const useEntityFeed = ({
                   peopleFilters.is_approved = isApproved;
                 }
                 
-                // Apply tag filtering if we have tagged person IDs
-                if (tagId && taggedEntityIds[targetType]?.length) {
-                  // For API factory, we'll need to handle this differently
-                  // since we can't directly filter by array of IDs in the simple filter
-                  peopleFilters.id = taggedEntityIds[targetType];
-                  logger.debug(`EntityFeed: Filtering PERSON entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                }
-                
-                // Use the profile API with search
+                // Use the profile API with view support
                 const profilesResponse = await profileApi.getAll({
                   filters: peopleFilters,
-                  search: search || undefined,
-                  limit
+                  ...queryOptions
                 });
                   
                 if (profilesResponse.error) {
@@ -137,26 +83,16 @@ export const useEntityFeed = ({
                 }
                 
                 items = profilesResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} PERSON entities`);
+                logger.debug(`EntityFeed: Received ${items?.length || 0} PERSON entities from view`);
                 break;
                 
               case EntityType.ORGANIZATION:
-                logger.debug(`EntityFeed: Fetching ORGANIZATION entities with tagId=${tagId}, search=${search}`);
+                logger.debug(`EntityFeed: Fetching ORGANIZATION entities from view with tagId=${tagId}, search=${search}`);
                 
-                // Build filters for organizations
-                const orgFilters: any = {};
-                
-                // Apply tag filtering if we have tagged organization IDs
-                if (tagId && taggedEntityIds[targetType]?.length) {
-                  orgFilters.id = taggedEntityIds[targetType];
-                  logger.debug(`EntityFeed: Filtering ORGANIZATION entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                }
-                
-                // Use the organization API with search
+                // Use the organization API with view support
                 const orgsResponse = await organizationApi.getAll({
-                  filters: orgFilters,
-                  search: search || undefined,
-                  limit
+                  filters: {},
+                  ...queryOptions
                 });
                   
                 if (orgsResponse.error) {
@@ -165,26 +101,16 @@ export const useEntityFeed = ({
                 }
                 
                 items = orgsResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} ORGANIZATION entities`);
+                logger.debug(`EntityFeed: Received ${items?.length || 0} ORGANIZATION entities from view`);
                 break;
                 
               case EntityType.EVENT:
-                logger.debug(`EntityFeed: Fetching EVENT entities with tagId=${tagId}, search=${search}`);
+                logger.debug(`EntityFeed: Fetching EVENT entities from view with tagId=${tagId}, search=${search}`);
                 
-                // Build filters for events
-                const eventFilters: any = {};
-                
-                // Apply tag filtering if we have tagged event IDs
-                if (tagId && taggedEntityIds[targetType]?.length) {
-                  eventFilters.id = taggedEntityIds[targetType];
-                  logger.debug(`EntityFeed: Filtering EVENT entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                }
-                
-                // Use the event API with search
+                // Use the event API with view support
                 const eventsResponse = await eventApi.getAll({
-                  filters: eventFilters,
-                  search: search || undefined,
-                  limit
+                  filters: {},
+                  ...queryOptions
                 });
                   
                 if (eventsResponse.error) {
@@ -193,22 +119,16 @@ export const useEntityFeed = ({
                 }
                 
                 items = eventsResponse.data || [];
-                logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities`);
+                logger.debug(`EntityFeed: Received ${items?.length || 0} EVENT entities from view`);
                 break;
                 
               case EntityType.POST:
                 logger.debug(`EntityFeed: Fetching POST entities with tagId=${tagId}, search=${search}`);
                 
-                // Build filters for posts
+                // Posts don't have a view yet, so use existing logic for now
+                // TODO: Create posts_with_tags view in future
                 const postFilters: any = {};
                 
-                // Apply tag filtering if we have tagged post IDs
-                if (tagId && taggedEntityIds[targetType]?.length) {
-                  postFilters.id = taggedEntityIds[targetType];
-                  logger.debug(`EntityFeed: Filtering POST entities by ${taggedEntityIds[targetType].length} tagged IDs`);
-                }
-                
-                // Use the posts API with search
                 const postsResponse = await postsApi.getAll({
                   filters: postFilters,
                   search: search || undefined,
@@ -241,11 +161,10 @@ export const useEntityFeed = ({
                       logger.debug(`EntityFeed: Converted ${type} to entity`, {
                         id: entity.id,
                         entityType: entity.entityType,
-                        name: entity.name
+                        name: entity.name,
+                        tagsCount: entity.tags?.length || 0
                       });
                       
-                      // Initialize empty tags array that will be populated later if needed
-                      entity.tags = [];
                       allEntities.push(entity);
                     } else {
                       logger.warn(`EntityFeed: Failed to convert ${type} to entity`, { itemId: item?.id });
@@ -262,37 +181,7 @@ export const useEntityFeed = ({
         })
       );
       
-      // After all entities are fetched, if tagId was provided, fetch tags for each entity
-      if (tagId) {
-        try {
-          logger.debug(`EntityFeed: Fetching tags for each entity`);
-          
-          // For each entity, fetch its tags - this is now just to get the tag details
-          // since we already filtered by tag
-          for (const entity of allEntities) {
-            const tagAssignmentsResponse = await tagAssignmentApi.getAll({
-              filters: {
-                target_id: entity.id,
-                target_type: entity.entityType
-              }
-            });
-              
-            if (tagAssignmentsResponse.error) {
-              logger.error(`EntityFeed: Error fetching tags for ${entity.entityType} entity:`, tagAssignmentsResponse.error);
-            } else if (tagAssignmentsResponse.data && tagAssignmentsResponse.data.length > 0) {
-              // Convert tag assignments to simple Tag[] format
-              entity.tags = tagAssignmentsResponse.data
-                .filter(assignment => assignment.tag)
-                .map(assignment => assignment.tag!)
-                .filter(Boolean);
-            }
-          }
-        } catch (e) {
-          logger.error(`EntityFeed: Error fetching tags for entities:`, e);
-        }
-      }
-      
-      logger.debug(`EntityFeed: Finished fetching entities, found ${allEntities.length} total entities`);
+      logger.debug(`EntityFeed: Simplified fetch completed, found ${allEntities.length} total entities`);
       return allEntities;
     },
     enabled: entityTypes.length > 0,
