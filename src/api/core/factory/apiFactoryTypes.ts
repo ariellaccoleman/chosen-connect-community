@@ -1,6 +1,7 @@
 
+
 import { DataRepository } from "../repository";
-import { TableNames } from "./types";
+import { TableNames, ViewNames, ApiFactoryOptions, ViewFactoryOptions, RelationshipFactoryOptions } from "./types";
 
 /**
  * Repository configuration options
@@ -35,3 +36,18 @@ export interface StandardApiFactoryConfig<T> extends ApiFactoryConfig<T> {
   useMutationOperations?: boolean;
   useBatchOperations?: boolean;
 }
+
+/**
+ * Enhanced repository type enumeration
+ */
+export type EnhancedRepositoryType = 'supabase' | 'mock';
+
+// Re-export types from the main types file for backward compatibility
+export type { 
+  TableNames, 
+  ViewNames, 
+  ApiFactoryOptions, 
+  ViewFactoryOptions, 
+  RelationshipFactoryOptions 
+} from "./types";
+

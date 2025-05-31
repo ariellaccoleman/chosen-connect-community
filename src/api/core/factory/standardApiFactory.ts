@@ -99,7 +99,7 @@ export function createStandardApiFactory<
   // Use entityName or generate from tableName (with safety check)
   const entity = entityName || 
     (typeof tableName === 'string' ? 
-      tableName.replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
+      (tableName as string).replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase()) : 
       'Entity');
   
   // Base operations are always included - includes query operations by default
@@ -153,3 +153,4 @@ export function createStandardApiFactory<
  * Alias for createStandardApiFactory for backwards compatibility
  */
 export const createApiOperations = createStandardApiFactory;
+
