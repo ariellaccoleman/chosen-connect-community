@@ -1,5 +1,5 @@
 
-import { createApiFactory } from '../core/factory/apiFactory';
+import { createApiFactory, createViewApiFactory } from '../core/factory/apiFactory';
 import { Post, PostCreate, PostUpdate, PostWithDetails } from '@/types/post';
 import { apiClient } from '../core/apiClient';
 import { createSuccessResponse, createErrorResponse, ApiResponse } from '../core/errorHandler';
@@ -35,9 +35,9 @@ export const postsApi = createApiFactory<Post, string, PostCreate, PostUpdate>({
   useBatchOperations: false
 });
 
-// Create the posts with tags view API for filtering and display
-export const postsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
-  tableName: 'posts_with_tags',
+// Create the posts with tags view API for filtering and display using ViewApiFactory
+export const postsWithTagsApi = createViewApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+  viewName: 'posts_with_tags',
   entityName: 'postWithTags',
   defaultOrderBy: 'created_at',
   transformResponse: (data: any) => ({
@@ -50,8 +50,7 @@ export const postsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_name
     tags: data.tags || [],
     tag_names: data.tag_names || []
   }),
-  useMutationOperations: false, // Read-only view
-  useBatchOperations: false
+  enableLogging: false
 });
 
 // Create the post comments API (alias as commentsApi for backwards compatibility)
@@ -347,8 +346,8 @@ export const resetPostsApi = (client?: any) => {
     useBatchOperations: false
   }, client);
 
-  const newPostsWithTagsApi = createApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
-    tableName: 'posts_with_tags',
+  const newPostsWithTagsApi = createViewApiFactory<Post & { tags?: any[], tag_names?: string[] }, string>({
+    viewName: 'posts_with_tags',
     entityName: 'postWithTags',
     defaultOrderBy: 'created_at',
     transformResponse: (data: any) => ({
@@ -361,8 +360,7 @@ export const resetPostsApi = (client?: any) => {
       tags: data.tags || [],
       tag_names: data.tag_names || []
     }),
-    useMutationOperations: false,
-    useBatchOperations: false
+    enableLogging: false
   }, client);
 
   return {

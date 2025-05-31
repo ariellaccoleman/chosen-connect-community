@@ -3,7 +3,7 @@ import { createRelationshipApiFactory } from '@/api/core/factory/apiFactory';
 import { OrganizationRelationshipOperations } from './types';
 import { ProfileOrganizationRelationship, ProfileOrganizationRelationshipWithDetails } from '@/types';
 import { organizationRelationshipsApi } from './relationshipsApi';
-import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/types';
+import { ApiResponse, createSuccessResponse, createErrorResponse } from '@/api/core/errorHandler';
 
 /**
  * Factory function to create organization relationship API using the relationship pattern
