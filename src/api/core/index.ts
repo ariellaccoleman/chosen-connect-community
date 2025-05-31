@@ -41,11 +41,9 @@ export type {
   ViewColumnName,
   ApiFactoryOptions,
   RelationshipFactoryOptions,
-  ViewFactoryOptions,
-  ViewOperations,
-  ApiOperations,
-  RelationshipApiOperations
+  ViewFactoryOptions
 } from './factory/types';
 
 // Export EnhancedRepositoryType specifically from apiFactoryTypes to avoid conflicts
 export type { EnhancedRepositoryType } from './factory/apiFactoryTypes';
+
