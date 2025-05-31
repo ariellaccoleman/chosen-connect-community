@@ -29,11 +29,12 @@ const EntityTagDisplay = ({
   showDebugInfo = false,
   tags: preloadedTags
 }: EntityTagDisplayProps) => {
-  // Only fetch tags if not provided
+  // Only fetch tags if not provided - fix the hook call to use 2 arguments
+  const shouldFetch = !preloadedTags;
   const { data: tagAssignments, isLoading, isError } = useEntityTags(
     entityId, 
-    entityType, 
-    { enabled: !preloadedTags } // Disable query if we have preloaded tags
+    entityType,
+    { enabled: shouldFetch }
   );
 
   // Use preloaded tags if available, otherwise use fetched assignments
