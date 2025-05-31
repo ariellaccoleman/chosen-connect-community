@@ -2,6 +2,7 @@
 import { Tag, TagAssignment } from '@/utils/tags/types';
 import { EntityType } from '@/types/entityTypes';
 import { createExtendedTagApi, createExtendedTagAssignmentApi } from './factory/tagApiFactory';
+import { ApiResponse } from '@/api/core/errorHandler';
 
 // Use extended APIs that have business operations
 const extendedTagApi = createExtendedTagApi();
@@ -10,137 +11,123 @@ const extendedTagAssignmentApi = createExtendedTagAssignmentApi();
 /**
  * Get all tags
  */
-export const getAllTags = async (): Promise<Tag[]> => {
+export const getAllTags = async (): Promise<ApiResponse<Tag[]>> => {
   const response = await extendedTagApi.getAll();
-  if (response.error) {
-    throw response.error;
-  }
-  return response.data || [];
+  return response;
 };
 
 /**
  * Get tag by ID
  */
-export const getTagById = async (id: string): Promise<Tag | null> => {
+export const getTagById = async (id: string): Promise<ApiResponse<Tag | null>> => {
   const response = await extendedTagApi.getById(id);
-  if (response.error) {
-    throw response.error;
-  }
-  return response.data || null;
+  return response;
 };
 
 /**
  * Find tag by name
  */
-export const findTagByName = async (name: string): Promise<Tag | null> => {
+export const findTagByName = async (name: string): Promise<ApiResponse<Tag | null>> => {
   const response = await extendedTagApi.getAll({ filters: { name } });
   if (response.error) {
-    throw response.error;
+    return response as ApiResponse<Tag | null>;
   }
-  return response.data?.[0] || null;
+  
+  const tag = response.data?.[0] || null;
+  return {
+    data: tag,
+    error: null,
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false
+  };
 };
 
 /**
  * Create a new tag
  */
-export const createTag = async (data: Partial<Tag>): Promise<Tag> => {
+export const createTag = async (data: Partial<Tag>): Promise<ApiResponse<Tag>> => {
   const response = await extendedTagApi.create(data);
-  if (response.error) {
-    throw response.error;
-  }
-  if (!response.data) {
-    throw new Error('Failed to create tag');
-  }
-  return response.data;
+  return response;
 };
 
 /**
  * Update an existing tag
  */
-export const updateTag = async (id: string, data: Partial<Tag>): Promise<Tag> => {
+export const updateTag = async (id: string, data: Partial<Tag>): Promise<ApiResponse<Tag>> => {
   const response = await extendedTagApi.update(id, data);
-  if (response.error) {
-    throw response.error;
-  }
-  if (!response.data) {
-    throw new Error('Failed to update tag');
-  }
-  return response.data;
+  return response;
 };
 
 /**
  * Delete a tag
  */
-export const deleteTag = async (id: string): Promise<boolean> => {
+export const deleteTag = async (id: string): Promise<ApiResponse<boolean>> => {
   const response = await extendedTagApi.delete(id);
   if (response.error) {
-    throw response.error;
+    return response as ApiResponse<boolean>;
   }
-  return response.data === true;
+  
+  return {
+    data: response.data === true,
+    error: null,
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false
+  };
 };
 
 /**
  * Find or create a tag
  */
-export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<Tag> => {
+export const findOrCreateTag = async (data: Partial<Tag>, entityType?: EntityType): Promise<ApiResponse<Tag>> => {
   const response = await extendedTagApi.findOrCreate(data);
-  if (response.error) {
-    throw response.error;
-  }
-  if (!response.data) {
-    throw new Error('Failed to find or create tag');
-  }
-  return response.data;
+  return response;
 };
 
 /**
  * Get tags by entity type
  */
-export const getTagsByEntityType = async (entityType: EntityType): Promise<Tag[]> => {
+export const getTagsByEntityType = async (entityType: EntityType): Promise<ApiResponse<Tag[]>> => {
   const response = await extendedTagApi.getByEntityType(entityType);
-  if (response.error) {
-    throw response.error;
-  }
-  return response.data || [];
+  return response;
 };
 
 /**
  * Get tag assignments for an entity
  */
-export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<TagAssignment[]> => {
+export const getTagAssignmentsForEntity = async (entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment[]>> => {
   const response = await extendedTagAssignmentApi.getAll({ 
     filters: { 
       target_id: entityId, 
       target_type: entityType 
     } 
   });
-  if (response.error) {
-    throw response.error;
-  }
-  return response.data || [];
+  return response;
 };
 
 /**
  * Create a tag assignment
  */
-export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<TagAssignment> => {
+export const createTagAssignment = async (tagId: string, entityId: string, entityType: EntityType): Promise<ApiResponse<TagAssignment>> => {
   const response = await extendedTagAssignmentApi.createAssignment(tagId, entityId, entityType);
-  if (response.error) {
-    throw response.error;
-  }
-  if (!response.data) {
-    throw new Error('Failed to create tag assignment');
-  }
-  return response.data;
+  return response;
 };
 
 /**
  * Delete a tag assignment
  */
-export const deleteTagAssignment = async (assignmentId: string): Promise<boolean> => {
+export const deleteTagAssignment = async (assignmentId: string): Promise<ApiResponse<boolean>> => {
   const response = await extendedTagAssignmentApi.delete(assignmentId);
   if (response.error) {
-    throw response.error;
+    return response as ApiResponse<boolean>;
   }
-  return response.data === true;
+  
+  return {
+    data: response.data === true,
+    error: null,
+    status: 'success',
+    isSuccess: () => true,
+    isError: () => false
+  };
 };
